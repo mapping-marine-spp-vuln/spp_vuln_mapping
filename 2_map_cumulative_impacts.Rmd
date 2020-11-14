@@ -66,7 +66,9 @@ tmp <- parallel::mclapply(ids, mc.cores = 16,
   })
 ```
 
-## Collect all spp chi, and calc mean chi per cell
+## For all spp
+
+### Collect all spp chi, and calc mean chi per cell
 
 ```{r}
 
@@ -93,7 +95,7 @@ if(!file.exists(chi_stats_f)) {
 
 ```
 
-## Put into rasters
+### Put into rasters
 
 ```{r}
 mean_rast_f <- '_output/mean_chi.tif'
@@ -137,6 +139,8 @@ plot(mean_chi_rast, main = 'mean CHI')
 plot(sd_chi_rast, main = 'sd CHI')
 plot(mean_nstr_rast, main = 'mean # stressors')
 plot(nspp_rast, main = '# spp')
+
+plot(sd_chi_rast / mean_chi_rast, main = 'CV', col = hcl.colors(n = 50))
 ```
 Identify some cells with many spp and high impacts.  Find all spp in these cells, and then read in the species-stressor intersections for them.  Filter to the appropriate cells and plot species-by-species bar charts of stressor intensities.
 
@@ -229,33 +233,36 @@ y <- rasterToPoints(x) %>%
   mutate(rank = ifelse(layer == 1, 'low', 'high'))
 
 xfm <- function(x) {
-  return(x^.4)
+  cutoff <- quantile(x, .9999, na.rm = TRUE)
+  y <- x / cutoff
+  y[y > 1] <- 1
+  return(sqrt(y))
 }
 
 chi_df <- rasterToPoints(mean_chi_rast) %>%
   as.data.frame() %>%
   arrange(mean_chi) %>%
-  mutate(xfm_chi = xfm(mean_chi)) %>%
-  mutate(pct_chi = ntile(mean_chi, n = 100))
+  mutate(xfm_chi = xfm(mean_chi)) # %>%
+  # mutate(pct_chi = ntile(mean_chi, n = 100))
 
-lbls <- c(.01, .1, .2, .5, 1, 2)
+lbls <- c(.01, .1, .2, .5, 1)
 ggplot() +
   ggtheme_map() +
   geom_raster(data = chi_df, aes(x, y, fill = xfm_chi)) +
   geom_point(data = y, aes(x, y, color = rank)) +
-  scale_fill_viridis_c(labels = lbls, breaks = xfm(lbls), option = 'magma') +
+  scale_fill_viridis_c(labels = lbls, breaks = xfm(lbls), option = 'viridis') +
   scale_color_manual(values = c('red', 'green')) +
   coord_sf() +
   labs(color = 'CHI rank', fill = 'mean CHI')
 
-ggplot() +
-  ggtheme_map() +
-  geom_raster(data = chi_df, aes(x, y, fill = pct_chi)) +
-  geom_point(data = y, aes(x, y, color = rank)) +
-  scale_fill_viridis_c(option = 'viridis') +
-  scale_color_manual(values = c('red', 'green')) +
-  coord_sf() +
-  labs(color = 'CHI rank', fill = 'mean CHI %ile')
+# ggplot() +
+#   ggtheme_map() +
+#   geom_raster(data = chi_df, aes(x, y, fill = pct_chi)) +
+#   geom_point(data = y, aes(x, y, color = rank)) +
+#   scale_fill_viridis_c(option = 'viridis') +
+#   scale_color_manual(values = c('red', 'green')) +
+#   coord_sf() +
+#   labs(color = 'CHI rank', fill = 'mean CHI %ile')
 ```
 
 ``` {r}
@@ -294,4 +301,114 @@ knitr::include_graphics('low_cells_dists.png')
 ```
 
 
+
+## By taxon
+
+### Collect all spp chi, and calc mean chi per cell
+
+
+```{r}
+spp_taxa <- read_csv(here('_raw/spp_ranks.csv')) %>% rename(taxon = rank)
+chi_f_df <- data.frame(f = list.files(dir_chi_spp, full.names = TRUE)) %>%
+  mutate(iucn_sid = str_extract(basename(f), '[0-9]+') %>% as.integer() %>% unique()) %>%
+  left_join(spp_taxa, by = 'iucn_sid')
+taxa <- spp_taxa$taxon %>% unique()
+
+for(t in taxa) { ### t <- taxa[1]
+  
+  t_chi_outfile <- sprintf('~/git-annex/spp_vuln/int/t_chi_%s.csv', tolower(t))
+  
+  if(!file.exists(t_chi_outfile)) {
+    
+    chi_fs <- chi_f_df %>%
+      filter(taxon == t) %>%
+      .$f
+    t_chi <- parallel::mclapply(chi_fs, mc.cores = 16,
+        FUN = function(f) {
+          x <- read_csv(f, col_types = 'idi')
+                                  }) %>%
+      setNames(chi_fs) %>%
+      bind_rows(.id = 'f')
+  
+    n_gps <- 24
+    t_cells <- data.frame(cell_id = t_chi$cell_id %>% unique() %>% sort()) %>%
+      mutate(cell_gp = rep(1:n_gps, length.out = n()))
+    
+    t_chi_stats_l <- parallel::mclapply(1:n_gps, mc.cores = n_gps,
+        FUN = function(gp) { ### gp <- 1
+          df <- t_cells %>% filter(cell_gp == gp)
+          t_chi_gp <- t_chi %>%
+            filter(cell_id %in% df$cell_id)
+          t_chi_gp_sum <- t_chi_gp %>%
+            # mutate(iucn_sid = str_extract(basename(f), '[0-9]+') %>% as.integer()) %>%
+            group_by(cell_id) %>%
+            summarize(mean_chi = mean(chi) %>% round(5),
+                      sd_chi = sd(chi) %>% round(5),
+                      mean_strs = mean(n_strs) %>% round(2),
+                      n_spp = n_distinct(f))
+        })
+    t_chi_stats <- bind_rows(t_chi_stats_l)
+  
+    write_csv(t_chi_stats, t_chi_outfile)
+  } else {
+    message('File exists: ', t_chi_outfile, '... skipping!')
+  }
+}
+
+```
+
+### Put a few taxa into rasters
+
+```{r}
+plot_map <- function(r, t, f = 'mean CHI') {
+  df <- rasterToPoints(r) %>%
+    as.data.frame() %>%
+    setNames(c('x', 'y', 'chi')) %>%
+    mutate(xfm_chi = xfm(chi))
+  x <- ggplot() +
+    ggtheme_map() +
+    geom_raster(data = df, aes(x, y, fill = xfm_chi)) +
+    scale_fill_viridis_c(labels = lbls, breaks = xfm(lbls), option = 'viridis') +
+    coord_sf() +
+    labs(fill = f, title = t)
+  print(x)
+}
+
+create_rast <- function(t) { # t <- taxa[1]
+  f <- sprintf('_output/mean_chi_%s.tif', tolower(t))
+  if(!file.exists(f)) {
+    csv <- sprintf('~/git-annex/spp_vuln/int/t_chi_%s.csv', tolower(t))
+    chi_df <- read_csv(csv)
+    r <- subs(cell_id_rast, chi_df, 
+              by = 'cell_id', which = 'mean_chi',
+              filename = f, overwrite = TRUE)
+  } else {
+    r <- raster(f)
+  }
+  return(r)
+}
+
+xfm <- function(x) {
+  cutoff <- quantile(x, .9999, na.rm = TRUE)
+  y <- x / cutoff
+  y[y > 1] <- 1
+  return(sqrt(y))
+}
+```
+
+``` {r}
+cell_id_rast <- raster('_spatial/cell_id_mol.tif')
+
+for(t in taxa) {
+  r <- create_rast(t = tolower(t))
+  plot_map(r, t = tolower(t))
+}
+
+```
+
+
+
+## By species
+
+### Choose a few key species and plot maps
 
