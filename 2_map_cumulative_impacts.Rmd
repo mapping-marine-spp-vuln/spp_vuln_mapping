@@ -135,10 +135,10 @@ mean_chi_rast <- raster(mean_rast_f)
 sd_chi_rast <- raster(sd_rast_f)
 mean_nstr_rast <- raster(mean_nstr_rast_f)
 nspp_rast <- raster(nspp_rast_f)
-plot(mean_chi_rast, main = 'mean CHI')
-plot(sd_chi_rast, main = 'sd CHI')
-plot(mean_nstr_rast, main = 'mean # stressors')
-plot(nspp_rast, main = '# spp')
+plot(mean_chi_rast,  main = 'mean CHI',         col = hcl.colors(n = 50))
+plot(sd_chi_rast,    main = 'sd CHI',           col = hcl.colors(n = 50))
+plot(mean_nstr_rast, main = 'mean # stressors', col = hcl.colors(n = 50))
+plot(nspp_rast,      main = '# spp',            col = hcl.colors(n = 50))
 
 plot(sd_chi_rast / mean_chi_rast, main = 'CV', col = hcl.colors(n = 50))
 ```
@@ -255,14 +255,18 @@ ggplot() +
   coord_sf() +
   labs(color = 'CHI rank', fill = 'mean CHI')
 
-# ggplot() +
-#   ggtheme_map() +
-#   geom_raster(data = chi_df, aes(x, y, fill = pct_chi)) +
-#   geom_point(data = y, aes(x, y, color = rank)) +
-#   scale_fill_viridis_c(option = 'viridis') +
-#   scale_color_manual(values = c('red', 'green')) +
-#   coord_sf() +
-#   labs(color = 'CHI rank', fill = 'mean CHI %ile')
+```
+
+```{r}
+cv_rast <- sd_chi_rast / mean_chi_rast
+cv_df <- rasterToPoints(cv_rast) %>%
+  as.data.frame()
+ggplot() +
+  ggtheme_map() +
+  geom_raster(data = cv_df, aes(x, y, fill = layer)) +
+  scale_fill_viridis_c(option = 'viridis') +
+  coord_sf() +
+  labs(fill = 'CV', title = 'Coefficient of variation')
 ```
 
 ``` {r}
@@ -282,10 +286,10 @@ x <- ggplot(plot_df %>% filter(rank == 'high')) +
   geom_col(aes(x = id, y = impact, fill = stressor), width = 1, position = 'stack') +
   scale_x_continuous(breaks = seq(0, 1500, 500)) +
   scale_fill_viridis_d() +
-  facet_wrap(~cell_id, ncol = 2) +
+  facet_wrap(~cell_id, ncol = 5) +
   labs(x = 'n_spp')
 
-ggsave('high_cells_dists.png', height = 8, width = 6, dpi = 300)
+ggsave('high_cells_dists.png', height = 3, width = 10, dpi = 300)
 knitr::include_graphics('high_cells_dists.png')
 
 x <- ggplot(plot_df %>% filter(rank == 'low')) +
@@ -293,10 +297,10 @@ x <- ggplot(plot_df %>% filter(rank == 'low')) +
   geom_col(aes(x = id, y = impact, fill = stressor), width = 1, position = 'stack') +
   scale_x_continuous(breaks = seq(0, 1500, 500)) +
   scale_fill_viridis_d() +
-  facet_wrap(~cell_id, ncol = 2) +
+  facet_wrap(~cell_id, ncol = 5) +
   labs(x = 'n_spp')
 
-ggsave('low_cells_dists.png', height = 8, width = 6, dpi = 300)
+ggsave('low_cells_dists.png', height = 3, width = 10, dpi = 300)
 knitr::include_graphics('low_cells_dists.png')
 ```
 
