@@ -1,5 +1,5 @@
 ---
-title: "Defining functional groups from FishBase data"
+title: "What's the big idea for this project"
 author: "*Compiled on `r date()` by `r Sys.info()['user']`*"
 output: 
   html_document:

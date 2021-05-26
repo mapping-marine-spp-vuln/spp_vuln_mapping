@@ -1,0 +1,143 @@
+---
+title: "Assemble grouping traits"
+author: "*Compiled on `r date()` by `r Sys.info()['user']`*"
+output: 
+  html_document:
+    code_folding: hide
+    toc: true
+    toc_depth: 3
+    toc_float: yes
+    number_sections: true
+    theme: cerulean
+    highlight: haddock
+    includes: 
+      in_header: '~/github/src/templates/ohara_hdr.html'
+  pdf_document:
+    toc: true
+---
+
+``` {r setup, echo = TRUE, message = FALSE, warning = FALSE}
+
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
+
+library(oharac)
+oharac::setup()
+library(cluster)
+library(factoextra)
+library(ggfortify)
+source(here('fb_slb_fxns.R'))
+
+
+```
+
+# Summary
+
+Gather processed traits data and assemble into a dataframe.  Apply a clustering algorithm to identify groupings.
+
+# Data
+
+See individual trait scripts.
+
+# Methods
+
+## Assemble dataframe
+
+```{r}
+depth_df <- read_csv(here('_data/traits_grouping/trait_depth_pca.csv')) %>%
+  select(species, depth_pc1, depth_pc2)
+length_df <- read_csv(here('_data/traits_grouping/trait_length.csv')) %>%
+  select(species, log_l)
+mobility_df <- read_csv(here('_data/traits_grouping/trait_mobility.csv')) %>%
+  select(species, mob_score)
+reprod_df <- read_csv(here('_data/traits_grouping/trait_reproduction_pca.csv')) %>%
+  select(species, repr_pc1, repr_pc2)
+troph_df <- read_csv(here('_data/traits_grouping/trait_trophic_level.csv')) %>%
+  select(species, troph)
+
+df <- depth_df %>%
+  full_join(length_df) %>%
+  full_join(mobility_df) %>%
+  full_join(reprod_df) %>%
+  full_join(troph_df) %>%
+  left_join(get_worms())
+```
+
+
+```{r}
+df_clean <- df %>%
+  drop_na()
+
+n_spp_clean <- df_clean$species %>% n_distinct()
+
+df_rescale <- df_clean %>%
+  select(where(is.numeric)) %>%
+  scale()
+```
+
+``` {r pca}
+traits_pca <- df_rescale %>%
+  prcomp()
+autoplot(traits_pca,
+         data = df_clean,
+         loadings = TRUE,
+         colour = 'class',
+         loadings.label = TRUE,
+         loadings.colour = "black",
+         loadings.label.colour = "black",
+         loadings.label.vjust = -0.5
+         ) +
+  scale_color_viridis_d() +
+  theme_minimal()
+
+# Variance explained by each PC
+screeplot(traits_pca, type = "lines")
+
+# See the loadings (weighting for each principal component)
+traits_pca$rotation %>% round(3)
+```
+
+### identify an appropriate number of clusters
+
+Iterate over different values of $k$ and identify a "knee".
+``` {r find optimal k}
+wss <- function(k, df) {
+  kmeans(df, k, nstart = 10 )$tot.withinss
+}
+
+# Compute and plot wss for k = 1 to k = 15
+k.values <- 1:15
+
+# extract wss for 2-15 clusters
+wss_values <- sapply(k.values, wss, df = df_rescale)
+
+plot(k.values, wss_values,
+       type="b", pch = 19, frame = FALSE, 
+       xlab="Number of clusters K",
+       ylab="Total within-clusters sum of squares")
+```
+
+It appears that a k between 4 and 6 is reasonable.  Let's choose 5.  Identify clusters across all species and then examine cluster breakdown by class.
+
+``` {r k means}
+k5 <- kmeans(df_rescale, centers = 5, nstart = 25)
+
+fviz_cluster(k5, data = df_rescale)
+
+df_clusters <- df_clean %>%
+  mutate(cluster = k5$cluster)
+
+clusters_by_class <- df_clusters %>%
+  group_by(class, cluster) %>%
+  summarize(nspp = n_distinct(species)) %>%
+  group_by(class) %>%
+  mutate(ntot = sum(nspp),
+         pct_in_cluster = nspp / ntot,
+         cluster_char = as.character(cluster)) %>%
+  ungroup()
+
+ggplot(clusters_by_class, aes(x = class, y = pct_in_cluster, fill = cluster_char)) +
+  geom_col() +
+  geom_text(y = .9, aes(label = ntot)) +
+  scale_fill_viridis_d()
+```
+
