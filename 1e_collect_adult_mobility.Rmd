@@ -1,0 +1,95 @@
+---
+title: 'Collect adult mobility traits'
+author: "*Compiled on `r date()` by `r Sys.info()['user']`*"
+output: 
+  html_document:
+    code_folding: hide
+    toc: true
+    toc_depth: 3
+    toc_float: yes
+    number_sections: true
+    theme: cerulean
+    highlight: haddock
+    includes: 
+      in_header: '~/github/src/templates/ohara_hdr.html'
+  pdf_document:
+    toc: true
+---
+
+``` {r setup, echo = TRUE, message = FALSE, warning = FALSE}
+
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
+
+library(oharac)
+oharac::setup()
+library(rfishbase)
+library(ggfortify) ### for PCA plots
+source(here('fb_slb_fxns.R'))
+
+### used for joining and gapfilling
+spp_from_worms <- get_worms()
+
+```
+
+# Summary
+
+Gather data on mobility traits from vulnerability project (are there options on FishBase or SeaLifeBase?).  Gapfill using downfill and upstream-downstream gapfill methodology.  Finally use PCA to reduce dimensionality across multiple traits, keeping the first two components.
+
+This paper (https://www.ncbi.nlm.nih.gov/pmc/articles/PMC4548538/) seems to indicate that certain traits including mobility should be available in WoRMS...?
+
+# Data
+
+This script will use processed valid species traits from the species vulnerability project
+
+* Butt, N. et al. 2021. 
+
+# Methods
+
+## Adult mobility: Read in data
+
+How to deal with vertical migrators? - Vertical migration is quite different from the others that imply horizontal range of mobility.  Vertical migrators can be assigned here, or perhaps in the "position in water column" variable instead.
+
+```{r}
+mob_vals <- c('sessile' = 0,
+              'nearly sessile/sedentary' = 1,
+              'passive' = 1,
+              'mobile resident' = 2,
+              # 'vertical migrator' = 2,
+              'horizontal migrator' = 3,
+              'nomadic' = 3)
+              
+
+mob_vuln <- get_vuln_traits() %>%
+  filter(str_detect(trait, 'adult_mobility')) %>%
+  mutate(mob_score = mob_vals[trait_value]) %>%
+  group_by(taxon, spp_gp) %>%
+  summarize(mob_score = mean(mob_score, na.rm = TRUE), 
+            mob_sd = sd(mob_score, na.rm = TRUE),
+            .groups = 'drop') %>%
+  downfill() %>%
+  right_join(get_worms()) %>%
+  gapfill_up_down('mob_score')
+
+```
+
+
+Write out the results:
+```{r}
+plot_df <- mob_vuln %>%
+  mutate(taxon = ifelse(phylum == 'chordata', class, phylum)) %>%
+  filter(!is.na(value))
+cols <- c(brewer.pal(8, 'Dark2'), brewer.pal(8, 'Set3')) %>%
+  setNames(plot_df$taxon %>% unique())
+ggplot(plot_df, 
+       aes(x = value, fill = taxon)) +
+  geom_histogram() +
+  scale_fill_manual(values = c(brewer.pal(8, 'Dark2'), brewer.pal(6, 'Set3'))) +
+  theme_minimal()
+
+mob_vuln_out <- mob_vuln %>%
+  select(species, trait, value, gf_level, sd, nspp) %>%
+  # filter(gf_level <= 4) %>%
+  filter(!is.na(value))
+write_csv(mob_vuln_out, here('_data/traits_grouping/trait_mobility.csv'))
+```
+

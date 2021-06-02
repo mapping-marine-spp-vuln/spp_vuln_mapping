@@ -85,7 +85,9 @@ downfill <- function(df) {
 ################################################
 ### function for upstream/downstream gapfill ###
 ################################################
-gapfill_up_down <- function(df, col, keep = c('match', 'genus', 'family')) {
+gapfill_up_down <- function(df, col) {
+  ### gf_level: 
+  ### 1 = match/species, 2 = genus, 3 = family, 4 = order, 5 = class
   
   col_sd   <- paste(col, 'sd', sep = '_')
   col_nspp <- paste(col, 'nspp', sep = '_')
@@ -139,40 +141,36 @@ gapfill_up_down <- function(df, col, keep = c('match', 'genus', 'family')) {
     left_join(gf_order) %>%
     left_join(gf_class) %>%
     select(-all_of(col)) %>%
-    mutate(gf_level = case_when(!is.na(tmp) ~ 'match',
-                                !is.na(g_mean_tmp) ~ 'genus',
-                                !is.na(f_mean_tmp) ~ 'family',
-                                !is.na(o_mean_tmp) ~ 'order',
-                                !is.na(c_mean_tmp) ~ 'class',
-                                TRUE ~ 'unmatched')) %>%
-    mutate(tmp = case_when(gf_level == 'match'  ~ tmp,
-                           gf_level == 'genus'  ~ g_mean_tmp,
-                           gf_level == 'family' ~ f_mean_tmp,
-                           gf_level == 'order'  ~ o_mean_tmp,
-                           gf_level == 'class'  ~ c_mean_tmp,
-                           TRUE ~ NA_real_)) %>%
-    mutate(tmp_sd = case_when(gf_level == 'match'  ~ NA_real_,
-                              gf_level == 'genus'  ~ g_sd_tmp,
-                              gf_level == 'family' ~ f_sd_tmp,
-                              gf_level == 'order'  ~ o_sd_tmp,
-                              gf_level == 'class'  ~ c_sd_tmp,
-                              TRUE ~ NA_real_)) %>%
-    mutate(tmp_nspp = case_when(gf_level == 'match'  ~ NA_integer_,
-                                gf_level == 'genus'  ~ g_nspp_tmp,
-                                gf_level == 'family' ~ f_nspp_tmp,
-                                gf_level == 'order'  ~ o_nspp_tmp,
-                                gf_level == 'class'  ~ c_nspp_tmp,
-                                TRUE ~ NA_integer_)) %>%
+    mutate(gf_level = case_when(!is.na(tmp) ~ 1,
+                                !is.na(g_mean_tmp) ~ 2,
+                                !is.na(f_mean_tmp) ~ 3,
+                                !is.na(o_mean_tmp) ~ 4,
+                                !is.na(c_mean_tmp) ~ 5,
+                                TRUE ~ NA_real_)) %>%
+    mutate(value = case_when(gf_level == 1  ~ tmp,
+                             gf_level == 2  ~ g_mean_tmp,
+                             gf_level == 3 ~ f_mean_tmp,
+                             gf_level == 4  ~ o_mean_tmp,
+                             gf_level == 5  ~ c_mean_tmp,
+                             TRUE ~ NA_real_)) %>%
+    mutate(sd = case_when(gf_level == 1  ~ NA_real_,
+                          gf_level == 2  ~ g_sd_tmp,
+                          gf_level == 3 ~ f_sd_tmp,
+                          gf_level == 4  ~ o_sd_tmp,
+                          gf_level == 5  ~ c_sd_tmp,
+                          TRUE ~ NA_real_)) %>%
+    mutate(nspp = case_when(gf_level == 1  ~ NA_integer_,
+                            gf_level == 2  ~ g_nspp_tmp,
+                            gf_level == 3 ~ f_nspp_tmp,
+                            gf_level == 4  ~ o_nspp_tmp,
+                            gf_level == 5  ~ c_nspp_tmp,
+                            TRUE ~ NA_integer_)) %>%
     ungroup() %>%
-    select(db, spec_code, kingdom, phylum, class, order, family, genus, species, 
-           !!col := tmp, !!col_sd := tmp_sd, !!col_nspp := tmp_nspp,
-           gf_level) %>%
+    mutate(trait = col) %>%
+    select(db, spec_code, 
+           kingdom, phylum, class, order, family, genus, species, 
+           trait, value, sd, nspp, gf_level) %>%
     distinct()
-  
-  if(!is.null(keep)) {
-    df_gf_all <- df_gf_all %>%
-      filter(gf_level %in% keep)
-  }
   
   return(df_gf_all)
 }
