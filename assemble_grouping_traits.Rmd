@@ -99,8 +99,11 @@ traits_pca$rotation %>% round(3)
 
 ### identify an appropriate number of clusters
 
+#### Knee method
+
 Iterate over different values of $k$ and identify a "knee".
-``` {r find optimal k}
+``` {r knee method, cache = TRUE}
+set.seed(42)
 wss <- function(k, df) {
   kmeans(df, k, nstart = 10)$tot.withinss
 }
@@ -116,6 +119,74 @@ plot(k_vec, wss_values,
      xlab="Number of clusters K",
      ylab="Total within-clusters sum of squares")
 
+plot(k_vec[6:15], wss_values[6:15],
+     type="b", pch = 19, frame = FALSE, 
+     xlab="Number of clusters K",
+     ylab="Total within-clusters sum of squares")
+
+```
+
+From this method, we see a knee around 6 looking at the overall set, and zooming in, 9 or higher appears optimal. 
+
+#### Silhouette method 
+
+From https://uc-r.github.io/kmeans_clustering:
+
+> In short, the average silhouette approach measures the quality of a clustering. That is, it determines how well each object lies within its cluster. A high average silhouette width indicates a good clustering. The average silhouette method computes the average silhouette of observations for different values of _k_. The optimal number of clusters _k_ is the one that maximizes the average silhouette over a range of possible values for _k_.
+
+```{r silhouette method, cache = TRUE}
+set.seed(42)
+avg_sil <- function(k, df) {
+  km_res <- kmeans(df, centers = k, nstart = 4)
+  ss <- silhouette(km_res$cluster, dist(df))
+  mean(ss[, 3])
+}
+
+# Compute and plot wss for k = 2 to k = 15
+k_vec <- 2:15
+
+# extract avg silhouette for 2-15 clusters
+avg_sil_values <- sapply(k_vec, avg_sil, df = df_rescale)
+
+plot(k_vec, avg_sil_values,
+     type = "b", pch = 19, frame = FALSE, 
+     xlab = "Number of clusters K",
+     ylab = "Average Silhouettes")
+
+# Similar to the elbow method, this process to compute the “average 
+# silhoutte method” has been wrapped up in a single function (fviz_nbclust):
+
+fviz_nbclust(df_rescale, kmeans, k.max = 15, method = "silhouette")
+```
+
+From this method it appears that 11 is an optimal number of clusters (and 8 is locally suboptimal!), though many values from 9-14 all look pretty good.
+
+#### Gap Statistic Method
+
+From https://uc-r.github.io/kmeans_clustering: 
+
+> The gap statistic has been published by R. Tibshirani, G. Walther, and T. Hastie (Standford University, 2001). The approach can be applied to any clustering method (i.e. K-means clustering, hierarchical clustering). The gap statistic compares the total intracluster variation for different values of k with their expected values under null reference distribution of the data (i.e. a distribution with no obvious clustering). The reference dataset is generated using Monte Carlo simulations of the sampling process. That is, for each variable
+$x_i$ in the data set we compute its range $[\min(x_i), \max(x_i)]$ and generate values for the $n$ points uniformly from the interval min to max.
+
+> For the observed data and the the reference data, the total intracluster variation is computed using different values of $k$. The gap statistic for a given $k$ is defined as follow:
+
+$$Gap_n(k) = E^*_n \log(W_k) - \log(W_k)$$
+>where $E^*_n$ denotes the expectation under a sample size $n$ from the reference distribution. $E^*_n$ is defined via bootstrapping (B) by generating B copies of the reference datasets and, by computing the average $\log(W^*_k)$. The gap statistic measures the deviation of the observed $W_k$ value from its expected value under the null hypothesis. The estimate of the optimal clusters ($\hat{k}$) will be the value that maximizes $Gap_n(k)$. This means that the clustering structure is far away from the uniform distribution of points.
+
+```{r gap stat method, cache = TRUE}
+set.seed(42)
+gap_stat <- clusGap(df_rescale, verbose = FALSE,
+                    FUN = kmeans, nstart = 25,
+                    K.max = 15, B = 50)
+# Print the result
+print(gap_stat, method = "firstmax")
+
+fviz_gap_stat(gap_stat)
+```
+
+This method seems to indicate that more clusters is better.  However (based on a sample version), it looks like beyond 9, the marginal value of additional bins levels off...
+
+``` {r distance matrix, eval = FALSE}
 rowsamps <- sample(1:nrow(df_rescale), 500, replace = FALSE)
 d_mtx_samp <- get_dist(df_rescale[rowsamps, ])
 d_mtx <- get_dist(df_rescale)
@@ -124,6 +195,8 @@ fviz_dist(d_mtx_samp,
           show_labels = FALSE)
 
 ```
+
+### Running K-means with optimal $k$
 
 It appears that a k between 6-10 is reasonable.  Let's choose 8.  Identify clusters across all species and then examine cluster breakdown by class.  Compare `pam()` and `kmeans()`.
 
