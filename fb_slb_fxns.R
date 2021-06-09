@@ -1,9 +1,135 @@
 ###################################
 ### Helper functions in general ###
 ###################################
-here_anx <- function(f) { 
+here_anx <- function(f = '') { 
   ### create file path to git-annex dir for project
   f_anx <- sprintf('~/git-annex/spp_vuln_mapping/%s', f)
+}
+
+#####################################
+### Helper functions for AquaMaps ###
+#####################################
+
+am_dir <- '~/git-annex/aquamaps_2021'
+get_am_spp_info <- function() {
+  spp_info <- data.table::fread(file.path(am_dir, 'ver10_2019_speciesoccursum_iucn.csv')) %>%
+    janitor::clean_names() %>%
+    rename(am_sid = species_id, iucn_sid = iucn_id, comname = f_bname) %>%
+    mutate(sciname = tolower(paste(genus, species)))
+  return(spp_info)
+}
+
+get_am_spp_envelopes <- function() {
+  env_file <- file.path(am_dir, 'species_envelope_summary.csv')
+  
+  ### create a tidy summary of environmental envelopes
+  # if(!file.exists) { ### create from scratch
+  #   env_info <- data.table::fread(file.path(am_dir, 'ver10_2019_hspen.csv')) %>%
+  #     janitor::clean_names() %>%
+  #     rename(am_sid = species_id)
+  #   
+  #   params <- c('depth', 'temp', 'salinity', 'prim_prod', 'ice_con', 'oxy', 'land_dist')
+  #   prm_or <- paste0(params, collapse = '|')
+  #   dist_vals <- c('min', 'pref_min', 'mean', 'pref_max', 'max')
+  #   env_sum_df <- env_info %>%
+  #     rename(depth_mean = mean_depth) %>%
+  #     select(am_sid, contains(params)) %>%
+  #     gather(param_full, value, -am_sid) %>%
+  #     mutate(param = str_extract(param_full, prm_or),
+  #            dist = str_replace(param_full, paste0('(', prm_or, ')_'), '')) %>%
+  #     select(-param_full) %>%
+  #     spread(dist, value) %>%
+  #     filter(yn == 1) %>%
+  #     select(-yn) %>%
+  #     gather(dist, value, -am_sid, -param) %>%
+  #     mutate(dist = factor(dist, levels = dist_vals),
+  #            value = ifelse(param == 'depth', log10(value + 1), value),
+  #            param = ifelse(param == 'depth', 'log10_depth', param))
+  #   
+  #   write_csv(env_sum_df, env_file)
+  # }
+  return(read_csv(env_file))
+}
+
+get_hcaf_info <- function() {
+  hcaf_info <- data.table::fread(file.path(am_dir, 'hcaf_v7.csv')) %>%
+    janitor::clean_names() %>%
+    mutate(across(where(is.numeric), ~ ifelse(.x == -9999, NA, .x)))
+  return(hcaf_info)
+}
+
+get_hcaf_rast <- function() {
+  rast_base <- raster::raster(ext = raster::extent(c(-180, 180, -90, 90)), 
+                              resolution = 0.5, crs = '+init=epsg:4326') %>%
+    raster::setValues(1:raster::ncell(.))
+  return(rast_base)
+}
+
+map_to_hcaf <- function(df, by = 'loiczid', which, xfm = NULL) {
+  if(!by %in% names(df)) stop('Dataframe needs a valid column for "by" (e.g., loiczid)!')
+  if(!which %in% names(df)) stop('Dataframe needs a valid column for "which" (e.g., n_spp)!')
+  if(any(is.na(df[[by]]))) stop('Dataframe contains NA values for "by"!')
+  
+  r_base <- get_hcaf_rast()
+  
+  out_rast <- raster::subs(x = r_base, y = df, 
+                           by = by, which = which)
+  
+  if(!is.null(xfm)) {
+    if(class(xfm) != 'function') stop('xfm argument must be a function!')
+    out_rast <- xfm(out_rast)
+  }
+  return(out_rast)
+}
+
+get_am_spp_cells <- function(occurcells_cut = 10, prob_cut = 0) {
+  
+  spp_cell_file <- file.path(am_dir, 'hcaf_species_native_clean.csv')
+  
+  ### create a cleaner version  of spp native file for speed and size!
+  # if(!file.exists(spp_cell_file)) {
+  #   csq_loiczid <- get_hcaf_info() %>%
+  #     select(loiczid, csquare_code) %>%
+  #     distinct()
+  #   spp_cells <- data.table::fread(file.path(am_dir, 'hcaf_species_native.csv')) %>%
+  #     janitor::clean_names() %>%
+  #     left_join(csq_loiczid) %>%
+  #     select(am_sid = species_id, loiczid, prob = probability) %>%
+  #     distinct()
+  # 
+  #   write_csv(spp_cells, spp_cell_file)
+  # }
+  
+  spp_cells <- data.table::fread(spp_cell_file) 
+  
+  if(occurcells_cut > 0) {
+    spp_valid <- get_am_spp_info() %>%
+      filter(occur_cells >= occurcells_cut) %>%
+      dplyr::select(am_sid, sciname)
+    spp_cells <- spp_cells %>%
+      filter(am_sid %in% spp_valid$am_sid)
+  }
+  if(prob_cut > 0) {
+    spp_cells <- spp_cells %>%
+      filter(prob >=  prob_cut)
+  }
+  return(spp_cells)
+}
+
+#####################################################
+###    Helper functions for vulnerability data    ###
+#####################################################
+get_spp_vuln <- function() {
+  vuln_tx <- data.table::fread(here('_data/vuln_data/vuln_gapfilled_tx.csv'))
+  vuln_score <- data.table::fread(here('_data/vuln_data/vuln_gapfilled_score.csv')) %>%
+    gather(stressor, score, -vuln_gf_id)
+  vuln_sd <- data.table::fread(here('_data/vuln_data/vuln_gapfilled_sd.csv')) %>%
+    gather(stressor, sd_score, -vuln_gf_id)
+  vuln_df <- vuln_tx %>%
+    full_join(vuln_score, by = c('vuln_gf_id')) %>%
+    full_join(vuln_sd,    by = c('vuln_gf_id', 'stressor')) %>%
+    dplyr::select(-vuln_gf_id)
+  return(vuln_df)
 }
 
 #####################################################
@@ -20,15 +146,15 @@ get_fb_slb <- function(fxn = species,
     mutate(db = 'slb')
   if(!is.null(keep_cols)) {
     fb <- fb %>%
-      select(spec_code, species, db, keep_fxn(keep_cols))
+      dplyr::select(spec_code, species, db, keep_fxn(keep_cols))
     slb <- slb %>%
-      select(spec_code, species, db, keep_fxn(keep_cols))
+      dplyr::select(spec_code, species, db, keep_fxn(keep_cols))
   }
   if(!is.null(drop_cols)) {
     fb <- fb %>%
-      select(-drop_fxn(drop_cols))
+      dplyr::select(-drop_fxn(drop_cols))
     slb <- slb %>%
-      select(-drop_fxn(drop_cols))
+      dplyr::select(-drop_fxn(drop_cols))
   }
   ### sometimes class of a column from one server mismatches that of the other.
   ### This should only be a problem for character vs. numeric - i.e.,
@@ -59,7 +185,7 @@ get_fb_slb <- function(fxn = species,
 
 downfill <- function(df) {
   x <- data.table::fread(here_anx('vuln_gapfilled_all_tx.csv')) %>%
-    select(-vuln_gf_id) %>%
+    dplyr::select(-vuln_gf_id) %>%
     filter_dupe_spp(level = 'class')
   
   ranks <- c('species', 'genus', 'family', 'order', 'class')
@@ -75,7 +201,7 @@ downfill <- function(df) {
     rank_list[[rank]] <- y
   }
   rank_df <- bind_rows(rank_list) %>%
-    select(taxon, spp_gp, # category, 
+    dplyr::select(taxon, spp_gp, # category, 
            class, order, family, genus, species, 
            gapfill, match_rank, everything())
   
@@ -140,7 +266,7 @@ gapfill_up_down <- function(df, col) {
     left_join(gf_family) %>%
     left_join(gf_order) %>%
     left_join(gf_class) %>%
-    select(-all_of(col)) %>%
+    dplyr::select(-all_of(col)) %>%
     mutate(gf_level = case_when(!is.na(tmp) ~ 1,
                                 !is.na(g_mean_tmp) ~ 2,
                                 !is.na(f_mean_tmp) ~ 3,
@@ -167,7 +293,7 @@ gapfill_up_down <- function(df, col) {
                             TRUE ~ NA_integer_)) %>%
     ungroup() %>%
     mutate(trait = col) %>%
-    select(db, spec_code, 
+    dplyr::select(db, spec_code, 
            kingdom, phylum, class, order, family, genus, species, 
            trait, value, sd, nspp, gf_level) %>%
     distinct()
@@ -184,17 +310,17 @@ get_worms <- function(animalia_only = TRUE) {
   if(!file.exists(worms_f)) {
     
     worms_p_from_k <- read_csv(here('~/git-annex/spp_vuln_mapping/taxa_from_worms/phylum_from_kingdom_worms.csv')) %>%
-      select(phylum = name, kingdom = parent)
+      dplyr::select(phylum = name, kingdom = parent)
     worms_c_from_p <- read_csv(here('~/git-annex/spp_vuln_mapping/taxa_from_worms/class_from_phylum_worms.csv')) %>%
-      select(class = name, phylum = parent)
+      dplyr::select(class = name, phylum = parent)
     worms_o_from_c <- read_csv(here('~/git-annex/spp_vuln_mapping/taxa_from_worms/order_from_class_worms.csv')) %>%
-      select(order = name, class = parent)
+      dplyr::select(order = name, class = parent)
     worms_f_from_o <- read_csv(here('~/git-annex/spp_vuln_mapping/taxa_from_worms/family_from_order_worms.csv')) %>%
-      select(family = name, order = parent)
+      dplyr::select(family = name, order = parent)
     worms_g_from_f <- read_csv(here('~/git-annex/spp_vuln_mapping/taxa_from_worms/genus_from_family_worms.csv')) %>%
-      select(genus = name, family = parent)
+      dplyr::select(genus = name, family = parent)
     worms_s_from_g <- read_csv(here('~/git-annex/spp_vuln_mapping/taxa_from_worms/species_from_genus_worms.csv')) %>%
-      select(species = name, genus = parent)
+      dplyr::select(species = name, genus = parent)
     
     spp_from_worms_raw <- worms_p_from_k %>%
       full_join(worms_c_from_p) %>%
@@ -203,7 +329,7 @@ get_worms <- function(animalia_only = TRUE) {
       full_join(worms_g_from_f) %>%
       full_join(worms_s_from_g) %>%
       filter(!is.na(species)) %>%
-      select(kingdom, phylum, class, order, family, genus, species) 
+      dplyr::select(kingdom, phylum, class, order, family, genus, species) 
     
     ### manually fix incorrect gapfilled taxa
     ### filter: left side is the troublesome lower-level taxon, 
@@ -224,7 +350,7 @@ check_dupe_spp <- function(df) {
   x <- show_dupes(df, 'species') %>%
     left_join(read_csv(here('_data/spp_traits_valid.csv')) %>% 
                 downfill() %>%
-                select(taxon, species) %>%
+                dplyr::select(taxon, species) %>%
                 distinct()) %>%
     group_by(species) %>%
     summarize(n_phyla = n_distinct(phylum),
@@ -269,3 +395,4 @@ filter_dupe_spp <- function(df, level = c('all', 'class')[1]) {
 get_vuln_traits <- function() {
   read_csv(here('_data/traits_vulnerability/spp_traits_valid.csv'))
 }
+

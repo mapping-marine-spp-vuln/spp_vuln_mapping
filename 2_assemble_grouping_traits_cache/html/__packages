@@ -1,0 +1,16 @@
+base
+oharac
+tidyverse
+ggplot2
+tibble
+tidyr
+readr
+purrr
+dplyr
+stringr
+forcats
+here
+RColorBrewer
+cluster
+factoextra
+ggfortify

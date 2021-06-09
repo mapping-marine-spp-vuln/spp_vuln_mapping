@@ -1,0 +1,391 @@
+---
+title: "Collect traits data from Spp Vulnerability Project"
+author: "*Compiled on `r date()` by `r Sys.info()['user']`*"
+output: 
+  html_document:
+    code_folding: hide
+    toc: true
+    toc_depth: 3
+    toc_float: yes
+    number_sections: true
+    theme: cerulean
+    highlight: haddock
+    includes: 
+      in_header: '~/github/src/templates/ohara_hdr.html'
+  pdf_document:
+    toc: true
+---
+
+``` {r setup, echo = TRUE, message = FALSE, warning = FALSE}
+
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
+
+library(oharac)
+oharac::setup()
+library(ggfortify) # For PCA biplot
+
+```
+
+# Summary
+
+Get traits data from the spp vulnerability project, score them, gapfill them, and try forming groups using PCA and/or K-means clustering
+
+# Data
+
+The processed valid species traits from the species vulnerability project
+
+# Methods
+
+Read in data
+
+```{r}
+spp_traits <- read_csv(here('_data/spp_traits_valid.csv'))
+
+# table(spp_traits$trait)
+
+traits <- c('adult_body_mass_body_size', 'adult_mobility', 
+            'calcium_carbonate_structure_stages', 'depth_min_max', 
+            'fecundity', 'lifetime_reproductive_opportunities', 
+            'age_to_1st_reproduction_generation_time', 'parental_investment',
+            'planktonic_larval_duration_pld_exposure', 'post_birth_hatching_parental_dependence',
+            'terrestrial_and_marine_life_stages', 'air_sea_interface', 'respiration_structures',
+            'within_stage_dependent_habitats_condition', 
+            'across_stage_dependent_habitats_condition')
+
+spp_traits <- spp_traits %>%
+  filter(trait %in% traits)
+```
+
+## parse out and score traits
+
+### size
+
+try to use FishBase/SeaLifeBase for this, since these bins are too few.
+
+```{r keep function}
+keep <- function(df, score) {
+  x <- df %>%
+    select(taxon, spp_gp, all_of(score)) %>%
+    mutate(trait = score) %>%
+    rename(score := !!score)
+}
+```
+
+```{r}
+levels <- c('0.5mm-49mm' = 1, '50mm-999mm' = 2, '>1000mm' = 3, 'unknown' = 2.5) 
+### unknown == corals; count them as coral heads
+
+size_df <- spp_traits %>%
+  filter(trait == 'adult_body_mass_body_size') %>%
+  mutate(size_score = levels[trait_value]) %>%
+  group_by(taxon, spp_gp) %>%
+  summarize(size_score = mean(size_score), .groups = 'drop') %>%
+  keep('size_score')
+
+```
+
+### mobility
+
+set levels to indicate roughly the range of species motion - none, local, regional+
+```{r mobility}
+levels <- c('passive' = 0,
+            'sessile' = 0,
+            'nearly sessile/sedentary' = 1,
+            'mobile resident' = 2,
+            'vertical migrator' = 2,
+            'horizontal migrator' = 2,
+            'nomadic' = 3,
+            'unknown' = 3) ### unknown is a few whales
+
+mob_df <- spp_traits %>%
+  filter(trait == 'adult_mobility') %>%
+  mutate(mob_score = levels[trait_value]) %>%
+  group_by(taxon, spp_gp) %>%
+  summarize(mob_score = mean(mob_score), .groups = 'drop') %>%
+  keep('mob_score')
+
+```
+
+### Land/air/sea dependence
+
+Rank the dependence of a species on access to land or air based on: `terrestrial_and_marine_life_stages` and `respiration_structures` traits:
+
+* 0 if no dependence on air/land
+* 1 if lungs
+* 2 if lungs and terr/marine life stage
+
+```{r air}
+
+air_df <- spp_traits %>%
+  filter(trait %in% c('terrestrial_and_marine_life_stages',
+                      'respiration_structures')) %>%
+  group_by(taxon, spp_gp, trait) %>%
+  summarize(trait_value = paste0(trait_value, collapse = ';'), .groups = 'drop') %>%
+  spread(trait, trait_value) %>%
+  mutate(across(is.character, .fns = function(x) ifelse(is.na(x), 'nope', x))) %>%
+  mutate(lungs = (respiration_structures == 'lungs'),
+         terr  = (terrestrial_and_marine_life_stages == 'yes'),
+         air_score = case_when(!lungs & !terr ~ 0,
+                               lungs & !terr ~ 1,
+                               lungs & terr ~ 2,
+                               spp_gp == 'crocodylus acutus' ~ 2, ### no respiration structure?!
+                               TRUE ~ 0)) %>%
+  keep('air_score')
+```
+
+### Reproduction
+
+Score reproduction based on `fecundity`, `lifetime_reproductive_opportunities`, `age_to_1st_reproduction_generation_time`.  
+
+```{r repr}
+fec_lvls <-  c("<1", "1-2", "2-5", "5-10", "10-20", "20-50", "50-100", "100-1000", "1000-10000", ">10000")
+
+fec_df <- spp_traits %>%
+  filter(trait %in% c('fecundity')) %>%
+  mutate(trait_fct = factor(trait_value, levels = fec_lvls),
+         fec_score = as.integer(trait_fct)) %>%
+  group_by(taxon, spp_gp) %>%
+  summarize(fec_score = mean(fec_score), .groups = 'drop') %>%
+  keep('fec_score')
+
+opp_lvls <- c("1", "2-10", "11-25", "26-50", "51-100", ">100") ### drop "unknown"
+
+opp_df <- spp_traits %>%
+  filter(trait == 'lifetime_reproductive_opportunities')  %>%
+  mutate(trait_fct = factor(trait_value, levels = opp_lvls),
+         opp_score = as.integer(trait_fct)) %>%
+  group_by(taxon, spp_gp) %>%
+  summarize(opp_score = mean(opp_score), .groups = 'drop') %>%
+  keep('opp_score')
+
+gen_lvls <- c("<1yr", "1-5yrs", "5-10yrs", "10-20yrs", ">20yrs") ### drop "unknown"
+
+gen_df <- spp_traits %>%
+  filter(trait == 'age_to_1st_reproduction_generation_time') %>%
+  mutate(trait_fct = factor(trait_value, levels = gen_lvls),
+         gen_score = as.integer(trait_fct)) %>%
+  group_by(taxon, spp_gp) %>%
+  summarize(gen_score = mean(gen_score), .groups = 'drop') %>%
+  keep('gen_score')
+
+repr_multi <- fec_df %>%
+  bind_rows(gen_df) %>%
+  bind_rows(opp_df) %>%
+  spread(trait, score)
+
+ggplot(repr_multi, aes(x = gen_score, y = fec_score, color = opp_score)) +
+  geom_jitter() +
+  scale_color_viridis_c()
+
+repr_multi_no_nas <- repr_multi %>%
+  drop_na()
+repr_pca <- repr_multi_no_nas %>%
+  select(ends_with('score')) %>%
+  scale() %>%
+  prcomp()
+
+autoplot(repr_pca,
+         data = repr_multi_no_nas,
+         loadings = TRUE,
+         loadings.label = TRUE,
+         loadings.colour = "black",
+         loadings.label.colour = "black",
+         loadings.label.vjust = -0.5
+         ) +
+  theme_minimal()
+
+# Variance explained by each PC
+screeplot(repr_pca, type = "lines")
+
+# See the loadings (weighting for each principal component)
+repr_pca$rotation %>% round(3)
+
+```
+
+Principal components 1 and 2 together explain 85.6% of the variance.  Perhaps we can use this to reduce the dimensionality of "reproduction" variables?
+
+### Eggs/larvae/juvies
+
+parental_investment
+planktonic_larval_duration_pld_exposure
+post_birth_hatching_parental_dependence
+
+```{r }
+invest_df <- spp_traits %>%
+  filter(trait %in% c('parental_investment')) %>%
+  mutate(invest_score = case_when(trait_value == 'spawner' ~ 0,
+                                  trait_value == 'egg-layer unattended' ~ 0,
+                                  trait_value == 'egg-layer' ~ 1,
+                                  trait_value == 'live birth/egg care' ~ 2,
+                                  TRUE ~ 0)) %>%
+  group_by(taxon, spp_gp) %>%
+  summarize(invest_score = mean(invest_score), .groups = 'drop') %>%
+  keep('invest_score')
+
+parent_lvls <- c("na", "<week", "week-month", "month-year", ">year") ### drop "unknown"
+
+parent_df <- spp_traits %>%
+  filter(trait == 'post_birth_hatching_parental_dependence')  %>%
+  mutate(trait_fct = factor(trait_value, levels = parent_lvls),
+         parent_score = as.integer(trait_fct)) %>%
+  group_by(taxon, spp_gp) %>%
+  summarize(parent_score = mean(parent_score), .groups = 'drop') %>%
+  keep('parent_score')
+
+pld_lvls <- c("not larvae", "<1day", "<1week", "<1month", "<4months", "4months-1yr", ">1yr") ### drop "unknown"
+
+pld_df <- spp_traits %>%
+  filter(trait == 'planktonic_larval_duration_pld_exposure') %>%
+  mutate(trait_fct = factor(trait_value, levels = pld_lvls),
+         pld_score = as.integer(trait_fct)) %>%
+  group_by(taxon, spp_gp) %>%
+  summarize(pld_score = mean(pld_score), .groups = 'drop') %>%
+  keep('pld_score')
+
+young_multi <- pld_df %>%
+  bind_rows(parent_df) %>%
+  bind_rows(invest_df) %>%
+  spread(trait, score)
+
+ggplot(young_multi, aes(x = invest_score, y = parent_score, color = pld_score)) +
+  geom_jitter() +
+  scale_color_viridis_c()
+
+young_multi_no_nas <- young_multi %>%
+  drop_na()
+young_pca <- young_multi_no_nas %>%
+  select(ends_with('score')) %>%
+  scale() %>%
+  prcomp()
+
+autoplot(young_pca,
+         data = young_multi_no_nas,
+         loadings = TRUE,
+         loadings.label = TRUE,
+         loadings.colour = "black",
+         loadings.label.colour = "black",
+         loadings.label.vjust = -0.5
+         ) +
+  theme_minimal()
+
+# Variance explained by each PC
+screeplot(young_pca, type = "lines")
+
+# See the loadings (weighting for each principal component)
+young_pca$rotation %>% round(3)
+
+```
+
+### depth_min_max
+
+```{r}
+depth_lvls <- c("air", "epipelagic", "mesopelagic", 
+                "bathypelagic", "abyssopelagic", "hadopelagic") ### drop "unknown"
+depth_df <- spp_traits %>%
+  filter(trait %in% c('depth_min_max')) %>%
+  mutate(trait_fct = factor(trait_value, levels = depth_lvls),
+         depth_score = as.integer(trait_fct)) %>%
+  group_by(taxon, spp_gp) %>%
+  summarize(depth_score = mean(depth_score), .groups = 'drop') %>%
+  keep('depth_score')
+
+hist(depth_df$score)
+
+```
+
+### habitats?
+
+Can we assign any values using `within_stage_dependent_habitats_condition`, `across_stage_dependent_habitats_condition`?  perhaps water column position?  too many vaguely stated habitat values...
+
+```{r, eval = FALSE}
+btm <- c('benthic', 'bottom', 'slope', 'shelf', 'shelves', 'seamount', 'vent', 'reef', 'seagrass', 'habitat')
+top <- c('surface')
+  
+hab_df <- spp_traits %>%
+  filter(str_detect(trait, 'dependent_habitats_condition')) %>%
+  mutate(water_col_btm = str_detect(trait_value, paste0(btm, collapse = '|')),
+         water_col_mid = str_detect(trait_value, paste0(btm, collapse = '|')%>%
+  group_by(taxon, spp_gp) %>%
+  summarize(depth_score = mean(depth_score), .groups = 'drop') %>%
+  keep('depth_score')
+
+hist(depth_df$depth_score)
+
+```
+
+
+### calcium_carbonate_structure_stages
+
+
+
+## Combine 'em
+
+For a test run, let's try length, 
+```{r}
+### make sure to restart so you don't have random "blah_df" objects
+dfs <- objects()[str_detect(objects(), '_df$')]
+
+traits_df <- bind_rows(mget(dfs)) %>%
+  filter(!is.na(trait)) %>%
+  spread(trait, score)
+
+```
+
+``` {r PCA}
+traits_lim <- traits_df %>%
+  drop_na()
+
+traits_pca <- traits_lim %>%
+  select(-where(is.character)) %>%
+  scale() %>%
+  prcomp()
+
+autoplot(traits_pca,
+         data = traits_lim,
+         colour = 'taxon',
+         loadings = TRUE,
+         loadings.label = TRUE,
+         loadings.colour = "black",
+         loadings.label.colour = "black",
+         loadings.label.vjust = -0.5
+         ) +
+  scale_color_brewer(palette = 'Dark2') +
+  theme_minimal()
+
+# Variance explained by each PC
+screeplot(traits_pca, type = "lines")
+
+# See the loadings (weighting for each principal component)
+traits_pca$rotation %>% round(3)
+
+```
+
+```{r kmeans}
+
+traits_kmeans <- traits_lim %>%
+  select(-where(is.character)) %>%
+  scale() %>%
+  as.matrix() %>%
+  kmeans(8)
+
+autoplot(traits_kmeans,
+         data = traits_lim,
+         loadings = TRUE,
+         colour = 'taxon',
+         loadings.label = TRUE,
+         loadings.colour = "black",
+         loadings.label.colour = "black",
+         loadings.label.vjust = -0.5
+         ) +
+  scale_color_brewer(palette = 'Dark2') +
+  theme_minimal()
+
+traits_df_kmeans <- traits_lim %>%
+  mutate(cluster = traits_kmeans$cluster)
+
+traits_sum <- traits_df_kmeans %>%
+  group_by(cluster) %>%
+  summarize(across(is.numeric, .fns = list(mean = mean)), #, sd = sd)), 
+            n_tot = n(), tx_sum = paste(names(table(taxon)), table(taxon), collapse = ';'))
+```
+

@@ -1,0 +1,180 @@
+---
+title: "Map vulnerability and impacts"
+author: "*Compiled on `r date()` by `r Sys.info()['user']`*"
+output: 
+  html_document:
+    code_folding: hide
+    toc: true
+    toc_depth: 3
+    toc_float: yes
+    number_sections: true
+    theme: cerulean
+    highlight: haddock
+    includes: 
+      in_header: '~/github/src/templates/ohara_hdr.html'
+  pdf_document:
+    toc: true
+---
+
+``` {r setup, echo = TRUE, message = FALSE, warning = FALSE}
+
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
+
+library(raster)
+library(oharac)
+oharac::setup()
+source(here('fb_slb_fxns.R'))
+
+```
+
+# Summary
+
+Combine vulnerability scores with AquaMaps species information and functional groups.
+
+# Data
+
+See individual trait scripts.
+
+# Methods
+
+## Gather and assemble data
+
+``` {r}
+spp_fxn_groups <- read_csv(here('_data/functional_groups_from_traits.csv'))
+
+spp_info <- get_am_spp_info()
+
+spp_by_gp <- spp_info %>% 
+  dplyr::select(am_sid, sciname) %>%
+  inner_join(spp_fxn_groups, by = c('sciname' = 'species')) ### 18285 spp matched in fxn gps
+
+spp_vuln <- get_spp_vuln()
+
+spp_vuln_am <- spp_info %>%
+  inner_join(spp_vuln, by = c('sciname' = 'species'))
+nspp <- spp_vuln_am$sciname %>% n_distinct() 
+### 10016 species with vulnerability scores in the AquaMaps dataset overall
+### (will improve when AquaMaps names are rectified with WoRMS)
+
+spp_vuln_by_gp <- spp_by_gp %>%
+  inner_join(spp_vuln, by = c('sciname' = 'species'))
+
+nspp <- spp_vuln_by_gp$sciname %>% n_distinct() 
+### 7985 species with both functional groups and vulnerability scores.  Of
+### these, the highest group-gapfill level is ~3.2, not so bad...
+
+```
+
+## Examine vulnerability by stressor and functional group
+
+```{r}
+spp_vuln_variation <- spp_vuln_by_gp %>%
+  group_by(stressor) %>%
+  mutate(diff = score - mean(score)) %>%
+  group_by(p_group) %>%
+  mutate(gp_lbl = paste0(p_group, ' (n = ', n_distinct(sciname), ')')) %>%
+  ungroup()
+spp_vuln_var_summary <- spp_vuln_variation %>%
+  group_by(stressor, gp_lbl) %>%
+  summarize(mean = mean(diff),
+            sd   = sd(diff)) %>%
+  ungroup()
+x <- ggplot() +
+  theme_minimal() +
+  theme(axis.text = element_text(size = 7)) +
+  geom_jitter(data = spp_vuln_variation, 
+              aes(x = stressor, y = diff), color = 'grey70', alpha = .1) +
+  geom_hline(yintercept = 0, color = 'red', size = 1) +
+  geom_linerange(data = spp_vuln_var_summary, 
+                 aes(x = stressor, ymin = mean - sd, ymax = mean + sd), 
+                 color = 'black', size = .5) +
+  geom_point(data = spp_vuln_var_summary, shape = 21, size = 1.5,
+             aes(x = stressor, y = mean), color = 'black', fill = 'yellow') +
+  geom_hline(yintercept = 0, color = 'red', size = .25) +
+  coord_flip() +
+  theme(axis.title.y = element_blank()) +
+  facet_wrap(~gp_lbl) +
+  labs(y = 'difference (vuln score - mean(vuln score))')
+
+ggsave(here('figs/vuln_plot_by_group.png'), height = 8, width = 8)
+knitr::include_graphics(here('figs/vuln_plot_by_group.png'))
+```
+
+## Map CHI for one species
+
+Select a species (or a small handful) and calculate cumulative impacts across range.
+
+* Dermochelys coriacea (leatherback turtle): Rep-3437
+* Poroderma pantherinum (Leopard catshark): Fis-23221
+* Megaptera novaeangliae (humpback whale): ITS-Mam-180530
+* Thunnus orientalis (Pacific bluefin tuna): Fis-123736
+* Clupea harengus (Atlantic herring): Fis-29344
+
+While we have stressor data from BD/CHI at 10km x 10km resolution, species distributions are at 0.5° resolution... for now let's use some test rasters (from `setup_stressors.Rmd`) of the stressors in their most recent available year.
+
+### The stressors
+
+```{r}
+
+str_maps <- data.frame(f = list.files(here('_spatial/stressors_hcaf'), full.names = TRUE)) %>%
+  mutate(str_chi = str_remove(basename(f), '_[0-9]{4}.+'),
+         year = str_extract(basename(f), '[0-9]{4}') %>% as.integer()) %>% 
+  full_join(read_csv(here('_raw/strs_vuln_to_chi.csv')) %>%
+              mutate(str_chi = str_split(str_chi, ';')) %>%
+              unnest(str_chi)) %>%
+  filter(!is.na(str_vuln) & !is.na(str_chi) & str_vuln != 'biomass_removal')
+
+str_stack <- raster::stack(str_maps$f) %>%
+  setNames(str_maps$str_vuln)
+### fill NAs with zero for math reasons
+values(str_stack)[is.na(values(str_stack))] <- 0
+
+plot(str_stack)
+```
+
+```{r, results = 'asis'}
+spp_vec <- c('Dermochelys coriacea (leatherback turtle)'  = 'Rep-3437', 
+             'Carcharodon carcharias (great white shark)' = 'Fis-23071', 
+             'Megaptera novaeangliae (humpback whale)'    = 'ITS-Mam-180530', 
+             'Thunnus orientalis (Pacific bluefin tuna)'  = 'Fis-123736', 
+             'Clupea harengus (Atlantic herring)'         = 'Fis-29344')
+
+test_vuln_df <- spp_vuln_by_gp %>%
+  filter(am_sid %in% spp_vec) %>%
+  select(am_sid, sciname, p_group, stressor, score, sd_score) %>%
+  filter(stressor %in% str_maps$str_vuln)
+
+test_maps_df <- get_am_spp_cells(prob = .5) %>%
+  filter(am_sid %in% spp_vec) %>%
+  mutate(presence = 1)
+
+for(i in seq_along(spp_vec)) {
+  ### i <- 2
+  spp <- spp_vec[i]
+  message('processing impacts for ', names(spp_vec)[i])
+  cat(sprintf('\n\n### %s \n', names(spp_vec)[i]))
+  test_spp_range_rast <- test_maps_df %>%
+    filter(am_sid == spp) %>%
+    map_to_hcaf(which = 'presence')
+  test_spp_vuln_df <- test_vuln_df %>%
+    filter(am_sid == spp) %>%
+    filter(score > 0)
+  
+  impact_list <- vector('list', length = nrow(test_spp_vuln_df)) %>%
+    setNames(test_spp_vuln_df$stressor)
+  for(i in 1:nrow(test_spp_vuln_df)) {
+    ### i <- 1
+    s <- test_spp_vuln_df$stressor[i]
+    v <- test_spp_vuln_df$score[i]
+    v_rast <- test_spp_range_rast * v
+    s_rast <- str_stack[[s]]
+    i_rast <- v_rast * s_rast
+    impact_list[[i]] <- i_rast
+  }
+  impact_stack <- stack(impact_list)
+  impact_stack[['chi']] <- calc(impact_stack, sum)
+  plot(impact_stack)
+}
+
+```
+

@@ -1,0 +1,463 @@
+---
+title: "Explore SeaLifeBase interface and data"
+author: "*Compiled on `r date()` by `r Sys.info()['user']`*"
+output: 
+  html_document:
+    code_folding: hide
+    toc: true
+    toc_depth: 3
+    toc_float: yes
+    number_sections: true
+    theme: cerulean
+    highlight: haddock
+    includes: 
+      in_header: '~/github/src/templates/ohara_hdr.html'
+  pdf_document:
+    toc: true
+---
+
+``` {r setup, echo = TRUE, message = FALSE, warning = FALSE}
+
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
+
+library(oharac)
+oharac::setup()
+# remotes::install_github("ropensci/rfishbase")
+library(rfishbase)
+# Sys.setenv(FISHBASE_API="sealifebase") ### this doesn't seem to work
+```
+
+# Summary
+
+This script is identical to tapping_into_fishbase, just applied to the sealifebase database.
+
+# Data
+
+FishBase is a scientific database, and this has the implication - among others - that its use and the use of its contents are free as long as due credit is given.
+
+This may be done at different levels, for which we suggest different forms of citations:
+
+* when referring to FishBase concepts and design, cite its architects (Froese and Pauly 2000);
+* when referring to a set of values extracted from a FishBase table, cite the author(s) of the original data, e.g., "Houde and Zastrow (1993)", or "Welcomme (1988)". To help us track the use of FishBase in the literature, we would appreciate your also citing Froese and Pauly (2000) in an appropriate part of your text, as the source of the information;
+* when discussing the features of a FishBase table, cite the section documenting that table, e.g., "Sa-a et al. (2000)."
+
+## References
+
+* Froese, R. and D. Pauly, Editors. 2000. FishBase 2000: concepts, design and data sources. ICLARM, Los Baños, Laguna, Philippines. 344 p.
+* Houde, E.D. and C.E. Zastrow. 1993. Ecosystem- and taxon-specific dynamic energetics properties of fish larvae assemblages. Bull. Mar. Sci. 53(2):290-335.
+* Sa-a, P., M.L. Palomares and D. Pauly. 2000. The FOOD ITEMS table, p. 182-188. In R. Froese and D. Pauly (eds.) FishBase 2000: concepts, design and data sources. ICLARM, Los Baños, Laguna, Philippines. 344 p.
+* Welcomme, R.L. 1988. International introductions of inland aquatic species. FAO Fish. Tech. Pap. 294, 318 p.
+    
+# Methods
+
+### the big dataframe of 101 variables
+
+```{r get species table}
+spp_info <- species(server = 'sealifebase')
+
+species_fields
+# $id
+# [1] "SpecCode" "Genus"    "Species"  "FBname"  
+# 
+# $habitat
+# [1] "Fresh"       "Brack"       "Saltwater"   "DemersPelag" "AnaCat"     
+# 
+# $longevity
+# [1] "LongevityWild"    "LongevityCaptive" "Vulnerability"   
+# 
+# $depth
+# [1] "DepthRangeShallow"    "DepthRangeDeep"       "DepthRangeComShallow"
+# [4] "DepthRangeComDeep"   
+# 
+# $morph
+#  [1] "Length"        "LTypeMaxM"     "LengthFemale"  "LTypeMaxF"     "CommonLength" 
+#  [6] "LTypeComM"     "CommonLengthF" "LTypeComF"     "Weight"        "WeightFemale" 
+# 
+# $fishing
+#  [1] "Importance"         "PriceCateg"         "PriceReliability"  
+#  [4] "LandingStatistics"  "Landings"           "MainCatchingMethod"
+#  [7] "MSeines"            "MGillnets"          "MCastnets"         
+# [10] "MTraps"             "MSpears"            "MTrawls"           
+# [13] "MDredges"           "MLiftnets"          "MHooksLines"       
+# [16] "MOther"             "UsedforAquaculture" "LifeCycle"         
+# [19] "UsedasBait"         "Aquarium"           "GameFish"          
+# 
+# $misc
+# [1] "Dangerous"    "Electrogenic"
+# 
+# $curation
+# [1] "DateEntered"  "DateModified" "DateChecked"  "Complete"     "Entered"     
+# [6] "Modified"     "Expert"      
+# 
+# $refs
+#  [1] "DepthRangeRef"    "LongevityWildRef" "LongevityCapRef"  "MaxLengthRef"    
+#  [5] "CommonLengthRef"  "MaxWeightRef"     "ImportanceRef"    "AquacultureRef"  
+#  [9] "BaitRef"          "AquariumRef"      "GameRef"          "DangerousRef"    
+# [13] "ElectroRef"           
+```
+
+```{r helper functions}
+summarize_table <- function(df) { ### df <- ecol
+  tot_code_spp <- df %>%
+    janitor::clean_names() %>%
+    select(spec_code, species) %>%
+    distinct() %>%
+    summarize(n_code = n_distinct(spec_code), n_spp = n_distinct(species))
+  
+  sum_df <- df %>%
+    janitor::clean_names() %>%
+    gather(variable, value, -spec_code, -species) %>%
+    group_by(spec_code, species) %>%
+    filter(!all(is.na(value))) %>%
+    group_by(variable) %>%
+    summarize(n_code  = n_distinct(spec_code),
+              n_spp   = n_distinct(species),
+              n_valid = sum(!is.na(value))) %>%
+    mutate(pct_valid  = n_valid / n_spp,
+           n_spp_in_table = tot_code_spp$n_spp,
+           n_code_in_table = tot_code_spp$n_code)
+  # col_sum <- df %>%
+  #   janitor::clean_names() %>%
+  #   select(-spec_code, -species) %>%
+  #   summarize(across(.fns = ~sum(!is.na(.x)))) %>%
+  #   gather(variable, n_valid, everything())
+  # out_df <- spp_sum %>% 
+  #   bind_cols(col_sum) %>%
+  #   mutate(pct_valid = round(n_valid / n_spp * 100, 2))
+  return(sum_df)
+}
+
+match_cols <- function(df, field) {
+  x <- names(df)
+  y <- x[str_detect(tolower(x), paste0(field, collapse = '|'))]
+}
+clean_df <- function(df, field) {
+  df_clean <- df %>%
+    janitor::clean_names() %>%
+    select(spec_code, species, match_cols(., fields)) %>%
+    filter(rowSums(is.na(.)) != (ncol(.) - 2))
+  
+  df_clean %>%
+    select(where(is.character), -species) %>%
+    summarize(across(where(is.character), 
+                     .fns = ~paste(unique(.x), collapse = ';'))) %>% 
+    gather(field, vals, everything()) %>%
+    print()
+  
+  summary(df_clean %>%
+            select(-where(is.character))) %>%
+    print()
+  return(df_clean)
+  
+}
+
+DT::datatable(summarize_table(spp_info))
+```
+
+```{r summarize species table}
+fields <- c('ana_cat', 'land', 'depth', 'length', 'weight', 'longevity', 'demers', 'pd50')
+
+spp_info_select <- clean_df(spp_info, fields)
+
+```
+
+## [Trophic Ecology](https://www.fishbase.se/manual/English/fishbasetrophic_ecology00002692.htm)
+
+The largest group of tables in FishBase is related to the trophic ecology of fishes and presents information on habitat, food items, diet composition, food consumption and predators of various fish species. The broad ‘ECOLOGY table’ of Froese et al. (1992) also covered environmental tolerance and behavior, but only few suitably standardized datasets were found and such information previously entered is now made accessible in the Remarks field of the SPECIES table, and in several fields (temp., pH, and H) in the STOCKS table.
+
+The information on trophic ecology, which can be used for construction of Ecopath models (see Box 21), is presented in the following tables:
+
+* [The ECOLOGY table](https://www.fishbase.se/manual/English/fishbasethe_ecology_table.htm) presents information on the environment, e.g., the body of water which the species inhabits, and its feeding habits (incl. trophic levels);
+* [The FOOD ITEMS table](https://www.fishbase.se/manual/English/fishbasethe_food_items_table.htm) lists organisms that have been found in the stomach or are otherwise known to be ingested by a given species;
+* [The DIET table](https://www.fishbase.se/manual/English/fishbasethe_diet_table.htm) gives the percentages (in weight or volume) of the different types of food item reported from studies of stomach contents;
+* [The RATION table](https://www.fishbase.se/manual/English/fishbasethe_ration_table.htm) presents the daily food intake relative to the body weight of the fish sampled, and related parameters;
+* [The POPQB table](https://www.fishbase.se/manual/English/fishbasethe_popqb_table.htm) gives the annual food consumption (Q) per unit biomass (B) of a fish population and the population dynamics parameters used in its estimation;
+* [The PREDATORS table](https://www.fishbase.se/manual/English/fishbasethe_predators_table.htm) documents instances of a predator (not necessarily a fish) having consumed fish of a given species.
+
+Also, a multi-level structure was created for these tables, which describes food items in increasing level of detail, from the Foods I field (consisting of 6 different broad food types, presented through a multiple choice field) and the Food II field (22 food types) to the Food III field (55 food types). This structure, which distinguishes stages (for both plants and animals), also allows entry of details on a given food item (e.g., name of the species ingested). Box 24 of the FOOD ITEMS table provides more detail on this as well as the trophic levels assigned to the different items in Foods I, II, and III, while Box 25 describes the method used to obtain estimates of trophic levels in fish whose diet composition is known. The FOOD ITEMS table provides more detail on this structure, as well as the trophic levels assigned to the different items which can be used to estimate trophic levels in fish whose diet composition is known.
+
+### How we can use these:
+
+* Ecology table: General trophic position? and feeding habits
+
+### Food:
+
+```{r food table}
+food <- fooditems(server = 'sealifebase')
+### 80895 obs of 30 vars
+DT::datatable(summarize_table(food))
+
+fields <- c('food', 'predator', 'prey')
+
+food_select <- clean_df(food, fields)
+```
+
+### Diet:
+``` {r diet table}
+food_diet <- diet(server = 'sealifebase')
+### 38940 obs of 41 vars
+DT::datatable(summarize_table(food_diet))
+
+fields <- c('troph')
+
+diet_select <- clean_df(food_diet, fields)
+
+```
+
+### Ecology:
+``` {r trophic ecology table}
+troph_ecol <- ecology(server = 'sealifebase')
+### 34329 obs of 131 vars
+DT::datatable(summarize_table(troph_ecol))
+
+fields <- c('troph', 'diet', 'school', 'shoal', 'sessile', 
+            'oceanic', 'pelagic', 'demersal', 'benthic',
+            'neritic', 'littoral', 'reef')
+
+troph_select <- clean_df(troph_ecol, fields)
+
+```
+
+
+## [Reproduction](https://www.fishbase.se/manual/English/fishbasereproduction00002700.htm)
+
+Fish display an astonishing variety of reproductive modes, ranging from parthenogenesis in the molly Poecilia formosa to permanently attached parasitic males in the deep-sea fish Haplophryne mollis. Similarly, fecundity ranges from 300 million eggs per year in Mola mola to a few live born offspring, e.g., in many sharks (Lagler et al. 1977). Parental care may be absent, as in many pelagic fishes, or involve various kinds of nest guarding or mouthbrooding. This variety implies that constraints to the ability of fish populations to reproduce themselves will also take different forms. Knowledge of reproduction is therefore important for proper management and conservation of fish species.
+
+Information on reproduction in FishBase is assembled in three tables: REPRODUCTION, MATURITY and SPAWNING. 
+
+* [The REPRODUCTION table](https://www.fishbase.se/manual/English/fishbasethe_reproduction_table.htm) documents the general mode and the type of reproduction that apply to the species throughout its range. 
+* [The MATURITY](https://www.fishbase.se/manual/English/fishbasethe_maturity_table.htm) and [SPAWNING tables](https://www.fishbase.se/manual/English/fishbasethe_spawning_table.htm), on the other hand, present information on the size and age at first maturity and spawning of different populations of the same species, occurring at different localities. These tables are described below.)
+
+### reproduction
+
+```{r reproduction table}
+reprod <- reproduction(server = 'sealifebase')
+### 34299 obs of 31 vars
+DT::datatable(summarize_table(reprod))
+
+fields <- c('fertilization', 'parental', 'guild', 'repro_mode', 'spawn')
+
+reprod_select <- clean_df(reprod, fields)
+
+```
+
+### maturity
+
+``` {r maturity table}
+matur  <- maturity(server = 'sealifebase')
+### 39887 obs of 36 vars
+DT::datatable(summarize_table(matur))
+
+fields <- c('age', 'length', 'tm', 'lm')
+
+matur_select <- clean_df(matur, fields)
+```
+
+### spawning
+```{r spawning table}
+spawn  <- spawning(server = 'sealifebase')
+### 37047 obs of 75 vars
+DT::datatable(summarize_table(spawn))
+
+fields <- c('fecun', 'length', 'weight')
+
+spawn_select <- clean_df(spawn, fields)
+```
+
+### Also in here: 
+
+### Fecundity
+
+duplicated from spawning/reproduction tables?
+```{r fecundity table}
+fecund <- fecundity(server = 'sealifebase')
+### 35762 obs of 55 vars
+DT::datatable(summarize_table(fecund))
+
+fields <- c('fecun', 'length', 'weight')
+
+fecund_select <- clean_df(fecund, fields)
+```
+
+### Ecosystem
+
+doesn't look like traits so much as ecosystem types, incl MEOW.  
+``` {r ecosystem table}
+ecosys <- ecosystem(server = 'sealifebase')
+### 155811 obs of 99 vars
+### looks like MEOW regions and the like, E_CODE
+DT::datatable(summarize_table(ecosys))
+
+```
+
+## [Population Dynamics](https://www.fishbase.se/manual/English/fishbasepopulation_dynamics00002680.htm)
+
+Information on the maximum size and age of fish, on their length-weight relationships and estimates of their growth parameters, natural mortality and recruitment variability are crucial for fisheries management purposes.
+
+While maximum age and size, and length-weight relationships are relatively easy to obtain for most fish species, making sure that such information is available wherever and whenever needed - and in the appropriate format - is rather more difficult.
+
+* [The POPCHAR Table](https://www.fishbase.se/manual/English/fishbasethe_popchar_table.htm) 
+    * This table presents information on maximum length (Lmax), weight (Wmax) and age (tmax) from various localities where a species occurs. The largest values from this table are also entered in the SPECIES table. The POPCHAR table also indicates whether the Lmax, Wmax and tmax values or various combinations thereof refer to the same individual fish.
+    * `popchar(server = 'sealifebase')` - local population values, rather than global
+* [The LENGTH-WEIGHT Table](https://www.fishbase.se/manual/English/fishbasethe_length_weight_table.htm)
+    * Length-weight relationships are important in fisheries science, notably to raise length-frequency samples to total catch, or to estimate biomass from underwater length observations. The LENGTH-WEIGHT table presents the a and b values of over 5,000 length-weight relationships of the form W = a × Lb, pertaining to about over 2,000 fish species.
+    * The units of length and weight in FishBase are centimeter and gram, respectively. Thus when length-weight relationships are not in cm-g, the intercept 'a' is transformed as follows...
+    * `length_weight(server = 'sealifebase')`
+    * potentially use for a proxy for aspect ratio?
+* [The LENGTH-FREQUENCY Table](https://www.fishbase.se/manual/English/lengthfrequency.htm)
+    * Length-frequency data are widely used to derive growth estimates, especially in small tropical fishes (see the POPGROWTH table, this vol.). Froese and Binohlan (2000) have shown that length-frequency curves can also be used to get a first assessment of the status of a stock (see Fig. 33) if the data are plotted in a framework of asymptotic length, length at optimum yield, and length at first maturity (see Key Facts, this vol.). With this new table, we try to collect and preserve historical data from unfished or still lightly fished populations, to be contrasted with the curves typically produced from overexploited stocks, where the large, highly fecund fish (the ‘Mega-spawners’) have disappeared and the bulk of the catch is made up of juveniles which had no chance to reproduce.
+    * `length_freq(server = 'sealifebase')`
+* [The LENGTH-LENGTH Table](https://www.fishbase.se/manual/english/PDF/FB_Book_CBinohlan_Length-Length_RF_JG.pdf)
+    * This table contains relationships for the conversion of one length type to another for over 8,000 species of fish, derived from different publications, e.g. Moutopoulos and Stergiou (2002) and Gaygusuz et al (2006), or from fish pictures, e.g. Collette and Nauen (1983), Compagno (1984) and Randall (1997)
+    * `length_length(server = 'sealifebase')`
+* [The POPGROWTH Table](https://www.fishbase.se/manual/English/fishbasethe_popgrowth_table.htm)
+    * This table contains information on growth, natural mortality and length at first maturity, which serve as inputs to many fish stock assessment models. The data can also be used to generate empirical relationships between growth parameters or natural mortality estimates, and their correlates (e.g., body shape, temperature, etc.), a line of research that is useful both for stock assessment and for increasing understanding of the evolution of life-history strategies (see Fig. 19).
+    * `popgrowth(server = 'sealifebase')`
+* [The RECRUITMENT Table](https://www.fishbase.se/manual/English/fishbasethe_recruitment_table.htm)
+    * Recruitment fluctuations and their causes represent one of the main areas of research in fisheries science, which is not surprising since it is these fluctuations which determine the annual catch levels of fisheries.
+    * Precise prediction of future recruitment is not possible. However, broad generalizations are possible (e.g., that depleted stocks produce fewer recruits than healthy stocks, a non-trivial result). The more recruitment time series are available from various parts of the world, the more precise and reliable will the generalizations be.
+    * no function?
+
+### PopChar
+skip it for now
+
+### Length-Weight
+
+Explore for use as morphology continuous variable a la aspect ratio... units cm and g; formula:
+
+$$W = aL^b$$
+
+Can we compare body shapes to $a$ and $b$ parameters, to see how particular shapes correspond to these parameters (and then use an aspect ratio in place of descriptive shapes)
+
+``` {r length-weight table}
+lw <- length_weight(server = 'sealifebase')
+### 46082 obs of 38 vars
+DT::datatable(summarize_table(lw))
+
+fields <- c('^a$', '^b$', 'length')
+
+lw_select <- clean_df(lw, fields)
+
+```
+
+### Length-Length
+skip for now
+
+### Pop Growth
+
+"This table contains information on growth, natural mortality and length at first maturity..." params for VBGF:
+
+$$L_t = L_{\infty} \left(1 - e^{-K(t - t_0)}\right)$$
+
+``` {r pop growth table}
+popg <- popgrowth(server = 'sealifebase')
+### 43302 obs of 80 vars
+DT::datatable(summarize_table(popg))
+
+fields <- c('loo', 'lm', 'length', 'to', '^k$')
+
+popg_select <- clean_df(popg, fields)
+
+```
+
+## [Ichthyoplankton](https://www.fishbase.se/manual/English/fishbaseichthyoplankton00002705.htm)
+
+An important method of fishery biology is the ichthyoplankton survey, used to estimate the size of a spawning stock from the numbers of eggs or larvae produced (e.g., Rankine and Bailey 1987). A precondition for such surveys is the ability to identify fish eggs and larvae. It has been shown that computerized systems in general and databases in particular can help with this task (Froese and Schöfer 1987; Froese 1988, 1989; Froese et al. 1989; Froese 1990a, 1990b; Froese and Papasissi 1990; Froese 1990b). Also, morphological characters of eggs and larvae can be used to test hypotheses about life-history strategies (e.g., Froese 1990a).
+
+* [Eggs table](https://www.fishbase.se/manual/English/fishbasethe_eggs_table.htm) Fish eggs display an astonishing variety of colors, shapes, appendages, sizes and places of development. The EGGS table tries to standardize such information in order to assist in fish egg identification and in comparative studies.
+    * The EGGS table has fields for the Environmental parameters that are usually associated with the occurrence of fish eggs, such as Temperature, Depth range, Salinity, pH and Oxygen content of the water. A Remarks field accommodates any additional environmental information.
+    * no function?
+* [Egg Dev table](https://www.fishbase.se/manual/English/fishbasethe_eggdev_table.htm) egg development time and size and whatnot
+    * no function? in `fecundity` maybe?
+* [Larvae table](https://www.fishbase.se/manual/English/fishbasethe_larvae_table.htm) morphology of fish larvae
+    * `larvae(server = 'sealifebase')`
+
+### Larvae
+
+morphology
+
+``` {r larvae table}
+larv <- larvae(server = 'sealifebase')
+### 34313 obs of 215 vars
+DT::datatable(summarize_table(larv))
+
+fields <- c('body_form', 'duration', 'length')
+
+larv_select <- clean_df(larv, fields)
+
+```
+
+
+## [Morphology](https://www.fishbase.se/manual/English/fishbasemorphology_and_physiology.htm)
+
+* [The MORPHOLOGY Table](https://www.fishbase.se/manual/English/fishbasethe_morphology_table.htm) In fish, the major characters used for description and identification are descriptive, referring to distinguishable characters (e.g., shape of caudal fin), morphometric, referring to continuous variables (e.g., head length as a fraction of body length) or meristic, referring to discontinuous variables (e.g., the number of rays and spines in a dorsal fin).
+    * The MORPHOLOGY table incorporates descriptive characters in multiple choice fields and morphometric and meristic characters in numeric fields. It is mainly the meristic characters that are used for quick identification, following the database identification scheme of Froese and Papasissi (1990). The structure of the MORPHOLOGY table and the choice of fields it includes are based on a close study of major texts in ichthyology (e.g., Lagler et al. 1977) and consultation with numerous colleagues. Some of the terms employed in the table are highly specialized; their definition may be found in the FishBase Glossary.
+    * The MORPHOLOGY table contains 67 choice fields, 79 numeric fields and several remarks fields. Choice fields present the user with preprogrammed choices of descriptions for a body part or feature (e.g., Cross section - circular; oval; compressed; flattened; angular; others (see Remarks)). The choices included were kept to a minimum, including only general descriptions covering the most common shapes or forms. In most cases, an ‘Other (see Remarks)’ choice is included for those species which might have aberrant features or shape of a body part. When ‘Other’ is chosen for a field, a detailed description of the particular body part is included in the Remarks field.
+    * `morphology(server = 'sealifebase')`
+* [The VISION Table](https://www.fishbase.se/manual/English/fishbasethe_vision_table.htm) - probably not all that helpful?
+* [The BRAINS Table](https://www.fishbase.se/manual/English/PDF/FB_Book_RFroese_Brains_RF_28062010_JG.pdf) - brain weight to body size... ?
+    * `brains(server = 'sealifebase')`
+* [The OXYGEN Table](https://www.fishbase.se/manual/English/PDF/FB_Book_ATorres_Oxygen_11Jul11.pdf) - metabolic rate in mg oxygen per kg of fish per hour.
+    * `oxygen(server = 'sealifebase')`
+* [The SWIMMING and SPEED Tables](https://www.fishbase.se/manual/English/PDF/FB_Book_ATorres_Swimming_Speed_RF_JG.pdf) - swimming type and mode based on: Movements of body and/or caudal fin, Undulation of median or pectoral fins, Oscillations of median or pectoral fins.  2700 spp; speed for ~90 spp. Perhaps not all that useful on these, BUT:
+    * NOTE: The aspect ratio of the caudal fin of a species closely correlates with its average level of activity (Pauly 1989). The Aspect ratio (A) of the caudal fin is calculated from: 
+$$A = h^2 / s$$
+* [The GILL AREA Table](https://www.fishbase.se/manual/English/fishbasethe_gill_area_table.htm) To survive, grow and reproduce, fish, like all heterotrophic animals, need food and oxygen. However, while a huge literature exists on the food and feeding habits of fishes (accommodated within FishBase through several tables and graphs), much less exists in the literature on the organs and processes which allow energy to be extracted from this food.
+    * The essential process is respiration, and it is accommodated, in part, in the OXYGEN table. The important organs - the gills - are dealt with in the present table.
+* [The PROCESSING Table](https://www.fishbase.se/manual/English/fishbasethe_processing_table.htm) This table represents our attempt at incorporating fish as consumable products into FishBase.
+
+### morphology
+```{r morphology}
+morph <- morphology(server = 'sealifebase')
+### 34359 obs of 160 vars
+DT::datatable(summarize_table(morph))
+
+fields <- c('body_shape', 'duration', 'length')
+
+morph_select <- clean_df(morph, fields)
+
+```
+
+### brains
+```{r brains}
+brain <- brains(server = 'sealifebase')
+### 38608 obs of 28 vars
+DT::datatable(summarize_table(brain))
+
+fields <- c('body_weight', 'brain_weight', 'life_stage')
+
+brain_select <- clean_df(brain, fields)
+
+```
+
+### oxygen
+
+```{r oxygen}
+oxyg <- oxygen(server = 'sealifebase')
+### 41107 obs of 28 vars
+DT::datatable(summarize_table(oxyg))
+
+fields <- c('metabolic', 'oxygen', 'speed')
+
+oxyg_select <- clean_df(oxyg, fields)
+
+```
+
+### swimming
+
+```{r swimming}
+swim <- swimming(server = 'sealifebase')
+### 34299 obs of 16 vars
+DT::datatable(summarize_table(swim))
+
+fields <- c('aspect_ratio', 'adult_mode', 'length')
+
+swim_select <- clean_df(swim, fields)
+
+```
+
+```{r}
+# gill_a <- gillarea()
+```
+
+### no gill area function?

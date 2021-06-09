@@ -1,0 +1,207 @@
+---
+title: "What's the big idea for this project"
+author: "*Compiled on `r date()` by `r Sys.info()['user']`*"
+output: 
+  html_document:
+    code_folding: hide
+    toc: true
+    toc_depth: 3
+    toc_float: yes
+    number_sections: true
+    theme: cerulean
+    highlight: haddock
+    includes: 
+      in_header: '~/github/src/templates/ohara_hdr.html'
+  pdf_document:
+    toc: true
+---
+
+``` {r setup, echo = TRUE, message = FALSE, warning = FALSE}
+
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
+
+library(oharac)
+oharac::setup()
+# remotes::install_github("ropensci/rfishbase")
+library(rfishbase)
+
+```
+
+# Summary
+
+Identify traits that can be pulled from FishBase and SeaLifeBase to identify functional groups for analysis.
+
+# Data
+
+>FishBase is a scientific database, and this has the implication - among others - that its use and the use of its contents are free as long as due credit is given.
+
+>This may be done at different levels, for which we suggest different forms of citations:
+
+>* when referring to FishBase concepts and design, cite its architects (Froese and Pauly 2000);
+* when referring to a set of values extracted from a FishBase table, cite the author(s) of the original data, e.g., "Houde and Zastrow (1993)", or "Welcomme (1988)". To help us track the use of FishBase in the literature, we would appreciate your also citing Froese and Pauly (2000) in an appropriate part of your text, as the source of the information;
+* when discussing the features of a FishBase table, cite the section documenting that table, e.g., "Sa-a et al. (2000)."
+
+## FishBase References
+
+* Froese, R. and D. Pauly, Editors. 2000. FishBase 2000: concepts, design and data sources. ICLARM, Los Baños, Laguna, Philippines. 344 p.
+* Houde, E.D. and C.E. Zastrow. 1993. Ecosystem- and taxon-specific dynamic energetics properties of fish larvae assemblages. Bull. Mar. Sci. 53(2):290-335.
+* Sa-a, P., M.L. Palomares and D. Pauly. 2000. The FOOD ITEMS table, p. 182-188. In R. Froese and D. Pauly (eds.) FishBase 2000: concepts, design and data sources. ICLARM, Los Baños, Laguna, Philippines. 344 p.
+* Welcomme, R.L. 1988. International introductions of inland aquatic species. FAO Fish. Tech. Pap. 294, 318 p.
+   
+# Methods
+
+## Identify traits for grouping
+
+Traits identified in literature around functional diversity and functional grouping:=
+
+### Mouillot et al. (2014) 
+
+focused on coral reef fish species.  From methods:
+
+* The functional strategy of each tropical-reef fish species was described using six categorical traits (8, 16) (SI Text). 
+    * Fish size was coded using six ordered categories: 0–7 cm, 7.1–15 cm, 15.1–30 cm, 30.1–50 cm, 50.1–80 cm, and >80 cm. 
+    * Mobility was coded using three ordered categories: sedentary (including territorial species), mobile within a reef, and mobile between reefs. 
+    * The period of activity was coded using three ordered categories: diurnal, both diurnal and nocturnal, and nocturnal. 
+    * Schooling was coded using five ordered categories: solitary, pairing, or living in small (3–20 individuals), medium (20–50 individuals), or large (>50 individuals) groups. 
+    * Vertical position in the water column was coded using three ordered categories: benthic, bentho-pelagic, and pelagic. 
+    * Diet was characterized based on main items consumed by each species, which led to seven trophic categories: 
+        * herbivorous-detritivorous (i.e., fish feeding on turf or filamentous algae and/or undefined organic material), 
+        * macroalgal herbivorous (i.e., fish eating large fleshy algae and/or seagrass), 
+        * invertivorous targeting sessile invertebrates (i.e., corals, sponges, ascidians), 
+        * invertivorous targeting mobile invertebrate (i.e., benthic species such as crustaceans), 
+        * planktivorous (i.e., fish eating small organisms in the water column), 
+        * piscivorous (including fish and cephalopods), and 
+        * omnivorous (i.e., fish for which both vegetal and animal material are important in their diet). 
+* The traits have already been used to investigate community assembly rules (16: Guillemot N, Kulbicki M, Chabanet P, Vigliola L (2011) Functional redundancy patterns reveal non-random assembly rules in a species-rich marine assemblage. PLoS ONE 6(10):e26735) and to seek vulnerable fish functions (8: Mouillot D, et al. (2013) Rare species support vulnerable functions in high-diversity
+ecosystems. PLoS Biol 11(5):e1001569.); their relevance is detailed in SI Text. Given the scale of our study, we could not account for intraspecific variability of traits among life stages.
+* This set of six functional traits and their respective number of categories yield a theoretical number of 5,670 unique combinations of trait values called functional entities. However, the 6,316 tropical-reef fish species fill only 646 FEs (11.4%).
+
+### Stuart-Smith et al. (2013) 
+
+again focused on fish, globally.
+
+* Traits: body size (maximum length), feeding ecology (trophic group, trophic breadth), behaviour (water column position, diel activity pattern, gregariousness), and habitat use (preferred substratum, habitat complexity.
+* SI table 1:
+    * Max length: body size; numeric; total length (cm) - from FishBase
+    * Trophic breadth: trophic niche; numeric; Number of prey phyla consumed (from diet studies). range 1-8. From FishBase
+    * Trophic group: trophic niche; factor; Browsing herbivore, scraping herbivore, benthic invertivore, plantivore, higher carnivore - from FishBase
+    * Water column position: behaviour; factor; Benthic, demersal, site-attached pelagic, roaming pelagic
+    * Gregariousness: behaviour; ordered factor; index from 1-3 representing singleton, paired to sometimes forming small schools, always schools
+    * Diel activity pattern: behaviour; factor; nocturnal/diurnal
+    * Preferred substrate: habitat use; factor; hard substrate, soft substrate
+    * Habitat complexity: habitat use; factor; Typically associated with habitats characterized by low, medium, high complexity.
+* NOTE: sequentially dropping traits and comparing results to full-trait scores, they identified water column position, substrate preference and trophic group as contributing most to global patterns in functional diversity
+* Species and functional diversity were calculated using Rao’s Q (6: Botta-Dukat, Z. Rao’s quadratic entropy as a measure of functional diversity based on multiple traits. J. Veg. Sci. 16, 533–540 (2005).), incorporating relative abundance of each species and converted to effective numbers following a method from a previous study(30: Jost, L. Entropy and diversity. Oikos 113, 363–375(2006).). Functional diversity and functional group richness were based on eight functional traits scored for each of the 2,473 fish species in the data set (many from FishBase, http://www.fishbase.org; Extended Data Table 1) and calculated using the functional diversity package in R. Evenness was calculated by dividing species diversity by species density (richness).
+    
+### Pimiento et al (2020)
+
+looking at marine megafauna - this is important because it crosses taxonomic groups, not solely fish.
+
+* "For our analysis, we selected 10 traits that characterize marine megafaunal functional diversity (table S1). We repeated all of our analyses using a subset of traits (herein referred to as “marine-only” traits) to assess how extinctions threaten strictly marine-based ecosystem processes (see Materials and Methods). There is great variation in traits among extant megafauna, providing evidence for their diverse range of niches (fig. S1A). 
+* A principal coordinates analysis (PCoA) revealed that the global marine megafauna can be represented within a reduced six-dimensional trait space (representing 71% of the total inertia; table S2). __The first axis of the trait space__ is strongly related to _terrestriality_ (i.e., the ability to move between marine and terrestrial or riverine realms) and _vertical position_ in the water column (table S2). The mostly fresh water and benthic Julien’s golden carp scored the lowest value along the first axis, and the fully marine and pelagic pygmy right whale scored the highest (Fig. 1A). __The second axis of the trait space__ revealed a strong compartmentalization, with mammals occupying an area separate from that of fishes and sharks. This axis is mostly related to _breeding site_ and _thermoregulation_ (table S2), two traits that separate endothermic mammals, many of which breed on sea ice (e.g., crabeater seal, the lowest value; Fig. 1A), from ectothermic species that breed in coastal environments (e.g., whale shark, the highest value; Fig. 1A). Last, __the third axis of the trait space__ is mostly related to _feeding mode_ (table S2). Accordingly, the filter-feeding fin whale occupies the highest end of this axis, whereas the active predatory butterfly kingfish occupies the lowest end (Fig. 1A). The remaining three axes of the functional space are weakly associated with individual species traits (table S2) and together represented 21% of the total inertia."
+* Methods: "For each iteration (see above), we calculated the FRic to evaluate the changes of the overall functional volume, FUn to quantify the changes in the interior of the functional space, and FSp to identify species contributing the most to FRic. We first created a species trait distance matrix using a modified version of Gower’s distance (“dist.ktab” function of the ade4 package), which allows the treatment of various types of variables (see table S1), e.g., quantitative, ordinal, nominal, multichoice nominal, binary (55). From this functional dissimilarity matrix, we then built a multidimensional Euclidean space based on a PCoA (56). We retrieved the PCoA axes using the “dudi.pco” function of the ade4 package. Using the method proposed by Maire et al. (56), we determined that the marine megafaunal functional space is best represented by seven dimensions (i.e., lowest mean squared deviation between the initial trait distance and standardized distance in the functional space given by the PCoA). However, we built our space using six dimensions because (i) the difference between mean squared deviations of a seven-dimensional space and a six-dimensional space was negligible (i.e., 0.0001), and (ii) 71.15% of the total inertia is represented in the first six axes. We assessed the relationship between axes and traits using a linear model (table S2)."
+    * Note use of functional uniqueness, as the mean distance to nearest 5 neighbors... relate this to Burgess et al (2019) ecosystem thinning paper...
+* "We used the following main references from the literature to assign traits to the marine megafaunal species: mammals (44, 62); sharks (63-65); sea turtles (42). Below we describe the assignment of the different traits."
+    * Maximum body mass: Maximum weight (kg) for each species was gathered from (1: J. A. Estes, M. Heithaus, D. J. McCauley, D. B. Rasher, B. Worm, Megafaunal impacts on structure and function of ocean ecosystems. Annu. Rev. Env. Resour. 41, 83–116 (2016).).
+    * Thermoregulation: endothermy, mesothermy, ectothermy. (see SI for details)
+    * Terrestriality: land, freshwater (see SI for details)
+    * Habitat zone and vertical position: We categorized the habitat where organisms occur based on the zone where they occur as adults (i.e., trait designations: continental shelf, slope, offshore, some of these, or all). Vertical position was assigned based on the most frequent part of water column where they feed (i.e., trait designations: benthic [or demersal], pelagic or both). These data were gathered from the primary literature and databases (see main text).
+    * Migration: 
+        * marine: organisms that are known to migrate within the marine environment (as is the case of some cetaceans, pinnipeds, sharks, bony fishes [including tunas], cephalopods, and all sea turtles).  
+        * Freshwater: those migrating within freshwaters (as is the case of anadromous, amphidromous, catadromous and potamodromous fishes). 
+        * Land: those migrating between aquatic and terrestrial environments (e.g., the polar bear and Emperor penguin).
+    * Feeding mechanism: predatory, browsing, filter-feeding (see SI for details)
+    * Diet: We classified the diet of each species based on the principal type of food it consumes as an adult. Diets were expressed as broad categories, including: fish; high vertebrates; invertebrates; plankton; plants. This information was gathered from the primary literature and databases (see main text).
+    * Breeding site: 
+        * coastal: animals that breed near or at the continental shelf, or within the neritic zone (i.e., above 200 meters depth). 
+        * Estuarine or riverine: organisms that breed in fresh- or brackish-waters (e.g., the bull shark Carcharhinus leucas). 
+        * Ice or land: animals that breed in the terrestrial realm (e.g., the Emperor penguin, the polar bear, all pinnipeds and sea turtles). 
+        * Oceanic: animals that breed offshore.
+    * Group size or sociality: 
+        * Schooling or aggregating: animals that are commonly found in groups of individuals of the same species. 
+        * Social: animals known to display social interactions with individuals of the same species (e.g., some cetaceans, pinnipeds, the Emperor penguin, the coelacanth, and a few species of sharks and fish). 
+        * Solitary: species that are mostly found alone, which includes most sharks, some fish, all invertebrates within the marine megafauna and some marine mammals (44).
+            
+### Winemiller and Rose (1992)
+
+Freshwater and marine fishes
+
+* Data were obtained for the following 16 life-history traits.
+    * Age at maturation - the mean age at maturation in years, or when estimates were in summarized form, the modal age of maturation.
+    * Length at maturation - the modal length at maturation m m1lhmetres total length (TL), or if not reported, either the median or minimum length at maturation.
+    * Maximum length - the maximum length reported in millimetres TL.
+    * Longevity - maximum age in years.
+    * Maximum clutch size - the largest batch fecundity reported.
+    * Mean clutch size - the mean batch fecundity for a local population, i.e., data from a specific location or ecosystem
+    * Egg size - the mean diameter of mature (fully yolked) ovrian oocytes (to nearest 0.01 mm).
+    * Range of egg sizes - the range of diameters for mature ovarian oocytes reported for a local population (0.01 mm).
+    * Duration of spawning season - number of days that spawning or early larvae were reported.
+    * Number of spawning bouts per year - the mean number of times an individual female was reported to spawn during a year. Because multiple spawning bouts are difficult to document in wild fishes, many of the estimates used in this analysis are probably underestimates.
+    * Parental care - following Winemiller (1989), quan- tified as $\sum x_i$  for i= 1 to 3 ($x_1$ = 0 if no special placement of zygotes, 1 if zygotes are placed in a special habitat (e.g. scattered on vegetation, or buried in gravel), and 2 if both zygotes and larvae are maintained in a nest;$x_2$ =0 if no parental protection of zygotes or larvae, l if a brief period of protection by one sex (<1 mo), 2 if a long period of protection by one sex (>1 mo) or brief care by both sexes, and 4 if lengthy protection by both sexes; and $x_3$ = 0 if no nutritional contribution to larvae (yolk sac material is not considered here), 2 if brief period of nutritional contribution to larvae ( = brief gestation (< 1 mo) with nutritional contribution in viviparous forms), 4 if long period of nutritional contribution to larvae or embryos ( = long gestation (1-2 mo) with nutritional contribution), or 8 if extremely long gestation (>2 mo). We reason that, in terms of benefits received by offspring, gestation with nutritional contribution is approximately equivalent to biparental brood guarding during an equivalent time period.
+    * Time to hatch - the mean time to hatch within the range
+of values for average midseason temperatures, or when not reported, the mean, modal, or midrange time to hatch at the highest temperature reported within a reasonable range (relative to local ambient temperatures) for a given locality.
+    * Larval growth rate - mean increment in millimetres TL during the first month following hatching. We subtracted the length of larvae at hatching from the mean length attained after the first month. For the few species with larval stage duration <1 mo, we converted mean daily growth rates to mean increments for 30 d.
+    * Young of the year (YOY) growth rate - mean increment in millimetres TL during the first year following hatching or independent life for viviparous fishes. We subtracted the length of larvae at hatching from the mean or modal length attained after the first growing season.
+    * Adult growth rate - mean increment in millimetres TL per year of life over an average adult life span (in this case, data were not weighted by sample size of age cohorts).
+    * Fractional adult growth - mean fraction of millimetres TL gained per year in a normal adult life span
+    
+It seems like many of these can be combined for something like lifetime reproduction, fecundity, ???
+
+### King & McFarlane (2003)
+
+Estimates were obtained for the following life history parameters:
+
+* size at maturity – fork length (mm) at 50% maturity; 
+* maximum size – maximum fork length (mm) repor- ted;
+* growth rate – von Bertalanffy growth coefficient (k) determined from a size-at-age curve (if the value of k was not published in the literature, it was calculated from available data);
+* fecundity – mid-point of the reported range of number of eggs per individual;
+* maximum age in years;
+* egg size – mean diameter (mm) of mature oocytes; 
+* parental investment – using the approach outlined by Winemiller (1989), which quantifies three components of parental investment: (i) placement of zygotes or larvae, (ii) parental protection of zygotes or larvae and (iii) nutritive contribution to larvae was used.
+    
+## Summarize traits
+
+In the three references above, summarize/group general traits - here in order of how many refs included one or more traits in analysis.  But note that only Pimiento here goes beyond just fish, so thermoregulation, terrestriality, and breeding site may be important to differentiate across taxa.
+
+* Body size: 
+    * Mouillot: max length
+    * Stuart-Smith: max length
+    * Pimiento: max mass
+    * Winemiller & Rose: max length, length at maturity
+* Grouping:
+    * Mouillot: schooling behavior
+    * Stuart-Smith: gregariousness
+    * Pimiento: group size or sociality
+* Position in water column:
+    * Mouillot: vertical position in water column
+    * Stuart-Smith: vertical position in water column
+    * Pimiento: vertical position where feeding occurs
+* Diet
+    * Mouillot: trophic categories
+    * Stuart-Smith: trophic breadth AND trophic group
+    * Pimiento: diet categories AND feeding mechanism
+* Mobility
+    * Mouillot: mobility (sedentary, mobile within reef, mobile between reef)
+    * Stuart-Smith: NA
+    * Pimiento: migration (marine, freshwater, land)
+* Diel activity period:
+    * Mouillot: diel activity period
+    * Stuart-Smith: diel activity period
+    * Pimiento: NA
+* Habitat
+    * Mouillot: NA
+    * Stuart-Smith: preferred substrate AND habitat complexity
+    * Pimiento: habitat zone preference
+* Thermoregulation
+    * Mouillot: NA
+    * Stuart-Smith: NA
+    * Pimiento: endothermy, mesothermy, ectothermy
+* Terrestriality
+    * Mouillot: NA
+    * Stuart-Smith: NA
+    * Pimiento: freshwater, land
+* Breeding site
+    * Mouillot: NA
+    * Stuart-Smith: NA
+    * Pimiento: coastal, estuarine, ocean, ice
+* Longevity
