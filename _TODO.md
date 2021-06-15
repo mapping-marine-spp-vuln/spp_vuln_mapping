@@ -1,7 +1,7 @@
 To Do:
 
 * [] Clean AquaMaps species names to match WoRMS names
-* [] Update species vulnerability using AM envelopes for temp, salinity, DO
+* [] Update species vulnerability using AM envelopes for temp, salinity, DO, body size
 
 - identify a few candidate stressors with data in Halpern et al. 2019
     - shipping (for ship strikes)
@@ -9,7 +9,7 @@ To Do:
     - fishing? this seems like it needs a discussion
     - land-based pollutants
 - calculate species sensitivity to the relevant stressors, both direct matches and gapfill
-- identify species in IUCN data that match species in our vulnerability dataset; separate into direct and gapfilled at genus/family/order levels.
+- identify species in AquaMaps data that match species in our vulnerability dataset; separate into direct and gapfilled at genus/family/order levels.
 
 Calculate CHI on species range:
 - calculate impact across range: sum of [species presence] $\times$ [stressor vulnerability] $\times$ [stressor intensity] across range
