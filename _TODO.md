@@ -1,7 +1,21 @@
 To Do:
 
-* [] Clean AquaMaps species names to match WoRMS names
+* [] Clean AquaMaps species names to match WoRMS names for more effective linking to traits and vulnerability scores
 * [] Update species vulnerability using AM envelopes for temp, salinity, DO
+* [] Explore other clustering options:
+    * Random Forest clustering
+    * K-means clustering
+    * PAM clustering (Partitioning Around Medioids)
+    * Clustering by Similarity Aggregation (Condorcet method)?
+* [] How to deal with fishing?
+* Mapping ideas:
+    * [] mean CHI in each cell; mean CHI adjusted by range size?
+    * [] variance CHI
+    * [] one-way ANOVA to compare within-group variance to between-group variance in each cell
+        * If variance between groups is higher than variance within groups, then the implication is that the between-group variance is a result of group means not being equal equal
+        * This can tell whether one or more groups are more heavily impacted than others
+        * Assumptions: The populations from which the samples were obtained must be normally or approximately normally distributed; the samples must be independent; the variances of the populations must be equal.
+        * Tests for assumptions of normality and similar within-group variances?
 
 - identify a few candidate stressors with data in Halpern et al. 2019
     - shipping (for ship strikes)
