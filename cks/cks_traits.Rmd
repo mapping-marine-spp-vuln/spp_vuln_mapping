@@ -1,0 +1,119 @@
+---
+title: 'Gather traits for Cultural Keystone Species'
+author: "*Compiled on `r date()` by `r Sys.info()['user']`*"
+output: 
+  html_document:
+    code_folding: hide
+    toc: true
+    toc_depth: 3
+    toc_float: yes
+    number_sections: true
+    theme: cerulean
+    highlight: haddock
+    includes: 
+      in_header: '~/github/src/templates/ohara_hdr.html'
+  pdf_document:
+    toc: true
+---
+
+``` {r setup, echo = TRUE, message = FALSE, warning = FALSE}
+
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
+
+library(oharac)
+oharac::setup()
+library(rfishbase)
+source(here('fb_slb_fxns.R'))
+
+```
+
+# Summary
+
+From Fishbase and SeaLifeBase, gather relevant traits for the CKS project.
+
+* body size
+* age at maturity
+* number of offspring/litter
+
+# Methods
+
+From other scripts scraping details from FishBase, SeaLifeBase, and the species vulnerability project, gather data on these traits for species on the CKS list.
+
+## Read in CKS list
+
+```{r}
+cks <- readxl::read_excel(here('cks/cks_list.xls'), sheet = 1) %>%
+  janitor::clean_names() %>%
+  mutate(species = tolower(species), 
+         group   = tolower(group)) #%>%
+  # filter(group %in% c('fish', 'reptile', 'mollusk'))
+```
+
+## Gather traits from FishBase
+
+```{r}
+keep_cols <- c('length', 'f_bname')
+length_fb_raw <- get_fb_slb(fxn = species, 
+                            keep_cols = keep_cols, keep_fxn = contains,
+                            drop_cols = '_ref',    drop_fxn = ends_with) 
+
+length_fb <- length_fb_raw %>%
+  mutate(species = tolower(species)) %>%
+  select(species, comname = f_bname, contains('length'), source = db) %>%
+  distinct()
+
+cks_length <- cks %>%
+  left_join(length_fb, by = 'species') %>%
+  mutate(source = ifelse(!is.na(length), source, NA))
+```
+
+```{r}
+fields <- c('age', 'tm')
+
+mat_df_raw <- get_fb_slb(rfishbase::maturity,
+                       keep_cols = fields, keep_fxn = contains,
+                       drop_cols = '_ref', drop_fxn = ends_with) %>%
+  select(db, spec_code, species, tm, age_mat_min, age_mat_min2) %>%
+  filter(!is.na(tm) | !is.na(age_mat_min) | !is.na(age_mat_min2))
+
+mat_df <- mat_df_raw %>%
+  group_by(species) %>%
+  summarize(n_tm = sum(!is.na(tm)),
+            n_amm = sum(!is.na(age_mat_min)),
+            n_amm2 = sum(!is.na(age_mat_min2)),
+            tm = mean(tm, na.rm = TRUE),
+            age_mat_min = mean(age_mat_min, na.rm = TRUE),
+            age_mat_min2 = mean(age_mat_min2, na.rm = TRUE))
+  # mutate(t_maturity = case_when(!is.na(tm) ~ tm,
+  #                               !is.na(age_mat_min2) ~ age_mat_min2 / coef_amm2,
+  #                               TRUE ~ age_mat_min / coef_amm)) %>%
+  # distinct()
+
+cks_age_mat <- cks %>%
+  left_join(mat_df_raw) %>%
+  distinct()
+
+```
+
+```{r}
+fields <- c('fecun')
+fecund_df_raw <- get_fb_slb(fxn = fecundity,
+                     keep_cols = fields, keep_fxn = contains,
+                     drop_cols = '_ref', drop_fxn = ends_with) %>%
+  select(db, spec_code, species, starts_with('fecun')) %>%
+  distinct()
+# summary(fecund_df_raw)
+# fecund_df_raw %>% summarize(across(starts_with('fecun'), .fns = ~sum(!is.na(.x))))
+
+cks_fecund <- cks %>%
+  left_join(fecund_df_raw) %>%
+  distinct()
+
+```
+
+```{r}
+write_csv(cks_length, here('cks/cks_length.csv'))
+write_csv(cks_age_mat, here('cks/cks_age_mat.csv'))
+write_csv(cks_fecund, here('cks/cks_fecund.csv'))
+```
+

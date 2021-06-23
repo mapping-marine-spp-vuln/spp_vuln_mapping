@@ -1,0 +1,41 @@
+group,species,comname,length,length_female,common_length,common_length_f,source
+fish,anguilla australis,Short-finned eel,130,106.5,45,65,fb
+fish,anguilla dieffenbachii,New Zealand longfin eel,185,156,60,100,fb
+fish,anguilla reinhardtii,Speckled longfin eel,165,158,100,NA,fb
+fish,anguilla rostrata,American eel,152,122,50,NA,fb
+fish,arapaima gigas,Arapaima,450,NA,200,NA,fb
+fish,arripis trutta,Australian salmon,89,NA,47,NA,fb
+fish,clupea pallasii,NA,NA,NA,NA,NA,NA
+fish,entosphenus tridentatus,Pacific lamprey,76,NA,41,NA,fb
+fish,epinephelus polyphekadion,Camouflage grouper,90,NA,90,NA,fb
+fish,lampetra tridentata,NA,NA,NA,NA,NA,NA
+fish,maccullochella peelii,Murray cod,180,NA,60,NA,fb
+fish,oncorhynchus nerka,Sockeye salmon,84,71,45,58,fb
+fish,salmo salar,Atlantic salmon,150,120,38,NA,fb
+fish,thaleichthys pacificus,Eulachon,34,NA,20,NA,fb
+fish,etrumeus teres,NA,NA,NA,NA,NA,NA
+fish,opisthonema libertate,Pacific thread herring,30,NA,22,NA,fb
+fish,opisthonema medirastre,Middling thread herring,30,NA,20,NA,fb
+fish,hippoglossus stenolepis,Pacific halibut,258,267,NA,NA,fb
+fish,oncorhynchus tshawytscha,Chinook salmon,150,NA,70,NA,fb
+fish,oncorhynchus kisutch,Coho salmon,107.95,65.5,71,59.5,fb
+fish,oncorhynchus gorbuscha,Pink salmon,76,NA,50.5,NA,fb
+mollusk,anadara tuberculosa,pustulose ark,NA,NA,NA,NA,NA
+mollusk,austrovenus stutchburyi,Stutchbury's venus,NA,NA,NA,NA,NA
+mollusk,clinocardium nuttallii,Nuttall cockle,14,NA,NA,NA,slb
+mollusk,crassostrea virginica,American cupped oyster,30,NA,NA,NA,slb
+mollusk,echyridella menziesii,NA,NA,NA,NA,NA,NA
+mollusk,fasciolaria princeps,NA,NA,NA,NA,NA,NA
+mollusk,haliotis iris,black paua,NA,NA,NA,NA,NA
+mollusk,haliotis kamtschatkana,pinto abalone,17.5,NA,NA,NA,slb
+mollusk,perna canaliculus,New Zealand green mussels,15,NA,NA,NA,slb
+mollusk,strombus galeatus,NA,NA,NA,NA,NA,NA
+reptile,bitis arietans,NA,NA,NA,NA,NA,NA
+reptile,chelonia mydas,green sea turtle,105,NA,90,NA,slb
+reptile,dendroaspis angusticeps,NA,NA,NA,NA,NA,NA
+reptile,dermochelys coriacea,leatherback turtle,256.5,NA,916000,NA,slb
+reptile,eretmochelys imbricata,hawksbill turtle,90,NA,80,NA,slb
+reptile,geochelone pardalis,NA,NA,NA,NA,NA,NA
+reptile,lepidochelys olivacea,Olive ridley turtle,76,NA,75,NA,slb
+reptile,naja haje,NA,NA,NA,NA,NA,NA
+reptile,sphenodon punctatus,NA,NA,NA,NA,NA,NA
