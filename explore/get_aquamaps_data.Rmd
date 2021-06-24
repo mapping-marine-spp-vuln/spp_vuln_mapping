@@ -23,7 +23,7 @@ knitr::opts_chunk$set(fig.width = 6, fig.height = 4, fig.path = 'figs/',
 
 library(raster)
 source('https://raw.githubusercontent.com/oharac/src/master/R/common.R')
-am_dir <- '~/git-annex/aquamaps_2021'
+am_dir <- '/home/shares/ohi/git-annex/aquamaps_2021'
 ```
 
 # Summary
@@ -131,20 +131,24 @@ for(v in vars) { ### v <- vars[1]
 
 ## Read and examine species cell occurrences
 
+```{r clean am spp cells, eval = FALSE}
+csq_loiczid <- hcaf_info %>%
+  select(loiczid, csquare_code) %>%
+  distinct()
+spp_cells <- data.table::fread(file.path(am_dir, 'hcaf_species_native.csv')) %>%
+  janitor::clean_names() %>%
+  left_join(csq_loiczid) %>%
+  select(am_sid = species_id, loiczid, prob = probability)
+
+write_csv(spp_cells, file.path(am_dir, 'hcaf_species_native_clean.csv'))
+
+```
+
 ```{r}
 spp_valid <- spp_info %>%
   filter(occur_cells >= 10) %>%
   select(am_sid, sciname)
 
-# csq_loiczid <- hcaf_info %>%
-#   select(loiczid, csquare_code) %>%
-#   distinct()
-# spp_cells <- data.table::fread(file.path(am_dir, 'hcaf_species_native.csv')) %>%
-#   janitor::clean_names() %>%
-#   left_join(csq_loiczid) %>%
-#   select(am_sid = species_id, loiczid, prob = probability)
-# 
-# write_csv(spp_cells, file.path(am_dir, 'hcaf_species_native_clean.csv'))
 spp_cells <- data.table::fread(file.path(am_dir, 'hcaf_species_native_clean.csv')) %>%
   filter(am_sid %in% spp_valid$am_sid)
 

@@ -1,0 +1,163 @@
+---
+title: "Clustering datasets having both numerical and categorical variables"
+author: "Casey O'Hara"
+date: "6/23/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(cluster)
+library(Rtsne)
+
+```
+
+borrowed from [Clustering datasets having both numerical and categorical variables](https://towardsdatascience.com/clustering-datasets-having-both-numerical-and-categorical-variables-ed91cdca0677) by Sushrut Shendre
+
+With the advent of machine learning in the modern era, businesses have seen a transformation in the way they make decisions and drive profits. One of the most important attributes of a successful firm is how well they can understand their customers and how well they can cater to their personalized needs. It has become increasingly important for firms to understand that the 'one size fits all' model doesn't work anymore.
+
+This brings us to the topic of clustering. Clustering is nothing but segmentation of entities, and it allows us to understand the distinct subgroups within a data set. While many articles review the clustering algorithms using data having simple continuous variables, clustering data having both numerical and categorical variables is often the case in real-life problems. This article discusses a clustering approach using Gower distance, the PAM (Partitioning Around Medoids) method, and silhouette width and explains each of the steps with an implementation in R.
+
+We are using the `germancredit` data taken from UCI's Machine Learning Repository: (https://archive.ics.uci.edu/ml/machine-learning-databases/statlog/german/). To import the data in R, we use the `read.table` command as follows:
+
+```{r}
+set.seed(2020)
+german_credit <- read.table("http://archive.ics.uci.edu/ml/machine-learning-databases/statlog/german/german.data")
+```
+
+We observe that the column names of this data set are not self-explanatory, and therefore we rename the columns with the help of the documentation.
+``` {r}
+german_credit <- german_credit %>%
+  setNames(c("chk_acct", "duration", "credit_his", 
+             "purpose", "amount", "saving_acct", 
+             "present_emp", "installment_rate", "sex", 
+             "other_debtor", "present_resid", "property", 
+             "age", "other_install", "housing", 
+             "n_credits", "job", "n_people", 
+             "telephone", "foreign", "response"))
+```
+Further, to make things easier, we select only a few variables that are relatively more important. Please note that I have selected these particular columns only for illustration purposes, and readers are free to experiment with a different set of columns.
+``` {r}
+german_credit_clean <- german_credit %>% 
+  select(duration, amount, installment_rate, 
+         present_resid, age, n_credits, 
+         n_people, chk_acct, credit_his, 
+         sex, property, housing, present_emp) %>%
+  ### do character variables need to be made into factors? YES
+  mutate(across(where(is.character), factor))
+
+# glimpse(german_credit_clean)
+```
+
+We see that this data set contains both numerical (continuous) as well as categorical variables.
+
+Continuous Variables:
+
+* duration: duration in months
+* amount: the credit amount of the loan
+* installment_rate: Installment rate in percentage of disposable income
+* present_resid: time since living in the present residence
+* age: Age in years
+* n_credits: number of existing credits at this bank
+* n_people: number of people being liable to provide maintenance for
+* credit_his: Credit history
+* property: Property
+* housing: Housing
+* present_emp: Present employment since
+
+Categorical variables:
+
+* chk_account: status of an existing checking account
+* sex: Personal status and sex
+* credit_his: Credit history
+* property: Property
+* housing: Housing
+* present_emp: Present employment since
+
+Now that we are done with understanding and preprocessing the data, we turn our heads towards clustering. The basic premise of clustering is the similarity/dissimilarity between the data points. As we know, the K-means algorithm iterates over and over until it attains a state wherein all points of a cluster are similar to each other, and points belonging to different clusters are dissimilar to each other. This similarity/dissimilarity is defined by the distance between the points.
+
+A popular choice for the metric to measure this distance is the Euclidean distance. Some researchers also advocate the use of Manhattan distance for particular types of problems. However, both of these distance metrics are applicable only for continuous data. _In our data which contains mixed data types, Euclidean and Manhattan distances are not applicable and therefore, algorithms such as K-means and hierarchical clustering would fail to work._
+
+Therefore, we use the ___Gower distance___ which is _a metric that can be used to calculate the distance between two entities whose attributes are a mix of categorical and quantitative values_. This distance is scaled in a numerical range of 0 (identical) and 1 (maximally dissimilar). The details about the mathematics of Gower distance are quite complicated and left out for another article.
+
+In R, the Gower distance can be calculated using the `cluster::daisy()` function. Before we use the `daisy()` function, we observe the distribution of the numerical variables to understand if any of them need transformations. We find that the variable amount needs a log transformation due to the positive skew in its distribution.
+
+The following code shows the implementation of the Gower distance calculation. Note that we have specified `2` as the parameter in the type argument. This ensures that the second variable, amount undergoes a log transformation before the Gower calculations are performed.
+```{r}
+gower_df <- cluster::daisy(german_credit_clean,
+                           metric = "gower" ,
+                           type = list(logratio = 2))
+```
+
+Next, we check the summary of the `gower_df` data frame. The type `I` and `N` tell us whether the respective columns are interval-scaled (numerical), or nominal.
+
+```{r}
+summary(gower_df)
+```
+
+
+## K-medoids and Partitioning Around Medoids
+
+Now that we have a distance matrix in place, we need to choose a clustering algorithm to infer similarities/dissimilarities from these distances. Just like K-means and hierarchical algorithms go hand-in-hand with Euclidean distance, the _Partitioning Around Medoids (PAM) algorithm goes along with the Gower distance_. PAM is an iterative clustering procedure just like the K-means, but with some slight differences. Instead of centroids in K-means clustering, PAM iterates over and over until the medoids don't change their positions. The medoid of a cluster is a member of the cluster which is representative of the median of all the attributes under consideration.
+
+### Silhouette Width to select the optimal number of clusters
+
+The silhouette width is one of the very popular choices when it comes to selecting the optimal number of clusters. It measures the similarity of each point to its cluster, and compares that to the similarity of the point with the closest neighboring cluster. This metric ranges between -1 to 1, where a higher value implies better similarity of the points to their clusters. Therefore, a higher value of the Silhouette Width is desirable. We calculate this metric for a range of cluster numbers and find where it is maximized. The following code shows the implementation in R:
+```{r}
+silhouette <- c()
+silhouette = c(silhouette, NA)
+for(i in 2:10){
+  pam_clusters = pam(as.matrix(gower_df),
+                 diss = TRUE,
+                 k = i)
+  silhouette = c(silhouette ,pam_clusters$silinfo$avg.width)
+}
+```
+
+The silhouette width is plotted versus the number of clusters, as shown:
+
+```{r}
+plot(1:10, silhouette,
+     xlab = "Clusters",
+     ylab = "Silhouette Width")
+lines(1:10, silhouette)
+```
+
+As can be seen, the value is maximized at 5. Hence, we can conclude that clustering the data into 5 clusters gives us the best segmentation possible. Having said that, we construct a PAM model with 5 clusters, and try to interpret the behavior of these clusters with the help of the medoids.
+```{r}
+pam_german = pam(gower_df, diss = TRUE, k = 5)
+german_credit_clean[pam_german$medoids, ]
+```
+
+The figure above shows the medoids table, where each row represents a cluster. Using this table, we can infer that customers belonging to Cluster 1 have the following characteristics: the duration is 15 months, the credit amount is 1829$, the installment rate is 4, they have been living in the present residence since 4 months, their average age is 46 years, they have 2 loans pending, they have 1 dependent, they have no checking account (A14), their credit history is critical (A34), they are male singles (A93), they have a car as their property (A123), live in their own housing (A152), and have been employed for more or equal to 7 years (A75). Please note that not all customers will be exactly like this; and that the medoids are only a representation of the median values.
+
+Similar interpretations can be made for the other clusters. To dig deeper into the characteristics of each cluster, we find the summary stats. The R code for the same is as shown below, along with the statistics for the first cluster.
+
+``` {r}
+pam_summary <- german_credit_clean %>%
+  mutate(cluster = pam_german$clustering) %>%
+  group_by(cluster) %>%
+  do(cluster_summary = summary(.))
+pam_summary$cluster_summary[[1]]
+```
+
+## Visualization
+
+Finally, let us wrap this article up with some fancy visualizations. For this, we use the t-SNE or the t-Distributed Stochastic Neighbor Embedding technique. This technique provides a great way to visualize a multi-dimensional data set such as the one we are working on.
+
+``` {r}
+tsne_object <- Rtsne::Rtsne(gower_df, is_distance = TRUE)
+tsne_df <- tsne_object$Y %>%
+  data.frame() %>%
+  setNames(c("X", "Y")) %>%
+  mutate(cluster = factor(pam_german$clustering))
+ggplot(aes(x = X, y = Y), data = tsne_df) +
+  geom_point(aes(color = cluster))
+```
+
+As we can see, t-SNE has helped us visualize multi-dimensional data into a simple two-dimensional plot. Although the clusters seem to have some overlap, they are pretty distinctive overall.
+
+This brings us to the end of this article. Summarizing, we discussed the concepts of Gower distance, PAM clustering, and Silhouette width to cluster data having both numerical and categorical features. Hope this helps all the data people around here who come across such data sets.
+
+Happy Clustering!

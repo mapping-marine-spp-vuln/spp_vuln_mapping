@@ -7,6 +7,7 @@ To Do:
     * K-means clustering
     * PAM clustering (Partitioning Around Medioids)
     * Clustering by Similarity Aggregation (Condorcet method)?
+    * Gaussian mixture models?
 * [] How to deal with fishing?
 * Mapping ideas:
     * [] mean CHI in each cell; mean CHI adjusted by range size?
