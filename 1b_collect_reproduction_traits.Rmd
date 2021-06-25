@@ -35,6 +35,10 @@ spp_from_worms <- get_worms()
 
 Gather data on reproductive traits from FishBase and the species vulnerability project: Max fecundity, generation time, parental care (pre-birth/hatch), parental dependence (post-birth/hatch), PLD.  Gapfill using downfill and upstream-downstream gapfill methodology.  Finally use PCA to reduce dimensionality across multiple traits, keeping the first two components.
 
+NOTE: from https://journals.plos.org/ploscompbiol/article?id=10.1371/journal.pcbi.1006907:
+
+> On the other hand, if the mixed dataset contains a large number of categorical variables, multiple factor analysis (MFA) [31] can be used. The method applies PCA on numerical and MCA on categorical variables and combines the results by weighing variable groups.
+
 # Data
 
 This script will use processed valid species traits from the species vulnerability project, plus FishBase and SeaLifeBase.
