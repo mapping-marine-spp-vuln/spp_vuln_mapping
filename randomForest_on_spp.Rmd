@@ -69,10 +69,10 @@ traits_dropna <- traits_df %>%
 holdout <- sample(1:nrow(traits_dropna), nrow(traits_dropna)/3, replace = FALSE)
 
 valid <- traits_dropna[holdout, ]
-train <- traits_dropna[-holdout, ]
+train <- traits_dropna[-holdout, ] # %>% sample_n(1000)
 ```
 
-Because we have nine predictor variables, select `mtry = 3` at a time ($\sqrt{\text{# of traits}}$).  Note randomForest seems to scale ~ $n^{1.9}$ (on my laptop - may be different on Mazu?)
+Because we have nine predictor variables, select `mtry = 3` at a time ($\sqrt{\text{# of traits}}$).  Note randomForest seems to scale ~ $n^{1.9}$ (on my laptop - but about the same on Mazu)
 ``` {r supervised random forest}
 ### for ntree = 1000:
 ###     n =  1000, t =   1.981
@@ -93,12 +93,12 @@ ggplot(df, aes(x = n, y = t)) +
   geom_line(aes(y = ln_fit), color = 'red') +
   labs(x = 'number of spp obs', y = 'RF processing time (s)')
 
-# system.time({
+system.time({
   sup_rf_class <- randomForest(x = train %>% 
                                  select(where(is.numeric)), 
                                y = factor(train$class), ### dependent must be factor 
                                mtry = 3, ntree = 1000, proximity = TRUE)
-# })
+})
 sup_rf_class
 varImpPlot(sup_rf_class)
 ```
@@ -111,7 +111,7 @@ valid_df <- data.frame(orig = valid$class, pred = class_predicted)
 confusionMatrix(table(valid_df$orig, valid_df$pred))
 ```
 
-Supervised RF does a great job of predicting a species' class based on the traits given.  What will happen when we run an unsupervised RF to inform a clustering algorithm?
+Supervised RF seems to do a great job of predicting a species' class based on the traits given.  What will happen when we run an unsupervised RF to inform a clustering algorithm?
 
 # Unsupervised Random Forest
 
@@ -133,19 +133,24 @@ varImpPlot(unsup_rf)
 
 ### Knee method
 
-Iterate over different values of $k$ and identify a "knee".  Since we will be using Partitioning Around Medioids method, look for a knee using that method.
-``` {r knee method}
+Iterate over different values of $k$ and identify a "knee".  When looking for a large number of clusters, however, it seems like this method is not super useful...
+``` {r knee method, eval = FALSE}
 set.seed(42)
 wss <- function(k, mtx) {
   # cluster::pam(mtx, k, diss = TRUE)
   kmeans(mtx, k, nstart = 10)$tot.withinss
 }
 
-dist_mtx <- as.dist(1 - unsup_rf$proximity)
-dist_mtx <- dist_mtx[1:1000, 1:1000]
+prox_mtx <- unsup_rf$proximity
+prox_mtx1 <- prox_mtx[1:1000, 1:1000]
+
+dist_mtx <- as.dist(1 - prox_mtx)
+dist_mtx1 <- as.dist(1 - prox_mtx1)
+
 # Compute and plot wss for a range of k
 k_vec <- 1:20
-wss_values <- sapply(k_vec, wss, mtx = dist_mtx1)
+wss_values <- parallel::mclapply(k_vec, wss, mtx = dist_mtx, mc.cores = 5) %>%
+  unlist()
 
 plot(k_vec, wss_values,
      type="b", pch = 19, frame = FALSE, 
