@@ -1,0 +1,316 @@
+---
+title: "Assemble grouping traits"
+author: "*Compiled on `r date()` by `r Sys.info()['user']`*"
+output: 
+  html_document:
+    code_folding: hide
+    toc: true
+    toc_depth: 3
+    toc_float: yes
+    number_sections: true
+    theme: cerulean
+    highlight: haddock
+    includes: 
+      in_header: '~/github/src/templates/ohara_hdr.html'
+  pdf_document:
+    toc: true
+---
+
+``` {r setup, echo = TRUE, message = FALSE, warning = FALSE}
+
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
+
+library(oharac)
+oharac::setup()
+library(randomForest)
+library(cluster)
+library(caret)
+library(factoextra)
+library(ggfortify)
+source(here('fb_slb_fxns.R'))
+
+
+```
+
+# Summary
+
+Gather processed traits data and assemble into a dataframe.  Apply a clustering algorithm to identify groupings: first, use Random Forest to create a dissimilarity matrix, then use Hierarchical clustering to identify groups of similar species.
+
+# Data
+
+See individual trait scripts.
+
+# Methods
+
+## Assemble dataframe
+
+Let's limit to observations with mean gapfill of rank 3 (family) or lower.  For now this gets us 17k observations.  Limiting that to rank 4 (order) or lower gets us 64k observations, or perhaps it is more efficient to gapfill groups upwards?  For Random Forest, use all traits in their rawest form (though there is some gapfilling already occurring in the trait prep scripts).
+
+```{r assemble raw traits}
+gf_cut <- 3
+
+trait_length <- read_csv(here('_data/traits_grouping/trait_length.csv')) %>%
+  filter(gf_level <= gf_cut) %>%
+  select(species, log_l = value)
+trait_reprod <- read_csv(here('_data/traits_grouping/trait_reproduction_raw.csv')) %>%
+  filter(gf_level <= gf_cut) %>%
+  select(species, depend_score, log_gen_time, log_max_fecund, pld_score, protect_score)
+trait_depth  <- read_csv(here('_data/traits_grouping/trait_depth_raw.csv')) %>%
+  filter(gf_level <= gf_cut) %>%
+  select(species, depth, terr_score, vert_mig_score)
+trait_mobil  <- read_csv(here('_data/traits_grouping/trait_mobility.csv')) %>%
+  filter(gf_level <= gf_cut) %>%
+  select(species, mob_score = value)
+trait_troph  <- read_csv(here('_data/traits_grouping/trait_trophic_level.csv')) %>%
+  filter(gf_level <= gf_cut) %>%
+  select(species, troph_level = value)
+traits_df <- trait_length %>%
+  full_join(trait_reprod) %>%
+  full_join(trait_depth) %>%
+  full_join(trait_mobil) %>%
+  full_join(trait_troph)
+```
+
+
+## Supervised Random Forest
+
+Let's try a supervised random forest to classify into some taxonomic level, e.g., class.
+
+```{r attach taxa}
+taxa <- read_csv(here('_data/vuln_data/vuln_gapfilled_tx.csv')) %>%
+  select(class:species) 
+  
+traits_dropna <- traits_df %>%
+  left_join(taxa, by = 'species') %>%
+  drop_na()
+### leaves only 17008 observations...
+```
+
+``` {r split into training and validation}
+### split training and validation sets
+holdout <- sample(1:nrow(traits_dropna), nrow(traits_dropna)/3, replace = FALSE)
+
+valid <- traits_dropna[holdout, ]
+train <- traits_dropna[-holdout, ] # %>% sample_n(1000)
+```
+
+```{r plot scaling factor}
+### for ntree = 1000:
+###     n =  1000, t =   1.981
+###     n =  2000, t =   6.886
+###     n =  3000, t =  14.739
+###     n =  4000, t =  25.421
+###     n =  5000, t =  40.262
+###     n =  8000, t = 106.578
+###     n = 11339, t = 199.23
+n <- c(1000,  2000,  3000, 4000, 5000, 8000, 11339)
+t <- c(1.981, 6.886, 14.739, 25.421, 40.262, 106.578, 199.23)
+power_fit <- lm(log(t) ~ log(n))$coefficients[2]
+
+### slope = power
+df1 <- data.frame(n, t) 
+df2 <- data.frame(n = seq(0, 12000, 50)) %>%
+  mutate(ln_fit = 1.981*(n/1000)^power_fit)
+ggplot(df1, aes(x = n, y = t)) +
+  geom_line(data = df2, aes(y = ln_fit), color = 'red') +
+  geom_point() +
+  labs(x = 'number of spp obs', y = 'RF processing time (s)')
+
+```
+
+Because we have nine predictor variables, select `mtry = 3` at a time ($\sqrt{\text{# of traits}}$).  Based on some trials, it seems as if `randomForest()` scales at ~$n^{1.92}$
+
+``` {r supervised random forest}
+set.seed(42)
+system.time({
+  sup_rf_class <- randomForest(x = train %>% 
+                                 select(where(is.numeric)), 
+                               y = factor(train$class), ### dependent must be factor 
+                               mtry = 3, ntree = 1000, proximity = TRUE)
+})
+sup_rf_class
+varImpPlot(sup_rf_class)
+```
+
+``` {r use supervised RF results to predict class on validation set}
+# predict on test set
+class_predicted <- predict(sup_rf_class, valid %>% select(where(is.numeric)))
+valid_df <- data.frame(orig = valid$class, pred = class_predicted)
+
+confusionMatrix(table(valid_df$orig, valid_df$pred))
+```
+
+Supervised RF seems to do a great job of predicting a species' class based on the traits given (99.8% accuracy).  What will happen when we run an unsupervised RF to inform a clustering algorithm?
+
+## Unsupervised Random Forest
+
+Let's apply the process to the traits dataframe, without supervision, to create a proximity matrix.  NOTE: This seems about half the speed of the supervised?
+
+```{r unsup_rf}
+### n = 1000, t = 3.663; n = 2000, t = 10.096; n = 17008, t = 477.686
+system.time({
+  unsup_rf <- randomForest(x = traits_dropna %>% 
+                             ### drop two least important vars
+                             select(-terr_score, -vert_mig_score) %>%
+                             # sample_n(2000) %>%
+                             select(where(is.numeric)),
+                           mtry = 3, ntree = 1000, proximity = TRUE)
+})
+unsup_rf
+varImpPlot(unsup_rf)
+```
+
+For the subset of species with mean gapfill level of 3 or less, the following traits score low on MeanDecreaseGini:
+
+* depth (~900)
+* depend_score (~450)
+* vert_mig_score (~100)
+* terr_score (~100)
+
+Once clusters have been identified with the full trait space, repeat while dropping low-importance variables to see how clusters are affected...
+
+## Hierarchical clustering
+
+### Notes on clustering techniques:
+
+With the results of the unsupervised Random Forest, we tried clustering in two ways: Partitioning Around Medioids (which seems standard for Random Forest examples), and Hierarchical clustering (which also appears in some Random Forest examples).  For these we identified a reasonable number of clusters and compared results; the most similar clusters scored about 80%  on Jaccard similarity index.  But hierarchical clustering was far faster, and seems very defensible.
+
+#### K-means?
+
+K-means does not seem appropriate for RF proximity/dissimilarity, since it relies on euclidean distances rather than a dissimilarity matrix.
+
+#### PAM?
+
+From `pam()` documentation: 
+
+>For large datasets, `pam` may need too much memory or too much computation time since both are $O(n^2)$. Then, `clara()` is preferable, see its documentation.
+
+However, the `clara()` function looks like it wants a data matrix/frame with columns for variables, rather than a dissimilarity/distance matrix.
+
+Some arguments to `pam()` sped up the clustering process by orders of magnitude, especially `do.swap = FALSE` and `pamonce = 6`.
+
+### identify an appropriate number of clusters
+
+While hierarchical clustering doesn't necessarily result in a specific number of clusters, we want to group species into discrete clusters as proxies for functional diversity.  The silhouette method seems standard, and applicable across different clustering methods (counterexample, the gap statistic method seems to require Euclidean distances, which Random Forest does not provide(?))
+
+We can use the Silhouette method for examining the relationship between number of clusters and average silhouette width.
+
+From https://uc-r.github.io/kmeans_clustering:
+
+> In short, the average silhouette approach measures the quality of a clustering. That is, it determines how well each object lies within its cluster. A high average silhouette width indicates a good clustering. The average silhouette method computes the average silhouette of observations for different values of _k_. The optimal number of clusters _k_ is the one that maximizes the average silhouette over a range of possible values for _k_.
+
+```{r silhouette functions}
+avg_sil_hcl <- function(k, HC, DM) {
+  ### k <- 6
+  hclust_tree <- cutree(HC, k = k)
+  ss <- silhouette(hclust_tree, dmatrix = DM)
+  mean_sil_w <- mean(ss[, 'sil_width'])
+}
+
+loop_over_clusts <- function(k_vec = 6:200, HC, DM) {
+  message('Calculating hclust silhouette for ', nrow(traits_dropna), 
+          ' observations (gapfill = ', gf_cut, ')')
+    
+  avg_sil <- parallel::mclapply(k_vec, 
+                                FUN = avg_sil_hcl, 
+                                HC = HC,
+                                DM = DM,
+                                mc.cores = 8)
+  avg_sil_val_vec <- unlist(avg_sil)
+  
+  silh_df <- data.frame(k = k_vec, silh = avg_sil_val_vec)
+  return(silh_df)
+}
+```
+
+```{r silhouette method hclust}
+### generate a dissimilarity matrix from the unsupervised random forest output.
+prox_mtx <- unsup_rf$proximity
+dissim_mtx <- 1 - prox_mtx
+dist_mtx <- as.dist(dissim_mtx, diag = TRUE, upper = TRUE)
+
+rf_hclust_ward1 <- hclust(dist_mtx, method = 'ward.D')
+rf_hclust_ward2 <- hclust(dist_mtx, method = 'ward.D2')
+rf_hclust_compl <- hclust(dist_mtx, method = 'complete')
+rf_hclust_singl <- hclust(dist_mtx, method = 'single')
+rf_hclust_avg   <- hclust(dist_mtx, method = 'average')
+### from help: Ward's minimum variance method aims at finding compact, 
+### spherical clusters. The complete linkage method finds similar clusters. 
+### The single linkage method (which is closely related to the minimal 
+### spanning tree) adopts a ‘friends of friends’ clustering strategy. The
+### other methods can be regarded as aiming for clusters with characteristics 
+### somewhere between the single and complete link methods
+
+silh_df_ward1 <- loop_over_clusts(HC = rf_hclust_ward1,
+                                  DM = dissim_mtx)
+p1 <- ggplot(silh_df_ward1, aes(x = k, y = silh)) +
+  geom_point() +
+  labs(x = "Number of clusters K, method = ward.D",
+       y = "Average Silhouette (hierarch cluster)") +
+  ylim(c(0, NA)) +
+  theme_minimal()
+
+silh_df_ward2 <- loop_over_clusts(HC = rf_hclust_ward2,
+                                  DM = dissim_mtx)
+p2 <- ggplot(silh_df_ward2, aes(x = k, y = silh)) +
+  geom_point() +
+  labs(x = "Number of clusters K, method = ward.D2",
+       y = "Average Silhouette (hierarch cluster)") +
+  ylim(c(0, NA)) +
+  theme_minimal()
+
+silh_df_compl <- loop_over_clusts(HC = rf_hclust_compl,
+                                  DM = dissim_mtx)
+p3 <- ggplot(silh_df_compl, aes(x = k, y = silh)) +
+  geom_point() +
+  labs(x = "Number of clusters K, method = complete",
+       y = "Average Silhouette (hierarch cluster)") +
+  ylim(c(0, NA)) +
+  theme_minimal()
+
+silh_df_singl <- loop_over_clusts(HC = rf_hclust_singl,
+                                  DM = dissim_mtx)
+p4 <- ggplot(silh_df_singl, aes(x = k, y = silh)) +
+  geom_point() +
+  labs(x = "Number of clusters K, method = single",
+       y = "Average Silhouette (hierarch cluster)") +
+  ylim(c(0, NA)) +
+  theme_minimal()
+
+silh_df_avg <- loop_over_clusts(HC = rf_hclust_avg,
+                                DM = dissim_mtx)
+
+silh_df_compare <- silh_df_ward1 %>%
+  rename(ward_D = silh) %>%
+  full_join(silh_df_ward2 %>% rename(ward_D2 = silh)) %>%
+  full_join(silh_df_avg %>% rename(average = silh)) %>%
+  full_join(silh_df_compl %>% rename(complete = silh)) %>%
+  full_join(silh_df_singl %>% rename(single = silh)) %>%
+  gather(method, silh, -k)
+ggplot(silh_df_compare, aes(x = k, y = silh, color = method)) +
+  geom_point() +
+  labs(x = "Number of clusters K",
+       y = "Average Silhouette (hierarch cluster)") +
+  ylim(c(0, NA)) +
+  theme_minimal()
+
+ggsave('figs/silhouette_plot.png')
+```
+
+#### Plot of silhouettes including all traits
+
+`r knitr::include_graphics('figs/silhouette_plot_all_vars.png')`
+
+Clustering using different methods (Ward's Distance 1 and 2, average, complete linkage, single linkage) from six up to 200 different clusters across the full set of traits (no least-important traits dropped), some observations:
+
+* Wards D and D2 start near 0.15 and continue to increase with number of clusters; there are some little downward blips here and there (30-50 for D and ~170 for D2). They both approach 0.5 by the time 200 clusters have been reached and appear to still be increasing.
+* Complete linkage shows discrete jumps at certain numbers of clusters, jumping to about 0.2 at 50 clusters, and then unevenly increasing to about 0.4 at 200 clusters.
+* Single linkage starts near 0.025 and jumps up unevenly to about 0.04 at 40 clusters, and about 0.2 at around 180 clusters.
+* Average linkage increases to about .18 by 50 clusters, about .35 by 200 clusters.
+
+From this, the Wards distance methods show tighter clusters as evident from consistently higher silhouette scores.
+
+#### Plot of silhouettes dropping least important traits
+
+`vert_mig_score` and `terr_score` showed very small effects on reducing Gini scores
+

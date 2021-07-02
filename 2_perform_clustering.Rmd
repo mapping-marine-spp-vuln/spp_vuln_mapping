@@ -197,20 +197,7 @@ From https://uc-r.github.io/kmeans_clustering:
 
 > In short, the average silhouette approach measures the quality of a clustering. That is, it determines how well each object lies within its cluster. A high average silhouette width indicates a good clustering. The average silhouette method computes the average silhouette of observations for different values of _k_. The optimal number of clusters _k_ is the one that maximizes the average silhouette over a range of possible values for _k_.
 
-```{r silhouette method hclust}
-### generate a dissimilarity matrix from the unsupervised random forest output.
-prox_mtx <- unsup_rf$proximity
-dissim_mtx <- 1 - prox_mtx
-dist_mtx <- as.dist(dissim_mtx, diag = TRUE, upper = TRUE)
-
-dissim_hclust <- hclust(dist_mtx, method = 'ward.D2')
-### from help: Ward's minimum variance method aims at finding compact, 
-### spherical clusters. The complete linkage method finds similar clusters. 
-### The single linkage method (which is closely related to the minimal 
-### spanning tree) adopts a ‘friends of friends’ clustering strategy. The
-### other methods can be regarded as aiming for clusters with characteristics 
-### somewhere between the single and complete link methods
-
+```{r silhouette functions}
 avg_sil_hcl <- function(k, HC, DM) {
   ### k <- 6
   hclust_tree <- cutree(HC, k = k)
@@ -218,29 +205,93 @@ avg_sil_hcl <- function(k, HC, DM) {
   mean_sil_w <- mean(ss[, 'sil_width'])
 }
 
-message('Calculating hclust silhouette for ', nrow(traits_dropna), 
-        ' observations (gapfill = ', gf_cut, ')')
-# Compute and plot silhouette for a range of K values
-k_vec <- 6:40
-avg_sil_values <- parallel::mclapply(k_vec, 
-                                     FUN = avg_sil_hcl, 
-                                     HC = dissim_hclust,
-                                     DM = dissim_mtx,
-                                     mc.cores = 16)
-avg_sil_val_vec <- unlist(avg_sil_values)
+loop_over_clusts <- function(k_vec = 6:200, HC, DM) {
+  message('Calculating hclust silhouette for ', nrow(traits_dropna), 
+          ' observations (gapfill = ', gf_cut, ')')
+    
+  avg_sil <- parallel::mclapply(k_vec, 
+                                FUN = avg_sil_hcl, 
+                                HC = HC,
+                                DM = DM,
+                                mc.cores = 8)
+  avg_sil_val_vec <- unlist(avg_sil)
+  
+  silh_df <- data.frame(k = k_vec, silh = avg_sil_val_vec)
+  return(silh_df)
+}
+```
 
-silh_df <- data.frame(k = k_vec, silh = avg_sil_val_vec)
+```{r silhouette method hclust}
+### generate a dissimilarity matrix from the unsupervised random forest output.
+prox_mtx <- unsup_rf$proximity
+dissim_mtx <- 1 - prox_mtx
+dist_mtx <- as.dist(dissim_mtx, diag = TRUE, upper = TRUE)
 
-ggplot(silh_df, aes(x = k, y = silh)) +
+rf_hclust_ward1 <- hclust(dist_mtx, method = 'ward.D')
+rf_hclust_ward2 <- hclust(dist_mtx, method = 'ward.D2')
+rf_hclust_compl <- hclust(dist_mtx, method = 'complete')
+rf_hclust_singl <- hclust(dist_mtx, method = 'single')
+rf_hclust_avg   <- hclust(dist_mtx, method = 'average')
+### from help: Ward's minimum variance method aims at finding compact, 
+### spherical clusters. The complete linkage method finds similar clusters. 
+### The single linkage method (which is closely related to the minimal 
+### spanning tree) adopts a ‘friends of friends’ clustering strategy. The
+### other methods can be regarded as aiming for clusters with characteristics 
+### somewhere between the single and complete link methods
+
+silh_df_ward1 <- loop_over_clusts(HC = rf_hclust_ward1,
+                                  DM = dissim_mtx)
+ggplot(silh_df_ward1, aes(x = k, y = silh)) +
   geom_point() +
-  labs(x = "Number of clusters K",
+  labs(x = "Number of clusters K, method = ward.D",
+       y = "Average Silhouette (hierarch cluster)") +
+  ylim(c(0, NA)) +
+  theme_minimal()
+
+silh_df_ward2 <- loop_over_clusts(HC = rf_hclust_ward2,
+                                  DM = dissim_mtx)
+ggplot(silh_df_ward2, aes(x = k, y = silh)) +
+  geom_point() +
+  labs(x = "Number of clusters K, method = ward.D2",
+       y = "Average Silhouette (hierarch cluster)") +
+  ylim(c(0, NA)) +
+  theme_minimal()
+
+silh_df_compl <- loop_over_clusts(HC = rf_hclust_compl,
+                                  DM = dissim_mtx)
+ggplot(silh_df_compl, aes(x = k, y = silh)) +
+  geom_point() +
+  labs(x = "Number of clusters K, method = complete",
+       y = "Average Silhouette (hierarch cluster)") +
+  ylim(c(0, NA)) +
+  theme_minimal()
+
+silh_df_singl <- loop_over_clusts(HC = rf_hclust_singl,
+                                  DM = dissim_mtx)
+ggplot(silh_df_singl, aes(x = k, y = silh)) +
+  geom_point() +
+  labs(x = "Number of clusters K, method = single",
+       y = "Average Silhouette (hierarch cluster)") +
+  ylim(c(0, NA)) +
+  theme_minimal()
+
+silh_df_avg <- loop_over_clusts(HC = rf_hclust_avg,
+                                DM = dissim_mtx)
+ggplot(silh_df_avg, aes(x = k, y = silh)) +
+  geom_point() +
+  labs(x = "Number of clusters K, method = average",
        y = "Average Silhouette (hierarch cluster)") +
   ylim(c(0, NA)) +
   theme_minimal()
 
 ```
 
-Even going out to 100 clusters, the silhouette continues to steadily increase.  But around 28 clusters, that little dip seems like a reason to cut off there...?  Let's cluster based on a few numbers (16, 24, 28, 32, 40 clusters) just to see how sensitive the groupings are to number of clusters.
+Clustering using different methods (Ward's Distance 1 and 2, average, complete linkage, single linkage) from six up to 200 different clusters across the full set of traits (no least-important traits dropped), some observations:
+
+* Wards D and D2 start near 0.15 and continue to increase with number of clusters
+* Complete linkage shows discrete jumps at certain numbers of clusters
+* Single linkage starts near 0.04 and hovers close
+
 
 ### Clustering based on optimal number of clusters
 
@@ -250,12 +301,6 @@ dissim_mtx <- 1 - prox_mtx
 dist_mtx <- as.dist(dissim_mtx, diag = TRUE, upper = TRUE)
 
 rf_hclust <- hclust(dist_mtx, method = 'ward.D2')
-### from help: Ward's minimum variance method aims at finding compact, 
-### spherical clusters. The complete linkage method finds similar clusters. 
-### The single linkage method (which is closely related to the minimal 
-### spanning tree) adopts a ‘friends of friends’ clustering strategy. The
-### other methods can be regarded as aiming for clusters with characteristics 
-### somewhere between the single and complete link methods
 
 hclust_16 <- cutree(rf_hclust, k = 16)
 hclust_24 <- cutree(rf_hclust, k = 24)
