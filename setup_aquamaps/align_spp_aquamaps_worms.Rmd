@@ -1,0 +1,174 @@
+---
+title: "Align species names between AquaMaps and WoRMS"
+author: "*Compiled on `r date()` by `r Sys.info()['user']`*"
+output: 
+  html_document:
+    code_folding: hide
+    toc: true
+    toc_depth: 3
+    toc_float: yes
+    number_sections: true
+    theme: cerulean
+    highlight: haddock
+    includes: 
+      in_header: '~/github/src/templates/ohara_hdr.html'
+  pdf_document:
+    toc: true
+---
+
+``` {r setup, echo = TRUE, message = FALSE, warning = FALSE}
+
+knitr::opts_chunk$set(fig.width = 6, fig.height = 4, fig.path = 'figs/',
+                      echo = TRUE, message = FALSE, warning = FALSE)
+
+library(raster)
+library(oharac)
+library(taxize)
+library(fuzzyjoin)
+oharac::setup()
+am_dir <- '/home/shares/ohi/git-annex/aquamaps_2021'
+source(here('worms_fxns.R'))
+```
+
+# Summary
+
+Read in AquaMaps species list, compare to WoRMS list.  Resolve any differences using `taxize` functionality.
+
+# Methods
+
+## Read in species lists
+
+The AquaMaps species list is found in the AquaMaps `speciesoccursum` file.  The full WoRMS list can be assembled using the lookups of kingdom -> phylum -> class -> order -> family -> genus -> species (using the `assemble_worms()` function from `worms_fxns.R`)
+
+```{r}
+am_spp_info <- data.table::fread(file.path(am_dir, 'ver10_2019_speciesoccursum_iucn.csv')) %>%
+  janitor::clean_names() %>%
+  rename(am_sid = species_id, iucn_sid = iucn_id, comname = f_bname) %>%
+  mutate(species = tolower(paste(genus, species))) %>%
+  select(am_sid, comname, occur_cells,
+         am_k = kingdom, am_p = phylum, am_c = class, 
+         am_o = order, am_f = family, am_g = genus, species) %>%
+  mutate(across(starts_with('am_'), tolower))
+
+worms_spp <- assemble_worms()
+```
+
+```{r}
+am_spp_subspp <- am_spp_info %>%
+  mutate(subspp = ifelse(str_detect(species, ' [a-z]+ '), str_remove(species, '.[a-z]+.? [a-z]+ '), NA),
+         ### drop subspecies name from species name: 
+         species = ifelse(!is.na(subspp), str_remove(species, ' [a-z]+$'), species),
+         ### drop "var." note
+         species = str_remove(species, ' var\\.$') %>% str_trim())
+
+am_spp_match <- am_spp_info %>%
+  inner_join(worms_spp, by = 'species')
+am_spp_match2 <- am_spp_subspp %>%
+  inner_join(worms_spp, by = 'species')
+
+am_spp_nomatch <- am_spp_subspp %>%
+  filter(!am_sid %in% am_spp_match2$am_sid)
+ 
+```
+
+There are `r nrow(am_spp_match)` direct matches with no modification needed, with an additional `r nrow(am_spp_match2) - nrow(am_spp_match)` matching when a subspecies name is dropped.  There are `r nrow(am_spp_nomatch)` AquaMaps species that do not immediately match up with species listed in WoRMS.  Of the non-matches, breakdown by kingdom:
+
+`r table(am_spp_nomatch$am_k)`
+
+## Try fuzzy join to identify small mismatches
+
+Use the `fuzzyjoin::stringdist_left_join()` function to try to match those AquaMaps species with near matches in the WoRMS list.  Set up a chunk-based system to take advantage of `mclapply()` because fuzzy joining is SLOOOWWW.
+
+```{r}
+fuzzymatch_file <- here('int/fuzzymatch_spp_am_worms_raw.csv')
+
+### trim full WoRMS set down to just those genera represented in the non-
+### matching dataframe... fewer possibilities should mean faster fuzzy join!
+worms_genus_spp <- worms_spp %>%
+  filter(genus %in% am_spp_nomatch$am_g)
+
+if(!file.exists(fuzzymatch_file)) {
+  chunk_size <- 20
+  n_chunks <- ceiling(nrow(am_spp_nomatch) / chunk_size)
+  tmp <- parallel::mclapply(1:n_chunks, 
+                            mc.cores = 1, ### doesn't work with >1 core???
+    FUN = function(i) {
+    # for(i in 1:n_chunks) {
+      ### i <- 2
+      min_index <- (i - 1) * chunk_size + 1
+      max_index <- min(i * chunk_size, nrow(am_spp_nomatch))
+      chunk_file <- sprintf(here('tmp/fuzzymatch_spp_chunk_%s_%s.csv'), min_index, max_index)
+      if(!file.exists(chunk_file)) {
+        message('Processing ', basename(chunk_file))
+        fuzzymatch_chunk <- am_spp_nomatch[min_index:max_index, ]
+        fuzzyjoin_result <- fuzzymatch_chunk %>% 
+          stringdist_left_join(worms_genus_spp, by = 'species', 
+                               max_dist = 2, distance_col = 'd')
+        write_csv(fuzzyjoin_result, chunk_file)
+      } else {
+        message('File exists: ', basename(chunk_file), '... skipping!')
+      }
+    })
+  
+  ### gather all temp chunk files and bind 'em together
+  fs <- list.files(here('tmp'), pattern = 'fuzzymatch_spp_chunk', full.names = TRUE)
+  fuzzymatch_all <- parallel::mclapply(fs, mc.cores = 20, 
+                    FUN = function(f) {
+                      read_csv(f, col_types = cols(.default = 'c'))
+                    }) %>%
+    bind_rows() %>%
+    mutate(occur_cells = as.integer(occur_cells), d = as.numeric(d)) %>%
+    filter(!is.na(d)) %>%
+    filter(genus == am_g)
+  
+  write_csv(fuzzymatch_all, fuzzymatch_file)
+}
+```
+
+
+## Resolve class/order/family/genus names
+
+It may be that a mismatch occurs at a higher rank due to different accepted names.  Check the mismatches that the higher-order names are found within the WoRMS data, and resolve any that are not using a multi-core implementation of `taxize::classification()`.  Focus on genus first, as it can be directly responsible for a mismatch.
+
+```{r check genus}
+gen_mismatch <- am_spp_nomatch %>%
+  filter(!am_g %in% worms_spp$genus) %>%
+  .$am_g %>% unique() %>% sort()
+
+# genus_syn_file <- here('tmp/genus_synonyms.csv')
+# if(!file.exists(genus_syn_file)) {
+#   chunk_size <- 20
+#   n_chunks <- ceiling(length(gen_mismatch) / chunk_size)
+#   for(i in 1:n_chunks) {
+#     ### i <- 1
+#     min_index <- (i - 1) * chunk_size + 1
+#     max_index <- min(i * chunk_size, length(gen_mismatch))
+#     chunk_file <- sprintf(here('tmp/genus_syn_chunk_%s_%s.csv'), min_index, max_index)
+#     if(!file.exists(chunk_file)) {
+#       gen_names_chunk <- gen_mismatch[min_index:max_index]
+#       gen_syn <- synonyms(gen_names_chunk, db = 'worms') %>%
+#         synonyms_df()
+#       write_csv(gen_syn, chunk_file)
+#     }
+#       
+#   }
+#   write_csv(genus_syn, genus_syn_file)
+# }
+# genus_syn <- read_csv(genus_syn_file)
+
+```
+
+```{r check higher ranks}
+cls_mismatch <- am_spp_nomatch %>%
+  filter(!am_c %in% worms_spp$class) %>%
+  .$am_c %>% unique()
+
+ord_mismatch <- am_spp_nomatch %>%
+  filter(!am_o %in% worms_spp$order) %>%
+  .$am_o %>% unique()
+
+fam_mismatch <- am_spp_nomatch %>%
+  filter(!am_f %in% worms_spp$family) %>%
+  .$am_f %>% unique()
+
+```

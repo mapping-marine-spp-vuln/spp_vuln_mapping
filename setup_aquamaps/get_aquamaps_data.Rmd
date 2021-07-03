@@ -1,0 +1,164 @@
+---
+title: "Read AquaMaps data"
+author: "*Compiled on `r date()` by `r Sys.info()['user']`*"
+output: 
+  html_document:
+    code_folding: hide
+    toc: true
+    toc_depth: 3
+    toc_float: yes
+    number_sections: true
+    theme: cerulean
+    highlight: haddock
+    includes: 
+      in_header: '~/github/src/templates/ohara_hdr.html'
+  pdf_document:
+    toc: true
+---
+
+``` {r setup, echo = TRUE, message = FALSE, warning = FALSE}
+
+knitr::opts_chunk$set(fig.width = 6, fig.height = 4, fig.path = 'figs/',
+                      echo = TRUE, message = FALSE, warning = FALSE)
+
+library(raster)
+source('https://raw.githubusercontent.com/oharac/src/master/R/common.R')
+am_dir <- '/home/shares/ohi/git-annex/aquamaps_2021'
+```
+
+# Summary
+
+Read in and examine the newest AquaMaps data.
+
+# Methods
+
+## Read in and examine species summary file
+
+```{r}
+spp_info <- data.table::fread(file.path(am_dir, 'ver10_2019_speciesoccursum_iucn.csv')) %>%
+  janitor::clean_names() %>%
+  rename(am_sid = species_id, iucn_sid = iucn_id, comname = f_bname) %>%
+  mutate(sciname = tolower(paste(genus, species)))
+```
+Number of unique species (by AM species ID): `r n_distinct(spp_info$am_sid)`
+
+Number of unique IUCN species (by IUCN species ID): `r spp_info %>% filter(!is.na(iucn_sid)) %>% .$iucn_sid %>% n_distinct()`
+
+## Read in and examine species environmental envelope file
+
+```{r}
+env_info <- data.table::fread(file.path(am_dir, 'ver10_2019_hspen.csv')) %>%
+  janitor::clean_names() %>%
+  rename(am_sid = species_id)
+
+names(env_info)
+```
+
+Each parameter (`depth`, `temp`, `salinity`, `prim_prod`, `ice_con`, `oxy`, `land_dist`) has a column for `min`, `pref_min`, `pref_max`, `max` (and `mean` for `depth`).  Additionally, all parameters also have columns for `_yn` (whether that parameter is relevant for that species). 
+For each parameter, let's plot distributions of the min, max, and preferred min/max for all spp that depend on that parameter.
+
+```{r examine dists for each parameter}
+params <- c('depth', 'temp', 'salinity', 'prim_prod', 'ice_con', 'oxy', 'land_dist')
+prm_or <- paste0(params, collapse = '|')
+dist_vals <- c('min', 'pref_min', 'mean', 'pref_max', 'max')
+env_sum_df <- env_info %>%
+  rename(depth_mean = mean_depth) %>%
+  select(am_sid, contains(params)) %>%
+  gather(param_full, value, -am_sid) %>%
+  mutate(param = str_extract(param_full, prm_or),
+         dist = str_replace(param_full, paste0('(', prm_or, ')_'), '')) %>%
+  select(-param_full) %>%
+  spread(dist, value) %>%
+  filter(yn == 1) %>%
+  select(-yn) %>%
+  gather(dist, value, -am_sid, -param) %>%
+  mutate(dist = factor(dist, levels = dist_vals),
+         value = ifelse(param == 'depth', log10(value + 1), value),
+         param = ifelse(param == 'depth', 'log10_depth', param))
+
+write_csv(env_sum_df, file.path(am_dir, 'species_envelope_summary.csv'))
+
+ggplot(env_sum_df) +
+  geom_density(aes(x = value, color = dist, ..scaled..), fill = NA) +
+  scale_color_viridis_d() +
+  facet_wrap(~param, scales = 'free_x') +
+  theme_minimal()
+```
+
+``` {r examine range of values for each parameter}
+env_range_df <- env_sum_df %>%
+  mutate(value = ifelse(param == 'log10_depth', 10^value, value)) %>%
+  spread(dist, value) %>%
+  mutate(mid = ifelse(is.na(mean), (pref_min + pref_max)/2, mean),
+         pref_range = pref_max - pref_min,
+         max_range  = max - min,
+         pref_range = ifelse(param == 'log10_depth', log10(pref_range), pref_range),
+         max_range  = ifelse(param == 'log10_depth', log10(max_range), max_range)) %>%
+  arrange(pref_range) %>%
+  mutate(spp = fct_inorder(am_sid))
+
+ggplot(env_range_df) +
+  geom_density(aes(x = pref_range, ..scaled..)) +
+  geom_density(aes(x = max_range, ..scaled..), color = 'darkred') +
+  facet_wrap(~ param, scales = 'free_x') +
+  theme_minimal()
+```
+
+## Read in and examine HCAF file
+
+```{r}
+hcaf_info <- data.table::fread(file.path(am_dir, 'hcaf_v7.csv')) %>%
+  janitor::clean_names() %>%
+  mutate(across(where(is.numeric), ~ ifelse(.x == -9999, NA, .x)))
+
+names(hcaf_info)
+```
+
+``` {r map vars, cache = TRUE}
+rast_base <- raster(ext = extent(c(-180, 180, -90, 90)), resolution = 0.5, crs = '+init=epsg:4326') %>%
+  setValues(1:ncell(.))
+var_df <- hcaf_info %>%
+  select(loiczid, p_water, eez:land_dist, 
+         -starts_with(c('elevation', 'area', 'lme')), -ocean_basin)
+vars <- names(var_df)[-1]
+
+for(v in vars) { ### v <- vars[1]
+  message('plotting map for ', v)
+  var_rast <- subs(rast_base, var_df, by = 'loiczid', which = v)
+  plot(var_rast, main = v, col = hcl.colors(n = 100))
+}
+```
+
+## Read and examine species cell occurrences
+
+```{r clean am spp cells, eval = FALSE}
+csq_loiczid <- hcaf_info %>%
+  select(loiczid, csquare_code) %>%
+  distinct()
+spp_cells <- data.table::fread(file.path(am_dir, 'hcaf_species_native.csv')) %>%
+  janitor::clean_names() %>%
+  left_join(csq_loiczid) %>%
+  select(am_sid = species_id, loiczid, prob = probability)
+
+write_csv(spp_cells, file.path(am_dir, 'hcaf_species_native_clean.csv'))
+
+```
+
+```{r}
+spp_valid <- spp_info %>%
+  filter(occur_cells >= 10) %>%
+  select(am_sid, sciname)
+
+spp_cells <- data.table::fread(file.path(am_dir, 'hcaf_species_native_clean.csv')) %>%
+  filter(am_sid %in% spp_valid$am_sid)
+
+spp_rich <- spp_cells %>%
+  group_by(loiczid) %>%
+  summarize(nspp = n_distinct(am_sid), .groups = 'drop')
+
+spp_rich_rast <- subs(rast_base, spp_rich, by = 'loiczid', which = 'nspp')
+
+plot(log10(spp_rich_rast), col = hcl.colors(20))
+
+```
+

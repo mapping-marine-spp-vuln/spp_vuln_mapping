@@ -1,5 +1,5 @@
 ---
-title: "Assemble grouping traits"
+title: "Examine hierarchical clustering methods for functional grouping"
 author: "*Compiled on `r date()` by `r Sys.info()['user']`*"
 output: 
   html_document:
@@ -71,11 +71,6 @@ traits_df <- trait_length %>%
   full_join(trait_troph)
 ```
 
-
-## Supervised Random Forest
-
-Let's try a supervised random forest to classify into some taxonomic level, e.g., class.
-
 ```{r attach taxa}
 taxa <- read_csv(here('_data/vuln_data/vuln_gapfilled_tx.csv')) %>%
   select(class:species) 
@@ -86,7 +81,12 @@ traits_dropna <- traits_df %>%
 ### leaves only 17008 observations...
 ```
 
-``` {r split into training and validation}
+<!-- ## Supervised Random Forest -->
+
+<!-- Let's try a supervised random forest to classify into some taxonomic level, e.g., class. -->
+
+
+``` {r split into training and validation, eval = FALSE, include = FALSE}
 ### split training and validation sets
 holdout <- sample(1:nrow(traits_dropna), nrow(traits_dropna)/3, replace = FALSE)
 
@@ -94,7 +94,7 @@ valid <- traits_dropna[holdout, ]
 train <- traits_dropna[-holdout, ] # %>% sample_n(1000)
 ```
 
-```{r plot scaling factor}
+```{r plot scaling factor, eval = FALSE, include = FALSE}
 ### for ntree = 1000:
 ###     n =  1000, t =   1.981
 ###     n =  2000, t =   6.886
@@ -118,9 +118,9 @@ ggplot(df1, aes(x = n, y = t)) +
 
 ```
 
-Because we have nine predictor variables, select `mtry = 3` at a time ($\sqrt{\text{# of traits}}$).  Based on some trials, it seems as if `randomForest()` scales at ~$n^{1.92}$
+<!-- Because we have nine predictor variables, select `mtry = 3` at a time ($\sqrt{\text{# of traits}}$).  Based on some trials, it seems as if `randomForest()` scales at ~$O(n^{1.92})$ -->
 
-``` {r supervised random forest}
+``` {r supervised random forest, eval = FALSE, include = FALSE}
 set.seed(42)
 system.time({
   sup_rf_class <- randomForest(x = train %>% 
@@ -132,7 +132,7 @@ sup_rf_class
 varImpPlot(sup_rf_class)
 ```
 
-``` {r use supervised RF results to predict class on validation set}
+``` {r use supervised RF results to predict class on validation set, eval = FALSE, include = FALSE}
 # predict on test set
 class_predicted <- predict(sup_rf_class, valid %>% select(where(is.numeric)))
 valid_df <- data.frame(orig = valid$class, pred = class_predicted)
@@ -140,18 +140,17 @@ valid_df <- data.frame(orig = valid$class, pred = class_predicted)
 confusionMatrix(table(valid_df$orig, valid_df$pred))
 ```
 
-Supervised RF seems to do a great job of predicting a species' class based on the traits given (99.8% accuracy).  What will happen when we run an unsupervised RF to inform a clustering algorithm?
+<!-- Supervised RF seems to do a great job of predicting a species' class based on the traits given (99.8% accuracy).  What will happen when we run an unsupervised RF to inform a clustering algorithm? -->
 
 ## Unsupervised Random Forest
 
-Let's apply the process to the traits dataframe, without supervision, to create a proximity matrix.  NOTE: This seems about half the speed of the supervised?
+Let's apply the Random Forest process to the traits dataframe, without supervision, to create a proximity matrix.  Drop some low-importance variables.
 
 ```{r unsup_rf}
-### n = 1000, t = 3.663; n = 2000, t = 10.096; n = 17008, t = 477.686
 system.time({
   unsup_rf <- randomForest(x = traits_dropna %>% 
-                             ### drop two least important vars
-                             select(-terr_score, -vert_mig_score) %>%
+                             ### drop three least important vars
+                             select(-terr_score, -vert_mig_score, -depend_score) %>%
                              # sample_n(2000) %>%
                              select(where(is.numeric)),
                            mtry = 3, ntree = 1000, proximity = TRUE)
@@ -160,34 +159,18 @@ unsup_rf
 varImpPlot(unsup_rf)
 ```
 
-For the subset of species with mean gapfill level of 3 or less, the following traits score low on MeanDecreaseGini:
+For the subset of species with mean gapfill level of 3 or less, the following traits score low on MeanDecreaseGini and can be perhaps dropped:
 
 * depth (~900)
-* depend_score (~450)
-* vert_mig_score (~100)
-* terr_score (~100)
-
-Once clusters have been identified with the full trait space, repeat while dropping low-importance variables to see how clusters are affected...
+* depend_score (~450) (dropped)
+* vert_mig_score (~100) (dropped)
+* terr_score (~100) (dropped)
 
 ## Hierarchical clustering
 
 ### Notes on clustering techniques:
 
-With the results of the unsupervised Random Forest, we tried clustering in two ways: Partitioning Around Medioids (which seems standard for Random Forest examples), and Hierarchical clustering (which also appears in some Random Forest examples).  For these we identified a reasonable number of clusters and compared results; the most similar clusters scored about 80%  on Jaccard similarity index.  But hierarchical clustering was far faster, and seems very defensible.
-
-#### K-means?
-
-K-means does not seem appropriate for RF proximity/dissimilarity, since it relies on euclidean distances rather than a dissimilarity matrix.
-
-#### PAM?
-
-From `pam()` documentation: 
-
->For large datasets, `pam` may need too much memory or too much computation time since both are $O(n^2)$. Then, `clara()` is preferable, see its documentation.
-
-However, the `clara()` function looks like it wants a data matrix/frame with columns for variables, rather than a dissimilarity/distance matrix.
-
-Some arguments to `pam()` sped up the clustering process by orders of magnitude, especially `do.swap = FALSE` and `pamonce = 6`.
+With the results of the unsupervised Random Forest, we tried clustering in two ways: Partitioning Around Medioids (which seems standard for Random Forest examples), and Hierarchical clustering (which also appears in some Random Forest examples).  For these we identified a reasonable number of clusters and compared results; the most similar clusters scored about 80%  on Jaccard similarity index.
 
 ### identify an appropriate number of clusters
 
@@ -207,7 +190,7 @@ avg_sil_hcl <- function(k, HC, DM) {
   mean_sil_w <- mean(ss[, 'sil_width'])
 }
 
-loop_over_clusts <- function(k_vec = 6:200, HC, DM) {
+loop_over_hclusts <- function(k_vec = 6:200, HC, DM) {
   message('Calculating hclust silhouette for ', nrow(traits_dropna), 
           ' observations (gapfill = ', gf_cut, ')')
     
@@ -241,43 +224,19 @@ rf_hclust_avg   <- hclust(dist_mtx, method = 'average')
 ### other methods can be regarded as aiming for clusters with characteristics 
 ### somewhere between the single and complete link methods
 
-silh_df_ward1 <- loop_over_clusts(HC = rf_hclust_ward1,
+silh_df_ward1 <- loop_over_hclusts(HC = rf_hclust_ward1,
                                   DM = dissim_mtx)
-p1 <- ggplot(silh_df_ward1, aes(x = k, y = silh)) +
-  geom_point() +
-  labs(x = "Number of clusters K, method = ward.D",
-       y = "Average Silhouette (hierarch cluster)") +
-  ylim(c(0, NA)) +
-  theme_minimal()
 
-silh_df_ward2 <- loop_over_clusts(HC = rf_hclust_ward2,
+silh_df_ward2 <- loop_over_hclusts(HC = rf_hclust_ward2,
                                   DM = dissim_mtx)
-p2 <- ggplot(silh_df_ward2, aes(x = k, y = silh)) +
-  geom_point() +
-  labs(x = "Number of clusters K, method = ward.D2",
-       y = "Average Silhouette (hierarch cluster)") +
-  ylim(c(0, NA)) +
-  theme_minimal()
 
-silh_df_compl <- loop_over_clusts(HC = rf_hclust_compl,
+silh_df_compl <- loop_over_hclusts(HC = rf_hclust_compl,
                                   DM = dissim_mtx)
-p3 <- ggplot(silh_df_compl, aes(x = k, y = silh)) +
-  geom_point() +
-  labs(x = "Number of clusters K, method = complete",
-       y = "Average Silhouette (hierarch cluster)") +
-  ylim(c(0, NA)) +
-  theme_minimal()
 
-silh_df_singl <- loop_over_clusts(HC = rf_hclust_singl,
+silh_df_singl <- loop_over_hclusts(HC = rf_hclust_singl,
                                   DM = dissim_mtx)
-p4 <- ggplot(silh_df_singl, aes(x = k, y = silh)) +
-  geom_point() +
-  labs(x = "Number of clusters K, method = single",
-       y = "Average Silhouette (hierarch cluster)") +
-  ylim(c(0, NA)) +
-  theme_minimal()
 
-silh_df_avg <- loop_over_clusts(HC = rf_hclust_avg,
+silh_df_avg <- loop_over_hclusts(HC = rf_hclust_avg,
                                 DM = dissim_mtx)
 
 silh_df_compare <- silh_df_ward1 %>%
@@ -287,6 +246,7 @@ silh_df_compare <- silh_df_ward1 %>%
   full_join(silh_df_compl %>% rename(complete = silh)) %>%
   full_join(silh_df_singl %>% rename(single = silh)) %>%
   gather(method, silh, -k)
+
 ggplot(silh_df_compare, aes(x = k, y = silh, color = method)) +
   geom_point() +
   labs(x = "Number of clusters K",
@@ -312,5 +272,6 @@ From this, the Wards distance methods show tighter clusters as evident from cons
 
 #### Plot of silhouettes dropping least important traits
 
-`vert_mig_score` and `terr_score` showed very small effects on reducing Gini scores
+`r knitr::include_graphics('figs/silhouette_plot.png')`
 
+`vert_mig_score` and `terr_score` showed very small effects on reducing Gini scores
