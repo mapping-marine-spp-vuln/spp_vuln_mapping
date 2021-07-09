@@ -24,6 +24,7 @@ knitr::opts_chunk$set(fig.width = 6, fig.height = 4, fig.path = 'figs/',
 library(raster)
 library(oharac)
 library(taxize)
+library(worrms)
 library(fuzzyjoin)
 oharac::setup()
 am_dir <- '/home/shares/ohi/git-annex/aquamaps_2021'
@@ -53,6 +54,8 @@ am_spp_info <- data.table::fread(file.path(am_dir, 'ver10_2019_speciesoccursum_i
 worms_spp <- assemble_worms()
 ```
 
+Check for species who are listed in AquaMaps with a subspecies name - drop subspp name and match at species level?  And then identify any remaining non-matched species.
+
 ```{r}
 am_spp_subspp <- am_spp_info %>%
   mutate(subspp = ifelse(str_detect(species, ' [a-z]+ '), str_remove(species, '.[a-z]+.? [a-z]+ '), NA),
@@ -77,18 +80,16 @@ There are `r nrow(am_spp_match)` direct matches with no modification needed, wit
 
 ## Try fuzzy join to identify small mismatches
 
-Use the `fuzzyjoin::stringdist_left_join()` function to try to match those AquaMaps species with near matches in the WoRMS list.  Set up a chunk-based system to take advantage of `mclapply()` because fuzzy joining is SLOOOWWW.
+Use the `fuzzyjoin::stringdist_left_join()` function to try to match those AquaMaps species with near matches in the WoRMS list.  Trim full WoRMS set down to just those genera represented in the non-matching dataframe... fewer possibilities should mean much faster fuzzy join!
 
 ```{r}
 fuzzymatch_file <- here('int/fuzzymatch_spp_am_worms_raw.csv')
 
-### trim full WoRMS set down to just those genera represented in the non-
-### matching dataframe... fewer possibilities should mean faster fuzzy join!
 worms_genus_spp <- worms_spp %>%
   filter(genus %in% am_spp_nomatch$am_g)
 
 if(!file.exists(fuzzymatch_file)) {
-  chunk_size <- 20
+  chunk_size <- 100
   n_chunks <- ceiling(nrow(am_spp_nomatch) / chunk_size)
   tmp <- parallel::mclapply(1:n_chunks, 
                             mc.cores = 1, ### doesn't work with >1 core???
@@ -123,52 +124,16 @@ if(!file.exists(fuzzymatch_file)) {
   
   write_csv(fuzzymatch_all, fuzzymatch_file)
 }
+
+fuzzymatch_check <- read_csv(fuzzymatch_file) %>%
+  select(am_sid, species_am = species.x, species_worms = species.y) %>%
+  distinct() %>%
+  mutate(keep = !is.na(str_match(species_worms, species_am)))
+### in all these cases, the WoRMS species name has an extra letter relative to 
+### the AquaMaps name, e.g., xanthias lamarckii vs xanthias lamarcki
+
+DT::datatable(fuzzymatch_check)
+write_csv(fuzzymatch_check, here('_raw/aquamaps_to_worms_fuzzymatch.csv'))
 ```
 
 
-## Resolve class/order/family/genus names
-
-It may be that a mismatch occurs at a higher rank due to different accepted names.  Check the mismatches that the higher-order names are found within the WoRMS data, and resolve any that are not using a multi-core implementation of `taxize::classification()`.  Focus on genus first, as it can be directly responsible for a mismatch.
-
-```{r check genus}
-gen_mismatch <- am_spp_nomatch %>%
-  filter(!am_g %in% worms_spp$genus) %>%
-  .$am_g %>% unique() %>% sort()
-
-# genus_syn_file <- here('tmp/genus_synonyms.csv')
-# if(!file.exists(genus_syn_file)) {
-#   chunk_size <- 20
-#   n_chunks <- ceiling(length(gen_mismatch) / chunk_size)
-#   for(i in 1:n_chunks) {
-#     ### i <- 1
-#     min_index <- (i - 1) * chunk_size + 1
-#     max_index <- min(i * chunk_size, length(gen_mismatch))
-#     chunk_file <- sprintf(here('tmp/genus_syn_chunk_%s_%s.csv'), min_index, max_index)
-#     if(!file.exists(chunk_file)) {
-#       gen_names_chunk <- gen_mismatch[min_index:max_index]
-#       gen_syn <- synonyms(gen_names_chunk, db = 'worms') %>%
-#         synonyms_df()
-#       write_csv(gen_syn, chunk_file)
-#     }
-#       
-#   }
-#   write_csv(genus_syn, genus_syn_file)
-# }
-# genus_syn <- read_csv(genus_syn_file)
-
-```
-
-```{r check higher ranks}
-cls_mismatch <- am_spp_nomatch %>%
-  filter(!am_c %in% worms_spp$class) %>%
-  .$am_c %>% unique()
-
-ord_mismatch <- am_spp_nomatch %>%
-  filter(!am_o %in% worms_spp$order) %>%
-  .$am_o %>% unique()
-
-fam_mismatch <- am_spp_nomatch %>%
-  filter(!am_f %in% worms_spp$family) %>%
-  .$am_f %>% unique()
-
-```

@@ -1,389 +1,46 @@
 am_sid,comname,occur_cells,am_k,am_p,am_c,am_o,am_f,am_g,species.x,subspp,phylum,class,order,family,genus,species.y,d
-fis-25123,Common ponyfish,362,animalia,chordata,actinopterygii,perciformes,leiognathidae,leiognathus,leiognathus equulus,NA,chordata,actinopterygii,perciformes,leiognathidae,leiognathus,leiognathus equula,2
-fis-172580,Otomebora mullet,23,animalia,chordata,actinopterygii,mugiliformes,mugilidae,planiliza,planiliza melinopterus,NA,chordata,actinopterygii,mugiliformes,mugilidae,planiliza,planiliza melinoptera,2
-slb-100648,NA,25,animalia,mollusca,gastropoda,neogastropoda,conidae,conus,conus circumactis,NA,mollusca,gastropoda,neogastropoda,conidae,conus,conus circumactus,1
 slb-100710,NA,72,animalia,arthropoda,malacostraca,decapoda,xanthidae,xanthias,xanthias lamarcki,NA,arthropoda,malacostraca,decapoda,xanthidae,xanthias,xanthias lamarckii,1
-slb-169123,NA,87,animalia,mollusca,gastropoda,neogastropoda,columbellidae,mitrella,mitrella puella,NA,mollusca,gastropoda,neogastropoda,columbellidae,mitrella,mitrella psilla,2
-slb-169123,NA,87,animalia,mollusca,gastropoda,neogastropoda,columbellidae,mitrella,mitrella puella,NA,mollusca,gastropoda,neogastropoda,columbellidae,mitrella,mitrella pulla,1
-slb-169330,wickerwork cone,18,animalia,mollusca,gastropoda,neogastropoda,conidae,conus,conus vimineus,NA,mollusca,gastropoda,neogastropoda,conidae,conus,conus ermineus,2
-slb-169449,NA,10,animalia,echinodermata,ophiuroidea,phrynophiurida,euryalidae,astroceras,astroceras mammosus,NA,echinodermata,ophiuroidea,euryalida,euryalidae,astroceras,astroceras mammosum,1
-slb-169772,NA,90,animalia,echinodermata,ophiuroidea,ophiurida,ophiodermatidae,ophiochasma,ophiochasma stellatum,NA,echinodermata,ophiuroidea,ophiacanthida,ophiodermatidae,ophiochasma,ophiochasma stellata,2
-slb-169773,NA,13,animalia,echinodermata,ophiuroidea,ophiurida,ophiochitonidae,ophiochiton,ophiochiton fastgatus,NA,echinodermata,ophiuroidea,amphilepidida,ophionereididae,ophiochiton,ophiochiton fastigatus,1
-slb-169881,NA,21,animalia,echinodermata,echinoidea,echinoida,parasaleniidae,parasalenia,parasalenia poehli,NA,echinodermata,echinoidea,camarodonta,parasaleniidae,parasalenia,parasalenia poehlii,1
-slb-170399,ruppell's keyhole limpet,19,animalia,mollusca,gastropoda,patellogastropoda,fissurellidae,diodora,diodora ruepellii,NA,mollusca,gastropoda,lepetellida,fissurellidae,diodora,diodora ruppellii,1
-slb-171199,NA,25,animalia,mollusca,gastropoda,neogastropoda,nassariidae,nassarius,nassarius accuminatus,NA,mollusca,gastropoda,neogastropoda,nassariidae,nassarius,nassarius acuminatus,1
-w-oph-243632,chocolate brittle star,78,animalia,echinodermata,ophiuroidea,ophiurida,ophiodermatidae,ophioderma,ophioderma cinerea,NA,echinodermata,ophiuroidea,ophiacanthida,ophiodermatidae,ophioderma,ophioderma cinereum,2
-w-oph-243630,harlequin brittle star,113,animalia,echinodermata,ophiuroidea,ophiurida,ophiodermatidae,ophioderma,ophioderma appressa,NA,echinodermata,ophiuroidea,ophiacanthida,ophiodermatidae,ophioderma,ophioderma appressum,2
-w-oph-243631,short spined ophioderma,58,animalia,echinodermata,ophiuroidea,ophiurida,ophiodermatidae,ophioderma,ophioderma brevicauda,NA,echinodermata,ophiuroidea,ophiacanthida,ophiodermatidae,ophioderma,ophioderma brevicaudum,2
-w-oph-243636,spotted brittle star,24,animalia,echinodermata,ophiuroidea,ophiurida,ophiodermatidae,ophioderma,ophioderma guttata,NA,echinodermata,ophiuroidea,ophiacanthida,ophiodermatidae,ophioderma,ophioderma guttatum,2
-w-oph-243646,scaly brittle star,20,animalia,echinodermata,ophiuroidea,ophiurida,ophiodermatidae,ophioderma,ophioderma squamosissima,NA,echinodermata,ophiuroidea,ophiacanthida,ophiodermatidae,ophioderma,ophioderma squamosissimum,2
-w-oph-243645,ruby brittle star,53,animalia,echinodermata,ophiuroidea,ophiurida,ophiodermatidae,ophioderma,ophioderma rubicunda,NA,echinodermata,ophiuroidea,ophiacanthida,ophiodermatidae,ophioderma,ophioderma rubicundum,2
-slb-174308,NA,27,animalia,echinodermata,echinoidea,spatangoida,schizasteridae,ova,ova canaliferus,NA,echinodermata,echinoidea,spatangoida,schizasteridae,ova,ova canalifera,2
-slb-174312,NA,132,animalia,echinodermata,holothuroidea,dendrochirotida,cucumariidae,aslia,aslia lefevrii,NA,echinodermata,holothuroidea,dendrochirotida,cucumariidae,aslia,aslia lefevrei,1
-slb-175235,little frog triton,140,animalia,mollusca,gastropoda,neogastropoda,buccinidae,ranella,ranella olearius,NA,mollusca,gastropoda,littorinimorpha,ranellidae,ranella,ranella olearium,1
-slb-175238,golden moon snail,39,animalia,mollusca,gastropoda,neotaenioglossa,naticidae,polinices,polinices aurantium,NA,mollusca,gastropoda,littorinimorpha,naticidae,polinices,polinices aurantius,1
-slb-177172,NA,16,animalia,mollusca,gastropoda,neogastropoda,olividae,olivella,olivella plata,NA,mollusca,gastropoda,neogastropoda,olividae,olivella,olivella plana,1
-slb-177489,NA,11,animalia,mollusca,gastropoda,thecosomata,cavoliniidae,clio,clio sulcata,NA,mollusca,gastropoda,pteropoda,cliidae,clio,clio sulcosa,2
+slb-111670,NA,13,animalia,arthropoda,malacostraca,isopoda,cirolanidae,bathynomus,bathynomus doederleini,NA,arthropoda,malacostraca,isopoda,cirolanidae,bathynomus,bathynomus doederleinii,1
+slb-112386,NA,14,animalia,mollusca,bivalvia,myoida,pholadidae,jouannetia,jouannetia cumingi,NA,mollusca,bivalvia,myida,pholadidae,jouannetia,jouannetia cumingii,1
+slb-118854,NA,32,animalia,mollusca,gastropoda,neogastropoda,costellariidae,vexillum,vexillum deshayesi,NA,mollusca,gastropoda,neogastropoda,costellariidae,vexillum,vexillum deshayesii,1
+its-95868,dog shrimp,12,animalia,arthropoda,malacostraca,decapoda,penaeidae,parapenaeopsis,parapenaeopsis hungerfordi,NA,arthropoda,malacostraca,decapoda,penaeidae,parapenaeopsis,parapenaeopsis hungerfordii,1
+slb-128839,NA,63,animalia,mollusca,bivalvia,ostreoida,propeamussidae,propeamussium,propeamussium jeffreysi,NA,mollusca,bivalvia,pectinida,propeamussiidae,propeamussium,propeamussium jeffreysii,1
+slb-156972,NA,31,animalia,porifera,demospongiae,halichondrida,axinellidae,ptilocaulis,ptilocaulis walpersi,NA,porifera,demospongiae,axinellida,axinellidae,ptilocaulis,ptilocaulis walpersii,1
 slb-178262,pulmonate limpet,56,animalia,mollusca,gastropoda,basommatophora,siphonariidae,siphonaria,siphonaria lessoni,NA,mollusca,gastropoda,siphonariida,siphonariidae,siphonaria,siphonaria lessonii,1
-slb-179254,NA,10,animalia,mollusca,gastropoda,patellogastropoda,turbinidae,margarites,margarites biconicus,NA,mollusca,gastropoda,trochida,margaritidae,margarites,margarites biconica,2
-slb-179483,NA,18,animalia,mollusca,bivalvia,myoida,corbulidae,corbula,corbula lyoni,NA,mollusca,bivalvia,myida,corbulidae,corbula,corbula tryoni,2
-slb-181498,NA,24,animalia,arthropoda,malacostraca,amphipoda,iphimediidae,iphimediella,iphimediella margueretei,NA,arthropoda,malacostraca,amphipoda,iphimediidae,iphimediella,iphimediella margueritei,1
-slb-182386,NA,33,animalia,mollusca,gastropoda,stenoglossa,neptuneidae,caducifer,caducifer decapitata,NA,mollusca,gastropoda,neogastropoda,pisaniidae,caducifer,caducifer decapitatus,2
-slb-183504,NA,35,animalia,echinodermata,ophiuroidea,ophiurida,amphiuridae,amphiura,amphiura rosea,NA,echinodermata,ophiuroidea,amphilepidida,amphiuridae,amphiura,amphiura rosae,1
 pbd-223594,southern spider crab,67,animalia,arthropoda,malacostraca,decapoda,majidae,jacquinotia,jacquinotia edwardsi,NA,arthropoda,malacostraca,decapoda,majidae,jacquinotia,jacquinotia edwardsii,1
 w-bch-209013,NA,19,animalia,arthropoda,malacostraca,decapoda,xanthidae,pseudoliomera,pseudoliomera helleri,NA,arthropoda,malacostraca,decapoda,xanthidae,pseudoliomera,pseudoliomera hellerii,1
-slb-186990,skunk sea cradle,38,animalia,mollusca,polyplacophora,chitonida,chitonidae,chiton,chiton granosus,NA,mollusca,polyplacophora,chitonida,chitonidae,chiton,chiton carnosus,2
 slb-188856,mottled star,124,animalia,echinodermata,asteroidea,forcipulatida,asteriidae,evasterias,evasterias troscheli,NA,echinodermata,asteroidea,forcipulatida,asteriidae,evasterias,evasterias troschelii,1
-slb-189282,NA,24,animalia,echinodermata,ophiuroidea,ophiurida,ophiolepididae,ophiosphalma,ophiosphalma jolliensis,NA,echinodermata,ophiuroidea,ophiurida,ophiosphalmidae,ophiosphalma,ophiosphalma jolliense,2
-pbd-225550,colorful reef crab,49,animalia,arthropoda,malacostraca,decapoda,xanthidae,liomera,liomera cinctimana,NA,arthropoda,malacostraca,decapoda,xanthidae,liomera,liomera cinctimanus,2
-slb-190133,NA,13,animalia,arthropoda,malacostraca,decapoda,xanthidae,liomera,liomera laevis,NA,arthropoda,malacostraca,decapoda,xanthidae,liomera,liomera loevis,1
-chn-8cc778cc-b690-4f20-900d-5c6e34860c1b,paron shrimp,38,animalia,arthropoda,malacostraca,decapoda,hippolytidae,gelastocaris,gelastocaris paronae,NA,arthropoda,malacostraca,decapoda,hippolytidae,gelastocaris,gelastocaris paronai,1
-slb-193014,NA,30,animalia,annelida,polychaeta,sabellida,serpulidae,hydroides,hydroides tuberculatus,NA,annelida,polychaeta,sabellida,serpulidae,hydroides,hydroides tuberculata,2
-slb-193018,NA,11,animalia,annelida,polychaeta,sabellida,serpulidae,hydroides,hydroides longispinosus,NA,annelida,polychaeta,sabellida,serpulidae,hydroides,hydroides longispinosa,2
-slb-193420,NA,74,animalia,porifera,demospongiae,dictyoceratida,spongiidae,coscinoderma,coscinoderma matthewsi,NA,porifera,demospongiae,dictyoceratida,spongiidae,coscinoderma,coscinoderma mathewsi,1
-w-bch-444908,NA,16,animalia,arthropoda,malacostraca,decapoda,dotillidae,scopimera,scopimera crabicauda,NA,arthropoda,malacostraca,decapoda,dotillidae,scopimera,scopimera crabricauda,1
-slb-194265,NA,11,animalia,mollusca,gastropoda,neogastropoda,muricidae,hexaplex,hexaplex kusterianus,NA,mollusca,gastropoda,neogastropoda,muricidae,hexaplex,hexaplex kuesterianus,1
-its-98009,NA,64,animalia,arthropoda,malacostraca,decapoda,galatheidae,munidopsis,munidopsis spinosa,NA,arthropoda,malacostraca,decapoda,munidopsidae,munidopsis,munidopsis pilosa,2
-slb-198300,granulated nassa,89,animalia,mollusca,gastropoda,neogastropoda,nassariidae,nassarius,nassarius graniferus,NA,mollusca,gastropoda,neogastropoda,nassariidae,nassarius,nassarius granifer,2
-w-msc-491269,NA,61,animalia,mollusca,gastropoda,stenoglossa,neptuneidae,plicifusus,plicifusus kroeyeri,NA,mollusca,gastropoda,neogastropoda,buccinidae,plicifusus,plicifusus kroyeri,1
-slb-2036,NA,39,animalia,annelida,polychaeta,eunicida,eunicidae,eunice,eunice cariboea,NA,annelida,polychaeta,eunicida,eunicidae,eunice,eunice excariboea,2
-slb-20803,stubby isopod,69,animalia,arthropoda,malacostraca,isopoda,sphaeromatidae,gnorimosphaeroma,gnorimosphaeroma oregonensis,NA,arthropoda,malacostraca,isopoda,sphaeromatidae,gnorimosphaeroma,gnorimosphaeroma oregonense,2
-slb-2102,NA,25,animalia,annelida,polychaeta,phyllodocida,glyceridae,glycera,glycera abranchiata,NA,annelida,polychaeta,phyllodocida,glyceridae,glycera,glycera dibranchiata,2
-slb-2102,NA,25,animalia,annelida,polychaeta,phyllodocida,glyceridae,glycera,glycera abranchiata,NA,annelida,polychaeta,phyllodocida,glyceridae,glycera,glycera embranchiata,2
-slb-21025,burrowing Australian isopod,38,animalia,arthropoda,malacostraca,isopoda,sphaeromatidae,sphaeroma,sphaeroma quoyanum,NA,arthropoda,malacostraca,isopoda,sphaeromatidae,sphaeroma,sphaeroma quoianum,1
-its-90185,NA,74,animalia,arthropoda,malacostraca,mysida,mysidae,erythrops,erythrops erythrophthalma,NA,arthropoda,malacostraca,mysida,mysidae,erythrops,erythrops erythrophthalmus,2
-its-90198,NA,56,animalia,arthropoda,malacostraca,mysida,mysidae,erythrops,erythrops serrata,NA,arthropoda,malacostraca,mysida,mysidae,erythrops,erythrops serratus,2
-its-90079,NA,44,animalia,arthropoda,malacostraca,mysida,mysidae,parerythrops,parerythrops obesa,NA,arthropoda,malacostraca,mysida,mysidae,parerythrops,parerythrops obesus,2
 slb-23431,NA,12,animalia,arthropoda,malacostraca,tanaidacea,pseudotanaidae,pseudotanais,pseudotanais lilljeborgi,NA,arthropoda,malacostraca,tanaidacea,pseudotanaidae,pseudotanais,pseudotanais lilljeborgii,1
-slb-2524,ornate worm,202,animalia,annelida,polychaeta,aciculata,onuphidae,diopatra,diopatra cupraea,NA,annelida,polychaeta,eunicida,onuphidae,diopatra,diopatra cuprea,1
-its-89613,giant acorn barnacle,12,animalia,arthropoda,maxillopoda,sessilia,balanidae,balanus,balanus nubilis,NA,arthropoda,hexanauplia,sessilia,balanidae,balanus,balanus humilis,2
-its-89613,giant acorn barnacle,12,animalia,arthropoda,maxillopoda,sessilia,balanidae,balanus,balanus nubilis,NA,arthropoda,hexanauplia,sessilia,balanidae,balanus,balanus nubilus,1
-w-pyc-239506,NA,15,animalia,arthropoda,pycnogonida,pantopoda,ammotheidae,ascorhynchus,ascorhynchus japonicus,NA,arthropoda,pycnogonida,pantopoda,ascorhynchidae,ascorhynchus,ascorhynchus japonicum,1
-slb-29559,yellow hairy sea spider,10,animalia,arthropoda,pycnogonida,pantopoda,ammotheidae,tanystylum,tanystylum grossifemora,NA,arthropoda,pycnogonida,pantopoda,ammotheidae,tanystylum,tanystylum grossifemorum,2
-slb-30134,NA,57,animalia,arthropoda,pycnogonida,pantopoda,nymphonidae,nymphon,nymphon stromi,NA,arthropoda,pycnogonida,pantopoda,nymphonidae,nymphon,nymphon stroemi,1
-slb-30327,NA,16,animalia,arthropoda,pycnogonida,pantopoda,phoxichilidiidae,pallenopsis,pallenopsis longirostris,NA,arthropoda,pycnogonida,pantopoda,pallenopsidae,pallenopsis,pallenopsis conirostris,2
-w-asc-221022,NA,17,animalia,chordata,ascidiacea,enterogona,didemnidae,polysyncraton,polysyncraton millepore,NA,chordata,ascidiacea,aplousobranchia,didemnidae,polysyncraton,polysyncraton milleporae,1
-slb-37673,NA,12,animalia,chordata,ascidiacea,enterogona,polycitoridae,eucoelium,eucoelium coronaria,NA,chordata,ascidiacea,aplousobranchia,polycitoridae,eucoelium,eucoelium coronarium,2
-slb-3837,NA,83,animalia,annelida,polychaeta,canalipalpata,sabellidae,branchiomma,branchiomma nigromaculata,NA,annelida,polychaeta,sabellida,sabellidae,branchiomma,branchiomma nigromaculatum,2
-w-asc-103816,NA,11,animalia,chordata,ascidiacea,pleurogona,pyuridae,boltenia,boltenia pilosa,NA,chordata,ascidiacea,stolidobranchia,pyuridae,boltenia,boltenia villosa,2
-slb-10172,rigid bathyal crab,98,animalia,arthropoda,malacostraca,decapoda,goneplacidae,bathyplax,bathyplax typhlus,NA,arthropoda,malacostraca,decapoda,goneplacidae,bathyplax,bathyplax typhla,2
-slb-102589,NA,10,animalia,arthropoda,maxillopoda,sessilia,pyrgomatidae,neotrevathana,neotrevathana elongatum,NA,arthropoda,hexanauplia,sessilia,pyrgomatidae,neotrevathana,neotrevathana elongata,2
-its-621750,NA,19,animalia,arthropoda,malacostraca,decapoda,hippolytidae,hippolyte,hippolyte pleuracanthus,NA,arthropoda,malacostraca,decapoda,hippolytidae,hippolyte,hippolyte pleuracantha,2
-w-pol-131503,NA,11,animalia,annelida,polychaeta,canalipalpata,terebellidae,neoamphitrite,neoamphitrite edwardsi,NA,annelida,polychaeta,terebellida,terebellidae,neoamphitrite,neoamphitrite edwardsii,1
-its-mam-622023,crabeater seal,2095,animalia,chordata,mammalia,carnivora,phocidae,lobodon,lobodon carcinophaga,NA,chordata,mammalia,carnivora,phocidae,lobodon,lobodon carcinophagus,2
-slb-55807,NA,22,animalia,chordata,thaliacea,doliolida,doliolidae,dolioletta,dolioletta gegenbaueri,NA,chordata,thaliacea,doliolida,doliolidae,dolioletta,dolioletta gegenbauri,1
-slb-58358,NA,35,animalia,cnidaria,anthozoa,actiniaria,edwardsiidae,edwardsianthus,edwardsianthus pudica,NA,cnidaria,anthozoa,actiniaria,edwardsiidae,edwardsianthus,edwardsianthus pudicus,2
-slb-58978,reticulate anemone,89,animalia,cnidaria,anthozoa,actiniaria,hormathiidae,actinauge,actinauge verrilli,NA,cnidaria,anthozoa,actiniaria,hormathiidae,actinauge,actinauge verrillii,1
 w-oct-128528,NA,11,animalia,cnidaria,anthozoa,pennatulacea,protoptilidae,protoptilum,protoptilum thomsoni,NA,cnidaria,anthozoa,pennatulacea,protoptilidae,protoptilum,protoptilum thomsonii,1
-slb-61615,Pacific elkhorn coral,52,animalia,cnidaria,anthozoa,scleractinia,acroporidae,acropora,acropora danai,NA,cnidaria,anthozoa,scleractinia,acroporidae,acropora,acropora donei,2
-slb-61615,Pacific elkhorn coral,52,animalia,cnidaria,anthozoa,scleractinia,acroporidae,acropora,acropora danai,NA,cnidaria,anthozoa,scleractinia,acroporidae,acropora,acropora nana,2
-slb-61648,plating acropora,14,animalia,cnidaria,anthozoa,scleractinia,acroporidae,acropora,acropora jacquelinae,NA,cnidaria,anthozoa,scleractinia,acroporidae,acropora,acropora jacquelineae,1
-slb-61947,NA,104,animalia,cnidaria,anthozoa,scleractinia,caryophylliidae,caryophyllia,caryophyllia inornata,NA,cnidaria,anthozoa,scleractinia,caryophylliidae,caryophyllia,caryophyllia ornata,2
-slb-62234,NA,33,animalia,cnidaria,anthozoa,scleractinia,dendrophylliidae,balanophyllia,balanophyllia palifera,NA,cnidaria,anthozoa,scleractinia,dendrophylliidae,balanophyllia,balanophyllia caulifera,2
-w-scl-288345,hedgehog coral,16,animalia,cnidaria,anthozoa,scleractinia,faviidae,echinopora,echinopora pacificus,NA,cnidaria,anthozoa,scleractinia,merulinidae,echinopora,echinopora pacifica,2
-slb-103773,NA,26,animalia,mollusca,gastropoda,neogastropoda,conidae,conus,conus articulatus,NA,mollusca,gastropoda,neogastropoda,conidae,conus,conus reticulatus,2
-slb-103782,NA,19,animalia,mollusca,gastropoda,neogastropoda,conidae,conus,conus baileyi,NA,mollusca,gastropoda,neogastropoda,conidae,conus,conus galeyi,2
-slb-62518,NA,87,animalia,cnidaria,anthozoa,scleractinia,flabellidae,flabellum,flabellum curvatum,NA,cnidaria,anthozoa,scleractinia,flabellidae,flabellum,flabellum cuneatum,2
-slb-62518,NA,87,animalia,cnidaria,anthozoa,scleractinia,flabellidae,flabellum,flabellum curvatum,NA,cnidaria,anthozoa,scleractinia,flabellidae,flabellum,flabellum curtum,2
-slb-62688,pineapple coral,134,animalia,cnidaria,anthozoa,scleractinia,meandrinidae,dichocoenia,dichocoenia stokesi,NA,cnidaria,anthozoa,scleractinia,meandrinidae,dichocoenia,dichocoenia stokesii,1
-w-scl-287972,NA,33,animalia,cnidaria,anthozoa,scleractinia,pectiniidae,echinophyllia,echinophyllia echinata,NA,cnidaria,anthozoa,scleractinia,lobophylliidae,echinophyllia,echinophyllia pectinata,2
-slb-62994,encrusting sandpaper coral,99,animalia,cnidaria,anthozoa,scleractinia,siderastreidae,psammocora,psammocora haimeana,NA,cnidaria,anthozoa,scleractinia,psammocoridae,psammocora,psammocora haimiana,1
-slb-63972,NA,21,animalia,cnidaria,hydrozoa,anthoathecata,eudendriidae,eudendrium,eudendrium eximium,NA,cnidaria,hydrozoa,anthoathecata,eudendriidae,eudendrium,eudendrium exiguum,2
 slb-65046,NA,31,animalia,cnidaria,hydrozoa,siphonophorae,forskaliidae,forskalia,forskalia edwardsi,NA,cnidaria,hydrozoa,siphonophorae,forskaliidae,forskalia,forskalia edwardsii,1
-slb-65076,NA,10,animalia,cnidaria,hydrozoa,siphonophorae,sphaeronectidae,sphaeronectes,sphaeronectes gracilis,NA,cnidaria,hydrozoa,siphonophorae,sphaeronectidae,sphaeronectes,sphaeronectes fragilis,2
-slb-65728,NA,148,animalia,echinodermata,asteroidea,valvatida,goniasteridae,anthenoides,anthenoides piercei,NA,echinodermata,asteroidea,valvatida,goniasteridae,anthenoides,anthenoides peircei,1
-slb-65995,five-toothed sea cucumber,44,animalia,echinodermata,holothuroidea,aspidochirotida,holothuriidae,actinopyga,actinopyga agassizi,NA,echinodermata,holothuroidea,holothuriida,holothuriidae,actinopyga,actinopyga agassizii,1
-slb-66152,slipper sea cucumber,59,animalia,echinodermata,holothuroidea,dendrochirotida,psolidae,psolus,psolus chitinoides,NA,echinodermata,holothuroidea,dendrochirotida,psolidae,psolus,psolus chitonoides,1
 slb-66264,NA,49,animalia,echinodermata,ophiuroidea,ophiurida,amphiuridae,amphiura,amphiura stimpsoni,NA,echinodermata,ophiuroidea,amphilepidida,amphiuridae,amphiura,amphiura stimpsonii,1
-w-oph-124821,smooth brittle-star,92,animalia,echinodermata,ophiuroidea,ophiurida,ophiodermatidae,ophioderma,ophioderma longicauda,NA,echinodermata,ophiuroidea,ophiacanthida,ophiodermatidae,ophioderma,ophioderma longicaudum,2
-slb-66461,notched brittle star,1302,animalia,echinodermata,ophiuroidea,ophiurida,ophiuridae,ophiura,ophiura sarsi,NA,echinodermata,ophiuroidea,ophiurida,ophiuridae,ophiura,ophiura sarsii,1
-slb-104693,NA,13,animalia,mollusca,gastropoda,neogastropoda,drilliidae,drillia,drillia enae,NA,mollusca,gastropoda,neogastropoda,drilliidae,drillia,drillia enna,2
-slb-104710,NA,15,animalia,mollusca,gastropoda,neogastropoda,drilliidae,splendrillia,splendrillia carolinae,NA,mollusca,gastropoda,neogastropoda,drilliidae,splendrillia,splendrillia carolae,2
-slb-10569,NA,12,animalia,arthropoda,malacostraca,decapoda,majidae,macrocoeloma,macrocoeloma subparallelum,NA,arthropoda,malacostraca,decapoda,epialtidae,macrocoeloma,macrocoeloma subparellelum,1
-slb-6890,NA,12,animalia,arthropoda,malacostraca,amphipoda,isaeidae,photis,photis trapherus,NA,arthropoda,malacostraca,amphipoda,photidae,photis,photis tropherus,1
-slb-69073,chestnut mussel,49,animalia,mollusca,bivalvia,mytiloida,mytilidae,lioberus,lioberus castaneus,NA,mollusca,bivalvia,mytilida,mytilidae,lioberus,lioberus castanea,2
-slb-69122,NA,10,animalia,mollusca,bivalvia,mytiloida,mytilidae,rhomboidella,rhomboidella prideaux,NA,mollusca,bivalvia,mytilida,mytilidae,rhomboidella,rhomboidella prideauxi,1
-fis-33813,Roundtail duckbill,94,animalia,chordata,actinopterygii,perciformes,percophidae,bembrops,bembrops greyi,NA,chordata,actinopterygii,perciformes,percophidae,bembrops,bembrops greyae,2
-fis-171863,So-iuy mullet,53,animalia,chordata,actinopterygii,mugiliformes,mugilidae,planiliza,planiliza haematocheila,NA,chordata,actinopterygii,mugiliformes,mugilidae,planiliza,planiliza haematocheilus,2
-slb-70291,NA,209,animalia,mollusca,bivalvia,veneroida,lasaeidae,mysella,mysella bidentata,NA,mollusca,bivalvia,galeommatida,lasaeidae,mysella,mysella unidentata,2
-w-msc-156878,plate mysella,79,animalia,mollusca,bivalvia,veneroida,lasaeidae,mysella,mysella planulata,NA,mollusca,bivalvia,galeommatida,lasaeidae,mysella,mysella planata,2
-slb-7100,NA,14,animalia,arthropoda,malacostraca,amphipoda,lycaeidae,tryphana,tryphana malmi,NA,arthropoda,malacostraca,amphipoda,tryphanidae,tryphana,tryphana malmii,1
-slb-71422,Verany's long-armed squid,307,animalia,mollusca,cephalopoda,teuthida,chiroteuthidae,chiroteuthis,chiroteuthis veranyi,NA,mollusca,cephalopoda,oegopsida,chiroteuthidae,chiroteuthis,chiroteuthis veranii,1
 slb-71452,Reinhardt's cranch squid,477,animalia,mollusca,cephalopoda,teuthida,cranchiidae,liocranchia,liocranchia reinhardti,NA,mollusca,cephalopoda,oegopsida,cranchiidae,liocranchia,liocranchia reinhardtii,1
-slb-71866,NA,42,animalia,mollusca,gastropoda,patellogastropoda,fissurellidae,emarginula,emarginula conica,NA,mollusca,gastropoda,lepetellida,fissurellidae,emarginula,emarginula sinica,2
-slb-106694,NA,48,animalia,mollusca,gastropoda,neogastropoda,turridae,lienardia,lienardia nigrocincta,NA,mollusca,gastropoda,neogastropoda,clathurellidae,lienardia,lienardia nigrotincta,1
-slb-72292,briar cyclostreme,18,animalia,mollusca,gastropoda,patellogastropoda,turbinidae,arene,arene briareus,NA,mollusca,gastropoda,trochida,areneidae,arene,arene briarea,2
 slb-72717,NA,42,animalia,mollusca,gastropoda,cephalaspidea,cylichnidae,cylichna,cylichna verrilli,NA,mollusca,gastropoda,cephalaspidea,cylichnidae,cylichna,cylichna verrillii,1
-slb-72793,NA,247,animalia,mollusca,gastropoda,cephalaspidea,philinidae,philine,philine scabra,NA,mollusca,gastropoda,cephalaspidea,philinidae,philine,philine sagra,2
-slb-73565,polar whelk,65,animalia,mollusca,gastropoda,neogastropoda,buccinidae,buccinum,buccinum polaris,NA,mollusca,gastropoda,neogastropoda,buccinidae,buccinum,buccinum polare,2
-slb-74008,Bermuda cone,74,animalia,mollusca,gastropoda,neogastropoda,conidae,conus,conus mindanus,NA,mollusca,gastropoda,neogastropoda,conidae,conus,conus bandanus,2
-slb-74008,Bermuda cone,74,animalia,mollusca,gastropoda,neogastropoda,conidae,conus,conus mindanus,NA,mollusca,gastropoda,neogastropoda,conidae,conus,conus tinianus,2
-slb-74432,beaded thala,26,animalia,mollusca,gastropoda,neogastropoda,costellariidae,thala,thala foveata,NA,mollusca,gastropoda,neogastropoda,costellariidae,thala,thala roseata,2
-slb-74549,Yucatan spindle,14,animalia,mollusca,gastropoda,neogastropoda,fasciolariidae,fusinus,fusinus couei,NA,mollusca,gastropoda,neogastropoda,fasciolariidae,fusinus,fusinus chuni,2
-w-msc-420232,Arcas auger,14,animalia,mollusca,gastropoda,neogastropoda,terebridae,terebra,terebra arcas,NA,mollusca,gastropoda,neogastropoda,terebridae,terebra,terebra argus,2
-slb-111668,NA,11,animalia,mollusca,gastropoda,cephalaspidea,cylichnidae,scaphander,scaphander bathymophila,NA,mollusca,gastropoda,cephalaspidea,scaphandridae,scaphander,scaphander bathymophilus,2
-slb-111670,NA,13,animalia,arthropoda,malacostraca,isopoda,cirolanidae,bathynomus,bathynomus doederleini,NA,arthropoda,malacostraca,isopoda,cirolanidae,bathynomus,bathynomus doederleinii,1
-slb-75828,gold-stripe eulima,25,animalia,mollusca,gastropoda,neotaenioglossa,eulimidae,eulima,eulima auricincta,NA,mollusca,gastropoda,littorinimorpha,eulimidae,eulima,eulima unicincta,2
-slb-76679,NA,14,animalia,mollusca,gastropoda,neotaenioglossa,ranellidae,cymatium,cymatium rehderi,NA,mollusca,gastropoda,littorinimorpha,cymatiidae,cymatium,cymatium raderi,2
-slb-76868,decussate risso,39,animalia,mollusca,gastropoda,neotaenioglossa,rissoidae,rissoina,rissoina decussata,NA,mollusca,gastropoda,littorinimorpha,rissoinidae,rissoina,rissoina exdecussata,2
-slb-80431,NA,23,animalia,mollusca,scaphopoda,gadilida,gadilidae,cadulus,cadulus occidus,NA,mollusca,scaphopoda,gadilida,gadilidae,cadulus,cadulus occiduus,1
 slb-86266,NA,12,animalia,porifera,demospongiae,hadromerida,clionaidae,cliona,cliona schmidti,NA,porifera,demospongiae,clionaida,clionaidae,cliona,cliona schmidtii,1
-slb-111938,rough fileclam,90,animalia,mollusca,bivalvia,limoida,limidae,ctenoides,ctenoides scabra,NA,mollusca,bivalvia,limida,limidae,ctenoides,ctenoides scaber,2
-its-659899,three-spine alpheid,10,animalia,arthropoda,malacostraca,decapoda,alpheidae,alpheopsis,alpheopsis trispinosus,NA,arthropoda,malacostraca,decapoda,alpheidae,alpheopsis,alpheopsis trispinosa,2
-slb-88643,Chilean ribbed mussel,44,animalia,mollusca,bivalvia,mytiloida,mytilidae,aulacomya,aulacomya ater,NA,mollusca,bivalvia,mytilida,mytilidae,aulacomya,aulacomya atra,2
-w-msc-382412,angulate volute,38,animalia,mollusca,gastropoda,neogastropoda,volutidae,zidona,zidona dufresnei,NA,mollusca,gastropoda,neogastropoda,volutidae,zidona,zidona dufresnii,1
-rep-467,spine-tailed seasnake,97,animalia,chordata,reptilia,squamata,hydrophiidae,aipysurus,aipysurus eydouxii,NA,chordata,reptilia,squamata,elapidae,aipysurus,aipysurus eydouxi,1
-slb-88981,furrowed horse mussel,21,animalia,mollusca,bivalvia,mytiloida,mytilidae,modiolus,modiolus aratus,NA,mollusca,bivalvia,mytilida,mytilidae,modiolus,modiolus barbatus,2
-slb-89375,NA,43,animalia,porifera,demospongiae,haplosclerida,chalinidae,haliclona,haliclona tubifera,NA,porifera,demospongiae,haplosclerida,chalinidae,haliclona,haliclona bulbifera,2
-slb-89375,NA,43,animalia,porifera,demospongiae,haplosclerida,chalinidae,haliclona,haliclona tubifera,NA,porifera,demospongiae,haplosclerida,chalinidae,haliclona,haliclona tubulifera,2
-slb-89463,bent sea rod,28,animalia,cnidaria,anthozoa,alcyonacea,plexauridae,plexaura,plexaura flexuosa,NA,cnidaria,anthozoa,alcyonacea,plexauridae,plexaura,plexaura flexuosula,2
-slb-89607,plain troughshell,20,animalia,mollusca,bivalvia,veneroida,mactridae,mactra,mactra mera,NA,mollusca,bivalvia,venerida,mactridae,mactra,mactra pura,2
-slb-89796,collar moon snail,13,animalia,mollusca,gastropoda,neotaenioglossa,naticidae,natica,natica collaris,NA,mollusca,gastropoda,littorinimorpha,naticidae,natica,natica collaria,1
-its-96699,NA,16,animalia,arthropoda,malacostraca,decapoda,alpheidae,synalpheus,synalpheus macclendoni,NA,arthropoda,malacostraca,decapoda,alpheidae,synalpheus,synalpheus mcclendoni,1
-its-564725,NA,14,animalia,arthropoda,malacostraca,decapoda,axiidae,calaxius,calaxius oxypleurus,NA,arthropoda,malacostraca,decapoda,axiidae,calaxius,calaxius oxypleura,2
-slb-92339,West African stromb,12,animalia,mollusca,gastropoda,neotaenioglossa,strombidae,strombus,strombus latus,NA,mollusca,gastropoda,littorinimorpha,strombidae,strombus,strombus alatus,1
-slb-92733,clathrate venus,43,animalia,mollusca,bivalvia,veneroida,veneridae,periglypta,periglypta clathrata,NA,mollusca,bivalvia,venerida,veneridae,periglypta,periglypta exclathrata,2
-slb-92928,coronate moon turban,109,animalia,mollusca,gastropoda,patellogastropoda,turbinidae,turbo,turbo coronatus,NA,mollusca,gastropoda,trochida,turbinidae,turbo,turbo cornutus,2
-slb-112386,NA,14,animalia,mollusca,bivalvia,myoida,pholadidae,jouannetia,jouannetia cumingi,NA,mollusca,bivalvia,myida,pholadidae,jouannetia,jouannetia cumingii,1
-slb-112748,razor mussel,24,animalia,mollusca,bivalvia,solemyoida,solemyidae,solemya,solemya parkinsoni,NA,mollusca,bivalvia,solemyida,solemyidae,solemya,solemya parkinsonii,1
-slb-93181,Boutet's cowrie,10,animalia,mollusca,gastropoda,neotaenioglossa,cypraeidae,cypraea,cypraea bouteti,NA,mollusca,gastropoda,littorinimorpha,cypraeidae,cypraea,cypraea boucheti,2
-slb-93286,lined moon snail,37,animalia,mollusca,gastropoda,neotaenioglossa,naticidae,natica,natica lineata,NA,mollusca,gastropoda,littorinimorpha,naticidae,natica,natica limbata,2
-w-scl-207188,NA,22,animalia,cnidaria,anthozoa,scleractinia,acroporidae,montipora,montipora meandrina,NA,cnidaria,anthozoa,scleractinia,acroporidae,montipora,montipora maeandrina,1
-slb-93487,precious stone shell,157,animalia,mollusca,gastropoda,neogastropoda,fasciolariidae,latirolagena,latirolagena smaragdula,NA,mollusca,gastropoda,neogastropoda,fasciolariidae,latirolagena,latirolagena smaragdulus,2
-w-msc-527732,Australian trumpet shell,92,animalia,mollusca,gastropoda,neogastropoda,turbinellidae,syrinx,syrinx aruanus,NA,mollusca,gastropoda,neogastropoda,turbinellidae,syrinx,syrinx aruana,2
-slb-93530,Amethyst olive,257,animalia,mollusca,gastropoda,neogastropoda,olividae,oliva,oliva annulata,NA,mollusca,gastropoda,neogastropoda,olividae,oliva,oliva venulata,2
-slb-93761,NA,485,animalia,annelida,polychaeta,sabellida,serpulidae,hydroides,hydroides norvegicus,NA,annelida,polychaeta,sabellida,serpulidae,hydroides,hydroides norvegica,2
-slb-93966,clown nudibranch,57,animalia,mollusca,gastropoda,nudibranchia,chromodorididae,ceratosoma,ceratosoma amoena,NA,mollusca,gastropoda,nudibranchia,chromodorididae,ceratosoma,ceratosoma amoenum,2
-slb-95578,NA,22,animalia,mollusca,scaphopoda,gadilida,gadilidae,gadila,gadila acus,NA,mollusca,scaphopoda,gadilida,gadilidae,gadila,gadila arctus,2
-slb-95578,NA,22,animalia,mollusca,scaphopoda,gadilida,gadilidae,gadila,gadila acus,NA,mollusca,scaphopoda,gadilida,gadilidae,gadila,gadila gadus,2
-w-msc-344426,Antillean tuskshell,64,animalia,mollusca,scaphopoda,dentaliida,dentaliidae,antalis,antalis antillaris,NA,mollusca,scaphopoda,dentaliida,dentaliidae,antalis,antalis antillarum,2
-slb-96266,NA,71,animalia,chordata,ascidiacea,enterogona,didemnidae,didemnum,didemnum psammatode,NA,chordata,ascidiacea,aplousobranchia,didemnidae,didemnum,didemnum psammatodes,1
-slb-96334,compressed toothshell,63,animalia,mollusca,scaphopoda,gadilida,not assigned,compressidens,compressidens pressum,NA,mollusca,scaphopoda,gadilida,[unassigned] gadilida,compressidens,compressidens pressus,1
-slb-96565,NA,13,animalia,mollusca,scaphopoda,dentaliida,dentaliidae,dentalium,dentalium exmouthensis,NA,mollusca,scaphopoda,dentaliida,dentaliidae,dentalium,dentalium exmouthense,2
-w-msc-344236,NA,20,animalia,mollusca,scaphopoda,dentaliida,laevidentaliidae,laevidentalium,laevidentalium jaffaensis,NA,mollusca,scaphopoda,dentaliida,laevidentaliidae,laevidentalium,laevidentalium jaffaense,2
-slb-97301,scallop sea squirt,34,animalia,chordata,ascidiacea,pleurogona,styelidae,cnemidocarpa,cnemidocarpa nordenskjoldi,NA,chordata,ascidiacea,stolidobranchia,styelidae,cnemidocarpa,cnemidocarpa nordenskjöldi,1
-slb-97633,NA,19,animalia,cnidaria,anthozoa,actiniaria,liponematidae,liponema,liponema multicornis,NA,cnidaria,anthozoa,actiniaria,liponematidae,liponema,liponema multicorne,2
-slb-98267,changeable nassa,53,animalia,mollusca,gastropoda,neogastropoda,nassariidae,nassarius,nassarius mutabilis,NA,mollusca,gastropoda,neogastropoda,nassariidae,nassarius,nassarius mirabilis,2
-slb-98584,NA,70,animalia,arthropoda,malacostraca,mysida,mysidae,siriella,siriella clausi,NA,arthropoda,malacostraca,mysida,mysidae,siriella,siriella clausii,1
-slb-98731,Guamanian nerite,22,animalia,mollusca,gastropoda,neritopsina,neritidae,clithon,clithon oualaniensis,NA,mollusca,gastropoda,cycloneritida,neritidae,clithon,clithon oualaniense,2
-slb-113139,NA,14,animalia,annelida,polychaeta,aciculata,nephtyidae,aglaophamus,aglaophamus lyrochaetus,NA,annelida,polychaeta,phyllodocida,nephtyidae,aglaophamus,aglaophamus lyrochaeta,2
-slb-113262,NA,31,animalia,mollusca,bivalvia,ostreoida,pectinidae,euvola,euvola laurentii,NA,mollusca,bivalvia,pectinida,pectinidae,euvola,euvola laurenti,1
-w-msc-420810,NA,69,animalia,mollusca,bivalvia,veneroida,ungulinidae,phlyctiderma,phlyctiderma semiaspera,NA,mollusca,bivalvia,venerida,ungulinidae,phlyctiderma,phlyctiderma semiasperum,2
+slb-89335,NA,49,animalia,mollusca,gastropoda,cephalaspidea,haminoeidae,atys,atys macandrewi,NA,mollusca,gastropoda,cephalaspidea,haminoeidae,atys,atys macandrewii,1
+chn-91abc70c-b6ae-49a6-840b-05ea852baff4,NA,44,animalia,echinodermata,crinoidea,comatulida,comasteridae,comanthina,comanthina schlegeli,NA,echinodermata,crinoidea,comatulida,comatulidae,comanthina,comanthina schlegelii,1
 slb-71652,angel squid,95,animalia,mollusca,cephalopoda,teuthida,onychoteuthidae,ancistroteuthis,ancistroteuthis lichtensteini,NA,mollusca,cephalopoda,oegopsida,onychoteuthidae,ancistroteuthis,ancistroteuthis lichtensteinii,1
-slb-39170,NA,14,animalia,chordata,ascidiacea,pleurogona,styelidae,styela,styela milleri,NA,chordata,ascidiacea,stolidobranchia,styelidae,styela,styela mallei,2
 slb-64981,NA,122,animalia,cnidaria,hydrozoa,siphonophorae,agalmatidae,agalma,agalma okeni,NA,cnidaria,hydrozoa,siphonophorae,agalmatidae,agalma,agalma okenii,1
 slb-64977,NA,47,animalia,cnidaria,hydrozoa,siphonophorae,abylidae,ceratocymba,ceratocymba leuckarti,NA,cnidaria,hydrozoa,siphonophorae,abylidae,ceratocymba,ceratocymba leuckartii,1
-slb-62852,bush coral,38,animalia,cnidaria,anthozoa,scleractinia,pocilloporidae,seriatopora,seriatopora guttatus,NA,cnidaria,anthozoa,scleractinia,pocilloporidae,seriatopora,seriatopora guttata,2
-slb-92940,chameleon nerite,38,animalia,mollusca,gastropoda,neritopsina,neritidae,nerita,nerita chameleon,NA,mollusca,gastropoda,cycloneritida,neritidae,nerita,nerita chamaeleon,1
-slb-61827,NA,11,animalia,cnidaria,anthozoa,scleractinia,acroporidae,montipora,montipora verruculosus,NA,cnidaria,anthozoa,scleractinia,acroporidae,montipora,montipora verruculosa,2
-slb-62744,NA,12,animalia,cnidaria,anthozoa,scleractinia,mussidae,lobophyllia,lobophyllia dentatus,NA,cnidaria,anthozoa,scleractinia,lobophylliidae,lobophyllia,lobophyllia dentata,2
-slb-93450,NA,10,animalia,cnidaria,anthozoa,scleractinia,acroporidae,acropora,acropora plana,NA,cnidaria,anthozoa,scleractinia,acroporidae,acropora,acropora nana,2
-slb-103480,NA,16,animalia,arthropoda,maxillopoda,pedunculata,scalpellidae,scalpellum,scalpellum stearnsii,NA,arthropoda,hexanauplia,scalpelliformes,scalpellidae,scalpellum,scalpellum stearnsi,1
 slb-190070,dendronephtya crab,11,animalia,arthropoda,malacostraca,decapoda,epialtidae,hoplophrys,hoplophrys oatesi,NA,arthropoda,malacostraca,decapoda,epialtidae,hoplophrys,hoplophrys oatesii,1
-slb-62446,NA,30,animalia,cnidaria,anthozoa,scleractinia,faviidae,favites,favites paraflexuosa,NA,cnidaria,anthozoa,scleractinia,merulinidae,favites,favites paraflexuosus,2
 slb-131270,NA,15,animalia,arthropoda,malacostraca,decapoda,pandalidae,heterocarpus,heterocarpus hayashi,NA,arthropoda,malacostraca,decapoda,pandalidae,heterocarpus,heterocarpus hayashii,1
 slb-64971,NA,125,animalia,cnidaria,hydrozoa,siphonophorae,abylidae,abylopsis,abylopsis eschscholtzi,NA,cnidaria,hydrozoa,siphonophorae,abylidae,abylopsis,abylopsis eschscholtzii,1
-slb-62813,NA,31,animalia,cnidaria,anthozoa,scleractinia,pectiniidae,pectinia,pectinia africanus,NA,cnidaria,anthozoa,scleractinia,merulinidae,pectinia,pectinia africana,2
-slb-63177,NA,10,animalia,cnidaria,hydrozoa,anthoathecata,hydractiniidae,hydractinia,hydractinia minima,NA,cnidaria,hydrozoa,anthoathecata,hydractiniidae,hydractinia,hydractinia munita,2
 slb-6495,NA,54,animalia,arthropoda,malacostraca,amphipoda,eusiridae,eusirus,eusirus holmi,NA,arthropoda,malacostraca,amphipoda,eusiridae,eusirus,eusirus holmii,1
 slb-159897,NA,10,animalia,porifera,demospongiae,astrophorida,geodiidae,geodia,geodia macandrewi,NA,porifera,demospongiae,tetractinellida,geodiidae,geodia,geodia macandrewii,1
-slb-62161,NA,15,animalia,cnidaria,anthozoa,scleractinia,caryophylliidae,trochocyathus,trochocyathus cepulla,NA,cnidaria,anthozoa,scleractinia,caryophylliidae,trochocyathus,trochocyathus cupula,2
-slb-177385,NA,10,animalia,mollusca,gastropoda,neogastropoda,muricidae,favartia,favartia nucea,NA,mollusca,gastropoda,neogastropoda,muricidae,favartia,favartia nivea,2
-slb-177385,NA,10,animalia,mollusca,gastropoda,neogastropoda,muricidae,favartia,favartia nucea,NA,mollusca,gastropoda,neogastropoda,muricidae,favartia,favartia nuceus,2
-slb-61314,NA,20,animalia,cnidaria,anthozoa,alcyonacea,plexauridae,scleracis,scleracis guadaloupensis,NA,cnidaria,anthozoa,alcyonacea,plexauridae,scleracis,scleracis guadalupensis,1
-slb-29409,NA,11,animalia,arthropoda,pycnogonida,pantopoda,ammotheidae,ascorhynchus,ascorhynchus pyrginospinum,NA,arthropoda,pycnogonida,pantopoda,ascorhynchidae,ascorhynchus,ascorhynchus pyrginospinus,1
 slb-72215,norrissnail,14,animalia,mollusca,gastropoda,archaeogastropoda,trochidae,norrisia,norrisia norrisi,NA,mollusca,gastropoda,trochida,tegulidae,norrisia,norrisia norrisii,1
-slb-113460,NA,15,animalia,annelida,polychaeta,canalipalpata,sabellidae,branchiomma,branchiomma cingulata,NA,annelida,polychaeta,sabellida,sabellidae,branchiomma,branchiomma cingulatum,2
-its-612453,basket star shrimp,34,animalia,arthropoda,malacostraca,decapoda,palaemonidae,periclimenes,periclimenes lanipes,NA,arthropoda,malacostraca,decapoda,palaemonidae,periclimenes,periclimenes longipes,2
-pbd-282994,NA,9,animalia,brachiopoda,articulata,terebratulida,cancellothyrididae,terebratulina,terebratulina reevi,NA,brachiopoda,rhynchonellata,terebratulida,cancellothyrididae,terebratulina,terebratulina reevei,1
-slb-102043,NA,3,animalia,arthropoda,malacostraca,stomatopoda,squillidae,oratosquillina,oratosquillina ornata,NA,arthropoda,malacostraca,stomatopoda,squillidae,oratosquillina,oratosquillina inornata,2
-slb-103765,NA,8,animalia,mollusca,gastropoda,neogastropoda,conidae,conus,conus alisi,NA,mollusca,gastropoda,neogastropoda,conidae,conus,conus alfi,2
-slb-103765,NA,8,animalia,mollusca,gastropoda,neogastropoda,conidae,conus,conus alisi,NA,mollusca,gastropoda,neogastropoda,conidae,conus,conus wilsi,2
-slb-105449,NA,9,animalia,mollusca,gastropoda,neogastropoda,drilliidae,clavus,clavus laeta,NA,mollusca,gastropoda,neogastropoda,drilliidae,clavus,clavus laetus,2
-slb-112015,NA,6,animalia,annelida,polychaeta,aciculata,amphinomidae,linopherus,linopherus hirsutus,NA,annelida,polychaeta,amphinomida,amphinomidae,linopherus,linopherus hirsuta,2
-slb-112131,NA,3,animalia,mollusca,bivalvia,pterioida,pteriidae,pteria,pteria falcata,NA,mollusca,bivalvia,ostreida,pteriidae,pteria,pteria saltata,2
-slb-112452,NA,3,animalia,annelida,polychaeta,canalipalpata,flabelligeridae,flabelligera,flabelligera diplochaitos,NA,annelida,polychaeta,terebellida,flabelligeridae,flabelligera,flabelligera diplochaitus,1
-slb-112623,NA,7,animalia,mollusca,bivalvia,pterioida,pulvinitidae,pulvinites,pulvinites exemplus,NA,mollusca,bivalvia,ostreida,pulvinitidae,pulvinites,pulvinites exempla,2
-slb-112624,NA,4,animalia,mollusca,bivalvia,pterioida,pteriidae,pteria,pteria avicula,NA,mollusca,bivalvia,ostreida,pteriidae,pteria,pteria avicular,1
-slb-113597,NA,3,animalia,annelida,polychaeta,sabellida,serpulidae,hydroides,hydroides brachyacanthus,NA,annelida,polychaeta,sabellida,serpulidae,hydroides,hydroides brachyacantha,2
-slb-114156,NA,3,animalia,annelida,polychaeta,sabellida,serpulidae,hydroides,hydroides exaltatus,NA,annelida,polychaeta,sabellida,serpulidae,hydroides,hydroides exaltata,2
-slb-114158,NA,6,animalia,annelida,polychaeta,sabellida,serpulidae,hydroides,hydroides heterocerus,NA,annelida,polychaeta,sabellida,serpulidae,hydroides,hydroides heterocera,2
-slb-114598,NA,3,animalia,mollusca,bivalvia,ostreoida,spondylidae,spondylus,spondylus varians,NA,mollusca,bivalvia,pectinida,spondylidae,spondylus,spondylus varius,2
-slb-116784,NA,7,animalia,arthropoda,malacostraca,cumacea,nannastacidae,cumella,cumella ocellata,NA,arthropoda,malacostraca,cumacea,nannastacidae,cumella,cumella oculata,2
-slb-117230,margarite nassa,6,animalia,mollusca,gastropoda,neogastropoda,nassariidae,nassarius,nassarius margaritiferus,NA,mollusca,gastropoda,neogastropoda,nassariidae,nassarius,nassarius margaritifer,2
-slb-117810,NA,3,animalia,arthropoda,malacostraca,isopoda,stenetriidae,liocoryphe,liocoryphe siamensis,NA,arthropoda,malacostraca,isopoda,stenetriidae,liocoryphe,liocoryphe siamense,2
-slb-117865,NA,4,animalia,mollusca,polyplacophora,lepidopleurida,leptochitonidae,leptochiton,leptochiton lineatus,NA,mollusca,polyplacophora,lepidopleurida,leptochitonidae,leptochiton,leptochiton liratus,2
-slb-118112,NA,7,animalia,arthropoda,malacostraca,decapoda,porcellanidae,megalobrachium,megalobrachium festae,NA,arthropoda,malacostraca,decapoda,porcellanidae,megalobrachium,megalobrachium festai,1
-slb-118869,NA,8,animalia,mollusca,gastropoda,neogastropoda,costellariidae,vexillum,vexillum turrigerum,NA,mollusca,gastropoda,neogastropoda,costellariidae,vexillum,vexillum turriger,2
-pbd-167351,furrowed frog crab,7,animalia,arthropoda,malacostraca,decapoda,raninidae,raninoides,raninoides loevis,NA,arthropoda,malacostraca,decapoda,raninidae,raninoides,raninoides laevis,1
-slb-114669,girgyllus star shell,29,animalia,mollusca,gastropoda,patellogastropoda,turbinidae,bolma,bolma girgylla,NA,mollusca,gastropoda,trochida,turbinidae,bolma,bolma girgyllus,2
-w-msc-506956,NA,8,animalia,mollusca,bivalvia,ostreoida,spondylidae,spondylus,spondylus erectospinosus,NA,mollusca,bivalvia,pectinida,spondylidae,spondylus,spondylus erectospinus,2
 slb-129226,NA,8,animalia,mollusca,bivalvia,veneroida,mesodesmatidae,coecella,coecella horsfieldi,NA,mollusca,bivalvia,venerida,mesodesmatidae,coecella,coecella horsfieldii,1
-slb-155601,NA,4,animalia,porifera,demospongiae,hadromerida,suberitidae,terpios,terpios gelatinosa,NA,porifera,demospongiae,suberitida,suberitidae,terpios,terpios gelatinosus,2
-w-bch-440206,NA,8,animalia,arthropoda,malacostraca,decapoda,homolidae,moloha,moloha majora,NA,arthropoda,malacostraca,decapoda,homolidae,moloha,moloha major,1
-slb-156692,NA,4,animalia,porifera,demospongiae,poecilosclerida,chondropsidae,strongylacidon,strongylacidon zanzibarense,NA,porifera,demospongiae,poecilosclerida,chondropsidae,strongylacidon,strongylacidon sansibarense,2
-slb-157885,NA,4,animalia,mollusca,bivalvia,veneroida,chamidae,chama,chama fibula,NA,mollusca,bivalvia,venerida,chamidae,chama,chama limbula,2
-slb-159100,NA,8,animalia,annelida,polychaeta,sabellida,serpulidae,vermiliopsis,vermiliopsis glandigerus,NA,annelida,polychaeta,sabellida,serpulidae,vermiliopsis,vermiliopsis glandigera,2
-slb-166027,NA,5,animalia,mollusca,gastropoda,patellogastropoda,fissurellidae,emarginella,emarginella incisula,NA,mollusca,gastropoda,lepetellida,fissurellidae,emarginella,emarginella incisura,1
-slb-166038,NA,3,animalia,mollusca,gastropoda,patellogastropoda,fissurellidae,macroschisma,macroschisma cuspidata,NA,mollusca,gastropoda,lepetellida,fissurellidae,macroschisma,macroschisma cuspidatum,2
-its-612780,NA,40,animalia,arthropoda,malacostraca,decapoda,palaemonidae,urocaridella,urocaridella antonbrunii,NA,arthropoda,malacostraca,decapoda,palaemonidae,urocaridella,urocaridella antonbruunii,1
-slb-11682,areolate mud crab,22,animalia,arthropoda,malacostraca,decapoda,panopeidae,panopeus,panopeus hartii,NA,arthropoda,malacostraca,decapoda,panopeidae,panopeus,panopeus harttii,1
-slb-169463,NA,3,animalia,echinodermata,asteroidea,paxillosida,astropectinidae,astropecten,astropecten mindanensis,NA,echinodermata,asteroidea,paxillosida,astropectinidae,astropecten,astropecten minadensis,2
-slb-169712,NA,4,animalia,echinodermata,echinoidea,spatangoida,spatangidae,nacospatangus,nacospatangus alta,NA,echinodermata,echinoidea,spatangoida,maretiidae,nacospatangus,nacospatangus altus,2
 w-oct-125420,NA,9,animalia,cnidaria,anthozoa,alcyonacea,paralcyoniidae,maasella,maasella edwardsi,NA,cnidaria,anthozoa,alcyonacea,paralcyoniidae,maasella,maasella edwardsii,1
 slb-17074,NA,4,animalia,arthropoda,malacostraca,isopoda,eurycopidae,eurycope,eurycope sarsi,NA,arthropoda,malacostraca,isopoda,munnopsidae,eurycope,eurycope sarsii,1
-w-oph-243635,NA,4,animalia,echinodermata,ophiuroidea,ophiurida,ophiodermatidae,ophioderma,ophioderma ensifera,NA,echinodermata,ophiuroidea,ophiacanthida,ophiodermatidae,ophioderma,ophioderma ensiferum,2
-slb-174144,NA,7,animalia,bryozoa,gymnolaemata,cheilostomata,celleporidae,celleporina,celleporina calciformis,NA,bryozoa,gymnolaemata,cheilostomatida,celleporidae,celleporina,celleporina caliciformis,1
-w-oct-286083,NA,3,animalia,cnidaria,anthozoa,alcyonacea,acanthogorgiidae,acanthogorgia,acanthogorgia ramosissima,NA,cnidaria,anthozoa,alcyonacea,acanthogorgiidae,acanthogorgia,acanthogorgia ramossissima,1
-slb-177134,NA,8,animalia,mollusca,gastropoda,neogastropoda,turridae,polystira,polystira barretti,NA,mollusca,gastropoda,neogastropoda,turridae,polystira,polystira starretti,2
-slb-178422,NA,3,animalia,mollusca,gastropoda,neogastropoda,columbellidae,anachis,anachis carloslirai,NA,mollusca,gastropoda,neogastropoda,columbellidae,anachis,anachis carloslirae,1
-slb-179430,NA,3,animalia,mollusca,gastropoda,neogastropoda,muricidae,attiliosa,attiliosa glennduffyi,NA,mollusca,gastropoda,neogastropoda,muricidae,attiliosa,attiliosa glenduffyi,1
-slb-117117,top vase,302,animalia,mollusca,gastropoda,neogastropoda,turbinellidae,vasum,vasum turbinellum,NA,mollusca,gastropoda,neogastropoda,turbinellidae,vasum,vasum turbinellus,1
-slb-117226,NA,19,animalia,mollusca,gastropoda,neogastropoda,muricidae,pterynotus,pterynotus martinetana,NA,mollusca,gastropoda,neogastropoda,muricidae,pterynotus,pterynotus martinetanus,2
-slb-117288,woven Pacific Phos,54,animalia,mollusca,gastropoda,neogastropoda,buccinidae,phos,phos textum,NA,mollusca,gastropoda,neogastropoda,nassariidae,phos,phos textus,1
-slb-179982,NA,3,animalia,mollusca,gastropoda,neogastropoda,turridae,hindsiclava,hindsiclava rosenstielana,NA,mollusca,gastropoda,neogastropoda,pseudomelatomidae,hindsiclava,hindsiclava rosenstielanus,2
-slb-183590,NA,5,animalia,echinodermata,holothuroidea,dendrochirotida,phyllophoridae,neothyonidium,neothyonidium dearmatus,NA,echinodermata,holothuroidea,dendrochirotida,phyllophoridae,neothyonidium,neothyonidium dearmatum,1
-slb-185187,NA,4,animalia,arthropoda,malacostraca,amphipoda,isaeidae,gammaropsis,gammaropsis dentifera,NA,arthropoda,malacostraca,amphipoda,photidae,gammaropsis,gammaropsis setifera,2
-slb-188159,NA,8,animalia,mollusca,bivalvia,veneroida,lasaeidae,lasaea,lasaea hawaiiensis,NA,mollusca,bivalvia,galeommatida,lasaeidae,lasaea,lasaea hawaiensis,1
-slb-189094,NA,9,animalia,cnidaria,anthozoa,antipatharia,schizopathidae,lillipathes,lillipathes lilliei,NA,cnidaria,anthozoa,antipatharia,schizopathidae,lillipathes,lillipathes lillei,1
 w-bch-208997,NA,5,animalia,arthropoda,malacostraca,decapoda,xanthidae,neoliomera,neoliomera richtersi,NA,arthropoda,malacostraca,decapoda,xanthidae,neoliomera,neoliomera richtersii,1
-slb-190420,NA,7,animalia,arthropoda,malacostraca,decapoda,pandalidae,plesionika,plesionika nesisi,NA,arthropoda,malacostraca,decapoda,pandalidae,plesionika,plesionika ensis,2
 w-bch-209083,NA,9,animalia,arthropoda,malacostraca,decapoda,xanthidae,macromedaeus,macromedaeus voeltzkowi,NA,arthropoda,malacostraca,decapoda,xanthidae,macromedaeus,macromedaeus voeltzkowii,1
-slb-197050,NA,7,animalia,arthropoda,malacostraca,decapoda,upogebiidae,upogebia,upogebia savignyi,NA,arthropoda,malacostraca,decapoda,upogebiidae,upogebia,upogebia savignii,1
-w-iso-258216,NA,6,animalia,arthropoda,malacostraca,isopoda,sphaeromatidae,dynoides,dynoides saldani,NA,arthropoda,malacostraca,isopoda,sphaeromatidae,dynoides,dynoides saldanai,1
-its-90188,NA,5,animalia,arthropoda,malacostraca,mysida,mysidae,erythrops,erythrops africana,NA,arthropoda,malacostraca,mysida,mysidae,erythrops,erythrops africanus,2
-its-90194,NA,5,animalia,arthropoda,malacostraca,mysida,mysidae,erythrops,erythrops minuta,NA,arthropoda,malacostraca,mysida,mysidae,erythrops,erythrops minutus,2
 w-cop-221309,NA,7,animalia,arthropoda,maxillopoda,calanoida,augaptilidae,euaugaptilus,euaugaptilus palumboi,NA,arthropoda,hexanauplia,calanoida,augaptilidae,euaugaptilus,euaugaptilus palumboii,1
-slb-24083,NA,6,animalia,arthropoda,maxillopoda,calanoida,euchaetidae,paraeuchaeta,paraeuchaeta pubera,NA,arthropoda,hexanauplia,calanoida,euchaetidae,paraeuchaeta,paraeuchaeta rubra,2
-slb-27676,NA,4,animalia,arthropoda,maxillopoda,poecilostomatoida,oncaeidae,oncaea,oncaea similis,NA,arthropoda,hexanauplia,cyclopoida,oncaeidae,oncaea,oncaea pumilis,2
 slb-29429,NA,6,animalia,arthropoda,pycnogonida,pantopoda,ammotheidae,bathyzetes,bathyzetes setiger,NA,arthropoda,pycnogonida,pantopoda,ascorhynchidae,bathyzetes,bathyzetes setigera,1
 w-pyc-134648,NA,7,animalia,arthropoda,pycnogonida,pantopoda,callipallenidae,callipallene,callipallene tiberi,NA,arthropoda,pycnogonida,pantopoda,callipallenidae,callipallene,callipallene tiberii,1
-slb-29879,NA,3,animalia,arthropoda,pycnogonida,pantopoda,endeidae,endeis,endeis charybdea,NA,arthropoda,pycnogonida,pantopoda,endeidae,endeis,endeis charybdaea,1
-slb-37677,NA,3,animalia,chordata,ascidiacea,enterogona,polycitoridae,eucoelium,eucoelium pallida,NA,chordata,ascidiacea,aplousobranchia,polycitoridae,eucoelium,eucoelium pallidus,2
-slb-37936,NA,8,animalia,chordata,ascidiacea,enterogona,polyclinidae,aplidium,aplidium leviventer,NA,chordata,ascidiacea,aplousobranchia,polyclinidae,aplidium,aplidium breviventer,2
-slb-57922,NA,6,animalia,cnidaria,anthozoa,actiniaria,andresiidae,andresia,andresia parthenopea,NA,cnidaria,anthozoa,actiniaria,andresiidae,andresia,andresia partenopea,1
-slb-58849,NA,3,animalia,cnidaria,anthozoa,actiniaria,haloclavidae,mesacmaea,mesacmaea mitchelli,NA,cnidaria,anthozoa,actiniaria,haloclavidae,mesacmaea,mesacmaea mitchellii,1
 w-oct-289321,NA,5,animalia,cnidaria,anthozoa,pennatulacea,virgulariidae,acanthoptilum,acanthoptilum agassizi,NA,cnidaria,anthozoa,pennatulacea,virgulariidae,acanthoptilum,acanthoptilum agassizii,1
-fis-173404,NA,29,animalia,chordata,elasmobranchii,torpediniformes,narcinidae,narcinops,narcinops ornata,NA,chordata,elasmobranchii,torpediniformes,narcinidae,narcinops,narcinops ornatus,2
-slb-68896,NA,4,animalia,mollusca,bivalvia,limoida,limidae,limatula,limatula sulcata,NA,mollusca,bivalvia,limida,limidae,limatula,limatula bullata,2
-slb-70386,Blake lucine,8,animalia,mollusca,bivalvia,veneroida,lucinidae,lucinoma,lucinoma blakeanum,NA,mollusca,bivalvia,lucinida,lucinidae,lucinoma,lucinoma blakeana,2
-slb-72013,NA,4,animalia,mollusca,gastropoda,archaeogastropoda,scissurellidae,scissurella,scissurella coronata,NA,mollusca,gastropoda,lepetellida,scissurellidae,scissurella,scissurella ornata,2
-slb-72779,girdled paperbubble,6,animalia,mollusca,gastropoda,cephalaspidea,philinidae,philine,philine cingulata,NA,mollusca,gastropoda,cephalaspidea,philinidae,philine,philine angulata,2
-slb-73864,NA,6,animalia,mollusca,gastropoda,neogastropoda,columbellidae,mitrella,mitrella bella,NA,mollusca,gastropoda,neogastropoda,columbellidae,mitrella,mitrella bellula,2
-slb-73864,NA,6,animalia,mollusca,gastropoda,neogastropoda,columbellidae,mitrella,mitrella bella,NA,mollusca,gastropoda,neogastropoda,columbellidae,mitrella,mitrella pulla,2
-slb-74887,white nassa,7,animalia,mollusca,gastropoda,neogastropoda,nassariidae,nassarius,nassarius albus,NA,mollusca,gastropoda,neogastropoda,nassariidae,nassarius,nassarius albinus,2
-slb-74887,white nassa,7,animalia,mollusca,gastropoda,neogastropoda,nassariidae,nassarius,nassarius albus,NA,mollusca,gastropoda,neogastropoda,nassariidae,nassarius,nassarius arcus,2
-slb-76891,NA,9,animalia,mollusca,gastropoda,neotaenioglossa,rissoidae,rissoina,rissoina striosa,NA,mollusca,gastropoda,littorinimorpha,rissoinidae,rissoina,rissoina striata,2
-slb-76891,NA,9,animalia,mollusca,gastropoda,neotaenioglossa,rissoidae,rissoina,rissoina striosa,NA,mollusca,gastropoda,littorinimorpha,rissoinidae,rissoina,rissoina stricta,2
-slb-89448,NA,5,animalia,porifera,demospongiae,hadromerida,clionaidae,cliona,cliona langae,NA,porifera,demospongiae,clionaida,clionaidae,cliona,cliona liangae,1
-slb-92563,NA,6,animalia,cnidaria,hydrozoa,anthoathecata,hydractiniidae,hydractinia,hydractinia minuta,NA,cnidaria,hydrozoa,anthoathecata,hydractiniidae,hydractinia,hydractinia munita,2
-slb-94121,NA,4,animalia,porifera,calcarea,leucosolenida,leucosoleniidae,leucosolenia,leucosolenia clathrus,NA,porifera,calcarea,leucosolenida,leucosoleniidae,leucosolenia,leucosolenia cyathus,2
-slb-95513,NA,4,animalia,chordata,ascidiacea,enterogona,polycitoridae,eudistoma,eudistoma toealense,NA,chordata,ascidiacea,aplousobranchia,polycitoridae,eudistoma,eudistoma toealensis,2
-w-msc-344414,NA,9,animalia,mollusca,scaphopoda,gadilida,pulsellidae,pulsellum,pulsellum bushi,NA,mollusca,scaphopoda,gadilida,pulsellidae,pulsellum,pulsellum bushae,2
-slb-96306,NA,3,animalia,mollusca,scaphopoda,dentaliida,dentaliidae,dentalium,dentalium congoensis,NA,mollusca,scaphopoda,dentaliida,dentaliidae,dentalium,dentalium congoense,2
-its-552877,NA,8,animalia,arthropoda,malacostraca,decapoda,ctenochelidae,dawsonius,dawsonius latispina,NA,arthropoda,malacostraca,decapoda,ctenochelidae,dawsonius,dawsonius latispinus,2
-w-bch-421910,NA,6,animalia,arthropoda,malacostraca,decapoda,cymonomidae,curupironomus,curupironomus agassizi,NA,arthropoda,malacostraca,decapoda,cymonomidae,curupironomus,curupironomus agassirii,2
-slb-99032,granulose Chondriovelum,8,animalia,bryozoa,gymnolaemata,cheilostomata,onychocellidae,chondriovelum,chondriovelum angustilobatum,NA,bryozoa,gymnolaemata,cheilostomatida,onychocellidae,chondriovelum,chondriovelum angustilobata,2
-slb-98108,NA,4,animalia,mollusca,scaphopoda,dentaliida,dentaliidae,antalis,antalis usitatum,NA,mollusca,scaphopoda,dentaliida,dentaliidae,antalis,antalis usitata,2
-slb-101138,NA,4,animalia,arthropoda,malacostraca,decapoda,diogenidae,clibanarius,clibanarius padaverensis,NA,arthropoda,malacostraca,decapoda,diogenidae,clibanarius,clibanarius padavensis,2
-slb-114565,NA,4,animalia,mollusca,bivalvia,arcoida,arcidae,barbatia,barbatia amygdalumtotsum,NA,mollusca,bivalvia,arcida,arcidae,barbatia,barbatia amygdalumtostum,1
-slb-114754,NA,3,animalia,mollusca,bivalvia,veneroida,veneridae,antigona,antigona restriculata,NA,mollusca,bivalvia,venerida,veneridae,antigona,antigona resticulata,1
-slb-155739,NA,3,animalia,arthropoda,malacostraca,decapoda,paguridae,pagurus,pagurus kalkarnii,NA,arthropoda,malacostraca,decapoda,paguridae,pagurus,pagurus kulkarnii,1
-slb-62751,NA,6,animalia,cnidaria,anthozoa,scleractinia,mussidae,lobophyllia,lobophyllia serratus,NA,cnidaria,anthozoa,scleractinia,lobophylliidae,lobophyllia,lobophyllia serrata,2
-slb-61685,NA,7,animalia,cnidaria,anthozoa,scleractinia,acroporidae,acropora,acropora pectinatus,NA,cnidaria,anthozoa,scleractinia,acroporidae,acropora,acropora pectinata,2
-slb-62445,golden war coral,3,animalia,cnidaria,anthozoa,scleractinia,faviidae,favites,favites micropentagona,NA,cnidaria,anthozoa,scleractinia,merulinidae,favites,favites micropentagonus,2
-slb-106340,NA,3,animalia,mollusca,gastropoda,neogastropoda,turridae,inquisitor,inquisitor varicosa,NA,mollusca,gastropoda,neogastropoda,pseudomelatomidae,inquisitor,inquisitor varicosus,2
-slb-118817,NA,3,animalia,mollusca,gastropoda,neogastropoda,buccinidae,pollia,pollia subrubiginosus,NA,mollusca,gastropoda,neogastropoda,pisaniidae,pollia,pollia subrubiginosa,2
-slb-128634,NA,5,animalia,mollusca,bivalvia,mytiloida,mytilidae,trichomya,trichomya hirsutua,NA,mollusca,bivalvia,mytilida,mytilidae,trichomya,trichomya hirsuta,1
-slb-169556,cushion star fish,6,animalia,echinodermata,asteroidea,valvatida,oreasteridae,culcita,culcita novaeguinae,NA,echinodermata,asteroidea,valvatida,oreasteridae,culcita,culcita novaeguineae,1
-w-por-723673,NA,4,animalia,porifera,demospongiae,lithistida,azoricidae,leiodermatium,leiodermatium intermedia,NA,porifera,demospongiae,tetractinellida,azoricidae,leiodermatium,leiodermatium intermedium,2
-slb-62490,NA,9,animalia,cnidaria,anthozoa,scleractinia,faviidae,platygyra,platygyra carnosus,NA,cnidaria,anthozoa,scleractinia,merulinidae,platygyra,platygyra carnosa,2
-slb-65877,red pencil urchin,7,animalia,echinodermata,echinoidea,echinoida,echinometridae,heterocentrotus,heterocentrotus mammillatus,NA,echinodermata,echinoidea,camarodonta,echinometridae,heterocentrotus,heterocentrotus mamillatus,1
-slb-129275,NA,3,animalia,mollusca,bivalvia,myoida,teredinidae,lyrodus,lyrodus massus,NA,mollusca,bivalvia,myida,teredinidae,lyrodus,lyrodus massa,2
-slb-117366,NA,3,animalia,mollusca,gastropoda,archaeogastropoda,trochidae,clanculus,clanculus persica,NA,mollusca,gastropoda,trochida,trochidae,clanculus,clanculus persicus,2
-slb-128615,NA,4,animalia,mollusca,bivalvia,arcoida,glycymerididae,glycymeris,glycymeris aspera,NA,mollusca,bivalvia,arcida,glycymerididae,glycymeris,glycymeris aspersa,1
 slb-130968,NA,3,animalia,arthropoda,malacostraca,decapoda,alpheidae,alpheus,alpheus soela,NA,arthropoda,malacostraca,decapoda,alpheidae,alpheus,alpheus soelae,1
-slb-129290,NA,3,animalia,mollusca,bivalvia,myoida,teredinidae,kuphus,kuphus polythalamia,NA,mollusca,bivalvia,myida,teredinidae,kuphus,kuphus polythalamius,2
-slb-197582,NA,6,animalia,arthropoda,malacostraca,amphipoda,melitidae,elasmopus,elasmopus alkahiranensis,NA,arthropoda,malacostraca,amphipoda,maeridae,elasmopus,elasmopus alkhiranensis,1
-slb-160063,NA,4,animalia,echinodermata,echinoidea,clypeasteroida,astriclypeidae,astriclypeus,astriclypeus manni,NA,echinodermata,echinoidea,clypeasteroida,astriclypeidae,astriclypeus,astriclypeus mannii,1
-slb-119032,NA,3,animalia,mollusca,bivalvia,mytiloida,mytilidae,musculus,musculus nanus,NA,mollusca,bivalvia,mytilida,mytilidae,musculus,musculus nana,2
-slb-119032,NA,3,animalia,mollusca,bivalvia,mytiloida,mytilidae,musculus,musculus nanus,NA,mollusca,bivalvia,mytilida,mytilidae,musculus,musculus nanulus,2
-slb-128697,NA,4,animalia,mollusca,bivalvia,limoida,limidae,ctenoides,ctenoides concentrica,NA,mollusca,bivalvia,limida,limidae,ctenoides,ctenoides concentricus,2
-slb-128857,NA,5,animalia,mollusca,bivalvia,ostreoida,spondylidae,spondylus,spondylus violascens,NA,mollusca,bivalvia,pectinida,spondylidae,spondylus,spondylus violacescens,2
-slb-129282,NA,3,animalia,mollusca,bivalvia,myoida,teredinidae,teredo,teredo mindaensis,NA,mollusca,bivalvia,myida,teredinidae,teredo,teredo mindanensis,1
+slb-166146,Cuming's worm shell,4,animalia,mollusca,gastropoda,neotaenioglossa,siliquariidae,tenagodus,tenagodus cumingi,NA,mollusca,gastropoda,[unassigned] caenogastropoda,siliquariidae,tenagodus,tenagodus cumingii,1
 slb-169922,brown worm cucumber,5,animalia,echinodermata,holothuroidea,apodida,synaptidae,polyplectana,polyplectana kefersteini,NA,echinodermata,holothuroidea,apodida,synaptidae,polyplectana,polyplectana kefersteinii,1
-slb-190143,NA,6,animalia,arthropoda,malacostraca,decapoda,portunidae,lissocarcinus,lissocarcinus polyboides,NA,arthropoda,malacostraca,decapoda,portunidae,lissocarcinus,lissocarcinus polybiodes,1
 slb-169737,NA,3,animalia,echinodermata,holothuroidea,dendrochirotida,sclerodactylidae,ohshimella,ohshimella ehrenbergi,NA,echinodermata,holothuroidea,dendrochirotida,sclerodactylidae,ohshimella,ohshimella ehrenbergii,1
-slb-112841,NA,6,animalia,mollusca,bivalvia,mytiloida,mytilidae,idas,idas japonica,NA,mollusca,bivalvia,mytilida,mytilidae,idas,idas japonicus,2
-slb-118477,smooth eyed ghost crab,70,animalia,arthropoda,malacostraca,decapoda,ocypodidae,ocypode,ocypode cordimanus,NA,arthropoda,malacostraca,decapoda,ocypodidae,ocypode,ocypode cordimana,2
-slb-128679,NA,3,animalia,mollusca,bivalvia,pterioida,pteriidae,pinctada,pinctada syugillata,NA,mollusca,bivalvia,ostreida,margaritidae,pinctada,pinctada sugillata,1
-slb-128702,NA,3,animalia,mollusca,bivalvia,limoida,limidae,limaria,limaria perfragile,NA,mollusca,bivalvia,limida,limidae,limaria,limaria perfragilis,2
-slb-174044,NA,5,animalia,arthropoda,malacostraca,mysida,mysidae,erythrops,erythrops neapolitana,NA,arthropoda,malacostraca,mysida,mysidae,erythrops,erythrops neapolitanus,2
 slb-101069,NA,6,animalia,mollusca,bivalvia,ostreoida,spondylidae,spondylus,spondylus gussoni,NA,mollusca,bivalvia,pectinida,spondylidae,spondylus,spondylus gussonii,1
-slb-16024,NA,5,animalia,arthropoda,malacostraca,isopoda,cirolanidae,politolana,politolana micropthalma,NA,arthropoda,malacostraca,isopoda,cirolanidae,politolana,politolana microphthalma,1
-slb-83768,NA,5,animalia,nemertea,enopla,hoplonemertea,tetrastemmatidae,tetrastemma,tetrastemma bicolor,NA,nemertea,hoplonemertea,monostilifera,tetrastemmatidae,tetrastemma,tetrastemma unicolor,2
-slb-96494,NA,5,animalia,mollusca,scaphopoda,gadilida,gadilidae,dischides,dischides dichelum,NA,mollusca,scaphopoda,gadilida,gadilidae,dischides,dischides dichelus,1
-slb-114010,NA,6,animalia,mollusca,bivalvia,veneroida,cardiidae,fulvia,fulvia dulce,NA,mollusca,bivalvia,cardiida,cardiidae,fulvia,fulvia dulcis,2
-slb-183999,NA,4,animalia,mollusca,gastropoda,neogastropoda,volutidae,lyria,lyria insignata,NA,mollusca,gastropoda,neogastropoda,volutidae,lyria,lyria insignita,1
-slb-27650,NA,3,animalia,arthropoda,maxillopoda,poecilostomatoida,oncaeidae,oncaea,oncaea derivata,NA,arthropoda,hexanauplia,cyclopoida,oncaeidae,oncaea,oncaea delicata,2
-slb-112797,ark shell,3,animalia,mollusca,bivalvia,arcoida,arcidae,barbatia,barbatia novaezelandiae,NA,mollusca,bivalvia,arcida,arcidae,barbatia,barbatia novaezealandiae,1
-slb-20991,NA,3,animalia,arthropoda,malacostraca,isopoda,sphaeromatidae,pseudosphaeroma,pseudosphaeroma campbellensis,NA,arthropoda,malacostraca,isopoda,sphaeromatidae,pseudosphaeroma,pseudosphaeroma campbellense,2
-slb-187276,ribbed black trochid,3,chromista,haptophyta,prymnesiophyceae,not assigned,not assigned,diloma,diloma nigerrima,NA,mollusca,gastropoda,trochida,trochidae,diloma,diloma nigerrimum,2
-slb-118854,NA,32,animalia,mollusca,gastropoda,neogastropoda,costellariidae,vexillum,vexillum deshayesi,NA,mollusca,gastropoda,neogastropoda,costellariidae,vexillum,vexillum deshayesii,1
-rep-5028,McDowell's sea snake,49,animalia,chordata,reptilia,squamata,hydrophiidae,hydrophis,hydrophis macdowelli,NA,chordata,reptilia,squamata,elapidae,hydrophis,hydrophis mcdowelli,1
-slb-119476,NA,16,animalia,annelida,polychaeta,aciculata,polynoidae,branchipolynoe,branchipolynoe pettibonae,NA,annelida,polychaeta,phyllodocida,polynoidae,branchipolynoe,branchipolynoe pettiboneae,1
-slb-29778,NA,3,animalia,arthropoda,pycnogonida,pantopoda,callipallenidae,seguapallene,seguapallene insignata,NA,arthropoda,pycnogonida,pantopoda,callipallenidae,seguapallene,seguapallene insignatus,2
-slb-199122,NA,6,animalia,mollusca,gastropoda,patellogastropoda,lepetidae,maoricrater,maoricrater explorata,NA,mollusca,gastropoda,lottioidea,lepetidae,maoricrater,maoricrater exploratus,2
-slb-29614,NA,3,animalia,arthropoda,pycnogonida,pantopoda,austrodecidae,austrodecus,austrodecus minutum,NA,arthropoda,pycnogonida,pantopoda,austrodecidae,austrodecus,austrodecus sinuatum,2
-slb-29630,NA,3,animalia,arthropoda,pycnogonida,pantopoda,austrodecidae,austrodecus,austrodecus varan,NA,arthropoda,pycnogonida,pantopoda,austrodecidae,austrodecus,austrodecus varum,2
-slb-103381,NA,4,animalia,cnidaria,hydrozoa,leptothecata,sertulariidae,symplectoscyphus,symplectoscyphus annae,NA,cnidaria,hydrozoa,leptothecata,symplectoscyphidae,symplectoscyphus,symplectoscyphus anae,1
-slb-29658,NA,8,animalia,arthropoda,pycnogonida,pantopoda,callipallenidae,austropallene,austropallene tcherniae,NA,arthropoda,pycnogonida,pantopoda,callipallenidae,austropallene,austropallene tcherniai,1
-slb-111115,NA,3,animalia,annelida,polychaeta,aciculata,chrysopetalidae,chrysopetalum,chrysopetalum hernancortazae,NA,annelida,polychaeta,phyllodocida,chrysopetalidae,chrysopetalum,chrysopetalum hernancortezae,1
-slb-111353,NA,4,animalia,annelida,polychaeta,aciculata,onuphidae,hirsutonuphis,hirsutonuphis gemminata,NA,annelida,polychaeta,eunicida,onuphidae,hirsutonuphis,hirsutonuphis geminata,1
-slb-113283,NA,4,animalia,mollusca,bivalvia,veneroida,lucinidae,phacoides,phacoides pectinata,NA,mollusca,bivalvia,lucinida,lucinidae,phacoides,phacoides pectinatus,2
-slb-113769,NA,3,animalia,annelida,polychaeta,canalipalpata,sabellidae,notaulax,notaulax nudicolis,NA,annelida,polychaeta,sabellida,sabellidae,notaulax,notaulax nudicollis,1
-slb-177233,NA,7,animalia,mollusca,gastropoda,neogastropoda,fasciolariidae,hemipolygona,hemipolygona cariniferus,NA,mollusca,gastropoda,neogastropoda,fasciolariidae,hemipolygona,hemipolygona carinifera,2
-slb-177304,NA,4,animalia,mollusca,gastropoda,nudibranchia,chromodorididae,chromodoris,chromodoris neona,NA,mollusca,gastropoda,nudibranchia,chromodorididae,chromodoris,chromodoris nona,1
-slb-73693,NA,3,animalia,mollusca,gastropoda,neogastropoda,buccinidae,monostiolum,monostiolum tesselatum,NA,mollusca,gastropoda,neogastropoda,pisaniidae,monostiolum,monostiolum tessellatum,1
-slb-155864,common brown tube sponge,8,animalia,porifera,demospongiae,agelasida,agelasidae,agelas,agelas schmidti,NA,porifera,demospongiae,agelasida,agelasidae,agelas,agelas schmidtii,1
-slb-119657,NA,4,animalia,arthropoda,malacostraca,decapoda,bythograeidae,cyanagraea,cyanagraea preadator,NA,arthropoda,malacostraca,decapoda,bythograeidae,cyanagraea,cyanagraea praedator,1
-w-bch-440211,NA,3,animalia,arthropoda,malacostraca,decapoda,homolidae,paromola,paromola rathbunae,NA,arthropoda,malacostraca,decapoda,homolidae,paromola,paromola rathbuni,2
-slb-178176,NA,3,animalia,mollusca,bivalvia,limoida,limidae,limea,limea argentineae,NA,mollusca,bivalvia,limida,limidae,limea,limea argentinae,1
-slb-74122,NA,3,animalia,mollusca,gastropoda,neogastropoda,conidae,kurtziella,kurtziella accincta,NA,mollusca,gastropoda,neogastropoda,mangeliidae,kurtziella,kurtziella accinctus,2
-slb-182872,NA,3,animalia,arthropoda,pycnogonida,pantopoda,ammotheidae,ascorhynchus,ascorhynchus paxillum,NA,arthropoda,pycnogonida,pantopoda,ascorhynchidae,ascorhynchus,ascorhynchus paxillus,1
-slb-74713,NA,7,animalia,mollusca,gastropoda,neogastropoda,muricidae,dermomurex,dermomurex abyssicola,NA,mollusca,gastropoda,neogastropoda,muricidae,dermomurex,dermomurex abyssicolus,2
+slb-67444,NA,3,animalia,bryozoa,gymnolaemata,cheilostomata,scrupocellariidae,scrupocellaria,scrupocellaria bertholetti,NA,bryozoa,gymnolaemata,cheilostomatida,candidae,scrupocellaria,scrupocellaria bertholettii,1
 slb-92489,NA,4,animalia,cnidaria,hydrozoa,anthoathecata,corymorphidae,corymorpha,corymorpha forbesi,NA,cnidaria,hydrozoa,anthoathecata,corymorphidae,corymorpha,corymorpha forbesii,1
-slb-64140,NA,6,animalia,cnidaria,hydrozoa,leptothecata,lafoeidae,zygophylax,zygophylax convallarius,NA,cnidaria,hydrozoa,leptothecata,zygophylacidae,zygophylax,zygophylax convallaria,2
-slb-176680,NA,7,animalia,mollusca,bivalvia,veneroida,sportellidae,ensitellops,ensitellops protextus,NA,mollusca,bivalvia,galeommatida,basterotiidae,ensitellops,ensitellops protexta,2
-slb-120078,hooded oyster,212,animalia,mollusca,bivalvia,ostreoida,ostreidae,saccostrea,saccostrea cucullata,NA,mollusca,bivalvia,ostreida,ostreidae,saccostrea,saccostrea cuccullata,1
-slb-120087,true heart cockle,94,animalia,mollusca,bivalvia,veneroida,cardiidae,corculum,corculum cardissum,NA,mollusca,bivalvia,cardiida,cardiidae,corculum,corculum cardissa,2
-its-97689,NA,38,animalia,arthropoda,malacostraca,decapoda,polychelidae,polycheles,polycheles crucifer,NA,arthropoda,malacostraca,decapoda,polychelidae,polycheles,polycheles coccifer,2
-slb-97520,long-spiculed glistenworm,6,animalia,mollusca,aplacophora,chaetodermomorpha,falcidentidae,falcidens,falcidens macracanthus,NA,mollusca,caudofoveata,chaetodermatida,chaetodermatidae,falcidens,falcidens macracanthos,1
-slb-119486,NA,7,animalia,annelida,polychaeta,phyllodocida,syllidae,sphaerosyllis,sphaerosyllis ridgiensis,NA,annelida,polychaeta,phyllodocida,syllidae,sphaerosyllis,sphaerosyllis ridgensis,1
-slb-119475,NA,4,animalia,annelida,polychaeta,aciculata,polynoidae,branchinotogluma,branchinotogluma tunnicliffae,NA,annelida,polychaeta,phyllodocida,polynoidae,branchinotogluma,branchinotogluma tunnicliffeae,1
-slb-176677,NA,4,animalia,mollusca,gastropoda,neotaenioglossa,rissoidae,alvania,alvania moerchii,NA,mollusca,gastropoda,littorinimorpha,rissoidae,alvania,alvania moerchi,1
-slb-12273,wide front swimcrab,181,animalia,arthropoda,malacostraca,decapoda,portunidae,thalamita,thalamita crenata,NA,arthropoda,malacostraca,decapoda,portunidae,thalamita,thalamita carinata,2
-slb-12282,NA,31,animalia,arthropoda,malacostraca,decapoda,portunidae,thalamita,thalamita poisonii,NA,arthropoda,malacostraca,decapoda,portunidae,thalamita,thalamita poissonii,1
-w-oph-158073,NA,154,animalia,echinodermata,ophiuroidea,ophiurida,ophiodermatidae,ophioderma,ophioderma brevispina,NA,echinodermata,ophiuroidea,ophiacanthida,ophiodermatidae,ophioderma,ophioderma brevispinum,2
-w-oph-243641,banded serpent star,56,animalia,echinodermata,ophiuroidea,ophiurida,ophiodermatidae,ophioderma,ophioderma panamensis,NA,echinodermata,ophiuroidea,ophiacanthida,ophiodermatidae,ophioderma,ophioderma panamense,2
-its-96047,knight rock shrimp,179,animalia,arthropoda,malacostraca,decapoda,sicyoniidae,sicyonia,sicyonia lancifera,NA,arthropoda,malacostraca,decapoda,sicyoniidae,sicyonia,sicyonia lancifer,1
-w-msc-506180,NA,10,animalia,mollusca,bivalvia,mytiloida,mytilidae,solamen,solamen spectabilis,NA,mollusca,bivalvia,mytilida,mytilidae,solamen,solamen spectabile,2
-slb-128839,NA,63,animalia,mollusca,bivalvia,ostreoida,propeamussidae,propeamussium,propeamussium jeffreysi,NA,mollusca,bivalvia,pectinida,propeamussiidae,propeamussium,propeamussium jeffreysii,1
-slb-128997,NA,79,animalia,mollusca,bivalvia,veneroida,veneridae,placamen,placamen lamellata,NA,mollusca,bivalvia,venerida,veneridae,placamen,placamen lamellatum,2
-slb-129289,NA,14,animalia,mollusca,bivalvia,myoida,teredinidae,nausitora,nausitora dunlopi,NA,mollusca,bivalvia,myida,teredinidae,nausitora,nausitora dunlopei,1
-slb-129367,Dall's unicum top,19,animalia,mollusca,gastropoda,archaeogastropoda,calliostomatidae,calliostoma,calliostoma unicum,NA,mollusca,gastropoda,trochida,calliostomatidae,calliostoma,calliostoma aulicum,2
-slb-129431,NA,18,animalia,arthropoda,maxillopoda,pedunculata,poecilasmatidae,octolasmis,octolasmis warwickii,NA,arthropoda,hexanauplia,lepadiformes,poecilasmatidae,octolasmis,octolasmis warwicki,1
-slb-129648,NA,61,animalia,echinodermata,ophiuroidea,ophiurida,amphiuridae,amphioplus,amphioplus lucidus,NA,echinodermata,ophiuroidea,amphilepidida,amphiuridae,amphioplus,amphioplus tumidus,2
-fis-173576,NA,3,animalia,chordata,actinopterygii,perciformes,cepolidae,owstonia,owstonia doryptera,NA,chordata,actinopterygii,perciformes,cepolidae,owstonia,owstonia dorypterus,2
-fis-170328,NA,3,animalia,chordata,actinopterygii,perciformes,apogonidae,ostorhinchus,ostorhinchus urostigmus,NA,chordata,actinopterygii,perciformes,apogonidae,ostorhinchus,ostorhinchus urostigma,2
-slb-129861,NA,125,animalia,cnidaria,anthozoa,scleractinia,flabellidae,flabellum,flabellum apertum,NA,cnidaria,anthozoa,scleractinia,flabellidae,flabellum,flabellum asperum,2
-slb-100501,NA,47,animalia,mollusca,gastropoda,neogastropoda,muricidae,clivipollia,clivipollia pulcher,NA,mollusca,gastropoda,neogastropoda,pisaniidae,clivipollia,clivipollia pulchra,2
-slb-100591,NA,27,animalia,mollusca,gastropoda,neogastropoda,nassariidae,nassarius,nassarius pauperus,NA,mollusca,gastropoda,neogastropoda,nassariidae,nassarius,nassarius pauperatus,2
-slb-15620,NA,12,animalia,arthropoda,malacostraca,isopoda,bopyridae,synsynella,synsynella choprae,NA,arthropoda,malacostraca,isopoda,bopyridae,synsynella,synsynella choprai,1
-slb-156515,NA,22,animalia,arthropoda,maxillopoda,sessilia,archaeobalanidae,conopea,conopea calceolus,NA,arthropoda,hexanauplia,sessilia,balanidae,conopea,conopea calceola,2
-slb-156892,NA,31,animalia,annelida,polychaeta,aciculata,acoetidae,acoetes,acoetes melanota,NA,annelida,polychaeta,phyllodocida,acoetidae,acoetes,acoetes melanonota,2
-slb-156972,NA,31,animalia,porifera,demospongiae,halichondrida,axinellidae,ptilocaulis,ptilocaulis walpersi,NA,porifera,demospongiae,axinellida,axinellidae,ptilocaulis,ptilocaulis walpersii,1
-slb-158244,NA,16,animalia,mollusca,gastropoda,neotaenioglossa,ficidae,ficus,ficus filosus,NA,mollusca,gastropoda,littorinimorpha,ficidae,ficus,ficus filosa,2
-slb-158468,long leaf irus,38,animalia,mollusca,bivalvia,veneroida,veneridae,irus,irus macrophyllus,NA,mollusca,bivalvia,venerida,veneridae,irus,irus macrophylla,2
-slb-158806,NA,16,animalia,cnidaria,anthozoa,scleractinia,poritidae,porites,porites sillimaniana,NA,cnidaria,anthozoa,scleractinia,poritidae,porites,porites silimaniana,1
-slb-158970,NA,15,animalia,arthropoda,malacostraca,decapoda,leucosiidae,myra,myra eudactyla,NA,arthropoda,malacostraca,decapoda,leucosiidae,myra,myra eudactylus,2

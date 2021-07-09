@@ -19,6 +19,12 @@ assemble_worms <- function(aspect = 'wide') {
   s_from_g <- read_csv(file.path(worms_dir, 'expand6_species_from_genus_worms.csv'), 
                        col_types = c(id = 'i')) %>%
     filter(!is.na(id))
+  am_patch_wide <- read_csv(here('_data/worms_data/expand7_aquamaps_patch.csv'),
+                            col_types = cols(.default = 'c')) %>%
+    select(spp_gp, rank, name) %>%
+    distinct() %>%
+    spread(rank, name) %>%
+    select(-spp_gp)
   
   rank_lvls <- c('kingdom', 'phylum', 'class', 'order', 'family', 'genus', 'species')
   
@@ -37,6 +43,7 @@ assemble_worms <- function(aspect = 'wide') {
               by = c('phylum')) %>%
     select(kingdom, phylum, class, order, family, genus, species) %>%
     filter(kingdom == 'animalia') %>%
+    bind_rows(am_patch_wide) %>%
     select(-kingdom) %>%
     distinct()
   
