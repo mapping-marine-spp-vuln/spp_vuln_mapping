@@ -50,9 +50,90 @@ Number of unique IUCN species (by IUCN species ID): `r spp_info %>% filter(!is.n
 env_info <- data.table::fread(file.path(am_dir, 'ver10_2019_hspen.csv')) %>%
   janitor::clean_names() %>%
   rename(am_sid = species_id)
+table(env_info$temp_yn)
 
 names(env_info)
 ```
+
+
+```{r}
+
+install.packages("sdmpredictors")
+install.packages("leaflet")
+
+# Load package
+library(sdmpredictors)
+library(leaflet)
+# Explore datasets in the package
+list_datasets()
+
+# Explore layers in a dataset
+tmp <- list_layers("Bio-ORACLE")
+tmp$name
+tmp <- list_layers("MARSPEC")
+tmp$name
+
+# Download specific layers to the current directory
+bathy <- load_layers(c("BO_bathymin", "BO_bathymean", "BO_bathymax"))
+
+
+future <- list_layers_future(terrestrial = FALSE) 
+salinity <- load_layers(c("BO2_RCP26_2050_salinitymean_bdmin"))
+```
+# temp
+```{r}
+
+env_info_manip <- env_info %>%
+  mutate(tmp_range_abs = temp_max - temp_min,
+         tmp_range_pref = temp_pref_max - temp_pref_min) %>%
+  mutate(tmp_range_abs_bin = cut(tmp_range_abs, breaks = c(0, 5, 10, 15, 20, 25, Inf), include.lowest=TRUE)) %>%
+  mutate(tmp_range_pref_bin = cut(tmp_range_pref, breaks = c(0, 2.5, 5, 7.5, 10, 15, Inf), include.lowest=TRUE)) %>%
+  mutate(trait = "thermal_sensitivity_to_ocean_warming_max_temps_tolerated") %>%
+  left_join(spp_info, by=c("am_sid")) %>%
+  select(am_sid, comname, sciname, trait, tmp_range_abs, tmp_range_pref, tmp_range_pref_bin, tmp_range_abs, tmp_range_abs_bin)            
+
+write_csv(env_info_manip, here::here("explore/tmp_cats/aquamaps_tmp_bins.csv"))
+
+ggplot(data=env_info_manip, aes(x=tmp_range_pref)) +
+  geom_histogram()
+
+
+ggplot(data=filter(env_info_manip, depth_min>100), aes(x=tmp_range_pref)) +
+  geom_histogram()
+
+ggplot(data=filter(env_info_manip, depth_min>200), aes(x=tmp_range_pref)) +
+  geom_histogram()
+
+ggplot(data=env_info_manip, aes(x=tmp_range, y=tmp_range_pref)) + 
+  geom_point(alpha=0.05)
+
+```
+
+# oxy
+```{r}
+table(env_info$oxy_yn)
+
+tmp <- filter(env_info, oxy_yn == 1)
+
+hist(env_info$oxy_min)
+
+env_info_manip <- env_info %>%
+  mutate(oxy_range = oxy_max - oxy_min,
+         oxy_range_pref = oxy_pref_max - oxy_pref_min)
+
+ggplot(data=filter(env_info_manip, oxy_yn==1), aes(x=oxy_range_pref)) +
+  geom_histogram() +
+  geom_vline(xintercept=90, color="red") +
+  geom_vline(xintercept = 200, color="red")
+
+summary(filter(env_info_manip, oxy_yn==1))
+ggplot(data=env_info_manip, aes(y=oxy_range, x=oxy_pref_min)) + 
+  geom_point(alpha=0.05)
+
+```
+
+
+
 
 Each parameter (`depth`, `temp`, `salinity`, `prim_prod`, `ice_con`, `oxy`, `land_dist`) has a column for `min`, `pref_min`, `pref_max`, `max` (and `mean` for `depth`).  Additionally, all parameters also have columns for `_yn` (whether that parameter is relevant for that species). 
 For each parameter, let's plot distributions of the min, max, and preferred min/max for all spp that depend on that parameter.
@@ -73,8 +154,9 @@ env_sum_df <- env_info %>%
   select(-yn) %>%
   gather(dist, value, -am_sid, -param) %>%
   mutate(dist = factor(dist, levels = dist_vals),
-         value = ifelse(param == 'depth', log10(value + 1), value),
-         param = ifelse(param == 'depth', 'log10_depth', param))
+         #value = ifelse(param == 'depth', log10(value + 1), value),
+         #param = ifelse(param == 'depth', 'log10_depth', param)
+         )
 
 write_csv(env_sum_df, file.path(am_dir, 'species_envelope_summary.csv'))
 
@@ -159,6 +241,10 @@ spp_rich <- spp_cells %>%
 spp_rich_rast <- subs(rast_base, spp_rich, by = 'loiczid', which = 'nspp')
 
 plot(log10(spp_rich_rast), col = hcl.colors(20))
+
+table(env_range_df$param)
+filter(env_range_df, param=="land_dist")
+tmp <- filter(env_range_df, param=="oxy")
 
 ```
 
