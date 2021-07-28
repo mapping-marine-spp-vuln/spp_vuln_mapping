@@ -54,7 +54,7 @@ Let's limit to observations with mean gapfill of rank 4 (order) or lower.  For n
 
 ```{r}
 df_clean <- df %>%
-  filter(gf_level <= 4) %>%
+  filter(gf_level <= 3) %>%
   select(-sd, -nspp) %>% 
   group_by(species) %>%
   mutate(gf_level = mean(gf_level),
@@ -143,7 +143,7 @@ avg_sil <- function(k, df) {
   mean(ss[, 3])
 }
 
-df_resc_samp <- df_rescale[sample(1:nrow(df_rescale), size = 24000, replace = FALSE), ]
+df_resc_samp <- df_rescale#[sample(1:nrow(df_rescale), size = 24000, replace = FALSE), ]
 
 # extract avg silhouette for 6-20 clusters
 silh_file <- sprintf(here('tmp/silhouette_%s.csv'), nrow(df_resc_samp))
@@ -188,7 +188,7 @@ $x_i$ in the data set we compute its range $[\min(x_i), \max(x_i)]$ and generate
 $$Gap_n(k) = E^*_n \log(W_k) - \log(W_k)$$
 >where $E^*_n$ denotes the expectation under a sample size $n$ from the reference distribution. $E^*_n$ is defined via bootstrapping (B) by generating B copies of the reference datasets and, by computing the average $\log(W^*_k)$. The gap statistic measures the deviation of the observed $W_k$ value from its expected value under the null hypothesis. The estimate of the optimal clusters ($\hat{k}$) will be the value that maximizes $Gap_n(k)$. This means that the clustering structure is far away from the uniform distribution of points.
 
-```{r gap stat method}
+```{r gap stat method, eval = TRUE}
 set.seed(42)
 gap_stat_plot_file <- sprintf(here('tmp/gap_stat_%s.png'), nrow(df_resc_samp))
 if(!file.exists(gap_stat_plot_file)) {
@@ -204,22 +204,10 @@ if(!file.exists(gap_stat_plot_file)) {
 knitr::include_graphics(gap_stat_plot_file)
 ```
 
-This method seems to indicate that more clusters is better all the way to 15.
-
-<!-- ### Distance matrix?  -->
-``` {r distance matrix, eval = FALSE}
-rowsamps <- sample(1:nrow(df_rescale), 500, replace = FALSE)
-d_mtx_samp <- get_dist(df_rescale[rowsamps, ])
-d_mtx <- get_dist(df_rescale)
-fviz_dist(d_mtx_samp, 
-          gradient = list(low = "#00AFBB", mid = "white", high = "#FC4E07"),
-          show_labels = FALSE)
-
-```
 
 ### Running K-means with optimal $k$
 
-It appears that a k between 6-12 is reasonable.  Let's choose 11 as suggested by the silhouette method.  Identify clusters across all species and then examine cluster breakdown by class.  Compare `pam()` and `kmeans()`.
+Identify clusters across all species and then examine cluster breakdown by class.  Compare `pam()` and `kmeans()`.
 
 ``` {r k means, cache = TRUE}
 system.time({
@@ -241,36 +229,90 @@ system.time({
 
 ```
 
-``` {r}
-k_vs_p <- data.frame(k = k15$cluster,
-                     p = p15$cluster) %>%
-  group_by(k, p) %>%
-  mutate(n = n()) %>%
-  ungroup() %>%
-  arrange(desc(n)) %>%
-  mutate(k_fct = fct_inorder(as.character(k)),
-         p_fct = fct_inorder(as.character(p)),
-         k_ltr = LETTERS[as.integer(k_fct)],
-         p_ltr = LETTERS[as.integer(p_fct)])
-ggplot(k_vs_p, aes(x = k_ltr, y = p_ltr)) +
-  geom_jitter()
+Use Jaccard similarity to see how well clusters line up.  Sequentially calculate similarity between pairs of clusters using Jaccard formula:
+$$J(A, B) = \frac{A \cap B}{A \cup B}$$
 
+```{r}
+
+df_clusters <- df_clean %>%
+  mutate(k_clust = k15$cluster,
+         p_clust = p15$cluster)
+
+df_spp <- df_clusters %>%
+  select(species, k_clust, p_clust) %>%
+  distinct() %>%
+  ungroup()
+
+compare_clusters <- function(df, a_col, b_col) {
+  ### a_col <- 'k_clust'; b_col <- 'p_clust'
+  n_clust <- n_distinct(df[[a_col]])
+  if(n_clust != n_distinct(df[[b_col]])) {
+    stop('Different # of clusters!')
+  }
+  df_tmp <- df %>%
+    rename(a_col := !!a_col, b_col := !!b_col)
+  jac_mtx <- matrix(NA, nrow = n_clust, ncol = n_clust)
+  for(a in 1:n_clust) {
+    for(b in 1:n_clust) {
+      ### a <- 1; b <- 1
+      jac_sim <- df_tmp %>%
+        filter(a_col == a | b_col == b) %>%
+        summarize(num = sum(a_col == a & b_col == b),
+                  den = n_distinct(species),
+                  jac = num / den)
+      jac_mtx[a, b] <- jac_sim$jac
+    }
+  }
+  jac_df <- data.frame(clust_name = letters[1:n_clust])
+  jac_mtx_tmp <- jac_mtx
+  rownames(jac_mtx_tmp) <- 1:n_clust
+  colnames(jac_mtx_tmp) <- 1:n_clust
+  for(j in 1:(n_clust-1)) {
+    # j <- 1
+    jac_max <- which(jac_mtx_tmp == max(jac_mtx_tmp), arr.ind = TRUE)
+    jac_df$a_col[j] <- rownames(jac_mtx_tmp)[jac_max[1]]
+    jac_df$b_col[j] <- colnames(jac_mtx_tmp)[jac_max[2]]
+    jac_df$sim[j] <- jac_mtx_tmp[jac_max]
+    if(j == n_clust-1) {
+      ### only one more!
+      jac_df$a_col[j+1] <- rownames(jac_mtx_tmp)[-jac_max[1]]
+      jac_df$b_col[j+1] <- colnames(jac_mtx_tmp)[-jac_max[2]]
+      jac_df$sim[j+1] <- jac_mtx_tmp[-jac_max[1], -jac_max[2]]
+    } else {
+      ### remove this match
+      jac_mtx_tmp <- jac_mtx_tmp[-jac_max[1], -jac_max[2]]
+    }
+  }  
+  jac_df <- jac_df %>%
+    mutate(a_col = as.integer(a_col), b_col = as.integer(b_col)) %>%
+    rename(!!a_col := a_col, !!b_col := b_col)
+  return(jac_df)
+}
+
+df_jac <- compare_clusters(df_spp, a = 'k_clust', b = 'p_clust')
+
+df_clusters_out <- df_clusters %>%
+  left_join(df_jac %>% select(k_clust, k_group = clust_name), by = 'k_clust') %>%
+  left_join(df_jac %>% select(p_clust, p_group = clust_name), by = 'p_clust')
+
+df_clust_plot <- df_clusters_out %>%
+  select(species, where(is.numeric), 
+         k_group, p_group, 
+         -n_traits, -k_clust, -p_clust) %>%
+  distinct()
+  
+ggplot(df_clust_plot, aes(x = k_group, y = p_group)) +
+  geom_jitter(alpha = .1)
+write_csv(df_clust_plot, 
+          here('_data/functional_groups_from_traits.csv'))
+```
+
+``` {r viz clusters}
 fviz_cluster(k15, data = df_rescale, labelsize = NA) +
   labs(title = 'kmeans')
 fviz_cluster(p15, data = df_rescale, labelsize = NA) +
   labs(title = 'pam')
 
-df_clusters <- df_clean %>%
-  mutate(k_clust = k15$cluster,
-         p_clust = p15$cluster) %>%
-  left_join(k_vs_p %>% select(k, p, k_ltr, p_ltr) %>% distinct(), 
-            by = c('k_clust' = 'k', 'p_clust' = 'p'))
-
-write_csv(df_clusters %>%
-            select(species, where(is.numeric), 
-                   k_group = k_ltr, p_group = p_ltr, 
-                   -n_traits, -k_clust, -p_clust), 
-          here('_data/functional_groups_from_traits.csv'))
 ```
 
 ``` {r}

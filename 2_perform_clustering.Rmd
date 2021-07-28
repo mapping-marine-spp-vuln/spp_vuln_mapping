@@ -1,0 +1,591 @@
+---
+title: "Assemble grouping traits"
+author: "*Compiled on `r date()` by `r Sys.info()['user']`*"
+output: 
+  html_document:
+    code_folding: hide
+    toc: true
+    toc_depth: 3
+    toc_float: yes
+    number_sections: true
+    theme: cerulean
+    highlight: haddock
+    includes: 
+      in_header: '~/github/src/templates/ohara_hdr.html'
+  pdf_document:
+    toc: true
+---
+
+``` {r setup, echo = TRUE, message = FALSE, warning = FALSE}
+
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
+
+library(oharac)
+oharac::setup()
+library(randomForest)
+library(cluster)
+library(caret)
+library(factoextra)
+library(ggfortify)
+source(here('fb_slb_fxns.R'))
+
+
+```
+
+# Summary
+
+Gather processed traits data and assemble into a dataframe.  Apply a clustering algorithm to identify groupings: first, use Random Forest to create a dissimilarity matrix, then use Hierarchical clustering to identify groups of similar species.
+
+# Data
+
+See individual trait scripts.
+
+# Methods
+
+## Assemble dataframe
+
+Let's limit to observations with mean gapfill of rank 3 (family) or lower.  For now this gets us 17k observations.  Limiting that to rank 4 (order) or lower gets us 64k observations, or perhaps it is more efficient to gapfill groups upwards?  For Random Forest, use all traits in their rawest form (though there is some gapfilling already occurring in the trait prep scripts).
+
+```{r assemble raw traits}
+gf_cut <- 3
+
+trait_length <- read_csv(here('_data/traits_grouping/trait_length.csv')) %>%
+  filter(gf_level <= gf_cut) %>%
+  select(species, log_l = value)
+trait_reprod <- read_csv(here('_data/traits_grouping/trait_reproduction_raw.csv')) %>%
+  filter(gf_level <= gf_cut) %>%
+  select(species, depend_score, log_gen_time, log_max_fecund, pld_score, protect_score)
+trait_depth  <- read_csv(here('_data/traits_grouping/trait_depth_raw.csv')) %>%
+  filter(gf_level <= gf_cut) %>%
+  select(species, depth, terr_score, vert_mig_score)
+trait_mobil  <- read_csv(here('_data/traits_grouping/trait_mobility.csv')) %>%
+  filter(gf_level <= gf_cut) %>%
+  select(species, mob_score = value)
+trait_troph  <- read_csv(here('_data/traits_grouping/trait_trophic_level.csv')) %>%
+  filter(gf_level <= gf_cut) %>%
+  select(species, troph_level = value)
+traits_df <- trait_length %>%
+  full_join(trait_reprod) %>%
+  full_join(trait_depth) %>%
+  full_join(trait_mobil) %>%
+  full_join(trait_troph)
+```
+
+
+## Supervised Random Forest
+
+Let's try a supervised random forest to classify into some taxonomic level, e.g., class.
+
+```{r attach taxa}
+taxa <- read_csv(here('_data/vuln_data/vuln_gapfilled_tx.csv')) %>%
+  select(class:species) 
+  
+traits_dropna <- traits_df %>%
+  left_join(taxa, by = 'species') %>%
+  drop_na()
+### leaves only 17008 observations...
+```
+
+``` {r split into training and validation}
+### split training and validation sets
+holdout <- sample(1:nrow(traits_dropna), nrow(traits_dropna)/3, replace = FALSE)
+
+valid <- traits_dropna[holdout, ]
+train <- traits_dropna[-holdout, ] # %>% sample_n(1000)
+```
+
+```{r plot scaling factor}
+### for ntree = 1000:
+###     n =  1000, t =   1.981
+###     n =  2000, t =   6.886
+###     n =  3000, t =  14.739
+###     n =  4000, t =  25.421
+###     n =  5000, t =  40.262
+###     n =  8000, t = 106.578
+###     n = 11339, t = 199.23
+n <- c(1000,  2000,  3000, 4000, 5000, 8000, 11339)
+t <- c(1.981, 6.886, 14.739, 25.421, 40.262, 106.578, 199.23)
+power_fit <- lm(log(t) ~ log(n))$coefficients[2]
+
+### slope = power
+df1 <- data.frame(n, t) 
+df2 <- data.frame(n = seq(0, 12000, 50)) %>%
+  mutate(ln_fit = 1.981*(n/1000)^power_fit)
+ggplot(df1, aes(x = n, y = t)) +
+  geom_line(data = df2, aes(y = ln_fit), color = 'red') +
+  geom_point() +
+  labs(x = 'number of spp obs', y = 'RF processing time (s)')
+
+```
+
+Because we have nine predictor variables, select `mtry = 3` at a time ($\sqrt{\text{# of traits}}$).  Based on some trials, it seems as if `randomForest()` scales at ~$n^{1.92}$
+
+``` {r supervised random forest}
+set.seed(42)
+system.time({
+  sup_rf_class <- randomForest(x = train %>% 
+                                 select(where(is.numeric)), 
+                               y = factor(train$class), ### dependent must be factor 
+                               mtry = 3, ntree = 1000, proximity = TRUE)
+})
+sup_rf_class
+varImpPlot(sup_rf_class)
+```
+
+``` {r use supervised RF results to predict class on validation set}
+# predict on test set
+class_predicted <- predict(sup_rf_class, valid %>% select(where(is.numeric)))
+valid_df <- data.frame(orig = valid$class, pred = class_predicted)
+
+confusionMatrix(table(valid_df$orig, valid_df$pred))
+```
+
+Supervised RF seems to do a great job of predicting a species' class based on the traits given (99.8% accuracy).  What will happen when we run an unsupervised RF to inform a clustering algorithm?
+
+## Unsupervised Random Forest
+
+Let's apply the process to the traits dataframe, without supervision, to create a proximity matrix.  NOTE: This seems about half the speed of the supervised?
+
+```{r unsup_rf}
+### n = 1000, t = 3.663; n = 2000, t = 10.096; n = 17008, t = 477.686
+system.time({
+  unsup_rf <- randomForest(x = traits_dropna %>% 
+                             # sample_n(2000) %>%
+                             select(where(is.numeric)),
+                           mtry = 3, ntree = 1000, proximity = TRUE)
+})
+unsup_rf
+varImpPlot(unsup_rf)
+```
+
+For the subset of species with mean gapfill level of 3 or less, the following traits score low on MeanDecreaseGini:
+
+* depth (~900)
+* depend_score (~450)
+* vert_mig_score (~100)
+* terr_score (~100)
+
+Once clusters have been identified with the full trait space, repeat while dropping low-importance variables to see how clusters are affected...
+
+## Hierarchical clustering
+
+### Notes on clustering techniques:
+
+With the results of the unsupervised Random Forest, we tried clustering in two ways: Partitioning Around Medioids (which seems standard for Random Forest examples), and Hierarchical clustering (which also appears in some Random Forest examples).  For these we identified a reasonable number of clusters and compared results; the most similar clusters scored about 80%  on Jaccard similarity index.  But hierarchical clustering was far faster, and seems very defensible.
+
+#### K-means?
+
+K-means does not seem appropriate for RF proximity/dissimilarity, since it relies on euclidean distances rather than a dissimilarity matrix.
+
+#### PAM?
+
+From `pam()` documentation: 
+
+>For large datasets, `pam` may need too much memory or too much computation time since both are $O(n^2)$. Then, `clara()` is preferable, see its documentation.
+
+However, the `clara()` function looks like it wants a data matrix/frame with columns for variables, rather than a dissimilarity/distance matrix.
+
+Some arguments to `pam()` sped up the clustering process by orders of magnitude, especially `do.swap = FALSE` and `pamonce = 6`.
+
+### identify an appropriate number of clusters
+
+While hierarchical clustering doesn't necessarily result in a specific number of clusters, we want to group species into discrete clusters as proxies for functional diversity.  The silhouette method seems standard, and applicable across different clustering methods (counterexample, the gap statistic method seems to require Euclidean distances, which Random Forest does not provide(?))
+
+We can use the Silhouette method for examining the relationship between number of clusters and average silhouette width.
+
+From https://uc-r.github.io/kmeans_clustering:
+
+> In short, the average silhouette approach measures the quality of a clustering. That is, it determines how well each object lies within its cluster. A high average silhouette width indicates a good clustering. The average silhouette method computes the average silhouette of observations for different values of _k_. The optimal number of clusters _k_ is the one that maximizes the average silhouette over a range of possible values for _k_.
+
+```{r silhouette functions}
+avg_sil_hcl <- function(k, HC, DM) {
+  ### k <- 6
+  hclust_tree <- cutree(HC, k = k)
+  ss <- silhouette(hclust_tree, dmatrix = DM)
+  mean_sil_w <- mean(ss[, 'sil_width'])
+}
+
+loop_over_clusts <- function(k_vec = 6:200, HC, DM) {
+  message('Calculating hclust silhouette for ', nrow(traits_dropna), 
+          ' observations (gapfill = ', gf_cut, ')')
+    
+  avg_sil <- parallel::mclapply(k_vec, 
+                                FUN = avg_sil_hcl, 
+                                HC = HC,
+                                DM = DM,
+                                mc.cores = 8)
+  avg_sil_val_vec <- unlist(avg_sil)
+  
+  silh_df <- data.frame(k = k_vec, silh = avg_sil_val_vec)
+  return(silh_df)
+}
+```
+
+```{r silhouette method hclust}
+### generate a dissimilarity matrix from the unsupervised random forest output.
+prox_mtx <- unsup_rf$proximity
+dissim_mtx <- 1 - prox_mtx
+dist_mtx <- as.dist(dissim_mtx, diag = TRUE, upper = TRUE)
+
+rf_hclust_ward1 <- hclust(dist_mtx, method = 'ward.D')
+rf_hclust_ward2 <- hclust(dist_mtx, method = 'ward.D2')
+rf_hclust_compl <- hclust(dist_mtx, method = 'complete')
+rf_hclust_singl <- hclust(dist_mtx, method = 'single')
+rf_hclust_avg   <- hclust(dist_mtx, method = 'average')
+### from help: Ward's minimum variance method aims at finding compact, 
+### spherical clusters. The complete linkage method finds similar clusters. 
+### The single linkage method (which is closely related to the minimal 
+### spanning tree) adopts a ‘friends of friends’ clustering strategy. The
+### other methods can be regarded as aiming for clusters with characteristics 
+### somewhere between the single and complete link methods
+
+silh_df_ward1 <- loop_over_clusts(HC = rf_hclust_ward1,
+                                  DM = dissim_mtx)
+ggplot(silh_df_ward1, aes(x = k, y = silh)) +
+  geom_point() +
+  labs(x = "Number of clusters K, method = ward.D",
+       y = "Average Silhouette (hierarch cluster)") +
+  ylim(c(0, NA)) +
+  theme_minimal()
+
+silh_df_ward2 <- loop_over_clusts(HC = rf_hclust_ward2,
+                                  DM = dissim_mtx)
+ggplot(silh_df_ward2, aes(x = k, y = silh)) +
+  geom_point() +
+  labs(x = "Number of clusters K, method = ward.D2",
+       y = "Average Silhouette (hierarch cluster)") +
+  ylim(c(0, NA)) +
+  theme_minimal()
+
+silh_df_compl <- loop_over_clusts(HC = rf_hclust_compl,
+                                  DM = dissim_mtx)
+ggplot(silh_df_compl, aes(x = k, y = silh)) +
+  geom_point() +
+  labs(x = "Number of clusters K, method = complete",
+       y = "Average Silhouette (hierarch cluster)") +
+  ylim(c(0, NA)) +
+  theme_minimal()
+
+silh_df_singl <- loop_over_clusts(HC = rf_hclust_singl,
+                                  DM = dissim_mtx)
+ggplot(silh_df_singl, aes(x = k, y = silh)) +
+  geom_point() +
+  labs(x = "Number of clusters K, method = single",
+       y = "Average Silhouette (hierarch cluster)") +
+  ylim(c(0, NA)) +
+  theme_minimal()
+
+silh_df_avg <- loop_over_clusts(HC = rf_hclust_avg,
+                                DM = dissim_mtx)
+ggplot(silh_df_avg, aes(x = k, y = silh)) +
+  geom_point() +
+  labs(x = "Number of clusters K, method = average",
+       y = "Average Silhouette (hierarch cluster)") +
+  ylim(c(0, NA)) +
+  theme_minimal()
+
+```
+
+Clustering using different methods (Ward's Distance 1 and 2, average, complete linkage, single linkage) from six up to 200 different clusters across the full set of traits (no least-important traits dropped), some observations:
+
+* Wards D and D2 start near 0.15 and continue to increase with number of clusters
+* Complete linkage shows discrete jumps at certain numbers of clusters
+* Single linkage starts near 0.04 and hovers close
+
+
+### Clustering based on optimal number of clusters
+
+``` {r hclust method at various k}
+prox_mtx <- unsup_rf$proximity
+dissim_mtx <- 1 - prox_mtx
+dist_mtx <- as.dist(dissim_mtx, diag = TRUE, upper = TRUE)
+
+rf_hclust <- hclust(dist_mtx, method = 'ward.D2')
+
+hclust_16 <- cutree(rf_hclust, k = 16)
+hclust_24 <- cutree(rf_hclust, k = 24)
+hclust_28 <- cutree(rf_hclust, k = 28)
+hclust_32 <- cutree(rf_hclust, k = 32)
+hclust_40 <- cutree(rf_hclust, k = 40)
+
+library(ape) ### for as.phylo
+colors = rep(c('red', 'blue', 'green', 'black', 'purple', 'orange', 'grey50'), times = 7)
+plot(as.phylo(rf_hclust),
+     cex = 0.6, 
+     tip.color = colors[hclust_16],
+     label.offset = 0.5)
+
+plot(as.phylo(rf_hclust),
+     cex = 0.6, 
+     tip.color = colors[hclust_28],
+     label.offset = 0.5)
+
+plot(as.phylo(rf_hclust),
+     cex = 0.6, 
+     tip.color = colors[hclust_40],
+     label.offset = 0.5)
+
+```
+
+Use Jaccard similarity to see how well clusters line up.  Sequentially calculate similarity between pairs of clusters using Jaccard formula:
+$$J(A, B) = \frac{A \cap B}{A \cup B}$$
+Comparing across different number of clusters, drop the lowest-scoring additional clusters... compare all to the mid value of 28.
+
+```{r define jaccard comparison function}
+compare_clusters <- function(df, a_col, b_col) {
+  ### a_col <- 'h_16'; b_col <- 'h_28'
+  n_clust_a <- n_distinct(df[[a_col]])
+  n_clust_b <- n_distinct(df[[b_col]])
+  df_tmp <- df %>%
+    rename(a_col := !!a_col, b_col := !!b_col)
+  jac_mtx <- matrix(NA, nrow = n_clust_a, ncol = n_clust_b)
+  nsp_mtx <- matrix(NA, nrow = n_clust_a, ncol = n_clust_b)
+  for(a in 1:n_clust_a) {
+    for(b in 1:n_clust_b) {
+      ### a <- 1; b <- 1
+      jac_sim <- df_tmp %>%
+        filter(a_col == a | b_col == b) %>%
+        summarize(num = sum(a_col == a & b_col == b),
+                  den = n_distinct(species),
+                  jac = num / den)
+      jac_mtx[a, b] <- jac_sim$jac
+      nsp_mtx[a, b] <- jac_sim$den
+    }
+  }
+  if(n_clust_a > 26) {
+      jac_df <- data.frame(clust_name = c(letters[1:26], LETTERS[1:(n_clust_a-26)]))
+  } else {
+      jac_df <- data.frame(clust_name = letters[1:n_clust_a])
+  }
+  jac_mtx_tmp <- jac_mtx
+  nsp_mtx_tmp <- nsp_mtx
+  rownames(jac_mtx_tmp) <- 1:n_clust_a
+  colnames(jac_mtx_tmp) <- 1:n_clust_b
+  for(j in 1:(n_clust_a-1)) {
+    # j <- 1
+    jac_max <- which(jac_mtx_tmp == max(jac_mtx_tmp), arr.ind = TRUE) %>%
+      as.data.frame() %>%
+      rowwise() %>%
+      mutate(n_spp = nsp_mtx_tmp[row, col]) %>%
+      ungroup() %>%
+      filter(n_spp == max(n_spp)) %>%
+      .[1, ] %>% ### in case of multiple max spp matches?
+      unlist() ### convert to vector
+    
+    jac_df$a_col[j]  <- rownames(jac_mtx_tmp)[jac_max[1]]
+    jac_df$b_col[j]  <- colnames(jac_mtx_tmp)[jac_max[2]]
+    jac_df$sim[j]    <- jac_mtx_tmp[jac_max[1], jac_max[2]]
+    jac_df$nspp[j]   <- nsp_mtx_tmp[jac_max[1], jac_max[2]]
+    if(j == n_clust_a-1) {
+      ### only one more!
+      jac_df$a_col[j+1] <- rownames(jac_mtx_tmp)[-jac_max[1]]
+      jac_df$b_col[j+1] <- colnames(jac_mtx_tmp)[-jac_max[2]]
+      jac_df$sim[j+1] <- jac_mtx_tmp[-jac_max[1], -jac_max[2]]
+    } else {
+      ### remove this match from Jaccard score and species count matrices
+      jac_mtx_tmp <- jac_mtx_tmp[-jac_max[1], -jac_max[2]]
+      nsp_mtx_tmp <- nsp_mtx_tmp[-jac_max[1], -jac_max[2]]
+    }
+  }  
+  jac_df <- jac_df %>%
+    mutate(a_col = as.integer(a_col), b_col = as.integer(b_col)) %>%
+    rename(!!a_col := a_col, !!b_col := b_col)
+  return(jac_df)
+}
+```
+
+```{r compare diff number of clusters}
+
+df_clusters <- traits_dropna %>%
+  mutate(h_16 = hclust_16,
+         h_24 = hclust_24,
+         h_28 = hclust_28,
+         h_32 = hclust_32,
+         h_40 = hclust_40)
+
+df_spp <- df_clusters %>%
+  select(species, starts_with('h_')) %>%
+  distinct() %>%
+  ungroup()
+
+df_16_28 <- compare_clusters(df_spp, a = 'h_16', b = 'h_28')
+df_24_28 <- compare_clusters(df_spp, a = 'h_24', b = 'h_28')
+df_32_28 <- compare_clusters(df_spp, a = 'h_28', b = 'h_32')
+df_40_28 <- compare_clusters(df_spp, a = 'h_28', b = 'h_40')
+
+df_cl_16 <- df_clusters %>%
+  left_join(df_16_28 %>% select(h_16, h_16gp = clust_name), by = 'h_16') %>%
+  left_join(df_16_28 %>% select(h_28, h_28gp = clust_name), by = 'h_28') %>%
+  mutate(h_28gp = ifelse(is.na(h_28gp), 'zzz', h_28gp))
+df_cl_16_lbl <- df_cl_16 %>%
+  group_by(h_16gp, h_28gp) %>%
+  summarize(nspp = n_distinct(species), .groups = 'drop')
+
+df_cl_24 <- df_clusters %>%
+  left_join(df_24_28 %>% select(h_24, h_24gp = clust_name), by = 'h_24') %>%
+  left_join(df_24_28 %>% select(h_28, h_28gp = clust_name), by = 'h_28') %>%
+  mutate(h_28gp = ifelse(is.na(h_28gp), 'zzz', h_28gp))
+df_cl_24_lbl <- df_cl_24 %>%
+  group_by(h_24gp, h_28gp) %>%
+  summarize(nspp = n_distinct(species), .groups = 'drop')
+
+df_cl_32 <- df_clusters %>%
+  left_join(df_32_28 %>% select(h_32, h_32gp = clust_name), by = 'h_32') %>%
+  left_join(df_32_28 %>% select(h_28, h_28gp = clust_name), by = 'h_28') %>%
+  mutate(h_32gp = ifelse(is.na(h_32gp), 'zzz', h_32gp))
+df_cl_32_lbl <- df_cl_32 %>%
+  group_by(h_32gp, h_28gp) %>%
+  summarize(nspp = n_distinct(species), .groups = 'drop')
+
+df_cl_40 <- df_clusters %>%
+  left_join(df_40_28 %>% select(h_40, h_40gp = clust_name), by = 'h_40') %>%
+  left_join(df_40_28 %>% select(h_28, h_28gp = clust_name), by = 'h_28') %>%
+  mutate(h_40gp = ifelse(is.na(h_40gp), 'zzz', h_40gp))
+df_cl_40_lbl <- df_cl_40 %>%
+  group_by(h_40gp, h_28gp) %>%
+  summarize(nspp = n_distinct(species), .groups = 'drop')
+
+  
+ggplot(df_cl_16, aes(x = h_16gp, y = h_28gp)) +
+  geom_jitter(alpha = .1) +
+  geom_text(data = df_cl_16_lbl, aes(label = nspp), color = 'yellow') +
+  labs(title = 'compare 16 clusters to 28 clusters')
+ggplot(df_cl_24, aes(x = h_24gp, y = h_28gp)) +
+  geom_jitter(alpha = .1) +
+  geom_text(data = df_cl_24_lbl, aes(label = nspp), color = 'yellow') +
+  labs(title = 'compare 24 clusters to 28 clusters')
+ggplot(df_cl_32, aes(x = h_32gp, y = h_28gp)) +
+  geom_jitter(alpha = .1) +
+  geom_text(data = df_cl_32_lbl, aes(label = nspp), color = 'yellow') +
+  labs(title = 'compare 32 clusters to 28 clusters')
+ggplot(df_cl_40, aes(x = h_40gp, y = h_28gp)) +
+  geom_jitter(alpha = .1) +
+  geom_text(data = df_cl_40_lbl, aes(label = nspp), color = 'yellow') +
+  labs(title = 'compare 40 clusters to 28 clusters')
+```
+
+Visually it looks like many of the clusters are unchanged as the number of clusters increases; instead, a few very large clusters start to get broken down.  For this reason, let's be more parsimonious and select a lower number of clusters - e.g. 16.  But let's also examine what is happening with the massive cluster on `df_16_28` cluster 1 with nearly 7000 spp...
+
+``` {r check clusters}
+check_clust <- df_cl_16 %>%
+  group_by(h_16, class) %>%
+  summarize(n_in_cluster = n_distinct(species))
+
+```
+
+``` {r}
+
+cols <- c(hcl.colors(7, palette = 'Reds'), hcl.colors(8, palette = 'Viridis'))[sample(1:15,15)]
+
+clusters_by_class <- df_clusters %>%
+  group_by(class, p_ltr) %>%
+  summarize(nspp = n_distinct(species)) %>%
+  group_by(class) %>%
+  mutate(ntot = sum(nspp),
+         pct_in_cluster = nspp / ntot,
+         ntot_lbl = ifelse(p_ltr == first(p_ltr), ntot, NA)) %>%
+  ungroup()
+
+ggplot(clusters_by_class, aes(x = class, y = pct_in_cluster, fill = p_ltr)) +
+  geom_col() +
+  geom_text(y = 1.01, aes(label = ntot_lbl), hjust = 0) +
+  scale_fill_manual(values = cols) +
+  coord_flip() +
+  scale_y_continuous(limits = c(0, 1.1), breaks = seq(0, 1, .25)) +
+  theme_minimal() +
+  theme(axis.title.y = element_blank(),
+        panel.grid.major = element_blank()) +
+  labs(fill = 'p cluster', y = 'Percent of cluster')
+
+ggsave(here('figs/clusters_by_class.png'))
+```
+
+``` {r}
+classes_by_cluster <- df_clusters %>%
+  group_by(class, p_ltr) %>%
+  summarize(nspp = n_distinct(species)) %>%
+  group_by(p_ltr) %>%
+  mutate(ntot = sum(nspp),
+         pct_in_class = nspp / ntot,
+         ntot_lbl = ifelse(class == first(class), ntot, NA)) %>%
+  ungroup()
+
+ggplot(classes_by_cluster, aes(x = p_ltr, y = pct_in_class, fill = class)) +
+  geom_col() +
+  geom_text(y = 1.01, aes(label = ntot_lbl), hjust = 0) +
+  scale_fill_manual(values = cols) +
+  coord_flip() +
+  scale_y_continuous(limits = c(0, 1.1), breaks = seq(0, 1, .25)) +
+  theme_minimal() +
+  theme(axis.title.y = element_blank(),
+        panel.grid.major = element_blank()) +
+  labs(fill = 'p cluster', y = 'Percent of cluster')
+
+ggsave(here('figs/classes_by_cluster.png'))
+
+```
+
+## Examine trait centers by cluster
+
+```{r}
+k_lookup <- k_vs_p %>% select(k, k_ltr) %>% 
+  distinct() %>%
+  arrange(k) %>%
+  .$k_ltr
+p_lookup <- k_vs_p %>% select(p, p_ltr) %>% 
+  distinct() %>%
+  arrange(p) %>%
+  .$p_ltr
+
+centers_df <- data.frame(cluster = 1:15, scale(k15$centers), scale(p15$medoids)) %>%
+  arrange(cluster) %>%
+  gather(trait, center, -cluster) %>%
+  mutate(method = ifelse(str_detect(trait, '\\.1$'), 'p', 'k'),
+         trait = str_replace(trait, '\\.1$', ''),
+         clust = ifelse(method == 'k', k_lookup[cluster], p_lookup[cluster]))
+
+
+ggplot(centers_df, aes(x = clust, y = center, color = method)) +
+  geom_hline(yintercept = 0, size = .25, color = 'darkred') +
+  geom_point() +
+  facet_wrap(~trait, ncol = 4) +
+  labs(title = 'trait/cluster centers by trait')
+ggplot(centers_df, aes(x = trait, y = center, color = method)) +
+  geom_hline(yintercept = 0, size = .25, color = 'darkred') +
+  geom_point() +
+  facet_wrap(~clust, ncol = 4) +
+  theme(axis.text = element_text(angle = 70, hjust = 1)) +
+  labs(title = 'trait/cluster centers by cluster')
+```
+
+## Categorize trait centers by cluster
+
+```{r}
+bin_lbls <- c('low', 'medlo', 'med', 'medhi', 'high')
+centers_cat_df <- centers_df %>%
+  group_by(trait, method) %>%
+  mutate(bin = ntile(center, 5),
+         lbl = bin_lbls[bin],
+         lbl = factor(lbl, levels = bin_lbls)) %>%
+  ungroup()
+diff_cat_df <- centers_cat_df %>%
+  select(-cluster, -center, -lbl) %>%
+  group_by(trait, clust) %>%
+  arrange(method) %>%
+  summarize(diff = first(bin) - last(bin), .groups = 'drop') %>%
+  arrange(diff) %>%
+  mutate(diff_lbl = fct_inorder(as.character(diff)))
+ggplot(centers_cat_df, aes(x = clust, y = trait, fill = lbl)) +
+  geom_tile() +
+  facet_wrap(~method) +
+  scale_fill_viridis_d() +
+  labs(title = 'trait/cluster centers by quintile')
+ggsave(here('figs/trait_centers_by_cluster.png'))
+
+ggplot(diff_cat_df, aes(x = clust, y = trait, fill = diff_lbl)) +
+  geom_tile() +
+  scale_fill_viridis_d() +
+  labs(title = 'trait/cluster difference in quintile')
+
+```
+
