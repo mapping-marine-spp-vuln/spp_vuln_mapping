@@ -69,62 +69,24 @@ zone_vuln <- get_vuln_traits() %>%
 # zone_vuln$trait_value %>% unique()
 
 btm_terms <- c('bottom', 'slope', 'shelf', 'mud', 
-               'benth', 'reef', 'rubble', 'intertid', 'demersal') %>%
+               'benth', 'rubble', 'intertid', 'demersal') %>%
   paste0(collapse = '|')
-btm_vuln <- zone_vuln %>%
-  filter(str_detect(trait_value, btm_terms)) %>%
-  mutate(water_col_score = 0)
-# btm_vuln$trait_value %>% unique()
+
+reef_terms <- c('reef') %>%
+  paste0(collapse = '|')
 
 mid_terms <- c('pelagic', 'mid', 'ocean') %>%
   paste0(collapse = '|')
-mid_vuln <- zone_vuln %>%
-  filter(str_detect(trait_value, mid_terms)) %>%
-  mutate(water_col_score = 1)
-# mid_vuln$trait_value %>% unique()
-        
-top_terms <- c('surface', 'float') %>%
-  paste0(collapse = '|')
-top_vuln <- zone_vuln %>%
-  filter(str_detect(trait_value, top_terms) | 
-           (trait == 'air_sea_interface' & trait_value %in% c('yes', 'floating'))) %>%
-  mutate(water_col_score = 2)
-# top_vuln$trait_value %>% unique()
 
-### take mean across all scored instances, not unique scores - this kind of
-### weights the depth zone based on how many traits match up
-depth_vuln <- bind_rows(btm_vuln, mid_vuln, top_vuln) %>%
-  select(taxon, spp_gp, water_col_score) %>%
-  # distinct() %>%
+depth_vuln <- zone_vuln %>%
   group_by(taxon, spp_gp) %>%
-  summarize(depth_vuln = mean(water_col_score, na.rm = TRUE),
-            depth_sd   = sd(water_col_score, na.rm = TRUE), .groups = 'drop') %>%
-  downfill() %>%
-  right_join(get_worms()) %>%
-  gapfill_up_down('depth_vuln') %>%
-  select(species, trait, value, sd, nspp, gf_level)
-
-### terrestrial/marine?
-terr_vuln <- zone_vuln %>%
-  filter(trait == 'terrestrial_and_marine_life_stages') %>%
-  group_by(taxon, spp_gp) %>%
-  summarize(terr_score = (trait_value == 'yes') & taxon != 'elasmobranchs',
+  summarize(pelagic = any(str_detect(trait_value, mid_terms)),
+            benthic = any(str_detect(trait_value, btm_terms)),
+            reef    = any(str_detect(trait_value, reef_terms)),
             .groups = 'drop') %>%
-  mutate(terr_score = as.numeric(terr_score)) %>%
+  mutate(reef = reef | taxon == 'sponges') %>%
   downfill() %>%
-  right_join(get_worms()) %>%
-  gapfill_up_down('terr_score') %>%
-  select(species, trait, value, sd, nspp, gf_level)
-
-### vertical migrator?
-vert_mig_vuln <- get_vuln_traits() %>%
-  filter(trait == 'adult_mobility') %>%
-  group_by(taxon, spp_gp) %>%
-  summarize(vert_mig_score = any(str_detect(trait_value, 'vertical')) %>% as.numeric()) %>%
-  downfill() %>%
-  right_join(get_worms()) %>%
-  gapfill_up_down('vert_mig_score') %>%
-  select(species, trait, value, sd, nspp, gf_level)
+  select(taxon, species, match_rank, benthic, pelagic, reef)
 ```
 
 
@@ -140,151 +102,55 @@ dem_pel_fb_raw <- get_fb_slb(fxn = species,
 table(dem_pel_fb_raw$demers_pelag)
 
 depth_fb <- dem_pel_fb_raw %>%
-  mutate(depth_fb = case_when(str_detect(demers_pelag, 'benthic') ~ 0,
-                              str_detect(demers_pelag, 'sessile') ~ 0,
-                              str_detect(demers_pelag, 'demersal') ~ 0,
-                              str_detect(demers_pelag, 'reef') ~ 0.5, 
-                                 ### assume reef spp are demersal? or more like benthopelagic?
-                              str_detect(demers_pelag, 'benthopelagic') ~ .5,
-                              str_detect(demers_pelag, 'pelagic') ~ 1,
-                              TRUE ~ NA_real_)) %>%
-  right_join(get_worms()) %>%
-  gapfill_up_down('depth_fb') %>%
-  select(species, trait, value, sd, nspp, gf_level)
+  mutate(benthic = str_detect(demers_pelag, 'benthic|sessile|demersal'),
+         pelagic = str_detect(demers_pelag, 'pelagic'),
+         reef    = str_detect(demers_pelag, 'reef')) %>%
+  select(-demers_pelag) %>%
+  filter(benthic | pelagic | reef) ### drop any that aren't counted here
+  
 
 ### note the benthic/pelagic etc in the ecology table don't match up as well
   
 ```
 
-## Compare depth trait for FishBase and vulnerability traits data
+## compare datasets
 
 ```{r}
-check_df <- depth_vuln %>%
-  filter(gf_level <= 3) %>%
-  select(species, trait_v = trait, value_v = value, gf_level) %>%
-  mutate(gf_level = as.character(gf_level)) %>%
-  full_join(depth_fb %>% 
-              filter(gf_level <= 3) %>%
-              select(species, trait_fb = trait, value_fb = value))
+check <- depth_vuln %>%
+  rename(v_ben = benthic, v_pel = pelagic, v_rf = reef) %>%
+  inner_join(depth_fb, by = c('species')) %>%
+  mutate(match = (v_ben == benthic) + (v_pel == pelagic) + (v_rf == reef))
 
-ggplot(check_df, aes(x = value_v, y = value_fb, color = gf_level)) +
-  geom_jitter(alpha = .5, shape = 21) +
-  geom_smooth(method = 'lm')
-
+table(check %>% select(match, match_rank))
 ```
 
-The match between directly-scored species in the vulnerability dataset (including downfill) is decent, but quickly drops off with even modest upstream-downstream gapfilling.  For species matched in the vulnerability dataset (including downfill) we will use those values; for all others, we will use the dataset matched closest to the species level, with tie going to the dataset with more species used to gapfill the value.
+"match" of 3 indicates all of (pelagic, benthic, reef) match between FishBase/SealifeBase and the vulnerability traits.  Species given at the species level (for vulnerability) tend to be closer matches to FishBase values, with more mismatches when filling to higher ranks.  In general, heuristic: use FishBase where available (as these are all at species level and should be peer reviewed), then fill in with other spp based on vulnerability scores.
 
 ```{r}
-
-depth_df <- depth_vuln %>%
-  select(species, value_v = value, gf_v = gf_level, nspp_v = nspp, sd_v = sd) %>%
-  full_join(depth_fb %>% 
-              select(species, value_fb = value, gf_fb = gf_level, nspp_fb = nspp, sd_fb = sd)) %>%
-  mutate(hi_nspp = ifelse(nspp_v > nspp_fb, value_v, value_fb),
-         trait = 'depth',
-         depth_score = case_when(gf_v == 1     ~ value_v, ### if direct match, use it
-                                 gf_fb < gf_v  ~ value_fb,   ### if fb closer to match, use it
-                                 gf_v == gf_fb ~ hi_nspp,
-                                 is.na(value_v) ~ value_fb,
-                                 TRUE           ~ value_v),
-         gf_level    = case_when(gf_v == 1     ~ gf_v, 
-                                 gf_fb < gf_v  ~ gf_fb, 
-                                 gf_v == gf_fb ~ gf_v,
-                                 is.na(value_v) ~ gf_fb,
-                                 TRUE           ~ gf_v),
-         sd          = case_when(gf_v == 1     ~ sd_v,
-                                 gf_fb < gf_v  ~ sd_fb,
-                                 gf_v == gf_fb ~ sd_v,
-                                 is.na(value_v) ~ sd_fb,
-                                 TRUE           ~ sd_v), 
-         nspp        = case_when(gf_v == 1     ~ nspp_v, 
-                                 gf_fb < gf_v  ~ nspp_fb, 
-                                 gf_v == gf_fb ~ nspp_v,
-                                 is.na(value_v) ~ nspp_fb,
-                                 TRUE           ~ nspp_v)) %>%
-  select(species, trait, value = depth_score, gf_level, sd, nspp)
-# x <- depth_df %>% filter(depth_vuln != depth_fb)
-
-water_col_df <- depth_df %>%
-  bind_rows(terr_vuln, vert_mig_vuln) 
-
-# trait_check <- water_col_df %>%
-#   filter(!is.na(value)) %>%
-#   group_by(species) %>%
-#   summarize(n_traits = n_distinct(trait)) %>%
-#   ungroup()
-# table(trait_check$n_traits)
-#     1      2      3 
-# 73609  11475 124653 
-
-### for the spread() to work, collapse nspp and gf_level to mean values to avoid
-### multiple values per species
-water_col_dropna <- water_col_df %>%
-  group_by(species) %>%
-  mutate(nspp = mean(nspp), gf_level = mean(gf_level)) %>%
-  ungroup() %>%
-  select(-sd) %>%
-  spread(trait, value) %>%
-  # filter(gf_level <= 4) %>% ### keep order and lower
-  full_join(get_worms()) %>%
-  mutate(tx = ifelse(phylum == 'chordata', class, phylum)) %>%
-  select(tx, species, depth, terr_score, vert_mig_score) %>%
-  drop_na()
-
-cols <- c(brewer.pal(8, 'Dark2'), brewer.pal(8, 'Set3')) %>%
-  setNames(water_col_dropna$tx %>% unique())
-
-water_col_pca <- water_col_dropna %>%
-  select(-tx, -species) %>%
-  scale() %>%
-  prcomp()
-
-autoplot(water_col_pca,
-         data = water_col_dropna,
-         loadings = TRUE,
-         colour = 'tx',
-         loadings.label = TRUE,
-         loadings.colour = "black",
-         loadings.label.colour = "black",
-         loadings.label.vjust = -0.5
-         ) +
-  scale_color_manual(values = cols) +
-  theme_minimal()
-
-# See the loadings (weighting for each principal component)
-water_col_pca$rotation %>% round(3)
-
-water_col_pca_out <- water_col_dropna %>%
-  bind_cols(water_col_pca$x[, 1:2] %>% as.data.frame()) %>%
-  select(-tx)
+DT::datatable(check %>% filter(match == 0) %>% select(-spec_code, -db))
 ```
 
-Keeping the first two components will capture 80% of the explained variation.  The first relates more heavily to water column position in the usual sense along with terrestrial/marine life stages; the second combines vertical migration score with terrestrial/marine life stages. 
 
+## Save results
 
-## Write out results
-
-Discard results for unmatched/filled species; also discard those filled at the class level, as that is stretching the numbers quite a bit farther than can probably be justified...
+Only two species have traits of "pelagic" and "reef" - and these are both benthopelagic.  For processing, consider trait categories (in order of preference, but not an ordered category) of benthopelagic, pelagic, reef, benthic.  Few reef species are pelagic; this order will assign those two to benthopelagic (along with all others that are both benthic and pelagic).  Remaining pelagic species will not be benthic or reef-associated.  Many reef spp are also benthic, but reef association seems more likely to be important as a trait.
 
 ```{r}
-results_df <- water_col_df %>%
-  group_by(species) %>%
-  mutate(nspp = mean(nspp), gf_level = mean(gf_level)) %>%
-  ungroup() %>%
-  select(-sd) %>%
-  spread(trait, value) %>%
-  left_join(water_col_pca_out %>% select(species, depth_pc1 = PC1, depth_pc2 = PC2), by = 'species') %>%
-  filter(!is.na(depth_pc1))
+results_df <- depth_vuln %>%
+  filter(!species %in% depth_fb$species) %>%
+  mutate(source = 'vuln_traits') %>%
+  bind_rows(depth_fb %>%
+              mutate(source = 'fishbase')) %>%
+  mutate(value = case_when(benthic & pelagic ~ 'benthopelagic',
+                           pelagic ~ 'pelagic',
+                           reef ~ 'reef',
+                           benthic ~ 'benthic',
+                           TRUE ~ 'oops'),
+         trait = 'water_col_pos') %>%
+  select(species, trait, value, source) %>%
+  distinct()
 
-write_csv(results_df, here('_data/traits_grouping/trait_depth_raw.csv'))
-
-pca1_df <- results_df %>%
-  select(species, value = depth_pc1, gf_level) %>% mutate(trait = 'depth_pc1')
-pca2_df <- results_df %>%
-  select(species, value = depth_pc2, gf_level) %>% mutate(trait = 'depth_pc2')
-write_csv(pca1_df, here('_data/traits_grouping/trait_depth_pc1.csv'))
-write_csv(pca2_df, here('_data/traits_grouping/trait_depth_pc2.csv'))
+write_csv(results_df, here('_data/traits_grouping/trait_water_col_position.csv'))
 
 ```
 

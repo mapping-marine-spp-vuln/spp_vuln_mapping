@@ -113,15 +113,14 @@ length_fb <- length_fb_raw %>%
 
 ## Gapfill FB/SLB length data
 
-For purposes of identifying functional groups, it would make sense to consider length on a logarithmic scale to create sensible categories across vast differences in body size.  To combine length data, first preference is for continuous length measures from FB/SLB.  Where possible, we will upstream/downstream gap these values to unknown species in each represented family.  These will be compared to values from the spp vulnerability data for accuracy.  Any species not captured in this way can be gapfilled using length bins from the spp vulnerability data.  
+For purposes of identifying functional groups.  To combine length data, first preference is for continuous length measures from FB/SLB.  Where possible, we will upstream/downstream gap these values to unknown species in each represented family.  These will be compared to values from the spp vulnerability data for accuracy.  Any species not captured in this way can be gapfilled using length bins from the spp vulnerability data.  
 
 ```{r}
 spp_from_worms <- get_worms()
 
 length_worms_fb <- spp_from_worms %>%
   left_join(length_fb, by = 'species') %>%
-  mutate(db = ifelse(is.na(db), 'worms', db),
-         log_l = log10(length))
+  mutate(db = ifelse(is.na(db), 'worms', db))
 
 no_match <- anti_join(length_fb, spp_from_worms, by = 'species')
 no_match_w_vals <- no_match %>%
@@ -132,7 +131,7 @@ no_match_w_vals <- no_match %>%
 ### Here are the matched numbers by database and length source
 table(length_worms_fb %>% select(db, l_column))
 
-length_fb_gf <- gapfill_up_down(length_worms_fb, 'log_l')
+length_fb_gf <- gapfill_up_down(length_worms_fb, 'length')
                               
 # table(length_fb_gf %>% select(class, gf_level))
 # length_fb_gf %>% group_by(db) %>% summarize(n_tot = n(), n_val = sum(!is.na(log_l)))
@@ -140,23 +139,22 @@ length_fb_gf <- gapfill_up_down(length_worms_fb, 'log_l')
 
 ## Compare to bins in vulnerability traits data
 
-Compare vulnerability trait data (bins: 1 = '0.5mm-49mm', 2 = '50mm-999mm', 3 = '>1000mm') to matched or gapfilled length.  Remember that FishBase/SeaLifeBase length is in centimeters, and $\log_{10}$ transformed.
+Compare vulnerability trait data (bins: 1 = '0.5mm-49mm', 2 = '50mm-999mm', 3 = '>1000mm') to matched or gapfilled length.  Remember that FishBase/SeaLifeBase length is in centimeters.
 ```{r}
 check_df <- length_vuln %>%
   inner_join(length_fb_gf, by = c('spp_gp' = 'species')) %>%
-  rename(log_l = value) %>%
-  filter(!is.na(bin) & !is.na(log_l)) %>%
-  mutate(match = case_when(bin == 1 & log_l < log10(5) ~ 'small',
-                           bin == 2 & between(log_l, log10(5), log10(100)) ~ 'med',
-                           bin == 3 & log_l >= log10(100) ~ 'large',
-                           bin == 1 & log_l >= log10(5) ~ 'bin too low',
-                           bin == 2 & log_l >= log10(100) ~ 'bin too low',
-                           bin == 3 & log_l < log10(100) ~ 'bin too high',
-                           bin == 2 & log_l < log10(5) ~ 'bin too high',
-                           TRUE ~ 'wrong!')) %>%
-  mutate(l = 10^log_l * 10)
+  rename(length = value) %>%
+  filter(!is.na(bin) & !is.na(length)) %>%
+  mutate(match = case_when(bin == 1 & length < 5 ~ 'small',
+                           bin == 2 & between(length, 5, 100) ~ 'med',
+                           bin == 3 & length >= 100 ~ 'large',
+                           bin == 1 & length >= 5 ~ 'bin too low',
+                           bin == 2 & length >= 100 ~ 'bin too low',
+                           bin == 3 & length < 100 ~ 'bin too high',
+                           bin == 2 & length < 5 ~ 'bin too high',
+                           TRUE ~ 'wrong!')) 
 table(check_df %>% select(db, match))
-ggplot(check_df, aes(x = bin, y = log_l, color = match)) +
+ggplot(check_df, aes(x = bin, y = length, color = match)) +
   geom_jitter(alpha = .5) +
   scale_color_viridis_d()
 
@@ -193,6 +191,6 @@ results_df <- length_fb_gf %>%
   filter(gf_level <= 4) %>%
   distinct()
 
-write_csv(results_df, here('_data/traits_grouping/trait_length.csv'))
+write_csv(results_df, here('_data/traits_grouping/trait_length_cm.csv'))
 ```
 

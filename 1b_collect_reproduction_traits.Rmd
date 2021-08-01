@@ -63,38 +63,9 @@ This may be done at different levels, for which we suggest different forms of ci
 
 ## Age at maturity: Read in data
 
-Read in data from vulnerability project and fishbase/sealifebase.  FB/SLB have many NAs for these, but let's see how far we can get.  Otherwise, expand with data from species vulnerability trait data.
+Read in data from vulnerability project and fishbase/sealifebase.  First priority is to understand max age at maturity with data from species vulnerability trait data, which can achieve ~11000 spp.  FB/SLB have many NAs for these, but with a continuous value for age to maturity, we can use upstream/downstream gapfilling (to the order level) to plug in values for additional species not included in the vulnerability dataset.
 
-```{r}
-fields <- c('age', 'tm')
-
-mat_df_raw <- get_fb_slb(rfishbase::maturity,
-                       keep_cols = fields, keep_fxn = contains,
-                       drop_cols = '_ref', drop_fxn = ends_with) %>%
-  select(db, spec_code, species, tm, age_mat_min, age_mat_min2) %>%
-  filter(!is.na(tm) | !is.na(age_mat_min) | !is.na(age_mat_min2))
-
-
-lm_amm <- lm(age_mat_min ~ tm, data = mat_df_raw); coef_amm <- lm_amm$coefficients[2]
-# summary(lm_amm)
-### slope = .76, p << .001, adj.R^2 = .67
-lm_amm2 <- lm(age_mat_min2 ~ tm, data = mat_df_raw); coef_amm2 <- lm_amm2$coefficients[2]
-# summary(lm_amm2)
-### slope = 1.43, p << .001, adj.R^2 = .80
-
-mat_df <- mat_df_raw %>%
-  mutate(t_maturity = case_when(!is.na(tm) ~ tm,
-                                !is.na(age_mat_min2) ~ age_mat_min2 / coef_amm2,
-                                TRUE ~ age_mat_min / coef_amm)) %>%
-  select(db, spec_code, species, t_maturity) %>%
-  group_by(db, spec_code, species) %>%
-  summarize(age_mat = mean(t_maturity), .groups = 'drop') %>%
-  right_join(spp_from_worms, by = 'species')
-
-table(mat_df$db)
-```
-
-Even with all this, we get only 1576 distinct species, at least some of which are freshwater.
+### Vulnerability traits
 
 ```{r}
 age_mat_vuln <- get_vuln_traits() %>%
@@ -103,92 +74,71 @@ age_mat_vuln <- get_vuln_traits() %>%
                               levels = c('<1yr', '1-5yrs', '5-10yrs', '10-20yrs', '>20yrs')),
          bin = as.integer(trait_value))
 
-age_mat_vuln_gf <- downfill(age_mat_vuln)
+age_mat_vuln_gf <- downfill(age_mat_vuln) %>%
+  select(species, trait, value = trait_value) %>%
+  distinct() %>%
+  mutate(source = 'vuln')
 ```
 
-### Calculate bin values
+### Fishbase/Sealifebase
 
-Use the numeric age values to assign a mean age_mat value to each of the categorical bins.  The histogram looks a little more log-normal than normal... Filter out only those observations that match with the range, then log transform and calc the mean/sd.
+```{r}
+fields <- c('age', 'tm')
 
-``` {r}
-### compare vulnerability data to fb/slb data
+mat_fb_raw <- get_fb_slb(rfishbase::maturity,
+                       keep_cols = fields, keep_fxn = contains,
+                       drop_cols = '_ref', drop_fxn = ends_with) %>%
+  select(db, spec_code, species, tm, age_mat_min, age_mat_min2) %>%
+  filter(!is.na(tm) | !is.na(age_mat_min) | !is.na(age_mat_min2))
 
-vuln_and_fb <- age_mat_vuln_gf %>%
-  full_join(mat_df)
 
-compare_df <- vuln_and_fb %>% 
-  filter(!is.na(trait_value) & !is.na(age_mat)) %>%
-  mutate(match = (bin == 1 & age_mat < 1) |
-                 (bin == 2 & between(age_mat, 1, 5)) |
-                 (bin == 3 & between(age_mat, 5, 10)) |
-                 (bin == 4 & between(age_mat, 10, 20)) |
-                 (bin == 5 & age_mat >= 20))
+lm_amm <- lm(age_mat_min ~ tm, data = mat_fb_raw); coef_amm <- lm_amm$coefficients[2]
+# summary(lm_amm)
+### slope = .76, p << .001, adj.R^2 = .67
+lm_amm2 <- lm(age_mat_min2 ~ tm, data = mat_fb_raw); coef_amm2 <- lm_amm2$coefficients[2]
+# summary(lm_amm2)
+### slope = 1.43, p << .001, adj.R^2 = .80
 
-hist(log(compare_df$age_mat))
+mat_fb <- mat_fb_raw %>%
+  mutate(t_maturity = case_when(!is.na(tm) ~ tm,
+                                !is.na(age_mat_min2) ~ age_mat_min2 / coef_amm2,
+                                TRUE ~ age_mat_min / coef_amm)) %>%
+  select(db, spec_code, species, t_maturity) %>%
+  group_by(db, spec_code, species) %>%
+  summarize(age_mat = mean(t_maturity), .groups = 'drop')
 
-### 207 spp with values in both
-ggplot(compare_df, aes(x = trait_value, y = age_mat, color = match)) +
-  geom_point()
+mat_fb_gf <- mat_fb %>%
+  right_join(get_worms()) %>%
+  gapfill_up_down('age_mat') %>%
+  filter(!is.na(value)) %>%
+  filter(gf_level <= 4)
 
-summary(lm(bin ~ log10(age_mat), data = compare_df %>% filter(match)))
+summary(mat_fb_gf$value)
 
-summary_bins <- compare_df %>%
-  filter(match) %>%
-  group_by(trait_value) %>%
-  summarize(mean_log_age_mat = mean(log10(age_mat)),
-            sd_log_age_mat = sd(log10(age_mat)))
+mat_fb_binned <- mat_fb_gf %>%
+  mutate(val_bin = case_when(value <   1 ~ '<1yr',
+                             value <=  5 ~ '1-5yrs',
+                             value <= 10 ~ '5-10yrs',
+                             value <= 20 ~ '10-20yrs',
+                             value >  20 ~ '>20yrs',
+                             TRUE ~ 'oops')) %>%
+  filter(!species %in% age_mat_vuln_gf$species) %>%
+  select(species, trait, val_num = value, value = val_bin, sd, nspp, gf_level) %>%
+  distinct() %>%
+  mutate(source = 'fb')
 
-novel_df <- vuln_and_fb %>% 
-  filter(is.na(trait_value) & !is.na(age_mat))
-### 1408 spp with FB/SLB age to maturity but no vuln age to maturity
+age_mat_all_gf <- bind_rows(age_mat_vuln_gf, mat_fb_binned) %>%
+  mutate(trait = 'age_mat')
 
-gen_time_df <- vuln_and_fb %>%
-  left_join(summary_bins, by = 'trait_value') %>%
-  mutate(log_gen_time = ifelse(!is.na(age_mat), log10(age_mat), mean_log_age_mat)) %>%
-  group_by(db, spec_code, kingdom, phylum, class, order, family, genus, species, gapfill, match_rank) %>%
-  summarize(log_gen_time = mean(log_gen_time, na.rm = TRUE), 
-            sd_log_gen_time = sqrt(sum(sd_log_age_mat^2, na.rm = TRUE)), .groups = 'drop')
-
-gen_time_gf <- gen_time_df %>%
-  gapfill_up_down(col = 'log_gen_time')
+age_mat_all_gf$value %>% table()
 ```
+
+Without gapfilling, we get `r mat_fb$species %>% n_distinct()`  distinct species, at least some of which are freshwater.  With gapfilling to order level, we get ~75k species (and 22k if we stick with class level).  Combining FB traits and Vuln traits, we get ~92000 distinct species (fb species in the vuln dataset are dropped).
+
 
 ## Fecundity
 
-Read in data from vulnerability project and fishbase/sealifebase.  Examine potential for variables to be used to gapfill for max fecundity.  Min and max both have >2400 observations; mean has 133.
-
-```{r}
-fields <- c('fecun')
-fecund_df_raw <- get_fb_slb(fxn = fecundity,
-                     keep_cols = fields, keep_fxn = contains,
-                     drop_cols = '_ref', drop_fxn = ends_with) %>%
-  select(db, spec_code, species, starts_with('fecun'))
-# summary(fecund_df_raw)
-# fecund_df_raw %>% summarize(across(starts_with('fecun'), .fns = ~sum(!is.na(.x))))
-
-lm_fec1 <- lm(fecundity_max ~ fecundity_min, data = fecund_df_raw); coef_fec1 <- lm_fec1$coefficients[2]
-# summary(lm_fec1)
-### slope = 2.92, p << .001, adj.R^2 = .83
-lm_fec2 <- lm(fecundity_max ~ fecundity_mean, data = fecund_df_raw); coef_fec2 <- lm_fec2$coefficients[2]
-# summary(lm_fec2)
-### slope = 1.15, p << .001, adj.R^2 = .95
-
-fecund_df <- fecund_df_raw %>%
-  mutate(max_fecundity = case_when(!is.na(fecundity_max) ~ fecundity_max,
-                             !is.na(fecundity_mean) ~ fecundity_mean * coef_fec2,
-                             !is.na(fecundity_min) ~ fecundity_min * coef_fec1,
-                             TRUE ~ NA_real_)) %>%
-  select(db, spec_code, species, max_fecundity) %>%
-  group_by(db, spec_code, species) %>%
-  summarize(max_fecundity = mean(max_fecundity), .groups = 'drop') %>%
-  right_join(spp_from_worms, by = 'species')
-
-table(fecund_df$db)
-fecund_df %>% filter(!is.na(max_fecundity)) %>% n_distinct(.$species)
-
-```
-
-Even with all this, we get only 1161 distinct species, guessing some of which are freshwater.
+Read in data from vulnerability project and fishbase/sealifebase.  Examine potential for variables to be used to gapfill for max fecundity.  
 
 ```{r}
 f_vals <- c('<1', '1-2' , '2-5', '5-10', '10-20', '20-50', '50-100', '100-1000', '1000-10000', '>10000')      
@@ -199,63 +149,77 @@ fecund_vuln <- get_vuln_traits() %>%
                               levels = f_vals),
          bin = as.integer(trait_value))
 
-fecund_vuln_gf <- downfill(fecund_vuln)
+fecund_vuln_gf <- downfill(fecund_vuln) %>%
+  select(species, trait, value = trait_value) %>%
+  distinct()
 ```
 
-### Calculate bin values
 
-Use the numeric fecundity values to assign a mean max_fecundity value to each of the categorical bins.  Even log-transformed, there is still a lot of skew.  Filter out only those observations that match with the range, then log transform and calc the mean/sd.
+```{r}
+fields <- c('fecun')
+fecund_fb_raw <- get_fb_slb(fxn = fecundity,
+                     keep_cols = fields, keep_fxn = contains,
+                     drop_cols = '_ref', drop_fxn = ends_with) %>%
+  select(db, spec_code, species, starts_with('fecun'))
+# summary(fecund_df_raw)
+# fecund_df_raw %>% summarize(across(starts_with('fecun'), .fns = ~sum(!is.na(.x))))
 
-``` {r}
-### compare vulnerability data to fb/slb data
+lm_fec1 <- lm(fecundity_max ~ fecundity_min, data = fecund_fb_raw); coef_fec1 <- lm_fec1$coefficients[2]
+# summary(lm_fec1)
+### slope = 2.92, p << .001, adj.R^2 = .83
+lm_fec2 <- lm(fecundity_max ~ fecundity_mean, data = fecund_fb_raw); coef_fec2 <- lm_fec2$coefficients[2]
+# summary(lm_fec2)
+### slope = 1.15, p << .001, adj.R^2 = .95
 
-vuln_and_fb <- fecund_vuln_gf %>%
-  full_join(fecund_df)
+fecund_fb <- fecund_fb_raw %>%
+  mutate(max_fecundity = case_when(!is.na(fecundity_max) ~ fecundity_max,
+                             !is.na(fecundity_mean) ~ fecundity_mean * coef_fec2,
+                             !is.na(fecundity_min) ~ fecundity_min * coef_fec1,
+                             TRUE ~ NA_real_)) %>%
+  select(db, spec_code, species, max_fecundity) %>%
+  group_by(db, spec_code, species) %>%
+  summarize(max_fecundity = mean(max_fecundity), .groups = 'drop') %>%
+  filter(!is.na(max_fecundity))
 
-# f_vals <- c('<1', '1-2' , '2-5', '5-10', '10-20', '20-50', '50-100', '100-1000', '1000-10000', '>10000')      
-compare_df <- vuln_and_fb %>% 
-  filter(!is.na(trait_value) & !is.na(max_fecundity)) %>%
-  mutate(match = (bin == 1 & max_fecundity <= 1) |
-                 (bin == 2 & between(max_fecundity, 1, 2)) |
-                 (bin == 3 & between(max_fecundity, 2, 5)) |
-                 (bin == 4 & between(max_fecundity, 5, 10)) |
-                 (bin == 5 & between(max_fecundity, 10, 20)) |
-                 (bin == 6 & between(max_fecundity, 20, 50)) |
-                 (bin == 7 & between(max_fecundity, 50, 100)) |
-                 (bin == 8 & between(max_fecundity, 100, 1000)) |
-                 (bin == 9 & between(max_fecundity, 1000, 10000)) |
-                 (bin == 10 & max_fecundity >= 10000))
+fecund_fb_gf <- fecund_fb %>%
+  right_join(get_worms()) %>%
+  mutate(log_fec = log10(max_fecundity)) %>%
+  gapfill_up_down('log_fec') %>%
+  mutate(value = 10^value) %>%
+  filter(!is.na(value)) %>%
+  filter(gf_level <= 4)
 
-hist(log(compare_df$max_fecundity))
+summary(fecund_fb_gf$value)
 
-### 207 spp with values in both
-ggplot(compare_df, aes(x = trait_value, y = max_fecundity, color = match)) +
-  geom_jitter() +
-  scale_y_log10()
+fecund_fb_binned <- fecund_fb_gf %>%
+  mutate(val_bin = case_when(value <   1 ~ '<1',
+                             value <=  2 ~ '1-2',
+                             value <=  5 ~ '2-5',
+                             value <= 10 ~ '5-10',
+                             value <= 20 ~ '10-20',
+                             value <= 50 ~ '20-50',
+                             value <= 100 ~ '50-100',
+                             value <= 1000 ~ '100-1000',
+                             value <= 10000 ~ '1000-10000',
+                             value >  10000 ~ '>10000',
+                             TRUE ~ 'oops')) %>%
+  filter(!species %in% fecund_vuln_gf$species) %>%
+  select(species, trait, val_num = value, value = val_bin, sd, nspp, gf_level) %>%
+  distinct() %>%
+  mutate(source = 'fb')
 
-summary(lm(bin ~ log10(max_fecundity), data = compare_df %>% filter(match)))
+fecund_all_gf <- bind_rows(fecund_vuln_gf, fecund_fb_binned) %>%
+  mutate(trait = 'fec') %>%
+  mutate(value = factor(value, levels = f_vals))
 
-summary_bins <- compare_df %>%
-  filter(match) %>%
-  group_by(trait_value) %>%
-  summarize(mean_log_max_fecundity = mean(log10(max_fecundity)),
-            sd_log_max_fecundity = sd(log10(max_fecundity)))
-
-novel_df <- vuln_and_fb %>% 
-  filter(is.na(trait_value) & !is.na(max_fecundity))
-### 952 spp with FB/SLB max fecundity but no vuln fecundity
-
-max_fecund_df <- vuln_and_fb %>%
-  left_join(summary_bins, by = 'trait_value') %>%
-  mutate(log_max_fecund = ifelse(!is.na(max_fecundity), log10(max_fecundity), mean_log_max_fecundity)) %>%
-  group_by(db, spec_code, kingdom, phylum, class, order, family, genus, species, gapfill, match_rank) %>%
-  summarize(log_max_fecund = mean(log_max_fecund, na.rm = TRUE), 
-            sd_log_max_fecund = sqrt(sum(sd_log_max_fecundity^2, na.rm = TRUE)), .groups = 'drop')
-
-
-max_fecund_gf <- max_fecund_df %>%
-  gapfill_up_down(col = 'log_max_fecund')
+fecund_all_gf$value %>% table()
 ```
+
+Min and max both have >2400 observations; mean has 133.
+
+From FishBase/SeaLifeBase we get only `r `fecund_fb %>% filter(!is.na(max_fecundity)) %>% n_distinct(.$species)` distinct species, guessing some of which are freshwater.  Instead use vulnerability data, again, already binned.
+
+
 
 ## Parental investment
 
@@ -305,7 +269,10 @@ parent_vuln <- get_vuln_traits() %>%
                                 trait_value == 'egg-layer' ~ 1,
                                 trait_value == 'live birth/egg care' ~ 2))
 
-parent_vuln_gf <- downfill(parent_vuln)
+parent_vuln_gf <- downfill(parent_vuln) %>%
+  select(species, trait, value = trait_value) %>%
+  mutate(trait = 'par_inv') %>%
+  distinct()
 
 depend_vuln <- get_vuln_traits() %>%
   filter(trait == 'post_birth_hatching_parental_dependence') %>%
@@ -313,39 +280,11 @@ depend_vuln <- get_vuln_traits() %>%
          depend_score = as.double(trait_value) - 1)
            ### so "na" is 0 dependence, i.e., no post-birth care
 
-depend_vuln_gf <- downfill(depend_vuln)
+depend_vuln_gf <- downfill(depend_vuln) %>%
+  select(species, trait, value = trait_value) %>%
+  mutate(trait = 'par_dep') %>%
+  distinct()
 ```
-
-### Compare datasets
-
-First compare the FB/SLB parental protection traits to those in the vulnerability dataset.  It appears that the `protect_score` from FishBase captures more differences in the middle values, so use that as the preferred dataset, filling in with `parent_score` from the vulnerability traits.
-
-Here we also incorporate length of post-birth/hatching dependence from the vulnerability traits.
-
-```{r}
-vuln_and_fb <- protect_df %>%
-  full_join(parent_vuln_gf)
-
-ggplot(vuln_and_fb, aes(x = parent_score, y = protect_score)) +
-  geom_jitter()
-
-parental_protect_df <- vuln_and_fb %>%
-  mutate(protect_score = ifelse(is.na(protect_score), parent_score, protect_score)) %>%
-  group_by(db, spec_code, kingdom, phylum, class, order, family, genus, species, gapfill, match_rank) %>%
-  summarize(protect_score = mean(protect_score, na.rm = TRUE), .groups = 'drop')
-
-parental_protect_gf <- parental_protect_df %>%
-  gapfill_up_down(col = 'protect_score')
-
-parental_depend_gf <- depend_vuln_gf %>%
-  group_by(class, order, family, genus, species, gapfill, match_rank) %>%
-  summarize(depend_score = mean(depend_score, na.rm = TRUE), .groups = 'drop') %>%
-  full_join(get_worms()) %>%
-  gapfill_up_down(col = 'depend_score')
-
-```
-
-
 
 
 ## Planktonic larval duration
@@ -357,92 +296,40 @@ pld_vals <- c('not larvae', '<1day', '<1week', '<1month', '<4months', '4months-1
 
 pld_vuln <- get_vuln_traits() %>%
   filter(str_detect(trait, 'planktonic_larval_duration')) %>%
-  mutate(trait_value = factor(trait_value, levels = pld_vals),
-         pld_score = as.integer(trait_value) - 1) %>%
-  group_by(taxon, spp_gp) %>%
-  summarize(pld_score = mean(pld_score, na.rm = TRUE), .groups = 'drop')
+  mutate(trait_value = factor(trait_value, levels = pld_vals))
 
 pld_vuln_downfill <- downfill(pld_vuln)
 
 pld_vuln_gf <- pld_vuln_downfill %>%
-  full_join(protect_df %>% select(-protect_score)) %>%
-  gapfill_up_down(col = 'pld_score')
-
-```
-
-## Put them all together and PCA
-
-```{r}
-repr_df_all <- pld_vuln_gf %>%
-  bind_rows(gen_time_gf, max_fecund_gf, parental_protect_gf, parental_depend_gf) %>%
-  select(-db, -spec_code) %>%
+  select(species, trait, value = trait_value) %>%
+  mutate(trait = 'pld') %>%
   distinct()
 
-repr_df_wide <- repr_df_all %>%
-  group_by(species) %>%
-  mutate(gf_level = mean(gf_level)) %>% ### if any unfilled, let be NA
-  ungroup() %>%
-  select(-sd, -nspp) %>%
-  spread(trait, value) %>%
-  distinct() 
-
-repr_df_drop_na <- repr_df_wide %>%
-  drop_na()
-
-repr_pca <- repr_df_drop_na %>%
-  select(where(is.numeric)) %>%
-  scale() %>%
-  prcomp()
-
-autoplot(repr_pca,
-         data = repr_df_drop_na,
-         loadings = TRUE,
-         colour = 'class',
-         loadings.label = TRUE,
-         loadings.colour = "black",
-         loadings.label.colour = "black",
-         loadings.label.vjust = -0.5
-         ) +
-  scale_color_viridis_d() +
-  theme_minimal()
-
-# Variance explained by each PC
-screeplot(repr_pca, type = "lines")
-
-# See the loadings (weighting for each principal component)
-repr_pca$rotation %>% round(3)
-
-round(repr_pca$sdev^2/sum(repr_pca$sdev^2)*100)
-
-
 ```
 
-From this it appears that the first two principal components account for ~61% of the explainable variance in the data, one driven in large part by parental dependence (post-birth), and the other driven in large part by parental protection (pre-birth).
+### Combine data into a single dataframe and save
 
-Write out the results, keeping gapfills to order level or below:
+Write out the results.  In this case, no gapfilling (all down-filling).  Some species might have multiple values of a trait so this must be addressed eventually.
+
 ```{r}
-repr_pca_df <- repr_df_drop_na %>%
-  select(species) %>%
-  bind_cols(as.data.frame(repr_pca$x[, 1:2])) %>%
-  rename(repr_pc1 = PC1, repr_pc2 = PC2)
 
-repr_out_df <- repr_df_wide %>%
-  select(species, gf_level,
-         depend_score, log_gen_time, log_max_fecund, pld_score, protect_score) %>%
-  distinct() %>%
-  left_join(repr_pca_df) %>%
-  filter(gf_level <= 4)
+repr_out_df <- bind_rows(age_mat_all_gf,
+                         fecund_all_gf,
+                         depend_vuln_gf,
+                         parent_vuln_gf,
+                         pld_vuln_gf) %>%
+  arrange(trait, sd) ### to make sure non-NA values up front for read_csv
 
-write_csv(repr_out_df, here('_data/traits_grouping/trait_reproduction_raw.csv'))
+write_csv(repr_out_df, here('_data/traits_grouping/trait_reproduction.csv'))
 
-repr_pc1_df <- repr_out_df %>%
-  mutate(trait = 'repr_pc1') %>%
-  select(species, gf_level, trait, value = repr_pc1)
-write_csv(repr_pc1_df, here('_data/traits_grouping/trait_repr_pc1.csv'))
-repr_pc2_df <- repr_out_df %>%
-  mutate(trait = 'repr_pc2') %>%
-  select(species, gf_level, trait, value = repr_pc2)
-write_csv(repr_pc2_df, here('_data/traits_grouping/trait_repr_pc2.csv'))
+# repr_pc1_df <- repr_out_df %>%
+#   mutate(trait = 'repr_pc1') %>%
+#   select(species, gf_level, trait, value = repr_pc1)
+# write_csv(repr_pc1_df, here('_data/traits_grouping/trait_repr_pc1.csv'))
+# repr_pc2_df <- repr_out_df %>%
+#   mutate(trait = 'repr_pc2') %>%
+#   select(species, gf_level, trait, value = repr_pc2)
+# write_csv(repr_pc2_df, here('_data/traits_grouping/trait_repr_pc2.csv'))
 
 ```
 

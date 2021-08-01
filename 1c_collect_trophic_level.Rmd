@@ -143,23 +143,31 @@ summary(lm(troph_se ~ troph, data = troph_df))
 
 ## Write out results
 
-Write out both trophic level and std error - in case we want to include an omnivory dimension
+FishBase/SeaLifeBase is thin on trophic data for a few classes that can be manually gapfilled, as these are generally primary consumers:
 
+| anthozoa  | demospongiae | echinoidea | holothuroidea |
+| --------  | ------------ | ---------- | ------------- |
+|    283    |     7175     |      2     |       1       |
+          
+        
 ```{r}
+
+prob_classes <- c('anthozoa', 'demospongiae', 'echinoidea', 'holothuroidea')
 troph_df_gf <- troph_df %>%
   right_join(get_worms()) %>%
   gapfill_up_down('troph') %>%
-  select(species, trait, value, sd, nspp, gf_level) %>%
-  filter(gf_level <= 4)
+  filter(gf_level <= 4 | class %in% prob_classes) %>%
+  mutate(value = ifelse(is.na(value) & class %in% prob_classes, 2, value)) %>%
+  select(species, trait, value, sd, nspp, gf_level)
 
-troph_se_df_gf <- troph_df %>%
-  right_join(get_worms()) %>%
-  gapfill_up_down('troph_se') %>%
-  select(species, trait, value, sd, nspp, gf_level) %>%
-  filter(gf_level <= 4)
+# troph_se_df_gf <- troph_df %>%
+#   right_join(get_worms()) %>%
+#   gapfill_up_down('troph_se') %>%
+#   select(species, trait, value, sd, nspp, gf_level) %>%
+#   filter(gf_level <= 4)
 
 write_csv(troph_df_gf, here('_data/traits_grouping/trait_trophic_level.csv'))
-write_csv(troph_se_df_gf, here('_data/traits_grouping/trait_trophic_se.csv'))
+# write_csv(troph_se_df_gf, here('_data/traits_grouping/trait_trophic_se.csv'))
 
 ```
 

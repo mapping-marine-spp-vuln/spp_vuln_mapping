@@ -1,5 +1,5 @@
 ---
-title: "Assemble grouping traits"
+title: "Assemble grouping traits and form Functional Entities"
 author: "*Compiled on `r date()` by `r Sys.info()['user']`*"
 output: 
   html_document:
@@ -22,9 +22,6 @@ knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
 
 library(oharac)
 oharac::setup()
-library(cluster)
-library(factoextra)
-library(ggfortify)
 source(here('fb_slb_fxns.R'))
 
 
@@ -32,7 +29,7 @@ source(here('fb_slb_fxns.R'))
 
 # Summary
 
-Gather processed traits data and assemble into a dataframe.  Apply a clustering algorithm to identify groupings.
+Gather processed traits data and assemble into a dataframe.  Use trait bins to identify functional entities (FE) per Villeger and others.
 
 # Data
 
@@ -40,396 +37,301 @@ See individual trait scripts.
 
 # Methods
 
-## Assemble dataframe
+## Gather traits
 
-```{r}
-trait_fs <- list.files(here('_data/traits_grouping'), full.names = TRUE)
-trait_fs <- trait_fs[!str_detect(trait_fs, 'raw.csv')]
+Here we will read in each trait set and assign the values into specific bins as appropriate.  Inspired by Sebastien Villeger's code, I will create text codes for each trait/value combo, but with a few more letters so they are a little more comprehensible.
 
-df <- lapply(trait_fs, data.table::fread) %>%
-  bind_rows()
-```
+### mobility traits
 
-Let's limit to observations with mean gapfill of rank 4 (order) or lower.  For now this gets us 64k observations.  Limiting that to rank 3 (family) or lower gets us 17k observations.
-
-```{r}
-df_clean <- df %>%
-  filter(gf_level <= 3) %>%
-  select(-sd, -nspp) %>% 
+```{r mobility}
+mob_codes <- c('sessile'           = 'ses',
+               'sedentary'         = 'sed',
+               'mobile resident'   = 'res',
+               'migratory/nomadic' = 'mig')
+mob_traits <- read_csv(here('_data/traits_grouping/trait_mobility.csv')) %>%
+  mutate(mob = mob_codes[value],
+         mob = factor(mob, levels = mob_codes, ordered = TRUE)) %>%
   group_by(species) %>%
-  mutate(gf_level = mean(gf_level),
-         n_traits = n()) %>%
+  filter(mob == max(mob)) %>%
   ungroup() %>%
-  distinct() %>%
-  spread(trait, value) %>%
-  drop_na() %>%
-  left_join(get_worms()) %>%
-  arrange(class)
-
-n_spp_clean <- df_clean$species %>%
-  n_distinct()
-
-df_rescale <- df_clean %>%
-  select(-gf_level, -n_traits, -troph_se) %>%
-  select(where(is.numeric)) %>%
-  scale()
-```
-
-``` {r pca}
-traits_pca <- df_rescale %>%
-  prcomp()
-autoplot(traits_pca,
-         data = df_clean,
-         loadings = TRUE,
-         colour = 'class',
-         loadings.label = TRUE,
-         loadings.colour = "black",
-         loadings.label.colour = "black",
-         loadings.label.vjust = -0.5
-         ) +
-  scale_color_viridis_d() +
-  theme_minimal()
-
-# Variance explained by each PC
-screeplot(traits_pca, type = "lines")
-
-# See the loadings (weighting for each principal component)
-traits_pca$rotation %>% round(3)
-```
-
-### identify an appropriate number of clusters
-
-#### Knee method
-
-Iterate over different values of $k$ and identify a "knee".
-``` {r knee method}
-set.seed(42)
-wss <- function(k, df) {
-  kmeans(df, k, nstart = 10)$tot.withinss
-}
-
-# Compute and plot wss for k = 1 to k = 15
-k_vec <- 1:20
-
-# extract wss for 2-15 clusters
-wss_values <- sapply(k_vec, wss, df = df_rescale)
-
-plot(k_vec, wss_values,
-     type="b", pch = 19, frame = FALSE, 
-     xlab="Number of clusters K",
-     ylab="Total within-clusters sum of squares")
-
-plot(k_vec[9:20], wss_values[9:20],
-     type="b", pch = 19, frame = FALSE, 
-     xlab="Number of clusters K",
-     ylab="Total within-clusters sum of squares")
-
-```
-
-
-#### Silhouette method 
-
-From https://uc-r.github.io/kmeans_clustering:
-
-> In short, the average silhouette approach measures the quality of a clustering. That is, it determines how well each object lies within its cluster. A high average silhouette width indicates a good clustering. The average silhouette method computes the average silhouette of observations for different values of _k_. The optimal number of clusters _k_ is the one that maximizes the average silhouette over a range of possible values for _k_.
-
-Because this is very time consuming, consider using just a sample of the overall dataset to determine optimal number of clusters, and cache the results.
-
-```{r silhouette method}
-set.seed(42)
-avg_sil <- function(k, df) {
-  km_res <- kmeans(df, centers = k, nstart = 4)
-  ss <- silhouette(km_res$cluster, dist(df))
-  mean(ss[, 3])
-}
-
-df_resc_samp <- df_rescale#[sample(1:nrow(df_rescale), size = 24000, replace = FALSE), ]
-
-# extract avg silhouette for 6-20 clusters
-silh_file <- sprintf(here('tmp/silhouette_%s.csv'), nrow(df_resc_samp))
-if(!file.exists(silh_file)) {
-  message('Calculating silhouette for ', nrow(df_resc_samp), ' observations.')
-  # Compute and plot wss for k = 6 to k = 20
-  k_vec <- 6:20
-  avg_sil_values <- sapply(k_vec, avg_sil, df = df_resc_samp)
-  
-  silh_df <- data.frame(k = k_vec, silh = avg_sil_values)
-  write_csv(silh_df, silh_file)
-}
-silh_df <- read_csv(silh_file)
-
-plot(silh_df$k, silh_df$silh,
-     type = "b", pch = 19, frame = FALSE, 
-     xlab = "Number of clusters K",
-     ylab = "Average Silhouettes")
-
-# Similar to the elbow method, this process to compute the 'average 
-# silhoutte method' has been wrapped up in a single function (fviz_nbclust):
-silh_plot_file <- sprintf(here('tmp/silh_plot_%s.png'), nrow(df_resc_samp))
-if(!file.exists(silh_plot_file)) { 
-  message('Plotting optimal clusters by silhouette method for ', nrow(df_resc_samp), ' observations.')
-  # unlink(silh_plot_file)
-  x <- fviz_nbclust(df_resc_samp, kmeans, k.max = 20, method = "silhouette")
-  ggsave(plot = x, filename = silh_plot_file)
-}
-knitr::include_graphics(silh_plot_file)
-
-```
-
-#### Gap Statistic Method
-
-From https://uc-r.github.io/kmeans_clustering: 
-
-> The gap statistic has been published by R. Tibshirani, G. Walther, and T. Hastie (Standford University, 2001). The approach can be applied to any clustering method (i.e. K-means clustering, hierarchical clustering). The gap statistic compares the total intracluster variation for different values of k with their expected values under null reference distribution of the data (i.e. a distribution with no obvious clustering). The reference dataset is generated using Monte Carlo simulations of the sampling process. That is, for each variable
-$x_i$ in the data set we compute its range $[\min(x_i), \max(x_i)]$ and generate values for the $n$ points uniformly from the interval min to max.
-
-> For the observed data and the the reference data, the total intracluster variation is computed using different values of $k$. The gap statistic for a given $k$ is defined as follow:
-
-$$Gap_n(k) = E^*_n \log(W_k) - \log(W_k)$$
->where $E^*_n$ denotes the expectation under a sample size $n$ from the reference distribution. $E^*_n$ is defined via bootstrapping (B) by generating B copies of the reference datasets and, by computing the average $\log(W^*_k)$. The gap statistic measures the deviation of the observed $W_k$ value from its expected value under the null hypothesis. The estimate of the optimal clusters ($\hat{k}$) will be the value that maximizes $Gap_n(k)$. This means that the clustering structure is far away from the uniform distribution of points.
-
-```{r gap stat method, eval = TRUE}
-set.seed(42)
-gap_stat_plot_file <- sprintf(here('tmp/gap_stat_%s.png'), nrow(df_resc_samp))
-if(!file.exists(gap_stat_plot_file)) {
-  gap_stat <- clusGap(df_resc_samp, verbose = FALSE,
-                      FUN = kmeans, nstart = 25,
-                      K.max = 20, B = 50)
-  # Print the result
-  print(gap_stat, method = "firstmax")
-  
-  x <- fviz_gap_stat(gap_stat)
-  ggsave(plot = x, filename = gap_stat_plot_file)
-}
-knitr::include_graphics(gap_stat_plot_file)
-```
-
-
-### Running K-means with optimal $k$
-
-Identify clusters across all species and then examine cluster breakdown by class.  Compare `pam()` and `kmeans()`.
-
-``` {r k means, cache = TRUE}
-system.time({
-  k15 <- kmeans(df_rescale, centers = 15, nstart = 25)
-}) ### ~ 2 seconds for 25 starts, 64k observations
-
-system.time({
-  p15 <- pam(df_rescale, 
-            k = 15,
-            nstart = 1,
-            variant = 'faster')
-  ### note other variants like 'original', 'o_1', ... are probably better choices
-}) 
-### - with 17k rows on 'faster' with 1 nstart - 11 seconds
-### looks like it scales > n^2 
-### on 'original' variant, 2000 rows ~ 2.7 sec for 1 nstart, 4000 rows ~ 18.5 sec
-### note pam function can't use more than 65536 observations...
-### MUCH slower than kmeans (though more robust apparently)
-
-```
-
-Use Jaccard similarity to see how well clusters line up.  Sequentially calculate similarity between pairs of clusters using Jaccard formula:
-$$J(A, B) = \frac{A \cap B}{A \cup B}$$
-
-```{r}
-
-df_clusters <- df_clean %>%
-  mutate(k_clust = k15$cluster,
-         p_clust = p15$cluster)
-
-df_spp <- df_clusters %>%
-  select(species, k_clust, p_clust) %>%
-  distinct() %>%
-  ungroup()
-
-compare_clusters <- function(df, a_col, b_col) {
-  ### a_col <- 'k_clust'; b_col <- 'p_clust'
-  n_clust <- n_distinct(df[[a_col]])
-  if(n_clust != n_distinct(df[[b_col]])) {
-    stop('Different # of clusters!')
-  }
-  df_tmp <- df %>%
-    rename(a_col := !!a_col, b_col := !!b_col)
-  jac_mtx <- matrix(NA, nrow = n_clust, ncol = n_clust)
-  for(a in 1:n_clust) {
-    for(b in 1:n_clust) {
-      ### a <- 1; b <- 1
-      jac_sim <- df_tmp %>%
-        filter(a_col == a | b_col == b) %>%
-        summarize(num = sum(a_col == a & b_col == b),
-                  den = n_distinct(species),
-                  jac = num / den)
-      jac_mtx[a, b] <- jac_sim$jac
-    }
-  }
-  jac_df <- data.frame(clust_name = letters[1:n_clust])
-  jac_mtx_tmp <- jac_mtx
-  rownames(jac_mtx_tmp) <- 1:n_clust
-  colnames(jac_mtx_tmp) <- 1:n_clust
-  for(j in 1:(n_clust-1)) {
-    # j <- 1
-    jac_max <- which(jac_mtx_tmp == max(jac_mtx_tmp), arr.ind = TRUE)
-    jac_df$a_col[j] <- rownames(jac_mtx_tmp)[jac_max[1]]
-    jac_df$b_col[j] <- colnames(jac_mtx_tmp)[jac_max[2]]
-    jac_df$sim[j] <- jac_mtx_tmp[jac_max]
-    if(j == n_clust-1) {
-      ### only one more!
-      jac_df$a_col[j+1] <- rownames(jac_mtx_tmp)[-jac_max[1]]
-      jac_df$b_col[j+1] <- colnames(jac_mtx_tmp)[-jac_max[2]]
-      jac_df$sim[j+1] <- jac_mtx_tmp[-jac_max[1], -jac_max[2]]
-    } else {
-      ### remove this match
-      jac_mtx_tmp <- jac_mtx_tmp[-jac_max[1], -jac_max[2]]
-    }
-  }  
-  jac_df <- jac_df %>%
-    mutate(a_col = as.integer(a_col), b_col = as.integer(b_col)) %>%
-    rename(!!a_col := a_col, !!b_col := b_col)
-  return(jac_df)
-}
-
-df_jac <- compare_clusters(df_spp, a = 'k_clust', b = 'p_clust')
-
-df_clusters_out <- df_clusters %>%
-  left_join(df_jac %>% select(k_clust, k_group = clust_name), by = 'k_clust') %>%
-  left_join(df_jac %>% select(p_clust, p_group = clust_name), by = 'p_clust')
-
-df_clust_plot <- df_clusters_out %>%
-  select(species, where(is.numeric), 
-         k_group, p_group, 
-         -n_traits, -k_clust, -p_clust) %>%
+  select(species, mob) %>%
   distinct()
-  
-ggplot(df_clust_plot, aes(x = k_group, y = p_group)) +
-  geom_jitter(alpha = .1)
-write_csv(df_clust_plot, 
-          here('_data/functional_groups_from_traits.csv'))
+
+# x <- show_dupes(mob_traits, 'species')
+
+table(mob_traits$mob) %>% knitr::kable()
 ```
 
-``` {r viz clusters}
-fviz_cluster(k15, data = df_rescale, labelsize = NA) +
-  labs(title = 'kmeans')
-fviz_cluster(p15, data = df_rescale, labelsize = NA) +
-  labs(title = 'pam')
+### water column position traits
 
+```{r water col position}
+trait_val_codes <- c(reef    = 'rf',
+                     pelagic = 'pel',
+                     benthic = 'ben',
+                     benthopelagic = 'bp')
+water_col_traits <- read_csv(here('_data/traits_grouping/trait_water_col_position.csv')) %>%
+  mutate(wcol = trait_val_codes[value],
+         wcol = factor(wcol, levels = trait_val_codes, ordered = FALSE)) %>%
+  select(species, wcol) %>%
+  distinct()
+
+# x <- show_dupes(water_col_traits, 'species')
+
+
+table(water_col_traits$wcol) %>% knitr::kable()
 ```
 
-``` {r}
+### Reproduction traits
 
-cols <- c(hcl.colors(7, palette = 'Reds'), hcl.colors(8, palette = 'Viridis'))[sample(1:15,15)]
+Here we have options of:
 
-clusters_by_class <- df_clusters %>%
-  group_by(class, p_ltr) %>%
-  summarize(nspp = n_distinct(species)) %>%
-  group_by(class) %>%
-  mutate(ntot = sum(nspp),
-         pct_in_cluster = nspp / ntot,
-         ntot_lbl = ifelse(p_ltr == first(p_ltr), ntot, NA)) %>%
-  ungroup()
+* generation time
+* fecundity
+* parental investment
+* planktonic larval duration
+* post-birth/hatching parental dependence
 
-ggplot(clusters_by_class, aes(x = class, y = pct_in_cluster, fill = p_ltr)) +
-  geom_col() +
-  geom_text(y = 1.01, aes(label = ntot_lbl), hjust = 0) +
-  scale_fill_manual(values = cols) +
-  coord_flip() +
-  scale_y_continuous(limits = c(0, 1.1), breaks = seq(0, 1, .25)) +
-  theme_minimal() +
-  theme(axis.title.y = element_blank(),
-        panel.grid.major = element_blank()) +
-  labs(fill = 'p cluster', y = 'Percent of cluster')
+Generation time and fecundity seem most important, but others can be included as separate traits as well.  For spp with multiple fecundity and generation time values, take the largest category.
 
-ggsave(here('figs/clusters_by_class.png'))
+#### Fecundity
+
+```{r fecundity}
+repr_traits <- read_csv(here('_data/traits_grouping/trait_reproduction.csv')) %>%
+  filter(!is.na(value))
+
+fecund_codes <- c('<1'         = 'lo',
+                  '1-2'        = 'lo',
+                  '2-5'        = 'lo',
+                  '5-10'       = 'lo',
+                  '10-20'      = 'med',
+                  '20-50'      = 'med',
+                  '50-100'     = 'med',
+                  '100-1000'   = 'hi',
+                  '1000-10000' = 'vhi',
+                  '>10000'     = 'vhi')
+
+fecund_traits <- repr_traits %>%
+  filter(trait == 'fec') %>%
+  mutate(fec = fecund_codes[value],
+         fec = factor(fec, levels = unique(fecund_codes), ordered = TRUE)) %>%
+  group_by(species) %>%
+  filter(fec == max(fec)) %>%
+  ungroup() %>%
+  select(species, fec) %>%
+  distinct()
+
+table(fecund_traits$fec)
 ```
 
-``` {r}
-classes_by_cluster <- df_clusters %>%
-  group_by(class, p_ltr) %>%
-  summarize(nspp = n_distinct(species)) %>%
-  group_by(p_ltr) %>%
-  mutate(ntot = sum(nspp),
-         pct_in_class = nspp / ntot,
-         ntot_lbl = ifelse(class == first(class), ntot, NA)) %>%
-  ungroup()
+#### Generation time
 
-ggplot(classes_by_cluster, aes(x = p_ltr, y = pct_in_class, fill = class)) +
-  geom_col() +
-  geom_text(y = 1.01, aes(label = ntot_lbl), hjust = 0) +
-  scale_fill_manual(values = cols) +
-  coord_flip() +
-  scale_y_continuous(limits = c(0, 1.1), breaks = seq(0, 1, .25)) +
-  theme_minimal() +
-  theme(axis.title.y = element_blank(),
-        panel.grid.major = element_blank()) +
-  labs(fill = 'p cluster', y = 'Percent of cluster')
+```{r gen time}
 
-ggsave(here('figs/classes_by_cluster.png'))
+gen_codes <- c("<1yr"     = 'vshort',
+               "1-5yrs"   = 'short',
+               "5-10yrs"  = 'med',
+               "10-20yrs" = 'long',
+               ">20yrs"   = 'long')
 
+gen_time_traits <- repr_traits %>%
+  filter(trait == 'age_mat') %>%
+  mutate(gen = gen_codes[value],
+         gen = factor(gen, levels = unique(gen_codes), ordered = TRUE)) %>%
+  group_by(species) %>%
+  filter(gen == max(gen)) %>%
+  ungroup() %>%
+  select(species, gen) %>%
+  distinct()
+
+table(gen_time_traits$gen)
 ```
 
-## Examine trait centers by cluster
+#### check correlation between gen time and fecundity 
 
 ```{r}
-k_lookup <- k_vs_p %>% select(k, k_ltr) %>% 
-  distinct() %>%
-  arrange(k) %>%
-  .$k_ltr
-p_lookup <- k_vs_p %>% select(p, p_ltr) %>% 
-  distinct() %>%
-  arrange(p) %>%
-  .$p_ltr
+gen_fec_df <- full_join(fecund_traits, gen_time_traits, by = 'species') %>%
+  drop_na()
 
-centers_df <- data.frame(cluster = 1:15, scale(k15$centers), scale(p15$medoids)) %>%
-  arrange(cluster) %>%
-  gather(trait, center, -cluster) %>%
-  mutate(method = ifelse(str_detect(trait, '\\.1$'), 'p', 'k'),
-         trait = str_replace(trait, '\\.1$', ''),
-         clust = ifelse(method == 'k', k_lookup[cluster], p_lookup[cluster]))
+gen_fec_mtx <- gen_fec_df %>%
+  group_by(gen, fec) %>%
+  summarize(n = n()) %>%
+  mutate(fec = paste0('f:', fec),
+         gen = paste0('g:', gen)) %>%
+  spread(fec, n) %>%
+  column_to_rownames('gen') %>%
+  as.matrix()
 
+chi2 <- chisq.test(gen_fec_mtx, correct=F)
+c(chi2$statistic, chi2$p.value)
 
-ggplot(centers_df, aes(x = clust, y = center, color = method)) +
-  geom_hline(yintercept = 0, size = .25, color = 'darkred') +
-  geom_point() +
-  facet_wrap(~trait, ncol = 4) +
-  labs(title = 'trait/cluster centers by trait')
-ggplot(centers_df, aes(x = trait, y = center, color = method)) +
-  geom_hline(yintercept = 0, size = .25, color = 'darkred') +
-  geom_point() +
-  facet_wrap(~clust, ncol = 4) +
-  theme(axis.text = element_text(angle = 70, hjust = 1)) +
-  labs(title = 'trait/cluster centers by cluster')
+ggplot(gen_fec_df, aes(x = gen, y = fec)) +
+  geom_jitter(alpha = .2)
 ```
 
+While there is obviously correlation, there seems to be enough variation to keep both variables in for now.
 
+### Trophic level
 
-## Categorize trait centers by cluster
+Similar to Mireia's classifications: classify into primary producers (1), primary consumers (herbivores/detritivores) 2), secondary (2-3), tertiary (3-4), apex (>4).  Examine potential break points to see distributions.
+
+Some considerations:
+
+* _Orcinus orca_ is 4.6
+* _Carcharodon carcharias_ is 4.48
+* _Oncorhynchus_ spp are from 3.23 (Sockeye) to 4.18 (Coho, the only one above 4.0)
+
+Here we set break points at the top value for each category ($\leq$ 2 = primary consumer, $\leq$ 3 = secondary consumer, $\leq$ 4 = tertiary consumer, >4 = apex consumer)
+
+```{r trophic level}
+troph_traits <- read_csv(here('_data/traits_grouping/trait_trophic_level.csv')) %>%
+  filter(!is.na(value))
+
+summary(troph_traits)
+
+troph_qtile <- ecdf(troph_traits$value)
+troph_qtile(c(2, 3, 3.5, 4, 4.4, 5))
+
+troph_traits <- troph_traits %>%
+  mutate(trp = case_when(value == 2 ~ 'pri', ### anything above 2 suggests some carnivory
+                         value <= 3 ~ 'sec',
+                         value <= 4 ~ 'ter',
+                         value > 4  ~ 'apex',
+                         TRUE ~ 'oops'),
+         trp = factor(trp, levels = c('pri', 'sec', 'ter', 'apex'), ordered = TRUE)) %>%
+  select(species, trp) %>%
+  distinct()
+
+table(troph_traits$trp)
+```
+
+### Max length
+
+Examine distribution of lengths to see if there are good break points, or choose break points to achieve a reasonable distribution across reasonable size classes (~ factor of 10 for each class).
+
+```{r max length}
+length_traits <- read_csv(here('_data/traits_grouping/trait_length_cm.csv')) %>%
+  filter(!is.na(value))
+
+summary(length_traits$value)
+quantile(log10(length_traits$value), c(.2, .4, .6, .8))
+
+length_traits <- length_traits %>%
+  mutate(len = case_when(value <    1.5 ~ 'vsm', ### smaller than 1.5 cm
+                         value <    5.0 ~ 'sm',  ### 1.5 - 5 cm
+                         value <   15.0 ~ 'med', ### 5 - 15 cm
+                         value <  150.0 ~ 'lg',  ### 15 - 150 cm
+                         value >= 150.0 ~ 'vlg', ### larger than 1.5 meters
+                         TRUE ~ 'oops'),
+         len = factor(len, levels = c('vsm', 'sm', 'med', 'lg', 'vlg'), ordered = TRUE)) %>%
+  select(species, len) %>%
+  distinct()
+
+table(length_traits$len)
+```
+
+The number of uniquely identified species with full complement of traits will be limited by data availability in the Species Vulnerability project as well as data availability in Fishbase/Sealifebase.  See individual scripts for various gapfilling and assignation of traits for each distinct trait set.
+
+## Assemble and assign to functional entities
+
+Here we will full-join all trait dataframes by species, eliminate any with NA values for any traits, and then collapse the trait values together into a specific functional entity character code (which will also be assigned a numeric FE code).
 
 ```{r}
-bin_lbls <- c('low', 'medlo', 'med', 'medhi', 'high')
-centers_cat_df <- centers_df %>%
-  group_by(trait, method) %>%
-  mutate(bin = ntile(center, 5),
-         lbl = bin_lbls[bin],
-         lbl = factor(lbl, levels = bin_lbls)) %>%
-  ungroup()
-diff_cat_df <- centers_cat_df %>%
-  select(-cluster, -center, -lbl) %>%
-  group_by(trait, clust) %>%
-  arrange(method) %>%
-  summarize(diff = first(bin) - last(bin), .groups = 'drop') %>%
-  arrange(diff) %>%
-  mutate(diff_lbl = fct_inorder(as.character(diff)))
-ggplot(centers_cat_df, aes(x = clust, y = trait, fill = lbl)) +
-  geom_tile() +
-  facet_wrap(~method) +
-  scale_fill_viridis_d() +
-  labs(title = 'trait/cluster centers by quintile')
-ggsave(here('figs/trait_centers_by_cluster.png'))
+n_fe_possible <- n_distinct(mob_traits$mob) *
+                 n_distinct(fecund_traits$fec) *
+                 n_distinct(gen_time_traits$gen) *
+                 n_distinct(troph_traits$trp) *
+                 n_distinct(length_traits$len) *
+                 n_distinct(water_col_traits$wcol)
+```
 
-ggplot(diff_cat_df, aes(x = clust, y = trait, fill = diff_lbl)) +
-  geom_tile() +
-  scale_fill_viridis_d() +
-  labs(title = 'trait/cluster difference in quintile')
+Based on the given trait categories, we could see up to `r n_fe_possible` functional entities, though most will not be populated (e.g., not so likely to find a very large species with a high fecundity and short generation time).
+
+### Number of spp with NAs for one or more traits
+
+``` {r na_count}
+all_traits_df <- mob_traits %>%
+  full_join(fecund_traits, by = 'species') %>%
+  full_join(gen_time_traits, by = 'species') %>%
+  full_join(troph_traits, by = 'species') %>%
+  full_join(length_traits, by = 'species') %>%
+  full_join(water_col_traits, by = 'species') %>%
+  left_join(get_worms())
+
+fe_nas <- all_traits_df %>%
+  gather(trait, val, -species) %>%
+  group_by(species) %>%
+  summarize(n_na = sum(is.na(val)))
+table(fe_nas$n_na)
+```
+
+Which traits are responsible for dropping most species?  examine species dropped for one or two NAs.
+
+``` {r check which traits are causing drops}
+traits <- c('mob', 'fec', 'gen', 'trp', 'len', 'wcol')
+fe_trait_single_na <- all_traits_df %>% gather(trait, val, all_of(traits)) %>%
+  group_by(species) %>%
+  filter(is.na(val)) %>%
+  filter(n() == 1) %>%
+  ungroup()
+table(fe_trait_single_na$trait)
+
+fe_trait_double_na <- all_traits_df %>% gather(trait, val, all_of(traits)) %>%
+  group_by(species) %>%
+  filter(is.na(val)) %>%
+  filter(n() == 2) %>%
+  arrange(trait) %>%
+  summarize(t1 = first(trait), t2 = last(trait)) %>%
+  ungroup()
+table(fe_trait_double_na %>% select(t1, t2))
+
+fe_trait_triple_na <- all_traits_df %>% gather(trait, val, all_of(traits)) %>%
+  group_by(species) %>%
+  filter(is.na(val)) %>%
+  filter(n() == 3) %>%
+  arrange(trait) %>%
+  summarize(t1 = first(trait), t2 = nth(trait, 2), t3 = last(trait)) %>%
+  ungroup()
+table(fe_trait_triple_na %>% select(t1, t2, t3))
+
+```
+
+### assign FE codes
+
+```{r}
+fe_df <- all_traits_df %>%
+  drop_na() %>%
+  mutate(fe_code = sprintf('MOB%s_FEC%s_GEN%s_TRP%s_LEN%s_WCOL%s', mob, fec, gen, trp, len, wcol)) %>%
+  group_by(fe_code) %>%
+  mutate(n = n()) %>%
+  ungroup() %>%
+  arrange(desc(n)) %>%
+  mutate(fe_code = fct_inorder(fe_code))
+```
+
+``` {r examine distributions of species across functional entities}
+
+fe_df_summary <- fe_df %>%
+  group_by(fe_code) %>%
+  summarize(n_spp = n_distinct(species)) 
+
+hist(log10(fe_df_summary$n_spp))
+DT::datatable(fe_df_summary)
+```
+
+## Write out functional entities
+
+```{r}
+fe_out_df <- fe_df %>%
+  select(species, fe_code, n_spp = n) %>%
+  mutate(fe_id = as.integer(fe_code))
+
+write_csv(fe_out_df, here('_output/functional_entities/species_fe.csv'))
+
+fe_traits_df <- fe_df %>%
+  select(fe_code, n_spp = n, mob, fec, gen, trp, len, wcol) %>%
+  distinct()
+
+write_csv(fe_traits_df, here('_output/functional_entities/fe_traits.csv'))
 
 ```
 

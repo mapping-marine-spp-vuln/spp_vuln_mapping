@@ -1,0 +1,156 @@
+---
+title: "Unsupervised Random Forest Example 2"
+author: "Casey O'Hara"
+date: "6/25/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(randomForest)
+library(palmerpenguins)
+library(caret)
+library(cluster)
+library(RColorBrewer)
+```
+
+from `http://gradientdescending.com/unsupervised-random-forest-example/`
+
+June 8, 2018 Daniel Oehm 4 Comments
+
+A need for unsupervised learning or clustering procedures crop up regularly for problems such as customer behavior segmentation, clustering of patients with similar symptoms for diagnosis or anomaly detection. Unsupervised models are always more challenging since the interpretation of the cluster always comes back to strong subject matter knowledge and knowing your data. The profiling of the clusters is arguably the most challenging aspect of the work. In a business context it can take weeks iterating on the model and socialising the results with the business areas before there is broad agreement on their interpretation and how they can be used.
+
+Kmeans, partitioning around medoids and Gaussian mixture models are go to methods for clustering and have had success with all. A technique I have not used before but are interested in is unsupervised random forests. This post will go into some of the detail and intuition behind URF’s and an example on the iris data set comparing the different methods.
+
+```{r}
+data(penguins)
+set.seed(3984)
+
+penguins_clean <- penguins %>%
+  select(-sex) %>%
+  drop_na()
+
+```
+
+# Supervised Random Forest
+
+Everyone loves the random forest algorithm. It’s fast, it’s robust and surprisingly accurate for many complex problems. To start of with we’ll fit a normal supervised random forest model. I’ll preface this with the point that a random forest model isn’t really the best model for this data. A random forest model takes a random sample of features and builds a set of weak learners. Given there are only 4 features in this data set there are a maximum of 6 different trees by selecting at random 4 features. But let’s put that aside and push on because we all know the iris data set and makes learning the methods easier.
+
+```{r}
+# set colours
+myColRamp <- colorRampPalette(colors = c("#25591f", "#818c3c", "#72601b"))
+
+# split
+holdout <- sample(1:nrow(penguins_clean), nrow(penguins_clean)/3, replace = FALSE)
+
+testing <- penguins_clean[holdout, ]
+training <- penguins_clean[-holdout, ]
+# random forest model
+rf <- randomForest(x = training %>% select(ends_with(c('_mm', '_g'))), 
+                   y = training$species, 
+                   mtry = 2, ntree = 2000, proximity = TRUE)
+rf
+varImpPlot(rf)
+
+# predict on test set
+y_predicted <- predict(rf, testing %>% select(ends_with(c('_mm', '_g'))))
+df1 <- data.frame(orig = testing$species, pred = y_predicted)
+
+confusionMatrix(table(df1$orig, df1$pred))
+```
+
+As expected it does a pretty good job on the hold out sample.
+
+# Unsupervised Random Forest
+
+In the unsupervised case we don’t have labels to train on. Instead, like other clustering procedures, need to find the underlying structure in the data. For an unsupervised random forest the set up is as follows.
+
+A joint distribution of the explanatory variables is constructed and draws are taken from this distribution to create synthetic data. In most cases the the same number of draws as in the real data set will be taken. The real and synthetic data are combined. A label is then created, say 1 for the real data and 0 for the synthetic data. The random forest model then works in the same way, building a set of weak learners and determining whether or not observation i is real or synthetic.
+
+The key output we want is the proximity (or similarity/dissimilarity) matrix. This is an $n \times n$ matrix where each value is the proportion of times observation i and j where in the same terminal node. For example, if 100 trees were fit and the $ij^{th}$ entry is 0.9, it means 90 times out of 100 observation $i$ and $j$ were in the same terminal node. With this matrix we can then perform a normal clustering procedure such as kmeans or PAM (number of cool things could be done once the proximity matrix is created).
+
+```{r}
+rf2 <- randomForest(x = penguins_clean %>% 
+                      select(ends_with(c('_mm', '_g'))),# %>%
+                      # scale(), 
+                    mtry = 2, ntree = 2000, proximity = TRUE)
+rf2
+varImpPlot(rf2)
+```
+
+Now the unsupervised random forest model is fit we’ll extract the proximity matrix and use this as input to a PAM procedure.  Note: `scale()` doesn't seem to change the results!
+
+NOTE: should `pam()` be getting the proximity matrix as a distance matrix instead?
+
+``` {r}
+prox_mtx <- rf2$proximity
+dist_mtx <- as.dist(1 - prox_mtx)
+pam_rf <- pam(dist_mtx, k = 3) ### was prox_mtx
+pred <- data.frame(clust   = pam_rf$clustering, 
+                   species = penguins_clean$species)
+table(pred)
+#      species
+# clust Adelie Chinstrap Gentoo
+#     1    151        68     12
+#     2      0         0     52
+#     3      0         0     59
+
+plot_df <- penguins_clean %>%
+  mutate(clust = factor(pam_rf$clustering))
+ggplot(plot_df, aes(x = flipper_length_mm, y = bill_length_mm, col = clust, pch = species)) + 
+  geom_point(size = 3) + 
+  scale_color_manual(values = myColRamp(3))
+```
+ 
+
+Lots of misclassifications on the unsupervised, since Adelie and Chinstrap are pretty similar overall - Gentoo are split, while Adelie and Chinstrap are all grouped into one group with a few Gentoo
+
+# Comparison with straight kmeans and PAM
+
+A standard kmeans and PAM procedure will be fit for comparison.
+
+## straight kmeans
+
+```{r}
+peng_scale <- scale(penguins_clean %>% select(ends_with(c('_mm', '_g'))))
+km <- kmeans(peng_scale, 3, nstart = 200)
+pred_km <- data.frame(clust = km$cluster, 
+                      species = penguins_clean$species)
+table(pred_km)
+#      species
+# clust Adelie Chinstrap Gentoo
+#     1    127         5      0
+#     2     24        63      0
+#     3      0         0    123
+
+plot_df <- penguins_clean %>%
+  mutate(clust = factor(km$cluster))
+ggplot(plot_df, aes(x = flipper_length_mm, y = bill_length_mm, col = clust, pch = species)) + 
+  geom_point(size = 3) + 
+  scale_color_manual(values = myColRamp(3))
+```
+Straight k-means does a pretty good job, identifying all Gentoo as a single group, and reasonably separating Adelie and Chinstrap into different groups.
+
+```{r}
+pm <- pam(peng_scale, 3)
+pred_pm <- data.frame(clust = pm$clustering, 
+                      species = penguins_clean$species)
+table(pred_pm)
+#      species
+# clust Adelie Chinstrap Gentoo
+#     1    124         5      0
+#     2     27        63      0
+#     3      0         0    123
+
+plot_df <- penguins_clean %>%
+  mutate(clust = factor(pm$cluster))
+ggplot(plot_df, aes(x = flipper_length_mm, y = bill_length_mm, col = clust, pch = species)) + 
+  geom_point(size = 3) + 
+  scale_color_manual(values = myColRamp(3))
+```
+Straight PAM also does a reasonable job of differentiating into reasonable classes.
+
+Based on this, is unsupervised RF clustering really all that great?...
+
+

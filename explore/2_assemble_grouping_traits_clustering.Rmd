@@ -1,0 +1,435 @@
+---
+title: "Assemble grouping traits"
+author: "*Compiled on `r date()` by `r Sys.info()['user']`*"
+output: 
+  html_document:
+    code_folding: hide
+    toc: true
+    toc_depth: 3
+    toc_float: yes
+    number_sections: true
+    theme: cerulean
+    highlight: haddock
+    includes: 
+      in_header: '~/github/src/templates/ohara_hdr.html'
+  pdf_document:
+    toc: true
+---
+
+``` {r setup, echo = TRUE, message = FALSE, warning = FALSE}
+
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
+
+library(oharac)
+oharac::setup()
+library(cluster)
+library(factoextra)
+library(ggfortify)
+source(here('fb_slb_fxns.R'))
+
+
+```
+
+# Summary
+
+Gather processed traits data and assemble into a dataframe.  Apply a clustering algorithm to identify groupings.
+
+# Data
+
+See individual trait scripts.
+
+# Methods
+
+## Assemble dataframe
+
+```{r}
+trait_fs <- list.files(here('_data/traits_grouping'), full.names = TRUE)
+trait_fs <- trait_fs[!str_detect(trait_fs, 'raw.csv')]
+
+df <- lapply(trait_fs, data.table::fread) %>%
+  bind_rows()
+```
+
+Let's limit to observations with mean gapfill of rank 4 (order) or lower.  For now this gets us 64k observations.  Limiting that to rank 3 (family) or lower gets us 17k observations.
+
+```{r}
+df_clean <- df %>%
+  filter(gf_level <= 3) %>%
+  select(-sd, -nspp) %>% 
+  group_by(species) %>%
+  mutate(gf_level = mean(gf_level),
+         n_traits = n()) %>%
+  ungroup() %>%
+  distinct() %>%
+  spread(trait, value) %>%
+  drop_na() %>%
+  left_join(get_worms()) %>%
+  arrange(class)
+
+n_spp_clean <- df_clean$species %>%
+  n_distinct()
+
+df_rescale <- df_clean %>%
+  select(-gf_level, -n_traits, -troph_se) %>%
+  select(where(is.numeric)) %>%
+  scale()
+```
+
+``` {r pca}
+traits_pca <- df_rescale %>%
+  prcomp()
+autoplot(traits_pca,
+         data = df_clean,
+         loadings = TRUE,
+         colour = 'class',
+         loadings.label = TRUE,
+         loadings.colour = "black",
+         loadings.label.colour = "black",
+         loadings.label.vjust = -0.5
+         ) +
+  scale_color_viridis_d() +
+  theme_minimal()
+
+# Variance explained by each PC
+screeplot(traits_pca, type = "lines")
+
+# See the loadings (weighting for each principal component)
+traits_pca$rotation %>% round(3)
+```
+
+### identify an appropriate number of clusters
+
+#### Knee method
+
+Iterate over different values of $k$ and identify a "knee".
+``` {r knee method}
+set.seed(42)
+wss <- function(k, df) {
+  kmeans(df, k, nstart = 10)$tot.withinss
+}
+
+# Compute and plot wss for k = 1 to k = 15
+k_vec <- 1:20
+
+# extract wss for 2-15 clusters
+wss_values <- sapply(k_vec, wss, df = df_rescale)
+
+plot(k_vec, wss_values,
+     type="b", pch = 19, frame = FALSE, 
+     xlab="Number of clusters K",
+     ylab="Total within-clusters sum of squares")
+
+plot(k_vec[9:20], wss_values[9:20],
+     type="b", pch = 19, frame = FALSE, 
+     xlab="Number of clusters K",
+     ylab="Total within-clusters sum of squares")
+
+```
+
+
+#### Silhouette method 
+
+From https://uc-r.github.io/kmeans_clustering:
+
+> In short, the average silhouette approach measures the quality of a clustering. That is, it determines how well each object lies within its cluster. A high average silhouette width indicates a good clustering. The average silhouette method computes the average silhouette of observations for different values of _k_. The optimal number of clusters _k_ is the one that maximizes the average silhouette over a range of possible values for _k_.
+
+Because this is very time consuming, consider using just a sample of the overall dataset to determine optimal number of clusters, and cache the results.
+
+```{r silhouette method}
+set.seed(42)
+avg_sil <- function(k, df) {
+  km_res <- kmeans(df, centers = k, nstart = 4)
+  ss <- silhouette(km_res$cluster, dist(df))
+  mean(ss[, 3])
+}
+
+df_resc_samp <- df_rescale#[sample(1:nrow(df_rescale), size = 24000, replace = FALSE), ]
+
+# extract avg silhouette for 6-20 clusters
+silh_file <- sprintf(here('tmp/silhouette_%s.csv'), nrow(df_resc_samp))
+if(!file.exists(silh_file)) {
+  message('Calculating silhouette for ', nrow(df_resc_samp), ' observations.')
+  # Compute and plot wss for k = 6 to k = 20
+  k_vec <- 6:20
+  avg_sil_values <- sapply(k_vec, avg_sil, df = df_resc_samp)
+  
+  silh_df <- data.frame(k = k_vec, silh = avg_sil_values)
+  write_csv(silh_df, silh_file)
+}
+silh_df <- read_csv(silh_file)
+
+plot(silh_df$k, silh_df$silh,
+     type = "b", pch = 19, frame = FALSE, 
+     xlab = "Number of clusters K",
+     ylab = "Average Silhouettes")
+
+# Similar to the elbow method, this process to compute the 'average 
+# silhoutte method' has been wrapped up in a single function (fviz_nbclust):
+silh_plot_file <- sprintf(here('tmp/silh_plot_%s.png'), nrow(df_resc_samp))
+if(!file.exists(silh_plot_file)) { 
+  message('Plotting optimal clusters by silhouette method for ', nrow(df_resc_samp), ' observations.')
+  # unlink(silh_plot_file)
+  x <- fviz_nbclust(df_resc_samp, kmeans, k.max = 20, method = "silhouette")
+  ggsave(plot = x, filename = silh_plot_file)
+}
+knitr::include_graphics(silh_plot_file)
+
+```
+
+#### Gap Statistic Method
+
+From https://uc-r.github.io/kmeans_clustering: 
+
+> The gap statistic has been published by R. Tibshirani, G. Walther, and T. Hastie (Standford University, 2001). The approach can be applied to any clustering method (i.e. K-means clustering, hierarchical clustering). The gap statistic compares the total intracluster variation for different values of k with their expected values under null reference distribution of the data (i.e. a distribution with no obvious clustering). The reference dataset is generated using Monte Carlo simulations of the sampling process. That is, for each variable
+$x_i$ in the data set we compute its range $[\min(x_i), \max(x_i)]$ and generate values for the $n$ points uniformly from the interval min to max.
+
+> For the observed data and the the reference data, the total intracluster variation is computed using different values of $k$. The gap statistic for a given $k$ is defined as follow:
+
+$$Gap_n(k) = E^*_n \log(W_k) - \log(W_k)$$
+>where $E^*_n$ denotes the expectation under a sample size $n$ from the reference distribution. $E^*_n$ is defined via bootstrapping (B) by generating B copies of the reference datasets and, by computing the average $\log(W^*_k)$. The gap statistic measures the deviation of the observed $W_k$ value from its expected value under the null hypothesis. The estimate of the optimal clusters ($\hat{k}$) will be the value that maximizes $Gap_n(k)$. This means that the clustering structure is far away from the uniform distribution of points.
+
+```{r gap stat method, eval = TRUE}
+set.seed(42)
+gap_stat_plot_file <- sprintf(here('tmp/gap_stat_%s.png'), nrow(df_resc_samp))
+if(!file.exists(gap_stat_plot_file)) {
+  gap_stat <- clusGap(df_resc_samp, verbose = FALSE,
+                      FUN = kmeans, nstart = 25,
+                      K.max = 20, B = 50)
+  # Print the result
+  print(gap_stat, method = "firstmax")
+  
+  x <- fviz_gap_stat(gap_stat)
+  ggsave(plot = x, filename = gap_stat_plot_file)
+}
+knitr::include_graphics(gap_stat_plot_file)
+```
+
+
+### Running K-means with optimal $k$
+
+Identify clusters across all species and then examine cluster breakdown by class.  Compare `pam()` and `kmeans()`.
+
+``` {r k means, cache = TRUE}
+system.time({
+  k15 <- kmeans(df_rescale, centers = 15, nstart = 25)
+}) ### ~ 2 seconds for 25 starts, 64k observations
+
+system.time({
+  p15 <- pam(df_rescale, 
+            k = 15,
+            nstart = 1,
+            variant = 'faster')
+  ### note other variants like 'original', 'o_1', ... are probably better choices
+}) 
+### - with 17k rows on 'faster' with 1 nstart - 11 seconds
+### looks like it scales > n^2 
+### on 'original' variant, 2000 rows ~ 2.7 sec for 1 nstart, 4000 rows ~ 18.5 sec
+### note pam function can't use more than 65536 observations...
+### MUCH slower than kmeans (though more robust apparently)
+
+```
+
+Use Jaccard similarity to see how well clusters line up.  Sequentially calculate similarity between pairs of clusters using Jaccard formula:
+$$J(A, B) = \frac{A \cap B}{A \cup B}$$
+
+```{r}
+
+df_clusters <- df_clean %>%
+  mutate(k_clust = k15$cluster,
+         p_clust = p15$cluster)
+
+df_spp <- df_clusters %>%
+  select(species, k_clust, p_clust) %>%
+  distinct() %>%
+  ungroup()
+
+compare_clusters <- function(df, a_col, b_col) {
+  ### a_col <- 'k_clust'; b_col <- 'p_clust'
+  n_clust <- n_distinct(df[[a_col]])
+  if(n_clust != n_distinct(df[[b_col]])) {
+    stop('Different # of clusters!')
+  }
+  df_tmp <- df %>%
+    rename(a_col := !!a_col, b_col := !!b_col)
+  jac_mtx <- matrix(NA, nrow = n_clust, ncol = n_clust)
+  for(a in 1:n_clust) {
+    for(b in 1:n_clust) {
+      ### a <- 1; b <- 1
+      jac_sim <- df_tmp %>%
+        filter(a_col == a | b_col == b) %>%
+        summarize(num = sum(a_col == a & b_col == b),
+                  den = n_distinct(species),
+                  jac = num / den)
+      jac_mtx[a, b] <- jac_sim$jac
+    }
+  }
+  jac_df <- data.frame(clust_name = letters[1:n_clust])
+  jac_mtx_tmp <- jac_mtx
+  rownames(jac_mtx_tmp) <- 1:n_clust
+  colnames(jac_mtx_tmp) <- 1:n_clust
+  for(j in 1:(n_clust-1)) {
+    # j <- 1
+    jac_max <- which(jac_mtx_tmp == max(jac_mtx_tmp), arr.ind = TRUE)
+    jac_df$a_col[j] <- rownames(jac_mtx_tmp)[jac_max[1]]
+    jac_df$b_col[j] <- colnames(jac_mtx_tmp)[jac_max[2]]
+    jac_df$sim[j] <- jac_mtx_tmp[jac_max]
+    if(j == n_clust-1) {
+      ### only one more!
+      jac_df$a_col[j+1] <- rownames(jac_mtx_tmp)[-jac_max[1]]
+      jac_df$b_col[j+1] <- colnames(jac_mtx_tmp)[-jac_max[2]]
+      jac_df$sim[j+1] <- jac_mtx_tmp[-jac_max[1], -jac_max[2]]
+    } else {
+      ### remove this match
+      jac_mtx_tmp <- jac_mtx_tmp[-jac_max[1], -jac_max[2]]
+    }
+  }  
+  jac_df <- jac_df %>%
+    mutate(a_col = as.integer(a_col), b_col = as.integer(b_col)) %>%
+    rename(!!a_col := a_col, !!b_col := b_col)
+  return(jac_df)
+}
+
+df_jac <- compare_clusters(df_spp, a = 'k_clust', b = 'p_clust')
+
+df_clusters_out <- df_clusters %>%
+  left_join(df_jac %>% select(k_clust, k_group = clust_name), by = 'k_clust') %>%
+  left_join(df_jac %>% select(p_clust, p_group = clust_name), by = 'p_clust')
+
+df_clust_plot <- df_clusters_out %>%
+  select(species, where(is.numeric), 
+         k_group, p_group, 
+         -n_traits, -k_clust, -p_clust) %>%
+  distinct()
+  
+ggplot(df_clust_plot, aes(x = k_group, y = p_group)) +
+  geom_jitter(alpha = .1)
+write_csv(df_clust_plot, 
+          here('_data/functional_groups_from_traits.csv'))
+```
+
+``` {r viz clusters}
+fviz_cluster(k15, data = df_rescale, labelsize = NA) +
+  labs(title = 'kmeans')
+fviz_cluster(p15, data = df_rescale, labelsize = NA) +
+  labs(title = 'pam')
+
+```
+
+``` {r}
+
+cols <- c(hcl.colors(7, palette = 'Reds'), hcl.colors(8, palette = 'Viridis'))[sample(1:15,15)]
+
+clusters_by_class <- df_clusters %>%
+  group_by(class, p_ltr) %>%
+  summarize(nspp = n_distinct(species)) %>%
+  group_by(class) %>%
+  mutate(ntot = sum(nspp),
+         pct_in_cluster = nspp / ntot,
+         ntot_lbl = ifelse(p_ltr == first(p_ltr), ntot, NA)) %>%
+  ungroup()
+
+ggplot(clusters_by_class, aes(x = class, y = pct_in_cluster, fill = p_ltr)) +
+  geom_col() +
+  geom_text(y = 1.01, aes(label = ntot_lbl), hjust = 0) +
+  scale_fill_manual(values = cols) +
+  coord_flip() +
+  scale_y_continuous(limits = c(0, 1.1), breaks = seq(0, 1, .25)) +
+  theme_minimal() +
+  theme(axis.title.y = element_blank(),
+        panel.grid.major = element_blank()) +
+  labs(fill = 'p cluster', y = 'Percent of cluster')
+
+ggsave(here('figs/clusters_by_class.png'))
+```
+
+``` {r}
+classes_by_cluster <- df_clusters %>%
+  group_by(class, p_ltr) %>%
+  summarize(nspp = n_distinct(species)) %>%
+  group_by(p_ltr) %>%
+  mutate(ntot = sum(nspp),
+         pct_in_class = nspp / ntot,
+         ntot_lbl = ifelse(class == first(class), ntot, NA)) %>%
+  ungroup()
+
+ggplot(classes_by_cluster, aes(x = p_ltr, y = pct_in_class, fill = class)) +
+  geom_col() +
+  geom_text(y = 1.01, aes(label = ntot_lbl), hjust = 0) +
+  scale_fill_manual(values = cols) +
+  coord_flip() +
+  scale_y_continuous(limits = c(0, 1.1), breaks = seq(0, 1, .25)) +
+  theme_minimal() +
+  theme(axis.title.y = element_blank(),
+        panel.grid.major = element_blank()) +
+  labs(fill = 'p cluster', y = 'Percent of cluster')
+
+ggsave(here('figs/classes_by_cluster.png'))
+
+```
+
+## Examine trait centers by cluster
+
+```{r}
+k_lookup <- k_vs_p %>% select(k, k_ltr) %>% 
+  distinct() %>%
+  arrange(k) %>%
+  .$k_ltr
+p_lookup <- k_vs_p %>% select(p, p_ltr) %>% 
+  distinct() %>%
+  arrange(p) %>%
+  .$p_ltr
+
+centers_df <- data.frame(cluster = 1:15, scale(k15$centers), scale(p15$medoids)) %>%
+  arrange(cluster) %>%
+  gather(trait, center, -cluster) %>%
+  mutate(method = ifelse(str_detect(trait, '\\.1$'), 'p', 'k'),
+         trait = str_replace(trait, '\\.1$', ''),
+         clust = ifelse(method == 'k', k_lookup[cluster], p_lookup[cluster]))
+
+
+ggplot(centers_df, aes(x = clust, y = center, color = method)) +
+  geom_hline(yintercept = 0, size = .25, color = 'darkred') +
+  geom_point() +
+  facet_wrap(~trait, ncol = 4) +
+  labs(title = 'trait/cluster centers by trait')
+ggplot(centers_df, aes(x = trait, y = center, color = method)) +
+  geom_hline(yintercept = 0, size = .25, color = 'darkred') +
+  geom_point() +
+  facet_wrap(~clust, ncol = 4) +
+  theme(axis.text = element_text(angle = 70, hjust = 1)) +
+  labs(title = 'trait/cluster centers by cluster')
+```
+
+
+
+## Categorize trait centers by cluster
+
+```{r}
+bin_lbls <- c('low', 'medlo', 'med', 'medhi', 'high')
+centers_cat_df <- centers_df %>%
+  group_by(trait, method) %>%
+  mutate(bin = ntile(center, 5),
+         lbl = bin_lbls[bin],
+         lbl = factor(lbl, levels = bin_lbls)) %>%
+  ungroup()
+diff_cat_df <- centers_cat_df %>%
+  select(-cluster, -center, -lbl) %>%
+  group_by(trait, clust) %>%
+  arrange(method) %>%
+  summarize(diff = first(bin) - last(bin), .groups = 'drop') %>%
+  arrange(diff) %>%
+  mutate(diff_lbl = fct_inorder(as.character(diff)))
+ggplot(centers_cat_df, aes(x = clust, y = trait, fill = lbl)) +
+  geom_tile() +
+  facet_wrap(~method) +
+  scale_fill_viridis_d() +
+  labs(title = 'trait/cluster centers by quintile')
+ggsave(here('figs/trait_centers_by_cluster.png'))
+
+ggplot(diff_cat_df, aes(x = clust, y = trait, fill = diff_lbl)) +
+  geom_tile() +
+  scale_fill_viridis_d() +
+  labs(title = 'trait/cluster difference in quintile')
+
+```
+
