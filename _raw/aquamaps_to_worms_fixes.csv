@@ -1,0 +1,84 @@
+am_sid,species_am,species_worms,source
+fis-59418,emmelichthys nitidus nitidus,emmelichthys nitidus,subpops
+fis-153573,mullus barbatus barbatus,mullus barbatus,subpops
+fis-23218,platybelone argalus argalus,platybelone argalus,subpops
+fis-23314,tylosurus acus acus,tylosurus acus,subpops
+fis-23726,platybelone argalus platyura,platybelone argalus,subpops
+fis-23877,tylosurus acus melanotus,tylosurus acus,subpops
+fis-153539,clupea pallasii pallasii,clupea pallasii,subpops
+fis-23839,stomias boa boa,stomias boa,subpops
+fis-130709,strongylura notata notata,strongylura notata,subpops
+fis-144084,stichaeus punctatus punctatus,stichaeus punctatus,subpops
+fis-62843,trachyscorpia cristulata cristulata,trachyscorpia cristulata,subpops
+fis-31614,doryrhamphus excisus excisus,doryrhamphus excisus,subpops
+fis-145105,aethotaxis mitopteryx mitopteryx,aethotaxis mitopteryx,subpops
+fis-129910,hyporhamphus roberti roberti,hyporhamphus roberti,subpops
+fis-125812,cheilopogon pinnatibarbatus pinnatibarbatus,cheilopogon pinnatibarbatus,subpops
+fis-27261,tylosurus acus imperialis,tylosurus acus,subpops
+fis-33140,tylosurus acus rafale,tylosurus acus,subpops
+fis-146809,paraliparis copei copei,paraliparis copei,subpops
+fis-28920,platybelone argalus pterura,platybelone argalus,subpops
+fis-28944,cheilopogon pinnatibarbatus californicus,cheilopogon pinnatibarbatus,subpops
+fis-51189,trachyscorpia cristulata echinata,trachyscorpia cristulata,subpops
+fis-126063,emmelichthys nitidus cyanescens,emmelichthys nitidus,subpops
+fis-142446,platybelone argalus platura,platybelone argalus,subpops
+fis-60060,merluccius gayi gayi,merluccius gayi,subpops
+fis-133291,patagonotothen brevicauda brevicauda,patagonotothen brevicauda,subpops
+fis-32503,doryrhamphus excisus abbreviatus,doryrhamphus excisus,subpops
+fis-26682,platybelone argalus trachura,platybelone argalus,subpops
+fis-33138,platybelone argalus annobonensis,platybelone argalus,subpops
+fis-28718,cheilopogon pinnatibarbatus japonicus,cheilopogon pinnatibarbatus,subpops
+fis-35894,merluccius gayi peruanus,merluccius gayi,subpops
+fis-137627,paraliparis copei wilsoni,paraliparis copei,subpops
+fis-59170,mullus barbatus ponticus,mullus barbatus,subpops
+fis-115594,cheilopogon pinnatibarbatus melanocercus,cheilopogon pinnatibarbatus,subpops
+fis-129911,hyporhamphus roberti hildebrandi,hyporhamphus roberti,subpops
+fis-130716,strongylura notata forsythia,strongylura notata,subpops
+fis-137624,paraliparis copei kerguelensis,paraliparis copei,subpops
+slb-170155,caulerpa racemosa var. macrophysa,caulerpa racemosa,subpops
+slb-187717,mendax trizonalis odhneri,mendax trizonalis,subpops
+slb-100710,xanthias lamarcki,xanthias lamarckii,fuzzymatch
+slb-111670,bathynomus doederleini,bathynomus doederleinii,fuzzymatch
+slb-112386,jouannetia cumingi,jouannetia cumingii,fuzzymatch
+slb-118854,vexillum deshayesi,vexillum deshayesii,fuzzymatch
+its-95868,parapenaeopsis hungerfordi,parapenaeopsis hungerfordii,fuzzymatch
+slb-128839,propeamussium jeffreysi,propeamussium jeffreysii,fuzzymatch
+slb-156972,ptilocaulis walpersi,ptilocaulis walpersii,fuzzymatch
+slb-178262,siphonaria lessoni,siphonaria lessonii,fuzzymatch
+pbd-223594,jacquinotia edwardsi,jacquinotia edwardsii,fuzzymatch
+w-bch-209013,pseudoliomera helleri,pseudoliomera hellerii,fuzzymatch
+slb-188856,evasterias troscheli,evasterias troschelii,fuzzymatch
+slb-23431,pseudotanais lilljeborgi,pseudotanais lilljeborgii,fuzzymatch
+w-oct-128528,protoptilum thomsoni,protoptilum thomsonii,fuzzymatch
+slb-65046,forskalia edwardsi,forskalia edwardsii,fuzzymatch
+slb-66264,amphiura stimpsoni,amphiura stimpsonii,fuzzymatch
+slb-71452,liocranchia reinhardti,liocranchia reinhardtii,fuzzymatch
+slb-72717,cylichna verrilli,cylichna verrillii,fuzzymatch
+slb-86266,cliona schmidti,cliona schmidtii,fuzzymatch
+slb-89335,atys macandrewi,atys macandrewii,fuzzymatch
+chn-91abc70c-b6ae-49a6-840b-05ea852baff4,comanthina schlegeli,comanthina schlegelii,fuzzymatch
+slb-71652,ancistroteuthis lichtensteini,ancistroteuthis lichtensteinii,fuzzymatch
+slb-64981,agalma okeni,agalma okenii,fuzzymatch
+slb-64977,ceratocymba leuckarti,ceratocymba leuckartii,fuzzymatch
+slb-190070,hoplophrys oatesi,hoplophrys oatesii,fuzzymatch
+slb-131270,heterocarpus hayashi,heterocarpus hayashii,fuzzymatch
+slb-64971,abylopsis eschscholtzi,abylopsis eschscholtzii,fuzzymatch
+slb-6495,eusirus holmi,eusirus holmii,fuzzymatch
+slb-159897,geodia macandrewi,geodia macandrewii,fuzzymatch
+slb-72215,norrisia norrisi,norrisia norrisii,fuzzymatch
+slb-129226,coecella horsfieldi,coecella horsfieldii,fuzzymatch
+w-oct-125420,maasella edwardsi,maasella edwardsii,fuzzymatch
+slb-17074,eurycope sarsi,eurycope sarsii,fuzzymatch
+w-bch-208997,neoliomera richtersi,neoliomera richtersii,fuzzymatch
+w-bch-209083,macromedaeus voeltzkowi,macromedaeus voeltzkowii,fuzzymatch
+w-cop-221309,euaugaptilus palumboi,euaugaptilus palumboii,fuzzymatch
+slb-29429,bathyzetes setiger,bathyzetes setigera,fuzzymatch
+w-pyc-134648,callipallene tiberi,callipallene tiberii,fuzzymatch
+w-oct-289321,acanthoptilum agassizi,acanthoptilum agassizii,fuzzymatch
+slb-130968,alpheus soela,alpheus soelae,fuzzymatch
+slb-166146,tenagodus cumingi,tenagodus cumingii,fuzzymatch
+slb-169922,polyplectana kefersteini,polyplectana kefersteinii,fuzzymatch
+slb-169737,ohshimella ehrenbergi,ohshimella ehrenbergii,fuzzymatch
+slb-101069,spondylus gussoni,spondylus gussonii,fuzzymatch
+slb-67444,scrupocellaria bertholetti,scrupocellaria bertholettii,fuzzymatch
+slb-92489,corymorpha forbesi,corymorpha forbesii,fuzzymatch

@@ -60,14 +60,14 @@ Check for species who are listed in AquaMaps with a subspecies name - drop subsp
 am_spp_subspp <- am_spp_info %>%
   mutate(subspp = ifelse(str_detect(species, ' [a-z]+ '), str_remove(species, '.[a-z]+.? [a-z]+ '), NA),
          ### drop subspecies name from species name: 
-         species = ifelse(!is.na(subspp), str_remove(species, ' [a-z]+$'), species),
+         new_species = ifelse(!is.na(subspp), str_remove(species, ' [a-z]+$'), species),
          ### drop "var." note
-         species = str_remove(species, ' var\\.$') %>% str_trim())
+         new_species = str_remove(new_species, ' var\\.$') %>% str_trim())
 
 am_spp_match <- am_spp_info %>%
   inner_join(worms_spp, by = 'species')
 am_spp_match2 <- am_spp_subspp %>%
-  inner_join(worms_spp, by = 'species')
+  inner_join(worms_spp, by = c('new_species' = 'species'))
 
 am_spp_nomatch <- am_spp_subspp %>%
   filter(!am_sid %in% am_spp_match2$am_sid)
@@ -128,12 +128,26 @@ if(!file.exists(fuzzymatch_file)) {
 fuzzymatch_check <- read_csv(fuzzymatch_file) %>%
   select(am_sid, species_am = species.x, species_worms = species.y) %>%
   distinct() %>%
-  mutate(keep = !is.na(str_match(species_worms, species_am)))
+  mutate(keep = !is.na(str_match(species_worms, species_am)),
+         source = 'fuzzymatch')
 ### in all these cases, the WoRMS species name has an extra letter relative to 
 ### the AquaMaps name, e.g., xanthias lamarckii vs xanthias lamarcki
 
-DT::datatable(fuzzymatch_check)
-write_csv(fuzzymatch_check, here('_raw/aquamaps_to_worms_fuzzymatch.csv'))
+```
+
+## Join fuzzymatch fixes to subpop drop fixes and save
+
+``` {r}
+fixes_df <- am_spp_subspp %>% select(am_sid, species_am = species, species_worms = new_species) %>%
+  filter(species_am != species_worms) %>%
+  mutate(source = 'subpops') %>%
+  bind_rows(fuzzymatch_check) %>%
+  select(-keep) %>%
+  distinct()
+
+DT::datatable(fixes_df)
+
+write_csv(fixes_df, here('_raw/aquamaps_to_worms_fixes.csv'))
 ```
 
 
