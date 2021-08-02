@@ -67,7 +67,7 @@ This set of calculations replicates the results of Villeger's function but witho
     * Species richness
     * Functional entity richness
     * Functional vulnerability (% of FEs represented by a single spp)
-    * Weighted functional vulnerability (new: vuln of an FE is $\frac{1}{n_{spp}}$, take average over all FE)
+    * Weighted functional vulnerability (new: vuln of an FE is $\frac{1}{2^{n-1}}$, take average over all FE)
     * Functional redundancy (mean spp count per FE)
     * Functional over-redundancy (sum of spp per FE above mean, divided by total number of spp)
     
@@ -105,7 +105,7 @@ if(!file.exists(fe_metrics_file)) {
         group_by(loiczid) %>%
         summarize(n_fe = first(n_fe), n_spp = first(n_spp),
                   f_vuln = sum(nspp_fe == 1) / n_fe, 
-                  f_wvuln = mean(1/(nspp_fe^2)),
+                  f_wvuln = mean(0.5^(nspp_fe-1)),
                   f_red  = mean(nspp_fe),
                   .groups = 'drop')
       f_overred_df <- nspp_fe_df %>%
