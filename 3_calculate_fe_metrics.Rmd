@@ -8,12 +8,13 @@ editor_options:
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE, fig.height = 4, fig.width = 7)
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE, 
+                      fig.height = 4, fig.width = 7)
 
 library(raster)
 library(oharac)
 oharac::setup()
-source(here('fb_slb_fxns.R'))
+source(here('common_fxns.R'))
 ```
 
 # Summary
@@ -36,7 +37,8 @@ if(!file.exists(fe_metrics_file)) {
     select(-am_sid, -source)
   am_spp_cells <- get_am_spp_cells()
   am_spp_info  <- get_am_spp_info() %>%
-    select(-species, species = sciname)
+    select(-species, species = sciname) %>%
+    filter(kingdom == 'Animalia')
 }
 ```
 
@@ -46,12 +48,29 @@ Then filter the species-cell lookup to just those species, for better performanc
 
 ```{r join FEs to aquamaps}
 if(!file.exists(fe_metrics_file)) {
-  am_spp_fe   <- inner_join(am_spp_info, spp_fe, by = c('species' = 'species_am')) %>%
+  am_spp_fe <- inner_join(am_spp_info, spp_fe, by = c('species' = 'species_am')) %>%
     select(am_sid, species, occur_cells, iucn_sid, fe_code, fe_id, n_spp)
-  
-    
   am_cells_fe <- oharac::dt_join(am_spp_fe, am_spp_cells, by = 'am_sid', type = 'left') %>%
     select(loiczid, am_sid, fe_code, fe_id, prob)
+  
+  am_spp_nonfe <- am_spp_info %>%
+    filter(!species %in% spp_fe$species_am)
+  table(am_spp_nonfe$class)
+  worms_spp <- assemble_worms() 
+  worms_am <- worms_spp %>%
+    full_join(am_to_worms_fixes, by = c('species' = 'species_worms'))
+  am_spp_nonworms <- am_spp_info %>%
+    filter(!species %in% worms_spp$species & !species %in% am_to_worms_fixes$species_am)
+  
+  spp_fe_all <- spp_fe %>%
+    left_join(worms_spp, by = 'species')
+  mammals <- am_spp_info %>%
+    filter(class == 'Mammalia') %>%
+    full_join(spp_fe_all %>% filter(class == 'mammalia'), 
+              by = c('species' = 'species')) %>%
+    select(am_sid, species, species_am, fe_id) %>%
+    filter(is.na(am_sid) | is.na(fe_id))
+  
 }
 ```
 

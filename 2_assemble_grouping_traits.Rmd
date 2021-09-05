@@ -22,14 +22,14 @@ knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
 
 library(oharac)
 oharac::setup()
-source(here('fb_slb_fxns.R'))
+source(here('common_fxns.R'))
 
 
 ```
 
 # Summary
 
-Gather processed traits data and assemble into a dataframe.  Use trait bins to identify functional entities (FE) per Villeger and others.
+Gather processed traits data and assemble into a dataframe.  Assign bins for trait values.  Use trait bins to identify functional entities (FE) per Villeger and others.
 
 # Data
 
@@ -192,7 +192,7 @@ troph_qtile <- ecdf(troph_traits$value)
 troph_qtile(c(2, 3, 3.5, 4, 4.4, 5))
 
 troph_traits <- troph_traits %>%
-  mutate(trp = case_when(value == 2 ~ 'pri', ### anything above 2 suggests some carnivory
+  mutate(trp = case_when(value <= 2 ~ 'pri', ### anything above 2 suggests some carnivory
                          value <= 3 ~ 'sec',
                          value <= 4 ~ 'ter',
                          value > 4  ~ 'apex',
@@ -244,25 +244,92 @@ n_fe_possible <- n_distinct(mob_traits$mob) *
                  n_distinct(water_col_traits$wcol)
 ```
 
-Based on the given trait categories, we could see up to `r n_fe_possible` functional entities, though most will not be populated (e.g., not so likely to find a very large species with a high fecundity and short generation time).
+Based on the given trait categories, we could see up to `r n_fe_possible` functional entities, though most will not be populated (e.g., not so likely to find a very large apex predator species with a high fecundity and short generation time).
 
-### Number of spp with NAs for one or more traits
+### Number of spp included, by class
 
-``` {r na_count}
+``` {r check inclusion}
+worms_spp <- assemble_worms()
+
 all_traits_df <- mob_traits %>%
   full_join(fecund_traits, by = 'species') %>%
   full_join(gen_time_traits, by = 'species') %>%
   full_join(troph_traits, by = 'species') %>%
   full_join(length_traits, by = 'species') %>%
   full_join(water_col_traits, by = 'species') %>%
-  left_join(get_worms())
+  left_join(worms_spp, by = 'species') %>%
+  distinct()
 
+incl_spp <- all_traits_df %>%
+  drop_na() %>%
+  group_by(class) %>%
+  summarize(n_spp = n_distinct(species))
+
+knitr::kable(incl_spp)
+```
+
+### Number of spp with NAs for one or more traits
+
+``` {r na_check}
 fe_nas <- all_traits_df %>%
+  select(-c(phylum:genus)) %>%
   gather(trait, val, -species) %>%
   group_by(species) %>%
   summarize(n_na = sum(is.na(val)))
 table(fe_nas$n_na)
+
 ```
+
+### Number of spp unmatched by WoRMS names
+
+``` {r}
+unmatched_taxa <- all_traits_df %>%
+  filter(is.na(genus)) %>%
+  select(-c(phylum:genus)) %>%
+  gather(trait, val, -species) %>%
+  group_by(species) %>%
+  summarize(na_traits = sum(is.na(val))) %>%
+  mutate(genus = str_extract(species, '[a-z]+(?= )')) %>%
+  group_by(na_traits) %>%
+  summarize(n_spp = n_distinct(species),
+            n_gen = n_distinct(genus))
+knitr::kable(unmatched_taxa)
+
+```
+
+All the unmatched spp are missing values for most traits, and these only contain trait values for water column position.  Genus-level gapfilling in the water column position script was used to extract traits from these unmatched species to help gapfill for WoRMS-matched species in the same genera.
+
+``` {r check missing spp by genus}
+
+missing_water_col <- all_traits_df %>%
+  gather(trait, val, -species, -genus) %>%
+  group_by(genus, species) %>%
+  summarize(n_na = sum(is.na(val)),
+            missing_wcol = (is.na(val) & trait == 'wcol')) %>%
+  filter(n_na == 1 & missing_wcol)
+
+worms_genus_to_class <- worms_spp %>%
+  select(class, order, family, genus) %>%
+  distinct()
+genus_match <- all_traits_df %>%
+  filter(is.na(genus)) %>%
+  select(-c(phylum:genus)) %>% ### all NAs
+  mutate(genus = str_extract(species, '[a-z]+(?= )')) %>%
+  mutate(genus_match = genus %in% worms_spp$genus,
+         potential_fill = genus %in% missing_water_col$genus) %>%
+  left_join(worms_genus_to_class, by = 'genus') %>%
+  group_by(class, genus_match, potential_fill) %>%
+  summarize(n_spp = n_distinct(species),
+            n_gen = n_distinct(genus))
+```
+
+#### potential fills with additional gapfilling?
+
+Gapfilling skipped any genera represented by only one species, which may be why a few of these are still unmatched.
+
+`r knitr::kable(genus_match %>% filter(genus_match & potential_fill))`
+
+### Check traits causing drops
 
 Which traits are responsible for dropping most species?  examine species dropped for one or two NAs.
 

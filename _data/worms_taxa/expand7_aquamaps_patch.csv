@@ -1,0 +1,1613 @@
+phylum,class,order,family,genus,species
+chordata,actinopterygii,salmoniformes,salmonidae,oncorhynchus,oncorhynchus masou
+chordata,actinopterygii,siluriformes,ariidae,ariopsis,ariopsis felis
+chordata,actinopterygii,syngnathiformes,syngnathidae,microphis,microphis brachyurus
+chordata,actinopterygii,beloniformes,belonidae,strongylura,strongylura notata
+chordata,actinopterygii,perciformes,apogonidae,paroncheilus,paroncheilus affinis
+chordata,elasmobranchii,myliobatiformes,dasyatidae,taeniurops,taeniurops meyeni
+chordata,actinopterygii,tetraodontiformes,monacanthidae,arotrolepis,arotrolepis filicauda
+chordata,actinopterygii,scorpaeniformes,liparidae,edentoliparis,edentoliparis terraenovae
+chordata,actinopterygii,beloniformes,hemiramphidae,hyporhamphus,hyporhamphus roberti
+chordata,actinopterygii,perciformes,sillaginidae,sillaginopodys,sillaginopodys chondropus
+chordata,actinopterygii,beloniformes,hemiramphidae,oxyporhamphus,oxyporhamphus micropterus
+chordata,actinopterygii,perciformes,odacidae,heteroscarus,heteroscarus acroptilus
+chordata,actinopterygii,perciformes,odacidae,olisthops,olisthops cyanomelas
+chordata,actinopterygii,siluriformes,ariidae,ariopsis,ariopsis guatemalensis
+chordata,actinopterygii,perciformes,apogonidae,quinca,quinca mirifica
+chordata,elasmobranchii,rajiformes,rajidae,spiniraja,spiniraja whitleyi
+chordata,elasmobranchii,rajiformes,anacanthobatidae,springeria,springeria folirostris
+chordata,elasmobranchii,rajiformes,anacanthobatidae,springeria,springeria longirostris
+chordata,actinopterygii,notacanthiformes,notacanthidae,leptocephalus,leptocephalus giganteus
+chordata,actinopterygii,perciformes,labridae,novaculops,novaculops halsteadi
+chordata,actinopterygii,gadiformes,merlucciidae,merluccius,merluccius gayi
+chordata,actinopterygii,scorpaeniformes,scorpaenidae,thysanichthys,thysanichthys crossotus
+chordata,actinopterygii,syngnathiformes,syngnathidae,hippocampus,hippocampus montebelloensis
+chordata,actinopterygii,anguilliformes,ophichthidae,leptocephalus,leptocephalus ophichthoides
+chordata,actinopterygii,perciformes,labridae,novaculops,novaculops koteamea
+chordata,actinopterygii,perciformes,labridae,novaculops,novaculops pastellus
+mollusca,gastropoda,neogastropoda,muricidae,marchia,no match
+mollusca,gastropoda,neogastropoda,muricidae,habromorula,no match
+annelida,polychaeta,aciculata,myzostomidae,myzostoma,myzostoma willemoesii
+annelida,polychaeta,aciculata,myzostomidae,myzostoma,myzostoma attenuatum
+annelida,polychaeta,aciculata,myzostomidae,myzostoma,myzostoma divisor
+mollusca,gastropoda,heterostropha,architectonicidae,heliacus,heliacus fenestratus
+mollusca,gastropoda,heterostropha,pyramidellidae,pyramidella,longchaeus maculosus
+mollusca,gastropoda,heterostropha,pyramidellidae,otopleura,otopleura mitralis
+arthropoda,malacostraca,stomatopoda,nannosquillidae,acanthosquilla,no match
+arthropoda,maxillopoda,sessilia,chthamalidae,chamaesipho,chamaesipho columna
+arthropoda,maxillopoda,sessilia,balanidae,balanus,fistulobalanus albicostatus
+arthropoda,maxillopoda,sessilia,balanidae,megabalanus,megabalanus ajax
+arthropoda,maxillopoda,sessilia,pyrgomatidae,cantellius,cantellius septimus
+arthropoda,maxillopoda,sessilia,pyrgomatidae,savignium,savignium crenatum
+arthropoda,maxillopoda,sessilia,pyrgomatidae,trevathana,trevathana dentata
+arthropoda,maxillopoda,sessilia,pyrgomatidae,neotrevathana,neotrevathana elongata
+arthropoda,maxillopoda,sessilia,balanidae,austromegabalanus,austromegabalanus psittacus
+arthropoda,maxillopoda,sessilia,balanidae,austromegabalanus,austromegabalanus nigrescens
+arthropoda,maxillopoda,sessilia,archaeobalanidae,armatobalanus,armatobalanus quadrivittatus
+arthropoda,maxillopoda,sessilia,chthamalidae,notochthamalus,notochthamalus scabrosus
+mollusca,bivalvia,pholadomyoida,pandoridae,pandora,pandora albida
+mollusca,bivalvia,pholadomyoida,cuspidariidae,cuspidaria,cuspidaria concentrica
+mollusca,bivalvia,pholadomyoida,cuspidariidae,cuspidaria,cuspidaria infelix
+mollusca,bivalvia,pholadomyoida,cuspidariidae,cuspidaria,cuspidaria tenella
+mollusca,bivalvia,veneroida,cyamiidae,cyamiocardium,cyamiocardium crassilabrum
+mollusca,bivalvia,veneroida,gaimardiidae,gaimardia,gaimardia trapesina
+mollusca,bivalvia,pholadomyoida,lyonsiidae,lyonsia,lyonsia arcaeformis
+mollusca,bivalvia,pholadomyoida,thraciidae,thracia,thracia meridionalis
+arthropoda,maxillopoda,pedunculata,scalpellidae,ornatoscalpellum,weltnerium gibberum
+arthropoda,maxillopoda,pedunculata,lithotryidae,lithotrya,lithotrya nicobarica
+arthropoda,maxillopoda,sessilia,chthamalidae,chthamalus,chthamalus malayensis
+arthropoda,maxillopoda,pedunculata,iblidae,ibla,ibla cumingi
+arthropoda,maxillopoda,pedunculata,poecilasmatidae,temnaspis,dianajonesia excavatum
+mollusca,gastropoda,heterostropha,acteonidae,pupa,pupa affinis
+mollusca,gastropoda,heterostropha,acteonidae,pupa,abida secale
+mollusca,gastropoda,cephalaspidea,ringiculidae,ringicula,ringicula australis
+mollusca,gastropoda,sacoglossa,oxynoidae,roburnella,roburnella wilsoni
+mollusca,gastropoda,sacoglossa,juliidae,edenttellina,berthelinia typica
+mollusca,gastropoda,sacoglossa,juliidae,tamanovalva,berthelinia babai
+mollusca,gastropoda,sacoglossa,elysiidae,elysia,elysia australis
+mollusca,gastropoda,sacoglossa,elysiidae,elysia,elysia coodgeensis
+mollusca,gastropoda,sacoglossa,elysiidae,elysia,elysia maoria
+mollusca,gastropoda,neogastropoda,turridae,pleurotomella,austrotoma aguayoi
+arthropoda,malacostraca,decapoda,palaemonidae,macrobrachium,macrobrachium carcinus
+arthropoda,malacostraca,decapoda,palaemonidae,macrobrachium,macrobrachium equidens
+arthropoda,malacostraca,decapoda,palaemonidae,macrobrachium,no match
+arthropoda,malacostraca,decapoda,palaemonidae,macrobrachium,macrobrachium nipponense
+arthropoda,malacostraca,decapoda,palaemonidae,macrobrachium,macrobrachium olfersii
+arthropoda,malacostraca,decapoda,palaemonidae,macrobrachium,macrobrachium rosenbergii
+annelida,polychaeta,not assigned,orbiniidae,leitoscoloplos,leitoscoloplos robustus
+annelida,polychaeta,canalipalpata,magelonidae,magelona,magelona pettiboneae
+annelida,polychaeta,not assigned,capitellidae,capitella,capitella jonesi
+annelida,polychaeta,not assigned,capitellidae,mastobranchus,mastobranchus variabilis
+annelida,polychaeta,not assigned,maldanidae,nicomache,nicomache antillensis
+annelida,polychaeta,not assigned,maldanidae,sabaco,sabaco elongatus
+annelida,polychaeta,not assigned,scalibregmatidae,hyboscolex,hyboscolex quadricincta
+annelida,polychaeta,canalipalpata,sabellariidae,lygdamis,lygdamis indicus
+mollusca,gastropoda,cephalaspidea,cylichnidae,scaphander,scaphander bathymophila
+mollusca,gastropoda,cephalaspidea,philinidae,laona,praephiline finmarchica
+mollusca,bivalvia,veneroida,veneridae,lioconcha,lioconcha fastigiata
+mollusca,bivalvia,veneroida,veneridae,tapes,tapes sulcarius
+mollusca,bivalvia,veneroida,veneridae,timoclea,timoclea costellifera
+mollusca,bivalvia,veneroida,veneridae,lioconcha,lioconcha hieroglyphica
+mollusca,bivalvia,veneroida,veneridae,lioconcha,lioconcha annettae
+arthropoda,malacostraca,isopoda,haploniscidae,chandraniscus,no match
+mollusca,bivalvia,veneroida,veneridae,tapes,tapes platyptycha
+mollusca,bivalvia,veneroida,veneridae,tapes,tapes sericeus
+mollusca,bivalvia,veneroida,veneridae,clementia,clementia papyracea
+mollusca,bivalvia,pholadomyoida,myochamidae,myadora,myadora antipodum
+mollusca,bivalvia,pholadomyoida,myochamidae,myadora,myadora novaezelandiae
+mollusca,bivalvia,pholadomyoida,myochamidae,myadora,myadora subrostrata
+arthropoda,maxillopoda,pedunculata,poecilasmatidae,megalasma,megalasma striatum
+arthropoda,maxillopoda,pedunculata,poecilasmatidae,octolasmis,dichelaspis orthogonia
+mollusca,bivalvia,pholadomyoida,laternulidae,laternula,laternula anatina
+mollusca,bivalvia,veneroida,veneridae,globivenus,globivenus toreuma
+mollusca,bivalvia,veneroida,veneridae,dosinia,dosinia greyi
+mollusca,bivalvia,pholadomyoida,cuspidariidae,cuspidaria,cuspidaria fairchildi
+mollusca,bivalvia,pholadomyoida,cuspidariidae,cuspidaria,cuspidaria willetti
+mollusca,bivalvia,pholadomyoida,thraciidae,thracia,thracia vegrandis
+mollusca,bivalvia,pholadomyoida,thraciidae,thracia,thracia vitrea
+mollusca,bivalvia,pholadomyoida,euciroidae,euciroa,euciroa galatheae
+mollusca,bivalvia,pholadomyoida,verticordiidae,haliris,haliris setosa
+mollusca,bivalvia,pholadomyoida,verticordiidae,spinosipella,spinosipella acuticostata
+mollusca,bivalvia,veneroida,veneridae,transennella,transennella culebrana
+annelida,polychaeta,not assigned,opheliidae,armandia,armandia lanceolata
+annelida,polychaeta,not assigned,opheliidae,armandia,armandia leptocirris
+mollusca,bivalvia,veneroida,veneridae,timoclea,timoclea marica
+mollusca,gastropoda,heterostropha,architectonicidae,heliacus,heliacus variegatus
+mollusca,gastropoda,heterostropha,architectonicidae,architectonica,architectonica trochlearis
+mollusca,gastropoda,neotaenioglossa,cerithiidae,rhinoclavis,rhinoclavis kochi
+mollusca,gastropoda,neotaenioglossa,cerithiidae,cerithium,cerithium dialeucum
+mollusca,gastropoda,neotaenioglossa,cerithiidae,cerithium,cerithium lifuense
+mollusca,gastropoda,neotaenioglossa,cerithiidae,cerithium,cerithium citrinum
+mollusca,gastropoda,neotaenioglossa,planaxidae,planaxis,supplanaxis niger
+mollusca,gastropoda,neritopsina,neritidae,neritina,theodoxus baeticus
+mollusca,gastropoda,neotaenioglossa,cerithiidae,clypeomorus,clypeomorus brevis
+mollusca,gastropoda,neotaenioglossa,cerithiidae,cerithium,cerithium tenellum
+mollusca,gastropoda,neotaenioglossa,cerithiidae,clypeomorus,clypeomorus batillariaeformis
+mollusca,gastropoda,neotaenioglossa,epitoniidae,epitonium,epitonium pallasi
+mollusca,gastropoda,neogastropoda,cancellariidae,trigonostoma,no match
+mollusca,gastropoda,neotaenioglossa,cypraeidae,cypraea,no match
+mollusca,gastropoda,neogastropoda,buccinidae,nassaria,nassaria fusiformis
+mollusca,gastropoda,neogastropoda,buccinidae,cantharus,no match
+mollusca,gastropoda,vetigastropoda,chilodontidae,enida,enida japonica
+arthropoda,maxillopoda,sessilia,verrucidae,metaverruca,metaverruca imbricata
+arthropoda,maxillopoda,sessilia,verrucidae,gibbosaverruca,no match
+mollusca,gastropoda,neotaenioglossa,potamididae,royella,royella sinon
+mollusca,gastropoda,neotaenioglossa,planaxidae,hinea,hinea brasiliana
+mollusca,gastropoda,heterostropha,architectonicidae,heliacus,heliacus implexus
+mollusca,gastropoda,heterostropha,architectonicidae,psilaxis,psilaxis oxytropis
+mollusca,gastropoda,heterostropha,acteonidae,pupa,pupa sulcata
+mollusca,gastropoda,neotaenioglossa,lamellariidae,marseniopsis,marseniopsis conica
+mollusca,gastropoda,neotaenioglossa,lamellariidae,chelyonotus,no match
+mollusca,gastropoda,neogastropoda,muricidae,drupella,no match
+mollusca,bivalvia,veneroida,veneridae,pitar,pitar prora
+mollusca,aplacophora,cavibelonia,simrothiellidae,helicoradomenia,helicoradomenia juani
+mollusca,gastropoda,caenogastropoda,provannidae,desbruyeresia,desbruyeresia cancellata
+mollusca,gastropoda,caenogastropoda,provannidae,ifremeria,ifremeria nautilei
+mollusca,gastropoda,caenogastropoda,provannidae,provanna,provanna glabra
+mollusca,gastropoda,caenogastropoda,provannidae,provanna,provanna laevis
+mollusca,gastropoda,caenogastropoda,provannidae,provanna,provanna variabilis
+mollusca,gastropoda,neotaenioglossa,turritellidae,turritella,turritella bacillum
+mollusca,gastropoda,heterostropha,architectonicidae,architectonica,architectonica perdix
+mollusca,bivalvia,veneroida,veneridae,dosinia,dosinia japonica
+mollusca,bivalvia,mytiloida,mytilidae,limnoperna,limnoperna fortunei
+mollusca,bivalvia,veneroida,veneridae,venus,globivenus toreuma
+mollusca,bivalvia,veneroida,veneridae,placamen,placamen lamellatum
+mollusca,bivalvia,veneroida,veneridae,tapes,tapes araneosus
+mollusca,bivalvia,veneroida,veneridae,paphia,paphia euglypta
+mollusca,bivalvia,pholadomyoida,cuspidariidae,cardiomya,cardiomya alcocki
+arthropoda,maxillopoda,pedunculata,poecilasmatidae,octolasmis,octolasmis warwicki
+mollusca,gastropoda,neotaenioglossa,siliquariidae,siliquaria,tenagodus cumingii
+mollusca,bivalvia,veneroida,veneridae,samarangia,samarangia quadrangularis
+mollusca,bivalvia,veneroida,veneridae,callista,callista erycina
+mollusca,bivalvia,ostreoida,pectinidae,chlamys,no match
+mollusca,gastropoda,neotaenioglossa,cerithiopsidae,cerithiopsis,cerithiopsis fayalensis
+mollusca,gastropoda,heterostropha,pyramidellidae,odostomia,doliella nitens
+mollusca,gastropoda,heterostropha,pyramidellidae,turbonilla,turbonilla amoena
+arthropoda,malacostraca,isopoda,aegidae,aega,no match
+chordata,aves,ciconiiformes,phalacrocoracidae,phalacrocorax,phalacrocorax africanus
+porifera,demospongiae,poecilosclerida,tedaniidae,tedania,tedania (tedania) anhelans
+annelida,polychaeta,not assigned,opheliidae,ammotrypane,ophelina acuminata
+echinodermata,ophiuroidea,ophiurida,ophionereididae,ophionereis,ophionereis dubia
+echinodermata,ophiuroidea,ophiurida,ophiuridae,ophiolepis,ophiolepis cincta
+arthropoda,maxillopoda,pedunculata,heteralepadidae,heteralepas,heteralepas japonica
+arthropoda,maxillopoda,pedunculata,poecilasmatidae,octolasmis,octolasmis cor
+arthropoda,maxillopoda,pedunculata,poecilasmatidae,octolasmis,octolasmis neptuni
+arthropoda,maxillopoda,pedunculata,poecilasmatidae,octolasmis,octolasmis nierstraszi
+arthropoda,maxillopoda,pedunculata,lithotryidae,lithotrya,lithotrya valentiana
+arthropoda,maxillopoda,pedunculata,scalpellidae,weltnerium,weltnerium poculum
+arthropoda,maxillopoda,pedunculata,scalpellidae,amigdoscalpellum,amigdoscalpellum elegans
+arthropoda,maxillopoda,sessilia,verrucidae,rostratoverruca,rostratoverruca intexta
+arthropoda,maxillopoda,sessilia,pachylasmatidae,pachylasma,pachylasma scutistriata
+arthropoda,maxillopoda,sessilia,archaeobalanidae,armatobalanus,armatobalanus allium
+arthropoda,maxillopoda,sessilia,archaeobalanidae,armatobalanus,armatobalanus cepa
+arthropoda,maxillopoda,sessilia,archaeobalanidae,chirona,striatobalanus tenuis
+arthropoda,maxillopoda,sessilia,archaeobalanidae,solidobalanus,solidobalanus auricoma
+arthropoda,maxillopoda,sessilia,archaeobalanidae,solidobalanus,solidobalanus ciliatus
+arthropoda,maxillopoda,sessilia,archaeobalanidae,solidobalanus,solidobalanus maldivensis
+arthropoda,maxillopoda,sessilia,archaeobalanidae,conopea,conopea calceola
+arthropoda,maxillopoda,sessilia,archaeobalanidae,conopea,conopea cymbiformis
+arthropoda,maxillopoda,sessilia,archaeobalanidae,acasta,acasta japonica
+arthropoda,maxillopoda,sessilia,archaeobalanidae,acasta,acasta sulcata
+arthropoda,maxillopoda,sessilia,archaeobalanidae,neoacasta,neoacasta laevigata
+arthropoda,maxillopoda,sessilia,archaeobalanidae,pectinoacasta,pectinoacasta pectinipes
+arthropoda,maxillopoda,sessilia,pyrgomatidae,cantellius,cantellius secundus
+arthropoda,maxillopoda,sessilia,pyrgomatidae,nobia,nobia grandis
+porifera,demospongiae,poecilosclerida,tedaniidae,tedania,tedania (tedaniopsis) massa
+mollusca,gastropoda,neotaenioglossa,cerithiidae,clypeomorus,clypeomorus pellucida
+mollusca,gastropoda,neotaenioglossa,cerithiidae,clypeomorus,clypeomorus purpurastoma
+arthropoda,malacostraca,isopoda,cirolanidae,anopsilana,no match
+chordata,amphibia,anura,bufonidae,rhinella,rhinella marina
+echinodermata,asteroidea,valvatida,ganeriidae,perknaster,perknaster fuscus
+mollusca,bivalvia,veneroida,veneridae,callista,callista impar
+mollusca,gastropoda,neotaenioglossa,cerithiidae,bittium,bittium glareosum
+mollusca,bivalvia,veneroida,veneridae,dosinia,dosinia tumida
+mollusca,bivalvia,veneroida,veneridae,dosinia,marama tumida
+mollusca,bivalvia,veneroida,veneridae,irus,irus macrophylla
+mollusca,bivalvia,veneroida,veneridae,meretrix,meretrix casta
+chordata,reptilia,squamata,boidae,boa,boa constrictor
+platyhelminthes,turbellaria,polycladida,euryleptidae,prostheceraeus,prostheceraeus giesbrechtii
+platyhelminthes,turbellaria,polycladida,euryleptidae,prostheceraeus,prostheceraeus roseus
+platyhelminthes,turbellaria,polycladida,euryleptidae,prostheceraeus,prostheceraeus vittatus
+arthropoda,maxillopoda,sessilia,archaeobalanidae,striatobalanus,striatobalanus tenuis
+mollusca,gastropoda,neritopsina,neritidae,clithon,clithon chlorostoma
+mollusca,gastropoda,neotaenioglossa,cerithiidae,argyropeza,argyropeza divina
+mollusca,gastropoda,neotaenioglossa,cerithiidae,cerithium,cerithium pacificum
+mollusca,gastropoda,neotaenioglossa,cerithiidae,cerithium,rhinocoryne humboldti
+mollusca,gastropoda,neotaenioglossa,cerithiidae,colina,colina macrostoma
+mollusca,gastropoda,neotaenioglossa,epitoniidae,cycloscala,cycloscala hyalina
+mollusca,gastropoda,neotaenioglossa,epitoniidae,eglisia,eglisia tricarinata
+mollusca,gastropoda,neotaenioglossa,epitoniidae,epitonium,epitonium alatum
+mollusca,gastropoda,neotaenioglossa,epitoniidae,epitonium,epitonium lyra
+mollusca,gastropoda,neotaenioglossa,epitoniidae,epitonium,epitonium stigmaticum
+mollusca,gastropoda,neotaenioglossa,triphoridae,viriola,viriola tricincta
+phoronida,not assigned,not assigned,phoronidae,phoronis,phoronis australis
+mollusca,gastropoda,neotaenioglossa,cerithiidae,cerithium,cerithium scabridum
+mollusca,gastropoda,neotaenioglossa,planaxidae,planaxis,planaxis savignyi
+mollusca,gastropoda,neotaenioglossa,triphoridae,monophorus,monophorus perversus
+mollusca,gastropoda,heterostropha,architectonicidae,spirolaxis,spirolaxis centrifuga
+mollusca,gastropoda,heterostropha,rissoellidae,rissoella,rissoella globularis
+mollusca,gastropoda,heterostropha,pyramidellidae,chrysallida,parthenina eximia
+mollusca,gastropoda,heterostropha,pyramidellidae,odostomia,odostomia turrita
+mollusca,gastropoda,heterostropha,pyramidellidae,odostomia,folinella excavata
+mollusca,gastropoda,heterostropha,amathinidae,amathina,amathina tricarinata
+mollusca,bivalvia,veneroida,veneridae,dosinia,dosinia erythraea
+cnidaria,hydrozoa,leptothecata,sertulariidae,sertularia,sertularella distans
+mollusca,gastropoda,neotaenioglossa,triphoridae,monophorus,monophorus olivaceus
+mollusca,gastropoda,neotaenioglossa,triphoridae,latitriphora,latitriphora albida
+mollusca,gastropoda,neotaenioglossa,triphoridae,metaxia,metaxia excelsa
+mollusca,gastropoda,neotaenioglossa,triphoridae,nototriphora,nototriphora decorata
+mollusca,gastropoda,neotaenioglossa,planaxidae,angiola,hinea lineata
+mollusca,gastropoda,heterostropha,pyramidellidae,pseudoscilla,pseudoscilla babylonia
+mollusca,gastropoda,heterostropha,rissoellidae,rissoella,rissoella galba
+mollusca,gastropoda,heterostropha,pyramidellidae,boonea,boonea jadisi
+mollusca,gastropoda,heterostropha,architectonicidae,heliacus,heliacus infundibuliformis
+mollusca,gastropoda,heterostropha,pyramidellidae,eulimastoma,eulimastoma didymum
+mollusca,gastropoda,neotaenioglossa,epitoniidae,epitonium,epitonium sericifilum
+mollusca,gastropoda,heterostropha,acteonidae,pupa,pupa alveola
+mollusca,gastropoda,heterostropha,acteonidae,pupa,pupa solidula
+mollusca,gastropoda,heterostropha,acteonidae,pupa,pupa strigosa
+mollusca,gastropoda,cephalaspidea,aplustridae,hydatina,hydatina zonata
+mollusca,gastropoda,heterostropha,architectonicidae,heliacus,heliacus caelatus
+mollusca,gastropoda,heterostropha,architectonicidae,psilaxis,psilaxis radiatus
+annelida,polychaeta,not assigned,paraonidae,aricidea,aricidea (strelzovia) belgicae
+annelida,polychaeta,not assigned,paraonidae,aricidea,aricidea (acmira) lopezi
+bryozoa,gymnolaemata,cheilostomata,flustridae,austroflustra,austroflustra vulgaris
+echinodermata,asteroidea,valvatida,ganeriidae,cycethra,cycethra verrucosa
+echinodermata,asteroidea,valvatida,ganeriidae,ganeria,ganeria falklandica
+annelida,polychaeta,not assigned,opheliidae,travisia,travisia kerguelensis
+mollusca,bivalvia,veneroida,petricolidae,choristodon,choristodon robustus
+mollusca,gastropoda,heterostropha,pyramidellidae,japonactaeon,japonactaeon punctostriatus
+mollusca,gastropoda,neogastropoda,turridae,eulimastoma,eulimastoma canaliculatum
+mollusca,gastropoda,neotaenioglossa,triphoridae,eutriphora,eutriphora bermudensis
+mollusca,bivalvia,veneroida,veneridae,dosinia,dosinia concentrica
+mollusca,gastropoda,neotaenioglossa,velutinidae,limneria,limneria undata
+mollusca,gastropoda,neotaenioglossa,siliquariidae,tenagodus,tenagodus modestus
+mollusca,gastropoda,neotaenioglossa,epitoniidae,opalia,opalia moerchiana
+mollusca,bivalvia,pholadomyoida,cuspidariidae,cardiomya,cardiomya cleryana
+mollusca,bivalvia,veneroida,veneridae,liocyma,liocyma fluctuosa
+mollusca,gastropoda,neotaenioglossa,epitoniidae,epitonium,epitonium georgettinum
+mollusca,gastropoda,neotaenioglossa,ranellidae,fusitriton,no match
+mollusca,gastropoda,heterostropha,amathinidae,iselica,iselica globosa
+mollusca,gastropoda,heterostropha,pyramidellidae,longchaeus,longchaeus suturalis
+mollusca,gastropoda,cephalaspidea,aplustridae,hydatina,hydatina vesicaria
+mollusca,gastropoda,neotaenioglossa,turritellidae,colpospirella,turritella algida
+mollusca,gastropoda,heterostropha,pyramidellidae,longchaeus,longchaeus candidus
+mollusca,gastropoda,heterostropha,pyramidellidae,mumiola,mumiola gradatula
+mollusca,gastropoda,neogastropoda,buccinidae,pareuthria,microdeuthria michaelseni
+mollusca,gastropoda,neotaenioglossa,epitoniidae,eccliseogyra,eccliseogyra nitida
+mollusca,gastropoda,neotaenioglossa,rissoidae,cylindriscala,cylindriscala andrewsii
+mollusca,gastropoda,vetigastropoda,chilodontidae,brookula,brookula conica
+mollusca,gastropoda,heterostropha,pyramidellidae,turbonilla,turbonilla rushii
+mollusca,gastropoda,heterostropha,acteonidae,acteon,acteon pelecais
+mollusca,gastropoda,heterostropha,pyramidellidae,turbonilla,turbonilla uruguayensis
+mollusca,gastropoda,heterostropha,pyramidellidae,oscilla,oscilla notialis
+mollusca,gastropoda,neotaenioglossa,triphoridae,triphora,triphora atlantica
+arthropoda,malacostraca,isopoda,ligiidae,ligia,ligia italica
+arthropoda,malacostraca,isopoda,ligiidae,ligia,ligia pigmentata
+porifera,demospongiae,poecilosclerida,tedaniidae,tedania,tedania (tedaniopsis) mucosa
+cnidaria,anthozoa,actiniaria,actiniidae,bunodactis,bunodactis octoradiata
+mollusca,bivalvia,veneroida,cardiidae,corculum,no match
+echinodermata,ophiuroidea,phrynophiurida,gorgonocephalidae,asteroporpa,asteroporpa (asteroporpa) australiensis
+arthropoda,malacostraca,decapoda,gecarcinidae,discoplax,tuerkayana hirtipes
+mollusca,gastropoda,neotaenioglossa,cerithiopsidae,alipta,alipta crenistria
+mollusca,gastropoda,neotaenioglossa,cerithiopsidae,retilaskeya,retilaskeya zelandica
+mollusca,gastropoda,neotaenioglossa,cerithiopsidae,zaclys,zaclys sarissa
+mollusca,gastropoda,neotaenioglossa,cerithiopsidae,prolixodens,prolixodens infracolor
+mollusca,gastropoda,neotaenioglossa,cerithiopsidae,sundaya,sundaya tuberculata
+mollusca,gastropoda,neotaenioglossa,cerithiopsidae,seila,seila cincta
+mollusca,gastropoda,neotaenioglossa,cerithiopsidae,seila,seila terebelloides
+mollusca,gastropoda,neotaenioglossa,epitoniidae,boreoscala,cirsotrema magellanicum
+mollusca,gastropoda,neotaenioglossa,epitoniidae,cirsotrema,cirsotrema varicosum
+mollusca,gastropoda,neotaenioglossa,velutinidae,limneria,limneria prolongata
+annelida,polychaeta,not assigned,capitellidae,scyphoproctus,scyphoproctus armatus
+arthropoda,maxillopoda,sessilia,archaeobalanidae,striatobalanus,striatobalanus amaryllis
+arthropoda,maxillopoda,sessilia,pyrgomatidae,pyrgoma,pyrgoma cancellatum
+mollusca,gastropoda,heterostropha,mathildidae,mathilda,mathilda decorata
+mollusca,gastropoda,neotaenioglossa,cerithiidae,cerithium,cerithium caeruleum
+mollusca,bivalvia,veneroida,veneridae,callista,callista umbonella
+mollusca,bivalvia,veneroida,veneridae,marcia,marcia cordata
+arthropoda,maxillopoda,sessilia,balanidae,amphibalanus,amphibalanus amphitrite
+arthropoda,maxillopoda,sessilia,balanidae,amphibalanus,amphibalanus subalbidus
+arthropoda,maxillopoda,sessilia,balanidae,amphibalanus,amphibalanus venustus
+mollusca,bivalvia,veneroida,veneridae,callista,callista florida
+mollusca,bivalvia,veneroida,veneridae,venus,mysia undata
+mollusca,bivalvia,veneroida,veneridae,venus,venus sinuosa
+mollusca,gastropoda,neotaenioglossa,cerithiidae,cerithium,cerithium rueppelli
+mollusca,gastropoda,neotaenioglossa,potamididae,pirenella,pirenella conica
+mollusca,gastropoda,heterostropha,acteonidae,maxacteon,punctacteon fabreanus
+mollusca,gastropoda,heterostropha,architectonicidae,architectonica,architectonica laevigata
+mollusca,gastropoda,neotaenioglossa,epitoniidae,cycloscala,cycloscala echinaticosta
+mollusca,bivalvia,pholadomyoida,verticordiidae,spinosipella,spinosipella deshayesiana
+platyhelminthes,turbellaria,polycladida,pseudoceritidae,thysanozoon,thysanozoon nigropapillosum
+arthropoda,maxillopoda,sessilia,chthamalidae,microeuraphia,microeuraphia withersi
+arthropoda,maxillopoda,pedunculata,scalpellidae,weltnerium,weltnerium nymphocola
+phoronida,not assigned,not assigned,phoronidae,phoronis,phoronis hippocrepia
+arthropoda,malacostraca,tanaidacea,leptocheliidae,leptochelia,leptochelia dubia
+arthropoda,maxillopoda,apygophora,trypetesidae,trypetesa,trypetesa lampas
+arthropoda,maxillopoda,calanoida,acartiidae,acartia,acartia (odontacartia) erythraea
+arthropoda,maxillopoda,calanoida,calanidae,cosmocalanus,cosmocalanus darwinii
+arthropoda,maxillopoda,calanoida,clausocalanidae,clausocalanus,clausocalanus arcuicornis
+arthropoda,maxillopoda,calanoida,eucalanidae,eucalanus,eucalanus elongatus
+arthropoda,maxillopoda,calanoida,euchaetidae,paraeuchaeta,paraeuchaeta barbata
+arthropoda,maxillopoda,calanoida,megacalanidae,megacalanus,megacalanus princeps
+arthropoda,maxillopoda,calanoida,metridinidae,metridia,metridia lucens
+arthropoda,maxillopoda,calanoida,metridinidae,pleuromamma,pleuromamma abdominalis
+arthropoda,maxillopoda,calanoida,metridinidae,pleuromamma,pleuromamma gracilis
+arthropoda,maxillopoda,calanoida,paracalanidae,paracalanus,paracalanus aculeatus
+arthropoda,maxillopoda,calanoida,paracalanidae,paracalanus,paracalanus parvus
+arthropoda,maxillopoda,calanoida,paracalanidae,paracalanus,paracalanus pygmaeus
+arthropoda,maxillopoda,calanoida,pontellidae,labidocera,labidocera kroyeri
+arthropoda,maxillopoda,calanoida,rhincalanidae,rhincalanus,rhincalanus cornutus
+arthropoda,maxillopoda,cyclopoida,oithonidae,oithona,oithona setigera
+arthropoda,maxillopoda,cyclopoida,oithonidae,oithona,oithona simplex
+arthropoda,maxillopoda,harpacticoida,ameiridae,ameira,ameira parvula
+phoronida,not assigned,not assigned,phoronidae,phoronis,phoronis muelleri
+annelida,polychaeta,aciculata,phyllodocidae,eteone,hypereteone lactea
+phoronida,not assigned,not assigned,phoronidae,phoronis,phoronis ovalis
+arthropoda,maxillopoda,harpacticoida,tisbidae,tisbe,tisbe furcata
+arthropoda,maxillopoda,kentrogonida,lernaeodiscidae,lernaeodiscus,lernaeodiscus ingolfi
+arthropoda,maxillopoda,pedunculata,heteralepadidae,heteralepas,heteralepas cornuta
+arthropoda,maxillopoda,pedunculata,lepadidae,lepas,lepas (anatifa) anatifera
+arthropoda,maxillopoda,pedunculata,lepadidae,lepas,lepas (anatifa) anserifera
+arthropoda,maxillopoda,pedunculata,poecilasmatidae,octolasmis,octolasmis lowei
+arthropoda,maxillopoda,pedunculata,poecilasmatidae,poecilasma,poecilasma kaempferi
+arthropoda,maxillopoda,pedunculata,poecilasmatidae,temnaspis,dianajonesia fissum
+arthropoda,maxillopoda,pedunculata,pollicipedidae,pollicipes,pollicipes polymerus
+arthropoda,maxillopoda,pedunculata,scalpellidae,arcoscalpellum,arcoscalpellum michelottianum
+arthropoda,maxillopoda,pedunculata,scalpellidae,arcoscalpellum,arcoscalpellum portoricanum
+arthropoda,maxillopoda,pedunculata,scalpellidae,litoscalpellum,graviscalpellum regina
+arthropoda,maxillopoda,pedunculata,scalpellidae,ornatoscalpellum,weltnerium stroemii
+arthropoda,maxillopoda,pedunculata,scalpellidae,scalpellum,scalpellum scalpellum
+arthropoda,maxillopoda,pedunculata,scalpellidae,scalpellum,catherinum striolatum
+arthropoda,maxillopoda,pedunculata,scalpellidae,smilium,smilium acutum
+arthropoda,maxillopoda,pedunculata,scalpellidae,smilium,smilium peronii
+arthropoda,maxillopoda,pedunculata,scalpellidae,trianguloscalpellum,regioscalpellum regium
+arthropoda,maxillopoda,poecilostomatoida,oncaeidae,oncaea,oncaea mediterranea
+arthropoda,maxillopoda,sessilia,archaeobalanidae,acasta,acasta cyathus
+arthropoda,maxillopoda,sessilia,archaeobalanidae,acasta,acasta spongites
+arthropoda,maxillopoda,sessilia,balanidae,balanus,balanus crenatus
+arthropoda,maxillopoda,sessilia,balanidae,balanus,amphibalanus improvisus
+arthropoda,maxillopoda,sessilia,balanidae,balanus,balanus laevis
+arthropoda,maxillopoda,sessilia,balanidae,balanus,balanus nubilus
+arthropoda,maxillopoda,sessilia,balanidae,balanus,balanus spongicola
+arthropoda,maxillopoda,sessilia,balanidae,balanus,balanus trigonus
+arthropoda,maxillopoda,sessilia,balanidae,elminius,elminius kingii
+arthropoda,maxillopoda,sessilia,balanidae,megabalanus,megabalanus californicus
+arthropoda,maxillopoda,sessilia,balanidae,megabalanus,megabalanus coccopoma
+arthropoda,maxillopoda,sessilia,balanidae,megabalanus,megabalanus tintinnabulum
+arthropoda,maxillopoda,sessilia,chelonibiidae,chelonibia,chelonibia caretta
+arthropoda,maxillopoda,sessilia,chelonibiidae,chelonibia,chelonibia testudinaria
+arthropoda,maxillopoda,sessilia,chthamalidae,chthamalus,chthamalus fragilis
+arthropoda,maxillopoda,sessilia,chthamalidae,chthamalus,chthamalus stellatus
+arthropoda,maxillopoda,sessilia,tetraclitidae,newmanella,newmanella radiata
+arthropoda,maxillopoda,sessilia,tetraclitidae,tetraclita,tetraclita squamosa
+arthropoda,maxillopoda,sessilia,verrucidae,verruca,verruca cookei
+arthropoda,maxillopoda,sessilia,verrucidae,verruca,verruca stroemia
+phoronida,not assigned,not assigned,phoronidae,phoronis,phoronis psammophila
+brachiopoda,articulata,terebratulida,megathyrididae,gwynia,gwynia capsula
+priapulida,priapulomorpha,not assigned,priapulidae,priapulopsis,priapulopsis bicaudatus
+priapulida,priapulomorpha,not assigned,priapulidae,priapulus,priapulus caudatus
+annelida,polychaeta,canalipalpata,chaetopteridae,chaetopterus,chaetopterus variopedatus
+phoronida,not assigned,not assigned,phoronidae,phoronopsis,phoronopsis harmeri
+annelida,polychaeta,canalipalpata,chaetopteridae,mesochaetopterus,mesochaetopterus capensis
+annelida,polychaeta,canalipalpata,chaetopteridae,mesochaetopterus,mesochaetopterus sagittarius
+annelida,polychaeta,canalipalpata,chaetopteridae,mesochaetopterus,mesochaetopterus taylori
+annelida,polychaeta,canalipalpata,chaetopteridae,phyllochaetopterus,phyllochaetopterus prolifica
+annelida,polychaeta,canalipalpata,chaetopteridae,phyllochaetopterus,phyllochaetopterus socialis
+annelida,polychaeta,canalipalpata,chaetopteridae,spiochaetopterus,spiochaetopterus costarum
+annelida,polychaeta,canalipalpata,chaetopteridae,spiochaetopterus,spiochaetopterus typicus
+annelida,polychaeta,canalipalpata,magelonidae,magelona,magelona pacifica
+annelida,polychaeta,canalipalpata,magelonidae,magelona,magelona riojai
+annelida,polychaeta,canalipalpata,oweniidae,myriochele,galathowenia oculata
+annelida,polychaeta,canalipalpata,oweniidae,owenia,owenia fusiformis
+annelida,polychaeta,canalipalpata,sabellariidae,phragmatopoma,phragmatopoma californica
+annelida,polychaeta,canalipalpata,spionidae,prionospio,prionospio malmgreni
+annelida,polychaeta,not assigned,arenicolidae,arenicola,arenicola cristata
+annelida,polychaeta,not assigned,capitellidae,capitella,capitella capitata
+annelida,polychaeta,not assigned,capitellidae,dasybranchus,dasybranchus caducus
+annelida,polychaeta,not assigned,capitellidae,dasybranchus,dasybranchus lumbricoides
+annelida,polychaeta,not assigned,capitellidae,dasybranchus,dasybranchus lunulatus
+annelida,polychaeta,not assigned,capitellidae,heteromastus,heteromastus filiformis
+annelida,polychaeta,not assigned,capitellidae,mediomastus,mediomastus ambiseta
+annelida,polychaeta,not assigned,capitellidae,mediomastus,mediomastus californiensis
+annelida,polychaeta,not assigned,capitellidae,notomastus,notomastus hemipodus
+annelida,polychaeta,not assigned,capitellidae,notomastus,notomastus latericeus
+annelida,polychaeta,not assigned,capitellidae,notomastus,rashgua lobatus
+annelida,polychaeta,not assigned,capitellidae,notomastus,notomastus tenuis
+annelida,polychaeta,not assigned,capitellidae,scyphoproctus,scyphoproctus platyproctus
+annelida,polychaeta,not assigned,cossuridae,cossura,cossura delta
+annelida,polychaeta,not assigned,cossuridae,cossura,cossura soyeri
+annelida,polychaeta,not assigned,maldanidae,axiothella,clymenella mucosa
+annelida,polychaeta,not assigned,maldanidae,boguea,boguea enigmatica
+annelida,polychaeta,not assigned,maldanidae,clymenella,clymenella mucosa
+annelida,polychaeta,not assigned,maldanidae,clymenella,clymenella torquata
+annelida,polychaeta,not assigned,maldanidae,maldane,maldane cristata
+annelida,polychaeta,not assigned,maldanidae,maldane,maldane glebifex
+annelida,polychaeta,not assigned,maldanidae,maldane,maldane sarsi
+annelida,polychaeta,not assigned,maldanidae,petaloproctus,petaloproctus terricolus
+annelida,polychaeta,not assigned,maldanidae,praxillella,praxillella gracilis
+annelida,polychaeta,not assigned,maldanidae,praxillura,praxillura longissima
+annelida,polychaeta,not assigned,maldanidae,rhodine,rhodine gracilior
+annelida,polychaeta,not assigned,opheliidae,armandia,armandia agilis
+annelida,polychaeta,not assigned,opheliidae,armandia,armandia intermedia
+annelida,polychaeta,not assigned,opheliidae,armandia,armandia maculata
+annelida,polychaeta,not assigned,opheliidae,ophelia,ophelia denticulata
+annelida,polychaeta,not assigned,opheliidae,ophelina,ophelina acuminata
+annelida,polychaeta,not assigned,opheliidae,ophelina,ophelina cylindricaudata
+annelida,polychaeta,not assigned,opheliidae,polyophthalmus,polyophthalmus pictus
+annelida,polychaeta,not assigned,opheliidae,travisia,travisia hobsonae
+annelida,polychaeta,not assigned,orbiniidae,califia,califia calida
+annelida,polychaeta,not assigned,orbiniidae,leitoscoloplos,leitoscoloplos fragilis
+annelida,polychaeta,not assigned,orbiniidae,naineris,naineris bicornis
+annelida,polychaeta,not assigned,orbiniidae,naineris,naineris grubei
+annelida,polychaeta,not assigned,orbiniidae,naineris,naineris laevigata
+annelida,polychaeta,not assigned,orbiniidae,naineris,naineris setosa
+annelida,polychaeta,not assigned,orbiniidae,orbinia,orbinia riseri
+annelida,polychaeta,not assigned,orbiniidae,scoloplos,scoloplos acmeceps
+annelida,polychaeta,not assigned,orbiniidae,scoloplos,leodamas rubrus
+annelida,polychaeta,not assigned,orbiniidae,scoloplos,leodamas texana
+annelida,polychaeta,not assigned,paraonidae,aricidea,aricidea (aricidea) fragilis
+annelida,polychaeta,not assigned,paraonidae,aricidea,aricidea (aricidea) wassi
+annelida,polychaeta,not assigned,paraonidae,cirrophorus,cirrophorus branchiatus
+annelida,polychaeta,not assigned,paraonidae,cirrophorus,paradoneis lyra
+annelida,polychaeta,not assigned,paraonidae,levinsenia,levinsenia gracilis
+annelida,polychaeta,not assigned,paraonidae,paraonis,paraonis fulgens
+annelida,polychaeta,not assigned,paraonidae,paraonis,paraonis pygoenigmatica
+annelida,polychaeta,not assigned,questidae,questa,questa caudicirra
+annelida,polychaeta,not assigned,scalibregmatidae,asclerocheilus,asclerocheilus beringianus
+annelida,polychaeta,not assigned,scalibregmatidae,polyphysia,polyphysia crassa
+annelida,polychaeta,not assigned,scalibregmatidae,scalibregma,scalibregma inflatum
+arthropoda,branchiopoda,anostraca,artemiidae,artemia,artemia salina
+chordata,cephalochordata,not assigned,branchiostomidae,asymmetron,asymmetron lucayanum
+chordata,cephalochordata,not assigned,branchiostomidae,branchiostoma,branchiostoma belcheri
+chordata,cephalochordata,not assigned,branchiostomidae,branchiostoma,branchiostoma caribaeum
+chordata,cephalochordata,not assigned,branchiostomidae,branchiostoma,branchiostoma floridae
+chordata,cephalochordata,not assigned,branchiostomidae,branchiostoma,branchiostoma lanceolatum
+chordata,cephalochordata,not assigned,branchiostomidae,branchiostoma,branchiostoma longirostrum
+chordata,cephalochordata,not assigned,branchiostomidae,epigonichthys,epigonichthys cultellus
+chordata,mammalia,cetacea,balaenopteridae,balaenoptera,balaenoptera brydei
+chordata,mammalia,cetacea,delphinidae,delphinus,delphinus capensis
+chordata,mammalia,cetacea,delphinidae,sotalia,sotalia fluviatilis
+chordata,reptilia,crocodilia,alligatoridae,caiman,caiman crocodilus
+chordata,reptilia,crocodilia,crocodylidae,crocodylus,crocodylus acutus
+chordata,reptilia,crocodilia,crocodylidae,crocodylus,crocodylus porosus
+cnidaria,anthozoa,scleractinia,acroporidae,acropora,acropora teres
+cnidaria,anthozoa,scleractinia,agariciidae,pachyseris,pachyseris foliosa
+cnidaria,anthozoa,scleractinia,agariciidae,pachyseris,pachyseris gemmae
+cnidaria,anthozoa,scleractinia,agariciidae,pachyseris,pachyseris rugosa
+cnidaria,anthozoa,scleractinia,agariciidae,pachyseris,pachyseris speciosa
+cnidaria,anthozoa,scleractinia,caryophylliidae,cladocora,cladocora arbuscula
+cnidaria,anthozoa,scleractinia,caryophylliidae,cladocora,cladocora caespitosa
+cnidaria,anthozoa,scleractinia,caryophylliidae,cladocora,cladocora debilis
+cnidaria,anthozoa,scleractinia,faviidae,solenastrea,solenastrea bournoni
+cnidaria,anthozoa,scleractinia,faviidae,solenastrea,solenastrea hyades
+cnidaria,hydrozoa,anthoathecata,bougainvilliidae,bougainvillia,bougainvillia inaequalis
+cnidaria,hydrozoa,leptothecata,incertae sedis (leptothecata),cuspidella,cuspidella humilis
+cnidaria,hydrozoa,anthoathecata,eudendriidae,eudendrium,eudendrium eximium
+cnidaria,hydrozoa,anthoathecata,eudendriidae,eudendrium,eudendrium tenellum
+echinodermata,asteroidea,spinulosida,asterinidae,anseropoda,anseropoda placenta
+echinodermata,holothuroidea,aspidochirotida,holothuriidae,holothuria,holothuria glaberrima
+echinodermata,holothuroidea,aspidochirotida,stichopodidae,parastichopus,no match
+echinodermata,ophiuroidea,ophiurida,ophiacanthidae,ophiopthalmus,ophiophthalmus cataleimmoidus
+echinodermata,ophiuroidea,ophiurida,ophiacanthidae,ophiopthalmus,ophiophthalmus normani
+echinodermata,ophiuroidea,ophiurida,ophiactidae,hemipholis,hemipholis elongata
+echinodermata,ophiuroidea,ophiurida,ophiuridae,ophiura,ophiuroglypha irrorata
+echinodermata,ophiuroidea,phrynophiurida,gorgonocephalidae,asteroporpa,asteroporpa (asteroporpa) annulata
+bryozoa,gymnolaemata,cyclostomata,diaperoeciidae,diaperoecia,diaperoforma californica
+kamptozoa,not assigned,loxosomatida,loxosomatidae,loxosoma,loxosomella murmanica
+kamptozoa,not assigned,pedicellinida,pedicellinidae,barentsia,barentsia gracilis
+kamptozoa,not assigned,pedicellinida,pedicellinidae,pedicellina,pedicellina cernua
+gastrotricha,not assigned,chaetonotoidea,chaetonotidae,aspidiophorus,aspidiophorus paramediterraneus
+gastrotricha,not assigned,chaetonotoidea,chaetonotidae,chaetonotus,chaetonotus (schizochaetonotus) atrox
+gastrotricha,not assigned,chaetonotoidea,chaetonotidae,chaetonotus,chaetonotus (schizochaetonotus) dispar
+gastrotricha,not assigned,chaetonotoidea,chaetonotidae,halichaetonotus,halichaetonotus aculifer
+gastrotricha,not assigned,chaetonotoidea,xenotrichulidae,draculiciteria,draculiciteria tesselata
+gastrotricha,not assigned,chaetonotoidea,xenotrichulidae,heteroxenotrichula,heteroxenotrichula squamosa
+gastrotricha,not assigned,macrodasyoidea,macrodasyidae,macrodasys,macrodasys caudatus
+gastrotricha,not assigned,macrodasyoidea,thaumastodermatidae,diplodasys,diplodasys ankeli
+gastrotricha,not assigned,macrodasyoidea,turbanellidae,turbanella,turbanella bocqueti
+gastrotricha,not assigned,macrodasyoidea,turbanellidae,turbanella,turbanella cornuta
+gnathostomulida,not assigned,filospermoidea,haplognathiidae,haplognathia,haplognathia rosea
+gnathostomulida,not assigned,filospermoidea,haplognathiidae,haplognathia,haplognathia ruberrima
+mollusca,bivalvia,myoida,pholadidae,penitella,no match
+mollusca,bivalvia,pholadomyoida,cuspidariidae,cardiomya,cardiomya costellata
+mollusca,bivalvia,pholadomyoida,cuspidariidae,cardiomya,cardiomya ornatissima
+mollusca,bivalvia,pholadomyoida,cuspidariidae,cardiomya,cardiomya pectinata
+mollusca,bivalvia,pholadomyoida,cuspidariidae,cardiomya,cardiomya perrostrata
+mollusca,bivalvia,pholadomyoida,cuspidariidae,cardiomya,cardiomya striata
+mollusca,bivalvia,pholadomyoida,cuspidariidae,cuspidaria,cuspidaria arctica
+mollusca,bivalvia,pholadomyoida,cuspidariidae,cuspidaria,cuspidaria glacialis
+mollusca,bivalvia,pholadomyoida,cuspidariidae,cuspidaria,cuspidaria jeffreysi
+mollusca,bivalvia,pholadomyoida,cuspidariidae,cuspidaria,cuspidaria media
+mollusca,bivalvia,pholadomyoida,cuspidariidae,cuspidaria,cuspidaria microrhina
+mollusca,bivalvia,pholadomyoida,cuspidariidae,cuspidaria,cuspidaria obesa
+mollusca,bivalvia,pholadomyoida,cuspidariidae,cuspidaria,cuspidaria rostrata
+mollusca,bivalvia,pholadomyoida,cuspidariidae,cuspidaria,cuspidaria subtorta
+mollusca,bivalvia,pholadomyoida,cuspidariidae,myonera,myonera lamellifera
+mollusca,bivalvia,pholadomyoida,cuspidariidae,myonera,myonera limatula
+mollusca,bivalvia,pholadomyoida,cuspidariidae,myonera,myonera paucistriata
+mollusca,bivalvia,pholadomyoida,cuspidariidae,plectodon,plectodon granulatus
+mollusca,bivalvia,pholadomyoida,lyonsiidae,entodesma,entodesma navicula
+mollusca,bivalvia,pholadomyoida,lyonsiidae,lyonsia,lyonsia californica
+mollusca,bivalvia,pholadomyoida,lyonsiidae,lyonsia,lyonsia floridana
+mollusca,bivalvia,pholadomyoida,lyonsiidae,lyonsia,lyonsia hyalina
+mollusca,bivalvia,pholadomyoida,lyonsiidae,mytilimeria,mytilimeria nuttalli
+mollusca,bivalvia,pholadomyoida,pandoridae,pandora,pandora arenosa
+mollusca,bivalvia,pholadomyoida,pandoridae,pandora,pandora bilirata
+mollusca,bivalvia,pholadomyoida,pandoridae,pandora,pandora bushiana
+mollusca,bivalvia,pholadomyoida,pandoridae,pandora,pandora filosa
+mollusca,bivalvia,pholadomyoida,pandoridae,pandora,pandora glacialis
+mollusca,bivalvia,pholadomyoida,pandoridae,pandora,pandora gouldiana
+mollusca,bivalvia,pholadomyoida,pandoridae,pandora,pandora inaequivalvis
+mollusca,bivalvia,pholadomyoida,pandoridae,pandora,pandora inflata
+mollusca,bivalvia,pholadomyoida,pandoridae,pandora,pandora trilineata
+mollusca,bivalvia,pholadomyoida,pandoridae,pandora,pandora wardiana
+mollusca,bivalvia,pholadomyoida,periplomatidae,periploma,periploma margaritaceum
+mollusca,bivalvia,pholadomyoida,poromyidae,poromya,poromya granulata
+mollusca,bivalvia,pholadomyoida,poromyidae,poromya,poromya rostrata
+mollusca,bivalvia,pholadomyoida,poromyidae,poromya,cetomya tornata
+mollusca,bivalvia,pholadomyoida,thraciidae,asthenothaerus,asthenothaerus hemphilli
+mollusca,bivalvia,pholadomyoida,thraciidae,bushia,bushia elegans
+mollusca,bivalvia,pholadomyoida,thraciidae,thracia,thracia conradi
+mollusca,bivalvia,pholadomyoida,thraciidae,thracia,thracia devexa
+mollusca,bivalvia,pholadomyoida,thraciidae,thracia,thracia septentrionalis
+mollusca,bivalvia,pholadomyoida,thraciidae,thracia,thracia stimpsoni
+mollusca,bivalvia,pholadomyoida,thraciidae,thracia,thracia trapezoides
+mollusca,bivalvia,pholadomyoida,verticordiidae,euciroa,euciroa elegantissima
+mollusca,bivalvia,pholadomyoida,verticordiidae,haliris,haliris fischeriana
+mollusca,bivalvia,pholadomyoida,verticordiidae,trigonulina,trigonulina ornata
+mollusca,bivalvia,veneroida,lucinidae,anodontia,anodontia edentula
+mollusca,bivalvia,veneroida,lucinidae,lucina,lucina radians
+mollusca,bivalvia,veneroida,petricolidae,mysia,mysia undata
+mollusca,bivalvia,veneroida,petricolidae,petricola,petricola carditoides
+mollusca,bivalvia,veneroida,petricolidae,petricola,petricola lapicida
+mollusca,bivalvia,veneroida,petricolidae,petricola,petricolaria pholadiformis
+mollusca,bivalvia,veneroida,petricolidae,petricolaria,petricolaria pholadiformis
+mollusca,bivalvia,veneroida,tellinidae,macoma,no match
+mollusca,bivalvia,veneroida,turtoniidae,turtonia,turtonia minuta
+mollusca,bivalvia,veneroida,veneridae,callista,callista chione
+mollusca,bivalvia,veneroida,veneridae,chamelea,chamelea gallina
+mollusca,bivalvia,veneroida,veneridae,clausinella,clausinella fasciata
+mollusca,bivalvia,veneroida,veneridae,cyclinella,cyclinella tenuis
+mollusca,bivalvia,veneroida,veneridae,dosinia,dosinia discus
+mollusca,bivalvia,veneroida,veneridae,dosinia,dosinia exoleta
+mollusca,bivalvia,veneroida,veneridae,dosinia,dosinia lupinus
+mollusca,bivalvia,veneroida,veneridae,gemma,gemma gemma
+mollusca,bivalvia,veneroida,veneridae,globivenus,globivenus rigida
+mollusca,bivalvia,veneroida,veneridae,globivenus,globivenus rugatina
+mollusca,bivalvia,veneroida,veneridae,gouldia,gouldia cerina
+mollusca,bivalvia,veneroida,veneridae,macrocallista,macrocallista nimbosa
+mollusca,bivalvia,veneroida,veneridae,mercenaria,mercenaria campechiensis
+mollusca,bivalvia,veneroida,veneridae,mercenaria,mercenaria mercenaria
+mollusca,bivalvia,veneroida,veneridae,periglypta,periglypta listeri
+mollusca,bivalvia,veneroida,veneridae,pitar,pitar albidus
+mollusca,bivalvia,veneroida,veneridae,pitar,pitar arestus
+mollusca,bivalvia,veneroida,veneridae,pitar,pitar fulminatus
+mollusca,bivalvia,veneroida,veneridae,pitar,pitar simpsoni
+mollusca,bivalvia,veneroida,veneridae,tapes,polititapes rhomboides
+mollusca,bivalvia,veneroida,veneridae,tivela,tivela mactroides
+mollusca,bivalvia,veneroida,veneridae,tivela,tivela stultorum
+mollusca,bivalvia,veneroida,veneridae,transennella,transennella conradina
+mollusca,bivalvia,veneroida,veneridae,transennella,transennella cubaniana
+mollusca,bivalvia,veneroida,veneridae,transennella,transennella stimpsoni
+mollusca,bivalvia,veneroida,veneridae,venus,venus verrucosa
+mollusca,cephalopoda,octopoda,argonautidae,argonauta,argonauta cornuta
+mollusca,gastropoda,anaspidea,notarchidae,stylocheilus,stylocheilus longicauda
+mollusca,gastropoda,archaeogastropoda,trochidae,lamellitrochus,lamellitrochus carinatus
+mollusca,gastropoda,archaeogastropoda,trochidae,lamellitrochus,lamellitrochus inceratus
+mollusca,gastropoda,archaeogastropoda,trochidae,lamellitrochus,lamellitrochus lamellosus
+mollusca,gastropoda,cephalaspidea,aplustridae,hydatina,hydatina physis
+mollusca,gastropoda,cephalaspidea,aplustridae,micromelo,micromelo undatus
+mollusca,gastropoda,cephalaspidea,ringiculidae,ringicula,ringicula nitida
+mollusca,gastropoda,cephalaspidea,ringiculidae,ringicula,ringicula semistriata
+mollusca,gastropoda,heterostropha,acteonidae,acteon,acteon candens
+mollusca,gastropoda,heterostropha,acteonidae,acteon,acteon delicatus
+mollusca,gastropoda,heterostropha,acteonidae,acteon,acteon melampoides
+mollusca,gastropoda,heterostropha,acteonidae,mysouffa,mysouffa cumingii
+mollusca,gastropoda,heterostropha,acteonidae,rictaxis,rictaxis punctocaelatus
+mollusca,gastropoda,heterostropha,architectonicidae,architectonica,architectonica nobilis
+mollusca,gastropoda,heterostropha,architectonicidae,architectonica,architectonica perspectiva
+mollusca,gastropoda,heterostropha,architectonicidae,discotectonica,discotectonica discus
+mollusca,gastropoda,heterostropha,architectonicidae,heliacus,heliacus bisulcatus
+mollusca,gastropoda,heterostropha,architectonicidae,heliacus,heliacus cylindricus
+mollusca,gastropoda,heterostropha,architectonicidae,psilaxis,psilaxis krebsii
+mollusca,gastropoda,heterostropha,ebalidae,henrya,henrya goldmani
+mollusca,gastropoda,heterostropha,ebalidae,henrya,henrya morrisoni
+mollusca,gastropoda,heterostropha,mathildidae,mathilda,mathilda barbadensis
+mollusca,gastropoda,heterostropha,omalogyridae,omalogyra,omalogyra atomus
+mollusca,gastropoda,heterostropha,omalogyridae,omalogyra,omalogyra antarctica
+mollusca,gastropoda,heterostropha,pyramidellidae,boonea,boonea bisuturalis
+mollusca,gastropoda,heterostropha,pyramidellidae,boonea,boonea impressa
+mollusca,gastropoda,heterostropha,pyramidellidae,boonea,boonea seminuda
+mollusca,gastropoda,heterostropha,pyramidellidae,careliopsis,careliopsis styliformis
+mollusca,gastropoda,heterostropha,pyramidellidae,cyclostremella,cyclostremella humilis
+mollusca,gastropoda,heterostropha,pyramidellidae,eulimastoma,eulimastoma engonium
+mollusca,gastropoda,heterostropha,pyramidellidae,eulimastoma,eulimastoma weberi
+mollusca,gastropoda,heterostropha,pyramidellidae,fargoa,fargoa bartschi
+mollusca,gastropoda,heterostropha,pyramidellidae,fargoa,fargoa bushiana
+mollusca,gastropoda,heterostropha,pyramidellidae,fargoa,fargoa dianthophila
+mollusca,gastropoda,heterostropha,pyramidellidae,fargoa,fargoa gibbosa
+mollusca,gastropoda,heterostropha,pyramidellidae,ividia,ividia havanensis
+mollusca,gastropoda,heterostropha,pyramidellidae,odostomella,odostomella doliolum
+mollusca,gastropoda,heterostropha,pyramidellidae,odostomia,odostomia laevigata
+mollusca,gastropoda,heterostropha,pyramidellidae,odostomia,odostomia unidentata
+mollusca,gastropoda,heterostropha,pyramidellidae,peristichia,peristichia agria
+mollusca,gastropoda,heterostropha,pyramidellidae,peristichia,peristichia toreta
+mollusca,gastropoda,heterostropha,pyramidellidae,pyramidella,pyramidella dolabrata
+mollusca,gastropoda,heterostropha,pyramidellidae,sayella,sayella fusca
+mollusca,gastropoda,heterostropha,pyramidellidae,triptychus,triptychus niveus
+mollusca,gastropoda,heterostropha,pyramidellidae,turbonilla,turbonilla conradi
+mollusca,gastropoda,heterostropha,pyramidellidae,turbonilla,turbonilla coomansi
+mollusca,gastropoda,heterostropha,pyramidellidae,turbonilla,turbonilla curta
+mollusca,gastropoda,heterostropha,pyramidellidae,turbonilla,turbonilla dalli
+mollusca,gastropoda,heterostropha,pyramidellidae,turbonilla,turbonilla elegantula
+mollusca,gastropoda,heterostropha,pyramidellidae,turbonilla,asmunda elegantula
+mollusca,gastropoda,heterostropha,pyramidellidae,turbonilla,turbonilla hemphilli
+mollusca,gastropoda,heterostropha,pyramidellidae,turbonilla,turbonilla vix
+mollusca,gastropoda,heterostropha,pyramidellidae,turbonilla,turbonilla interrupta
+mollusca,gastropoda,heterostropha,pyramidellidae,turbonilla,turbonilla portoricana
+mollusca,gastropoda,heterostropha,pyramidellidae,turbonilla,turbonilla puncta
+mollusca,gastropoda,heterostropha,pyramidellidae,turbonilla,turbonilla pupoides
+mollusca,gastropoda,heterostropha,pyramidellidae,turbonilla,turbonilla textilis
+mollusca,gastropoda,heterostropha,pyramidellidae,turbonilla,turbolidium uniliratum
+mollusca,gastropoda,heterostropha,rissoellidae,rissoella,rissoella caribaea
+mollusca,gastropoda,neogastropoda,buccinidae,bartschia,no match
+mollusca,gastropoda,neogastropoda,muricidae,chicoreus,no match
+mollusca,gastropoda,neotaenioglossa,aclididae,graphis,graphis underwoodae
+mollusca,gastropoda,neotaenioglossa,assimineidae,assiminea,angustassiminea succinea
+mollusca,gastropoda,neotaenioglossa,batillariidae,batillaria,batillaria zonalis
+mollusca,gastropoda,neotaenioglossa,cerithiidae,bittiolum,bittiolum alternatum
+mollusca,gastropoda,neotaenioglossa,cerithiidae,bittiolum,bittiolum varium
+mollusca,gastropoda,neotaenioglossa,cerithiidae,bittium,lirobittium attenuatum
+mollusca,gastropoda,neotaenioglossa,cerithiidae,bittium,bittium reticulatum
+mollusca,gastropoda,neotaenioglossa,cerithiidae,cerithiella,cerithiella metula
+mollusca,gastropoda,neotaenioglossa,cerithiidae,cerithium,cerithium atratum
+mollusca,gastropoda,neotaenioglossa,cerithiidae,cerithium,cerithium eburneum
+mollusca,gastropoda,neotaenioglossa,cerithiidae,cerithium,cerithium guinaicum
+mollusca,gastropoda,neotaenioglossa,cerithiidae,cerithium,cerithium interstriatum
+mollusca,gastropoda,neotaenioglossa,cerithiidae,cerithium,cerithium litteratum
+mollusca,gastropoda,neotaenioglossa,cerithiidae,cerithium,cerithium lutosum
+mollusca,gastropoda,neotaenioglossa,cerithiidae,cerithium,cerithium muscarum
+mollusca,gastropoda,neotaenioglossa,cerithiidae,varicopeza,varicopeza crystallina
+mollusca,gastropoda,neotaenioglossa,cerithiopsidae,cerithiopsis,cerithiopsis albovittata
+mollusca,gastropoda,neotaenioglossa,cerithiopsidae,cerithiopsis,cerithiopsis flava
+mollusca,gastropoda,neotaenioglossa,cerithiopsidae,cerithiopsis,cerithiopsis fusiformis
+mollusca,gastropoda,neotaenioglossa,cerithiopsidae,cerithiopsis,cerithiopsis gemmulosa
+mollusca,gastropoda,neotaenioglossa,cerithiopsidae,cerithiopsis,cerithiopsis greenii
+mollusca,gastropoda,neotaenioglossa,cerithiopsidae,cerithiopsis,cerithiopsis iota
+mollusca,gastropoda,neotaenioglossa,cerithiopsidae,cerithiopsis,cerithiopsis lata
+mollusca,gastropoda,neotaenioglossa,cerithiopsidae,cerithiopsis,cerithiopsida lata
+mollusca,gastropoda,neotaenioglossa,cerithiopsidae,eumetula,eumetula arctica
+mollusca,gastropoda,neotaenioglossa,cerithiopsidae,retilaskeya,retilaskeya bicolor
+mollusca,gastropoda,neotaenioglossa,cerithiopsidae,seila,seila adamsii
+mollusca,gastropoda,neotaenioglossa,epitoniidae,acirsa,acirsa borealis
+mollusca,gastropoda,neotaenioglossa,epitoniidae,amaea,amaea mitchelli
+mollusca,gastropoda,neotaenioglossa,epitoniidae,amaea,amaea retifera
+mollusca,gastropoda,neotaenioglossa,epitoniidae,boreoscala,boreoscala greenlandica
+mollusca,gastropoda,neotaenioglossa,epitoniidae,cirsotrema,cirsotrema dalli
+mollusca,gastropoda,neotaenioglossa,epitoniidae,couthouyella,couthouyella striatula
+mollusca,gastropoda,neotaenioglossa,epitoniidae,depressiscala,epitonium nitidella
+mollusca,gastropoda,neotaenioglossa,epitoniidae,epitonium,epitonium albidum
+mollusca,gastropoda,neotaenioglossa,epitoniidae,epitonium,epitonium angulatum
+mollusca,gastropoda,neotaenioglossa,epitoniidae,epitonium,epitonium apiculatum
+mollusca,gastropoda,neotaenioglossa,epitoniidae,epitonium,epitonium hindsii
+mollusca,gastropoda,neotaenioglossa,epitoniidae,epitonium,epitonium candeanum
+mollusca,gastropoda,neotaenioglossa,epitoniidae,epitonium,epitonium celesti
+mollusca,gastropoda,neotaenioglossa,epitoniidae,epitonium,epitonium championi
+mollusca,gastropoda,neotaenioglossa,epitoniidae,epitonium,epitonium dallianum
+mollusca,gastropoda,neotaenioglossa,epitoniidae,epitonium,epitonium denticulatum
+mollusca,gastropoda,neotaenioglossa,epitoniidae,epitonium,epitonium foliaceicosta
+mollusca,gastropoda,neotaenioglossa,epitoniidae,epitonium,epitonium fractum
+mollusca,gastropoda,neotaenioglossa,epitoniidae,epitonium,epitonium frielei
+mollusca,gastropoda,neotaenioglossa,epitoniidae,epitonium,epitonium humphreysii
+mollusca,gastropoda,neotaenioglossa,epitoniidae,epitonium,epitonium indianorum
+mollusca,gastropoda,neotaenioglossa,epitoniidae,epitonium,epitonium krebsii
+mollusca,gastropoda,neotaenioglossa,epitoniidae,epitonium,gyroscala commutata
+mollusca,gastropoda,neotaenioglossa,epitoniidae,epitonium,epitonium multistriatum
+mollusca,gastropoda,neotaenioglossa,epitoniidae,epitonium,epitonium novangliae
+mollusca,gastropoda,neotaenioglossa,epitoniidae,epitonium,epitonium occidentale
+mollusca,gastropoda,neotaenioglossa,epitoniidae,epitonium,periapta gracilis
+mollusca,gastropoda,neotaenioglossa,epitoniidae,epitonium,gyroscala rupicola
+mollusca,gastropoda,neotaenioglossa,epitoniidae,epitonium,epitonium unifasciatum
+mollusca,gastropoda,neotaenioglossa,epitoniidae,nitidiscala,epitonium tinctum
+mollusca,gastropoda,neotaenioglossa,epitoniidae,opalia,opalia aurifila
+mollusca,gastropoda,neotaenioglossa,epitoniidae,opalia,opalia wroblewskyi
+mollusca,gastropoda,neotaenioglossa,epitoniidae,opalia,opalia burryi
+mollusca,gastropoda,neotaenioglossa,epitoniidae,opalia,opalia crenata
+mollusca,gastropoda,neotaenioglossa,epitoniidae,opalia,opalia eolis
+mollusca,gastropoda,neotaenioglossa,epitoniidae,opalia,opalia hotessieriana
+mollusca,gastropoda,neotaenioglossa,epitoniidae,opalia,opalia pumilio
+mollusca,gastropoda,neotaenioglossa,epitoniidae,sthenorytis,sthenorytis pernobilis
+mollusca,gastropoda,neotaenioglossa,janthinidae,janthina,janthina globosa
+mollusca,gastropoda,neotaenioglossa,janthinidae,janthina,janthina umbilicata
+mollusca,gastropoda,neotaenioglossa,janthinidae,janthina,janthina janthina
+mollusca,gastropoda,neotaenioglossa,lamellariidae,lamellaria,lamellaria perspicua
+mollusca,gastropoda,neotaenioglossa,lamellariidae,marsenina,marsenina glabra
+mollusca,gastropoda,neotaenioglossa,lamellariidae,onchidiopsis,onchidiopsis glacialis
+mollusca,gastropoda,neotaenioglossa,litiopidae,alaba,alaba incerta
+mollusca,gastropoda,neotaenioglossa,litiopidae,litiopa,litiopa melanostoma
+mollusca,gastropoda,neotaenioglossa,modulidae,modulus,trochomodulus carchedonius
+mollusca,gastropoda,neotaenioglossa,modulidae,modulus,modulus modulus
+mollusca,gastropoda,neotaenioglossa,obtortionidae,finella,finella adamsi
+mollusca,gastropoda,neotaenioglossa,obtortionidae,finella,finella dubia
+mollusca,gastropoda,neotaenioglossa,obtortionidae,finella,finella pupoides
+mollusca,gastropoda,neotaenioglossa,pickworthiidae,sansonia,sansonia tuberculata
+mollusca,gastropoda,neotaenioglossa,planaxidae,fossarus,fossarus orbignyi
+mollusca,gastropoda,neotaenioglossa,planaxidae,planaxis,planaxis sulcatus
+mollusca,gastropoda,neotaenioglossa,planaxidae,supplanaxis,supplanaxis nucleus
+mollusca,gastropoda,neotaenioglossa,potamididae,cerithidea,cerithidea decollata
+mollusca,gastropoda,neotaenioglossa,potamididae,cerithidea,cerithideopsis pliculosa
+mollusca,gastropoda,neotaenioglossa,siliquariidae,tenagodus,tenagodus squamatus
+mollusca,gastropoda,neotaenioglossa,triphoridae,cosmotriphora,cosmotriphora melanura
+mollusca,gastropoda,neotaenioglossa,triphoridae,iniforis,iniforis turristhomae
+mollusca,gastropoda,neotaenioglossa,triphoridae,marshallora,marshallora nigrocincta
+mollusca,gastropoda,neotaenioglossa,triphoridae,metaxia,metaxia rugulosa
+mollusca,gastropoda,neotaenioglossa,triphoridae,similiphora,similiphora intermedia
+mollusca,gastropoda,neotaenioglossa,triphoridae,triphora,triphora lilacina
+mollusca,gastropoda,neotaenioglossa,triphoridae,triphora,marshallora nigrocincta
+mollusca,gastropoda,neotaenioglossa,triphoridae,triphora,cosmotriphora ornata
+mollusca,gastropoda,neotaenioglossa,turritellidae,tachyrhynchus,tachyrhynchus erosus
+mollusca,gastropoda,neotaenioglossa,turritellidae,tachyrhynchus,tachyrhynchus reticulatus
+mollusca,gastropoda,neotaenioglossa,turritellidae,turritella,turritella acropora
+mollusca,gastropoda,neotaenioglossa,turritellidae,turritella,turritellinella tricarinata
+mollusca,gastropoda,neotaenioglossa,turritellidae,turritella,turritella exoleta
+mollusca,gastropoda,neotaenioglossa,turritellidae,turritella,turritella variegata
+mollusca,gastropoda,neotaenioglossa,turritellidae,vermicularia,vermicularia fargoi
+mollusca,gastropoda,neotaenioglossa,turritellidae,vermicularia,vermicularia knorrii
+mollusca,gastropoda,neotaenioglossa,turritellidae,vermicularia,vermicularia spirata
+mollusca,gastropoda,neotaenioglossa,velutinidae,piliscus,piliscus commodus
+mollusca,gastropoda,neotaenioglossa,velutinidae,velutina,velutina plicatilis
+mollusca,gastropoda,neotaenioglossa,velutinidae,velutina,velutina velutina
+mollusca,gastropoda,neotaenioglossa,vermetidae,dendropoma,vermetus irregularis
+mollusca,gastropoda,notaspidea,pleurobranchidae,berthellina,berthellina engeli
+mollusca,gastropoda,patellogastropoda,acmaeidae,notoacmea,no match
+mollusca,gastropoda,pulmonata,ellobiidae,pythia,pythia scarabaeus
+mollusca,gastropoda,sacoglossa,caliphyllidae,cyerce,cyerce antillensis
+mollusca,gastropoda,sacoglossa,caliphyllidae,cyerce,cyerce cristallina
+mollusca,gastropoda,sacoglossa,costasiellidae,costasiella,costasiella nonatoi
+mollusca,gastropoda,sacoglossa,costasiellidae,costasiella,costasiella ocellifera
+mollusca,gastropoda,sacoglossa,cylindrobullidae,cylindrobulla,cylindrobulla beauii
+mollusca,gastropoda,sacoglossa,elysiidae,elysia,elysia cornigera
+mollusca,gastropoda,sacoglossa,elysiidae,elysia,elysia crispata
+mollusca,gastropoda,sacoglossa,elysiidae,elysia,elysia ornata
+mollusca,gastropoda,sacoglossa,elysiidae,elysia,elysia papillosa
+mollusca,gastropoda,sacoglossa,elysiidae,elysia,elysia patina
+mollusca,gastropoda,sacoglossa,elysiidae,elysia,elysia subornata
+mollusca,gastropoda,sacoglossa,elysiidae,elysia,elysia velutinus
+mollusca,gastropoda,sacoglossa,elysiidae,thuridilla,thuridilla picta
+mollusca,gastropoda,sacoglossa,oxynoidae,lobiger,lobiger souverbii
+mollusca,gastropoda,sacoglossa,oxynoidae,oxynoe,oxynoe antillarum
+mollusca,polyplacophora,chitonida,acanthochitonidae,acanthochitona,acanthochitona spiculosa
+nemertea,enopla,hoplonemertea,tetrastemmatidae,tetrastemma,quasitetrastemma nigrifrons
+porifera,demospongiae,poecilosclerida,tedaniidae,tedania,tedania (tedania) ignis
+sipuncula,phascolosomatidea,aspidosiphoniformes,aspidosiphonidae,aspidosiphon,aspidosiphon (aspidosiphon) muelleri
+sipuncula,sipunculidea,golfingiiformes,golfingiidae,golfingia,golfingia (golfingia) vulgaris
+sipuncula,sipunculidea,golfingiiformes,phascoliidae,phascolion,phascolion (phascolion) strombus
+arthropoda,malacostraca,decapoda,dromiidae,lauridromia,no match
+arthropoda,malacostraca,decapoda,portunidae,charybdis,no match
+mollusca,bivalvia,arcoida,arcidae,scapharca,no match
+mollusca,bivalvia,veneroida,veneridae,meretrix,meretrix lusoria
+mollusca,bivalvia,veneroida,veneridae,meretrix,meretrix meretrix
+mollusca,bivalvia,veneroida,veneridae,pitar,pitar rostratus
+arthropoda,maxillopoda,pedunculata,pollicipedidae,pollicipes,pollicipes pollicipes
+mollusca,bivalvia,veneroida,veneridae,ruditapes,ruditapes decussatus
+mollusca,gastropoda,sacoglossa,elysiidae,elysia,elysia flava
+mollusca,bivalvia,veneroida,cardiidae,trachycardium,no match
+mollusca,bivalvia,veneroida,mactridae,meropesta,no match
+mollusca,bivalvia,veneroida,pharidae,siliqua,no match
+mollusca,bivalvia,veneroida,veneridae,venerupis,venerupis corrugata
+kamptozoa,not assigned,loxosomatida,loxosomatidae,loxosomella,loxosomella phascolosomata
+kamptozoa,not assigned,loxosomatida,loxosomatidae,loxosomella,loxosomella varians
+mollusca,bivalvia,veneroida,corbiculidae,batissa,batissa violacea
+mollusca,bivalvia,veneroida,veneridae,gafrarium,gafrarium dispar
+mollusca,bivalvia,veneroida,veneridae,gafrarium,gafrarium divaricatum
+mollusca,bivalvia,veneroida,veneridae,gafrarium,gafrarium pectinatum
+mollusca,bivalvia,veneroida,veneridae,marcia,marcia hiantina
+mollusca,bivalvia,veneroida,veneridae,lioconcha,lioconcha castrensis
+mollusca,bivalvia,veneroida,veneridae,meretrix,meretrix lyrata
+mollusca,bivalvia,veneroida,veneridae,periglypta,periglypta puerpera
+mollusca,bivalvia,veneroida,veneridae,ruditapes,venerupis aspera
+mollusca,bivalvia,veneroida,veneridae,tapes,tapes conspersus
+mollusca,bivalvia,veneroida,veneridae,tapes,tapes literatus
+mollusca,bivalvia,veneroida,veneridae,katelysia,marcia japonica
+mollusca,bivalvia,veneroida,veneridae,katelysia,marcia recens
+mollusca,bivalvia,veneroida,veneridae,lioconcha,lioconcha ornata
+mollusca,bivalvia,veneroida,veneridae,marcia,marcia opima
+mollusca,bivalvia,veneroida,veneridae,paphia,paphia semirugata
+mollusca,bivalvia,veneroida,veneridae,paphia,paphia crassisulca
+mollusca,bivalvia,veneroida,veneridae,periglypta,periglypta exclathrata
+mollusca,bivalvia,veneroida,veneridae,periglypta,periglypta reticulata
+mollusca,bivalvia,veneroida,veneridae,pitar,pitar citrinus
+mollusca,bivalvia,veneroida,veneridae,pitar,pitar pellucidus
+mollusca,bivalvia,veneroida,veneridae,placamen,placamen retroversum
+mollusca,bivalvia,veneroida,veneridae,sunetta,sunetta menstrualis
+mollusca,bivalvia,veneroida,veneridae,sunetta,sunetta concinna
+mollusca,bivalvia,pholadomyoida,laternulidae,laternula,exolaternula spengleri
+mollusca,gastropoda,archaeogastropoda,trochidae,trochus,trochus hanleyanus
+mollusca,gastropoda,neotaenioglossa,cerithiidae,cerithium,cerithium coralium
+mollusca,gastropoda,neotaenioglossa,cerithiidae,cerithium,cerithium echinatum
+mollusca,gastropoda,neotaenioglossa,cerithiidae,cerithium,cerithium nodulosum
+mollusca,gastropoda,neotaenioglossa,cerithiidae,cerithium,batillaria hectori
+mollusca,gastropoda,neotaenioglossa,cerithiidae,rhinoclavis,rhinoclavis fasciata
+mollusca,gastropoda,neotaenioglossa,cerithiidae,rhinoclavis,rhinoclavis vertagus
+mollusca,gastropoda,neotaenioglossa,cerithiidae,pseudovertagus,pseudovertagus aluco
+mollusca,gastropoda,neotaenioglossa,cerithiidae,rhinoclavis,rhinoclavis aspera
+mollusca,gastropoda,neotaenioglossa,cerithiidae,rhinoclavis,rhinoclavis sinensis
+mollusca,gastropoda,neotaenioglossa,potamididae,cerithidea,cerithidea obtusa
+mollusca,gastropoda,neotaenioglossa,potamididae,telescopium,telescopium telescopium
+mollusca,gastropoda,neotaenioglossa,potamididae,terebralia,terebralia palustris
+mollusca,gastropoda,neotaenioglossa,potamididae,terebralia,terebralia sulcata
+mollusca,gastropoda,neotaenioglossa,potamididae,cerithidea,pirenella cingulata
+mollusca,gastropoda,neotaenioglossa,potamididae,cerithidea,cerithidea quoyii
+mollusca,gastropoda,neotaenioglossa,turritellidae,turritella,turritella terebra
+mollusca,gastropoda,neotaenioglossa,turritellidae,turritella,turritella duplicata
+mollusca,gastropoda,neogastropoda,melongenidae,pugilina,no match
+mollusca,gastropoda,neogastropoda,olividae,oliva,oliva annulata
+mollusca,gastropoda,heterostropha,architectonicidae,architectonica,architectonica maxima
+mollusca,gastropoda,cephalaspidea,aplustridae,hydatina,aplustrum amplustre
+mollusca,gastropoda,cephalaspidea,bullinidae,bullina,bullina lineata
+cnidaria,anthozoa,scleractinia,acroporidae,acropora,acropora plantaginea
+cnidaria,anthozoa,scleractinia,acroporidae,acropora,acropora cophodactyla
+cnidaria,anthozoa,scleractinia,acroporidae,acropora,acropora appressa
+mollusca,gastropoda,sacoglossa,stiligeridae,stiliger,sacoproteus smaragdinus
+mollusca,gastropoda,sacoglossa,elysiidae,elysia,elysia tomentosa
+mollusca,gastropoda,sacoglossa,elysiidae,elysia,elysia diomedea
+mollusca,gastropoda,sacoglossa,elysiidae,plakobranchus,plakobranchus ocellatus
+mollusca,gastropoda,sacoglossa,volvatellidae,ascobulla,ascobulla fischeri
+mollusca,gastropoda,sacoglossa,juliidae,berthelinia,berthelinia chloris
+mollusca,gastropoda,sacoglossa,limapontiidae,placida,placida cremoniana
+mollusca,aplacophora,not assigned,prochaetodermatidae,prochaetoderma,no match
+mollusca,aplacophora,pholidoskepia,dondersiidae,nematomenia,nematomenia banyulensis
+mollusca,aplacophora,cavibelonia,rhopalomeniidae,rhopalomenia,rhopalomenia aglaopheniae
+mollusca,aplacophora,neomeniamorpha,acanthomeniidae,acanthomenia,acanthomenia arcuata
+mollusca,aplacophora,cavibelonia,epimeniidae,epimenia,epimenia australis
+arthropoda,malacostraca,decapoda,coenobitidae,coenobita,coenobita clypeatus
+mollusca,gastropoda,sacoglossa,oxynoidae,oxynoe,oxynoe viridis
+mollusca,gastropoda,sacoglossa,limapontiidae,placida,placida dendritica
+arthropoda,maxillopoda,pedunculata,oxynaspididae,oxynaspis,oxynaspis celata
+arthropoda,maxillopoda,sessilia,pyrgomatidae,megatrema,adna anglica
+arthropoda,maxillopoda,sessilia,balanidae,megabalanus,megabalanus azoricus
+annelida,polychaeta,not assigned,paraonidae,aricidea,aricidea (acmira) catherinae
+mollusca,bivalvia,veneroida,lucinidae,loripes,loripes lacteus
+mollusca,bivalvia,pholadomyoida,laternulidae,laternula,laternula elliptica
+mollusca,gastropoda,heterostropha,architectonicidae,architectonica,no match
+mollusca,gastropoda,neritopsina,neritidae,septaria,septaria porcellana
+mollusca,gastropoda,neotaenioglossa,cerithiidae,bittium,bittium impendens
+mollusca,gastropoda,neotaenioglossa,cerithiidae,cerithium,cerithium atromarginatum
+mollusca,gastropoda,neotaenioglossa,cerithiidae,cerithium,cerithium balteatum
+mollusca,gastropoda,neotaenioglossa,cerithiidae,cerithium,cerithium claviforme
+mollusca,gastropoda,neotaenioglossa,cerithiidae,cerithium,cerithium columna
+mollusca,gastropoda,neotaenioglossa,cerithiidae,cerithium,cerithium egenum
+mollusca,gastropoda,neotaenioglossa,cerithiidae,cerithium,cerithium munitum
+mollusca,gastropoda,neotaenioglossa,cerithiidae,cerithium,cerithium nesioticum
+mollusca,gastropoda,neotaenioglossa,cerithiidae,cerithium,cerithium punctatum
+mollusca,gastropoda,neotaenioglossa,cerithiidae,cerithium,cerithium rostratum
+mollusca,gastropoda,neotaenioglossa,cerithiidae,cerithium,cerithium salebrosum
+mollusca,gastropoda,neotaenioglossa,cerithiidae,cerithium,cerithium zebrum
+mollusca,gastropoda,neotaenioglossa,cerithiidae,cerithium,cerithium zonatum
+mollusca,gastropoda,neotaenioglossa,cerithiidae,clypeomorus,clypeomorus bifasciata
+mollusca,gastropoda,neotaenioglossa,cerithiidae,plesiotrochus,plesiotrochus unicinctus
+mollusca,gastropoda,neotaenioglossa,cerithiidae,pseudovertagus,pseudovertagus nobilis
+mollusca,gastropoda,neotaenioglossa,cerithiidae,rhinoclavis,rhinoclavis articulata
+mollusca,gastropoda,neotaenioglossa,cerithiidae,rhinoclavis,rhinoclavis diadema
+mollusca,gastropoda,neotaenioglossa,cerithiidae,rhinoclavis,rhinoclavis sordidula
+mollusca,gastropoda,neogastropoda,dialidae,diala,diala albugo
+mollusca,gastropoda,neogastropoda,dialidae,diala,diala semistriata
+mollusca,gastropoda,neotaenioglossa,turritellidae,turritella,turritella cingulifera
+mollusca,gastropoda,neotaenioglossa,planaxidae,angiola,hinea fasciata
+mollusca,gastropoda,neotaenioglossa,modulidae,modulus,indomodulus tectum
+mollusca,gastropoda,neotaenioglossa,rissoidae,rissoina,rissoina balteata
+mollusca,gastropoda,neotaenioglossa,naticidae,polinices,no match
+chordata,cephalochordata,not assigned,branchiostomidae,epigonichthys,asymmetron lucayanum
+gastrotricha,not assigned,macrodasyoidea,macrodasyidae,urodasys,urodasys viviparus
+gastrotricha,not assigned,macrodasyoidea,thaumastodermatidae,acanthodasys,acanthodasys aculeatus
+arthropoda,malacostraca,decapoda,parthenopidae,platylambrus,no match
+arthropoda,maxillopoda,sessilia,archaeobalanidae,euacasta,euacasta dofleini
+cnidaria,anthozoa,scleractinia,acroporidae,acropora,acropora mirabilis
+arthropoda,maxillopoda,pedunculata,scalpellidae,scalpellum,scalpellum stearnsi
+mollusca,bivalvia,veneroida,cardiidae,fulvia,no match
+arthropoda,maxillopoda,pedunculata,heteralepadidae,paralepas,paralepas morula
+arthropoda,maxillopoda,sessilia,verrucidae,metaverruca,metaverruca recta
+arthropoda,maxillopoda,sessilia,archaeobalanidae,conopea,acasta dentifer
+arthropoda,maxillopoda,sessilia,verrucidae,newmaniverruca,newmaniverruca albatrossiana
+arthropoda,maxillopoda,sessilia,verrucidae,metaverruca,metaverruca halotheca
+arthropoda,maxillopoda,pedunculata,scalpellidae,amigdoscalpellum,amigdoscalpellum vitreum
+arthropoda,maxillopoda,pedunculata,poecilasmatidae,trilasmis,trilasmis eburnea
+arthropoda,maxillopoda,sessilia,verrucidae,altiverruca,altiverruca cristallina
+arthropoda,malacostraca,decapoda,palaemonidae,periclimenes,bathymenes aleator
+gastrotricha,not assigned,macrodasyoidea,thaumastodermatidae,tetranchyroderma,tetranchyroderma megastomum
+arthropoda,ostracoda,podocopida,trachyleberididae,venericythere,venericythere papuensis
+hemichordata,enteropneusta,not assigned,spengelidae,glandiceps,glandiceps talaboti
+gastrotricha,not assigned,chaetonotoidea,xenotrichulidae,xenotrichula,xenotrichula intermedia
+gastrotricha,not assigned,macrodasyida,cephalodasyidae,mesodasys,mesodasys laticaudatus
+gastrotricha,not assigned,macrodasyoidea,turbanellidae,paraturbanella,paraturbanella teissieri
+annelida,polychaeta,not assigned,paraonidae,levinsenia,levinsenia reducta
+gastrotricha,not assigned,macrodasyoidea,thaumastodermatidae,pseudostomella,pseudostomella roscovita
+gastrotricha,not assigned,macrodasyoidea,thaumastodermatidae,tetranchyroderma,tetranchyroderma cirrophorum
+mollusca,bivalvia,nuculoida,nuculanidae,nuculana,nuculana radiata
+mollusca,bivalvia,pholadomyoida,lyonsiidae,lyonsia,lyonsia arenosa
+annelida,polychaeta,not assigned,orbiniidae,leitoscoloplos,leitoscoloplos foliosus
+arthropoda,malacostraca,amphipoda,epimeriidae,paramphithoe,paramphithoe hystrix
+arthropoda,maxillopoda,pedunculata,scalpellidae,alcockianum,alcockianum alcockianum
+mollusca,gastropoda,caenogastropoda,provannidae,provanna,provanna buccinoides
+mollusca,gastropoda,heterostropha,acteonidae,pupa,pupa tragulata
+mollusca,gastropoda,cephalaspidea,aglajidae,noalda,noalda exigua
+annelida,polychaeta,canalipalpata,spionidae,polybranchia,polybranchia pallens
+bryozoa,gymnolaemata,cyclostomata,tubuliporidae,tubulipora,no match
+arthropoda,maxillopoda,sessilia,tetraclitidae,tetraclitella,tetraclitella depressa
+brachiopoda,articulata,rhynchonellida,hemithyrididae,notosaria,no match
+mollusca,gastropoda,heterostropha,pyramidellidae,parthenina,parthenina varia
+annelida,polychaeta,not assigned,capitellidae,peresiella,peresiella spathulata
+annelida,polychaeta,not assigned,scalibregmatidae,asclerocheilus,asclerocheilus mexicanus
+mollusca,gastropoda,neogastropoda,turridae,strictispira,no match
+mollusca,gastropoda,heterostropha,pyramidellidae,triptychus,triptychus litosbathron
+annelida,polychaeta,not assigned,capitellidae,notomastus,notomastus daueri
+annelida,polychaeta,not assigned,orbiniidae,orbinia,orbinia americana
+annelida,polychaeta,not assigned,paraonidae,cirrophorus,cirrophorus americanus
+mollusca,gastropoda,cephalaspidea,cylichnidae,scaphander,scaphander pilsbryi
+mollusca,gastropoda,neotaenioglossa,vermetidae,dendropoma,dendropoma exsertum
+priapulida,priapulomorpha,not assigned,tubiluchidae,tubiluchus,tubiluchus corallicola
+arthropoda,malacostraca,isopoda,sphaeromatidae,exosphaeroma,exosphaeroma productatelson
+porifera,demospongiae,hadromerida,clionaidae,cliona,cliona arenosa
+annelida,polychaeta,not assigned,maldanidae,nicomache,nicomache venticola
+bryozoa,gymnolaemata,cheilostomata,membraniporidae,membranipora,membranipora isabelleana
+mollusca,gastropoda,neogastropoda,mitridae,cancilla,no match
+kamptozoa,not assigned,loxosomatida,loxosomatidae,loxosomella,loxosomella atkinsae
+annelida,polychaeta,not assigned,orbiniidae,scoloplos,leodamas chevalieri
+mollusca,aplacophora,sterrofustia,phyllomeniidae,phyllomenia,phyllomenia austrina
+mollusca,aplacophora,cavibelonia,proneomeniidae,dorymenia,dorymenia tricarinata
+arthropoda,malacostraca,stomatopoda,squillidae,cloridina,parisia microphthalma
+arthropoda,malacostraca,stomatopoda,gonodactylidae,gonodactylaceus,no match
+arthropoda,malacostraca,stomatopoda,squillidae,oratosquillina,no match
+arthropoda,maxillopoda,sessilia,pyrgomatidae,trevathana,trevathana paulayi
+arthropoda,maxillopoda,sessilia,balanidae,balanus,balanus minutus
+arthropoda,maxillopoda,sessilia,balanidae,megabalanus,notomegabalanus concinnus
+arthropoda,maxillopoda,sessilia,balanidae,megabalanus,megabalanus volcano
+arthropoda,maxillopoda,pedunculata,poecilasmatidae,poecilasma,poecilasma obliqua
+mollusca,bivalvia,veneroida,veneridae,venerupis,polititapes rhomboides
+cnidaria,hydrozoa,leptothecata,sertulariidae,staurotheca,staurotheca stolonifera
+arthropoda,maxillopoda,sessilia,pyrgomatidae,savignium,trevathana dentata
+arthropoda,maxillopoda,pedunculata,poecilasmatidae,octolasmis,octolasmis angulata
+mollusca,gastropoda,neotaenioglossa,pickworthiidae,reynellona,reynellona natalis
+mollusca,gastropoda,neotaenioglossa,pickworthiidae,reynellona,reynellona semipellucida
+mollusca,gastropoda,archaeogastropoda,scissurellidae,scissurella,no match
+mollusca,gastropoda,heterostropha,acteonidae,acteon,acteon retusus
+mollusca,gastropoda,cephalaspidea,ringiculidae,ringicula,ringicula grandinosa
+mollusca,gastropoda,sacoglossa,juliidae,midorigai,berthelinia australis
+mollusca,gastropoda,neogastropoda,drilliidae,clavus,no match
+mollusca,gastropoda,heterostropha,acteonidae,crenilabium,crenilabium exile
+annelida,polychaeta,not assigned,capitellidae,heteromastus,heteromastus similis
+arthropoda,maxillopoda,kentrogonida,lernaeodiscidae,lernaeodiscus,lernaeodiscus okadai
+mollusca,bivalvia,mytiloida,mytilidae,botula,cotula filicula
+arthropoda,maxillopoda,pedunculata,oxynaspididae,oxynaspis,oxynaspis connectens
+annelida,polychaeta,eunicida,dorvilleidae,schistomeringos,schistomeringos incerta
+mollusca,bivalvia,pholadomyoida,myochamidae,myadora,myadora compressa
+arthropoda,maxillopoda,pedunculata,oxynaspididae,oxynaspis,minyaspis bocki
+arthropoda,maxillopoda,pedunculata,poecilasmatidae,octolasmis,octolasmis weberi
+mollusca,bivalvia,pholadomyoida,cuspidariidae,protocuspidaria,protocuspidaria verityi
+mollusca,bivalvia,pholadomyoida,cuspidariidae,cuspidaria,cuspidaria morelandi
+mollusca,bivalvia,pholadomyoida,myochamidae,hunkydora,hunkydora novozelandica
+mollusca,bivalvia,pholadomyoida,myochamidae,hunkydora,asthenothaerus maxwelli
+mollusca,bivalvia,pholadomyoida,poromyidae,poromya,poromya undosa
+annelida,polychaeta,not assigned,maldanidae,maldane,maldane theodori
+annelida,polychaeta,not assigned,orbiniidae,phylo,phylo kupfferi
+annelida,polychaeta,canalipalpata,sabellariidae,sabellaria,sabellaria alcocki
+mollusca,gastropoda,neogastropoda,columbellidae,mitrella,no match
+mollusca,bivalvia,veneroida,cardiidae,acrosterigma,no match
+mollusca,gastropoda,neotaenioglossa,cerithiidae,rhinoclavis,rhinoclavis longicaudata
+mollusca,gastropoda,neotaenioglossa,ranellidae,cymatium,no match
+arthropoda,malacostraca,decapoda,parthenopidae,heterocrypta,no match
+arthropoda,maxillopoda,pedunculata,scalpellidae,ornatoscalpellum,weltnerium vanhoeffeni
+mollusca,gastropoda,neotaenioglossa,assimineidae,assiminea,angustassiminea vulgaris
+mollusca,gastropoda,neotaenioglossa,cerithiopsidae,cerithiopsis,cerithiopsis powelli
+annelida,polychaeta,canalipalpata,sabellariidae,tetreres,tetreres philippinensis
+mollusca,bivalvia,arcoida,noetiidae,arcopsis,no match
+mollusca,aplacophora,cavibelonia,simrothiellidae,helicoradomenia,helicoradomenia acredema
+mollusca,gastropoda,caenogastropoda,provannidae,provanna,provanna ios
+mollusca,gastropoda,caenogastropoda,provannidae,provanna,provanna muricata
+mollusca,gastropoda,caenogastropoda,provannidae,provanna,provanna segonzaci
+mollusca,gastropoda,heterostropha,hyalogyrinidae,hyalogyrina,hyalogyrina globularis
+arthropoda,maxillopoda,sessilia,chionelasmatoidae,eochionelasmus,eochionelasmus ohtai
+arthropoda,maxillopoda,pedunculata,neobrachylepadidae,neobrachylepas,neobrachylepas relica
+mollusca,bivalvia,veneroida,veneridae,timoclea,timoclea imbricata
+mollusca,bivalvia,veneroida,veneridae,paphia,paphia philippiana
+mollusca,bivalvia,arcoida,glycymerididae,glycymeris,no match
+mollusca,bivalvia,veneroida,cardiidae,plagiocardium,no match
+mollusca,bivalvia,veneroida,cardiidae,discors,no match
+mollusca,bivalvia,veneroida,veneridae,dosinia,dosinia laminata
+mollusca,bivalvia,veneroida,veneridae,dosinia,dosinia corrugata
+mollusca,bivalvia,myoida,pholadidae,aspidopholas,no match
+mollusca,bivalvia,pholadomyoida,laternulidae,laternula,laternula boschasina
+mollusca,bivalvia,pholadomyoida,clavagellidae,bryopa,bryopa lata
+annelida,polychaeta,canalipalpata,magelonidae,magelona,magelona crenulifrons
+mollusca,gastropoda,neogastropoda,turridae,marshallena,no match
+arthropoda,malacostraca,isopoda,arcturidae,astacilla,no match
+arthropoda,malacostraca,decapoda,palaemonidae,kemponia,no match
+arthropoda,maxillopoda,pedunculata,heteralepadidae,paralepas,paralepas quadrata
+arthropoda,maxillopoda,pedunculata,heteralepadidae,paralepas,paralepas scutiger
+arthropoda,maxillopoda,pedunculata,koleolepadidae,koleolepas,koleolepas avis
+arthropoda,maxillopoda,pedunculata,oxynaspididae,oxynaspis,minyaspis aurivillii
+arthropoda,maxillopoda,pedunculata,poecilasmatidae,temnaspis,dianajonesia tridens
+arthropoda,maxillopoda,pedunculata,poecilasmatidae,octolasmis,octolasmis bullata
+arthropoda,maxillopoda,pedunculata,poecilasmatidae,octolasmis,octolasmis geryonophila
+arthropoda,maxillopoda,pedunculata,poecilasmatidae,octolasmis,octolasmis scuticosta
+arthropoda,maxillopoda,pedunculata,scalpellidae,verum,catherinum novaezelandiae
+arthropoda,maxillopoda,pedunculata,scalpellidae,trianguloscalpellum,trianguloscalpellum diota
+arthropoda,maxillopoda,sessilia,verrucidae,altiverruca,altiverruca sulcata
+arthropoda,maxillopoda,sessilia,bathylasmatidae,hexelasma,hexelasma velutinum
+arthropoda,maxillopoda,sessilia,tetraclitidae,tetraclita,tetraclita serrata
+arthropoda,maxillopoda,sessilia,archaeobalanidae,armatobalanus,multatria terebratus
+arthropoda,maxillopoda,sessilia,archaeobalanidae,solidobalanus,solidobalanus echinoplacis
+arthropoda,maxillopoda,sessilia,archaeobalanidae,solidobalanus,solidobalanus socialis
+arthropoda,maxillopoda,sessilia,archaeobalanidae,membranobalanus,membranobalanus longirostrum
+arthropoda,maxillopoda,sessilia,archaeobalanidae,conopea,acasta navicula
+arthropoda,maxillopoda,sessilia,archaeobalanidae,acasta,acasta echinata
+arthropoda,maxillopoda,sessilia,archaeobalanidae,acasta,acasta fenestrata
+arthropoda,maxillopoda,sessilia,archaeobalanidae,acasta,acasta purpurata
+arthropoda,maxillopoda,sessilia,archaeobalanidae,neoacasta,neoacasta glans
+arthropoda,maxillopoda,sessilia,pyrgomatidae,cantellius,cantellius acutum
+arthropoda,maxillopoda,sessilia,balanidae,balanus,fistulobalanus kondakovi
+porifera,demospongiae,poecilosclerida,tedaniidae,tedania,tedania (tedania) brevispiculata
+porifera,demospongiae,poecilosclerida,tedaniidae,tedania,tedania (tedania) coralliophila
+porifera,demospongiae,poecilosclerida,tedaniidae,tedania,tedania (tedania) maeandrica
+porifera,demospongiae,poecilosclerida,tedaniidae,tedania,tedania (tedania) reticulata
+arthropoda,malacostraca,isopoda,sphaeromatidae,lekanesphaera,no match
+porifera,demospongiae,poecilosclerida,tedaniidae,tedania,tedania (tedania) klausi
+cnidaria,anthozoa,scleractinia,agariciidae,pachyseris,pachyseris involuta
+arthropoda,malacostraca,decapoda,palaemonidae,apopontonia,no match
+mollusca,gastropoda,neotaenioglossa,cerithiidae,cerithium,cerithium lissum
+mollusca,gastropoda,neotaenioglossa,cerithiidae,cerithium,cerithium ophioderma
+mollusca,gastropoda,neotaenioglossa,siliquariidae,tenagodus,tenagodus trochlearis
+mollusca,gastropoda,neotaenioglossa,epitoniidae,cycloscala,cycloscala peaseana
+mollusca,gastropoda,neotaenioglossa,epitoniidae,epitonium,epitonium replicatum
+mollusca,gastropoda,neotaenioglossa,epitoniidae,opalia,opalia bicarinata
+mollusca,gastropoda,neotaenioglossa,triphoridae,euthymella,euthymella bilix
+mollusca,gastropoda,neotaenioglossa,triphoridae,euthymella,euthymella concors
+mollusca,gastropoda,neotaenioglossa,triphoridae,mastonia,mastonia lamberti
+mollusca,gastropoda,neotaenioglossa,triphoridae,mastoniaeforis,mastoniaeforis lifuana
+echinodermata,asteroidea,spinulosida,asterinidae,anseropoda,anseropoda rosacea
+echinodermata,echinoidea,spatangoida,asterostomatidae,heterobrissus,heterobrissus niasicus
+platyhelminthes,turbellaria,polycladida,callioplanidae,meixneria,meixneria furva
+mollusca,bivalvia,pholadomyoida,clavagellidae,brechites,verpa penis
+cnidaria,anthozoa,actiniaria,actiniidae,bunodactis,bunodactis rubripunctata
+cnidaria,anthozoa,actiniaria,hormathiidae,paractinia,paractinia striata
+xenacoelomorpha,not assigned,not assigned,xenoturbellidae,xenoturbella,xenoturbella bocki
+chordata,reptilia,squamata,gekkonidae,phyllodactylus,no match
+mollusca,gastropoda,heterostropha,architectonicidae,spirolaxis,spirolaxis lamellifer
+mollusca,gastropoda,not assigned,tjaernoeiidae,tjaernoeia,tjaernoeia exquisita
+mollusca,bivalvia,veneroida,chamidae,chama,chama aspersa
+annelida,polychaeta,not assigned,paraonidae,paradoneis,paradoneis harpagonea
+mollusca,gastropoda,not assigned,murchisonellidae,murchisonella,murchisonella spectrum
+mollusca,gastropoda,neotaenioglossa,triphoridae,isotriphora,isotriphora peetersae
+mollusca,gastropoda,neotaenioglossa,triphoridae,triphora,triphora elvirae
+mollusca,gastropoda,heterostropha,omalogyridae,ammonicera,ammonicera albospeciosa
+mollusca,gastropoda,heterostropha,architectonicidae,mathilda,mathilda carystia
+mollusca,gastropoda,heterostropha,pyramidellidae,odostomia,eulimastoma eutropia
+mollusca,gastropoda,heterostropha,pyramidellidae,syrnola,colsyrnola brunnea
+arthropoda,pycnogonida,pantopoda,callipallenidae,pseudopallene,pseudopallene glutus
+mollusca,gastropoda,archaeogastropoda,skeneidae,lissotesta,lissotesta strebeli
+arthropoda,malacostraca,amphipoda,lysianassidae,tryphosella,uristidae incertae sedis trigonica
+mollusca,gastropoda,neotaenioglossa,cerithiopsidae,retilaskeya,retilaskeya emersonii
+mollusca,gastropoda,archaeogastropoda,orbitestellidae,orbitestella,orbitestella bermudezi
+mollusca,gastropoda,heterostropha,pyramidellidae,folinella,iolaea robertsoni
+mollusca,gastropoda,neogastropoda,olividae,hesperancilla,no match
+mollusca,gastropoda,heterostropha,pyramidellidae,chrysallida,boonea multituberculata
+mollusca,gastropoda,vetigastropoda,solariellidae,lamellitrochus,lamellitrochus pourtalesi
+mollusca,gastropoda,neotaenioglossa,triphoridae,inella,inella colon
+mollusca,bivalvia,veneroida,vesicomyidae,vesicomya,vesicomya venusta
+mollusca,gastropoda,patellogastropoda,turbinidae,granigyra,granigyra limata
+mollusca,gastropoda,heterostropha,pyramidellidae,bacteridium,bacteridium resticulum
+mollusca,bivalvia,ostreoida,pectinidae,pacipecten,no match
+mollusca,gastropoda,neotaenioglossa,epitoniidae,opaliopsis,opaliopsis opalina
+mollusca,gastropoda,neotaenioglossa,triphoridae,inella,strobiligera pompona
+mollusca,gastropoda,neotaenioglossa,triphoridae,metaxia,metaxia metaxa
+mollusca,gastropoda,heterostropha,pyramidellidae,turbonilla,turbonilla elegans
+mollusca,gastropoda,heterostropha,pyramidellidae,turbonilla,turbonilla fasciata
+mollusca,bivalvia,veneroida,veneridae,tivela,tivela dentaria
+mollusca,bivalvia,veneroida,veneridae,globivenus,globivenus listeroides
+mollusca,gastropoda,neogastropoda,terebridae,terebra,no match
+mollusca,gastropoda,neogastropoda,muricidae,stramonita,stramonita cruentata
+mollusca,gastropoda,neogastropoda,turridae,polystira,no match
+mollusca,gastropoda,neotaenioglossa,triphoridae,iniforis,iniforis casta
+mollusca,gastropoda,neogastropoda,turridae,fusiturricula,no match
+mollusca,gastropoda,neogastropoda,olividae,eburna,no match
+mollusca,gastropoda,heterostropha,mathildidae,mathilda,mathilda malvinarum
+mollusca,gastropoda,neotaenioglossa,triphoridae,cheirodonta,nanaphora verbernei
+mollusca,gastropoda,neotaenioglossa,epitoniidae,epitonium,epitonium turritellula
+mollusca,gastropoda,neotaenioglossa,pelycidiidae,pelycidion,pelycidion megalomastoma
+mollusca,gastropoda,vetigastropoda,chilodontidae,brookula,brookula decussata
+mollusca,bivalvia,veneroida,leptonidae,mysella,mysella minuscula
+mollusca,gastropoda,heterostropha,architectonicidae,pseudomalaxis,pseudomalaxis zanclaeus
+mollusca,gastropoda,neotaenioglossa,cerithiopsidae,eumetula,eumetula pulla
+mollusca,gastropoda,neogastropoda,buccinidae,glypteuthria,glypteuthria meridionalis
+mollusca,gastropoda,neotaenioglossa,cerithiopsidae,eumetula,eumetula michaelseni
+mollusca,gastropoda,heterostropha,acteonidae,acteon,acteon biplicatus
+mollusca,gastropoda,heterostropha,acteonidae,acteon,acteon gabbana
+mollusca,gastropoda,neotaenioglossa,triphoridae,mesophora,coriophora novem
+mollusca,gastropoda,heterostropha,pyramidellidae,oscilla,oscilla somersi
+mollusca,gastropoda,heterostropha,acteonidae,neactaeonina,neactaeonina edentula
+mollusca,gastropoda,heterostropha,pyramidellidae,egila,egila virginiae
+mollusca,gastropoda,heterostropha,pyramidellidae,eulimastoma,eulimastoma surinamense
+mollusca,gastropoda,neotaenioglossa,lamellariidae,marseniopsis,marseniopsis pacifica
+mollusca,gastropoda,caenogastropoda,abyssochrysidae,abyssochrysos,abyssochrysos brasilianus
+mollusca,gastropoda,heterostropha,acteonidae,ovulactaeon,ovulactaeon meekii
+mollusca,gastropoda,patellogastropoda,turbinidae,granigyra,granigyra oblatogyra
+mollusca,gastropoda,neotaenioglossa,triphoridae,cosmotriphora,cosmotriphora arnoldoi
+mollusca,gastropoda,neotaenioglossa,siliquariidae,hummelinckiella,hummelinckiella borinquensis
+mollusca,gastropoda,neotaenioglossa,triphoridae,triphora,triphora ellyae
+mollusca,gastropoda,heterostropha,mathildidae,mathilda,mathilda vanaartseni
+mollusca,gastropoda,heterostropha,pyramidellidae,trabecula,trabecula krumpermani
+mollusca,gastropoda,heterostropha,pyramidellidae,turbonilla,turbonilla rixtae
+mollusca,gastropoda,sacoglossa,cylindrobullidae,cylindrobulla,cylindrobulla gigas
+mollusca,gastropoda,neotaenioglossa,siliquariidae,stephopoma,stephopoma myrakeenae
+mollusca,gastropoda,opisthobranchia,placobranchidae,elysia,elysia zuleicae
+mollusca,gastropoda,heterostropha,pyramidellidae,turbonilla,turbonilla dispar
+mollusca,gastropoda,heterostropha,pyramidellidae,turbonilla,turbonilla macaensis
+mollusca,gastropoda,heterostropha,pyramidellidae,turbonilla,turbonilla aracruzensis
+mollusca,gastropoda,heterostropha,pyramidellidae,turbonilla,turbonilla capixaba
+mollusca,gastropoda,heterostropha,pyramidellidae,turbonilla,turbonilla farroupilha
+mollusca,gastropoda,heterostropha,pyramidellidae,turbonilla,nisiturris fluminensis
+mollusca,gastropoda,heterostropha,pyramidellidae,turbonilla,turbonilla goytacazi
+mollusca,gastropoda,heterostropha,pyramidellidae,turbonilla,turbonilla maestratii
+mollusca,gastropoda,heterostropha,pyramidellidae,peristichia,peristichia lepta
+mollusca,gastropoda,cephalaspidea,aplustridae,parvaplustrum,parvaplustrum tenerum
+mollusca,gastropoda,neotaenioglossa,cerithiidae,fastigiella,fastigiella carinata
+mollusca,gastropoda,neotaenioglossa,cerithiopsidae,cerithiopsis,cerithiopsis prieguei
+mollusca,gastropoda,neotaenioglossa,cerithiopsidae,cerithiopsis,cerithiopsis pseudomovilla
+mollusca,gastropoda,neotaenioglossa,triphoridae,monophorus,monophorus ateralbus
+mollusca,gastropoda,neotaenioglossa,triphoridae,marshallora,marshallora ostenta
+mollusca,gastropoda,neotaenioglossa,velutinidae,lamellaria,lamellaria patagonica
+mollusca,bivalvia,pholadomyoida,pholadomyidae,pholadomya,pholadomya candida
+mollusca,gastropoda,archaeogastropoda,orbitestellidae,microdiscula,microdiscula vanhoeffeni
+mollusca,gastropoda,heterostropha,acteonidae,acteon,acteon antarcticus
+mollusca,gastropoda,neotaenioglossa,triphoridae,triphora,sagenotriphora osclausum
+cnidaria,anthozoa,pennatulacea,renillidae,renilla,renilla chilensis
+arthropoda,maxillopoda,sessilia,chthamalidae,rehderella,rehderella belyaevi
+arthropoda,maxillopoda,mystacocaridida,derocheilocarididae,derocheilocaris,derocheilocaris hessleri
+mollusca,gastropoda,neotaenioglossa,cerithiopsidae,specula,specula styliformis
+mollusca,gastropoda,neotaenioglossa,cerithiopsidae,specula,specula retifera
+mollusca,gastropoda,neotaenioglossa,cerithiopsidae,zaclys,zaclys murdochi
+mollusca,gastropoda,neotaenioglossa,cerithiopsidae,horologica,horologica dirempta
+mollusca,gastropoda,neotaenioglossa,cerithiopsidae,synthopsis,synthopsis regia
+mollusca,gastropoda,neotaenioglossa,cerithiopsidae,synthopsis,synthopsis acuminata
+mollusca,gastropoda,neotaenioglossa,cerithiopsidae,prolixodens,prolixodens benthica
+mollusca,gastropoda,neotaenioglossa,cerithiopsidae,seila,seila bulbosa
+mollusca,gastropoda,neotaenioglossa,cerithiidae,argyropeza,argyropeza leucocephala
+arthropoda,maxillopoda,pedunculata,poecilasmatidae,dichelaspis,dichelaspis hawaiense
+mollusca,gastropoda,heterostropha,mathildidae,tuba,tuba valkyrie
+porifera,calcarea,murrayonida,lelapiellidae,lelapiella,lelapiella incrustans
+porifera,calcarea,murrayonida,paramurrayonidae,paramurrayona,paramurrayona corticata
+mollusca,gastropoda,archaeogastropoda,trochidae,priotrochus,trochus kotschyi
+mollusca,gastropoda,neotaenioglossa,turritellidae,turritella,turritella torulosa
+mollusca,gastropoda,neotaenioglossa,cerithiidae,cerithidium,cerithidium cerithinum
+mollusca,gastropoda,heterostropha,pyramidellidae,turbonilla,turbonilla linjaica
+mollusca,gastropoda,cephalaspidea,ringiculidae,ringicula,ringicula propinquans
+mollusca,bivalvia,veneroida,veneridae,dosinia,dosinia alta
+mollusca,gastropoda,neotaenioglossa,turritellidae,turritella,turritella fultoni
+mollusca,bivalvia,veneroida,veneridae,tivela,tivela damaoides
+mollusca,gastropoda,neotaenioglossa,turritellidae,turritella,turritella cochlea
+mollusca,bivalvia,veneroida,veneridae,sunetta,sunetta effossa
+arthropoda,maxillopoda,sessilia,chthamalidae,microeuraphia,microeuraphia permitini
+mollusca,gastropoda,neotaenioglossa,epitoniidae,acrilla,acrilla acuminata
+mollusca,gastropoda,heterostropha,acteonidae,punctacteon,punctacteon eloiseae
+mollusca,gastropoda,littorinimorpha,stenothyridae,stenothyra,stenothyra arabica
+echinodermata,holothuroidea,aspidochirotida,stichopodidae,stichopus,stichopus anapinusus
+mollusca,gastropoda,neotaenioglossa,triphoridae,strobiligera,strobiligera bigemma
+annelida,polychaeta,not assigned,scalibregmatidae,pseudoscalibregma,pseudoscalibregma parvum
+arthropoda,malacostraca,isopoda,stenetriidae,stenetrium,stenetriidae incertae sedis stebbingi
+arthropoda,maxillopoda,calanoida,temoridae,eurytemora,eurytemora affinis
+arthropoda,maxillopoda,harpacticoida,tegastidae,parategastes,parategastes sphaericus
+arthropoda,maxillopoda,pedunculata,poecilasmatidae,glyptelasma,glyptelasma hamatum
+arthropoda,maxillopoda,pedunculata,poecilasmatidae,megalasma,megalasma minus
+arthropoda,maxillopoda,pedunculata,poecilasmatidae,octolasmis,octolasmis hoeki
+arthropoda,maxillopoda,pedunculata,scalpellidae,diceroscalpellum,diceroscalpellum arietinum
+arthropoda,maxillopoda,pedunculata,scalpellidae,diceroscalpellum,diceroscalpellum diceratum
+arthropoda,maxillopoda,pedunculata,scalpellidae,scalpellum,scalpellum gibbum
+arthropoda,maxillopoda,pedunculata,scalpellidae,smilium,smilium scorpio
+arthropoda,maxillopoda,pedunculata,scalpellidae,tarasovium,weltnerium cornutum
+arthropoda,maxillopoda,sessilia,archaeobalanidae,conopea,solidobalanus merrilli
+arthropoda,maxillopoda,sessilia,chthamalidae,chthamalus,chthamalus angustitergum
+arthropoda,pycnogonida,pantopoda,ammotheidae,achelia,achelia segmentata
+arthropoda,pycnogonida,pantopoda,callipallenidae,pseudopallene,pseudopallene zamboangae
+kinorhyncha,not assigned,homalorhagida,pycnophyidae,kinorhynchus,leiocanthus mainensis
+priapulida,priapulomorpha,not assigned,priapulidae,halicryptus,halicryptus higginsi
+phoronida,not assigned,not assigned,phoronidae,phoronopsis,phoronopsis albomaculata
+annelida,polychaeta,canalipalpata,magelonidae,magelona,magelona cornuta
+annelida,polychaeta,canalipalpata,magelonidae,magelona,magelona phyllisae
+annelida,polychaeta,not assigned,capitellidae,leiochrides,leiochrides pallidior
+annelida,polychaeta,not assigned,capitellidae,mastobranchus,mastobranchus trinchesii
+placozoa,not assigned,not assigned,trichoplacidae,trichoplax,trichoplax adhaerens
+annelida,polychaeta,not assigned,cossuridae,cossura,cossura laeviseta
+annelida,polychaeta,not assigned,opheliidae,ophelina,ophelina breviata
+chordata,cephalochordata,not assigned,branchiostomidae,branchiostoma,branchiostoma bennetti
+chordata,cephalochordata,not assigned,branchiostomidae,epigonichthys,epigonichthys bassanus
+chordata,cephalochordata,not assigned,branchiostomidae,epigonichthys,epigonichthys maldivensis
+arthropoda,malacostraca,amphipoda,corophiidae,americorophium,americorophium ellisi
+cnidaria,hydrozoa,anthoathecata,eudendriidae,eudendrium,eudendrium gracile
+cnidaria,hydrozoa,anthoathecata,pennariidae,pennaria,pennaria vitrea
+bryozoa,gymnolaemata,cheilostomata,calwelliidae,calwellia,no match
+bryozoa,gymnolaemata,cyclostomata,lichenoporidae,lichenopora,lichenopora radiata
+gastrotricha,not assigned,chaetonotoidea,chaetonotidae,halichaetonotus,halichaetonotus paradoxus
+gastrotricha,not assigned,macrodasyida,cephalodasyidae,dolichodasys,dolichodasys elongatus
+gnathostomulida,not assigned,bursovaginoidea,austrognathiidae,austrognatharia,austrognatharia pecten
+gnathostomulida,not assigned,bursovaginoidea,austrognathiidae,austrognatharia,austrognatharia strunki
+gnathostomulida,not assigned,bursovaginoidea,austrognathiidae,austrognathia,austrognathia nannulifera
+gnathostomulida,not assigned,bursovaginoidea,gnathostomulidae,gnathostomula,gnathostomula mediterranea
+gnathostomulida,not assigned,bursovaginoidea,gnathostomulidae,gnathostomula,gnathostomula peregrina
+gnathostomulida,not assigned,bursovaginoidea,gnathostomulidae,semaeognathia,semaeognathia sterreri
+gnathostomulida,not assigned,bursovaginoidea,mesognathariidae,labidognathia,labidognathia longicollis
+gnathostomulida,not assigned,bursovaginoidea,mesognathariidae,tenuignathia,tenuignathia rikerae
+gnathostomulida,not assigned,bursovaginoidea,onychognathiidae,onychognathia,onychognathia rhombocephala
+gnathostomulida,not assigned,filospermoidea,pterognathiidae,cosmognathia,cosmognathia aquila
+gnathostomulida,not assigned,filospermoidea,pterognathiidae,cosmognathia,cosmognathia arcus
+gnathostomulida,not assigned,filospermoidea,pterognathiidae,cosmognathia,cosmognathia manubrium
+gnathostomulida,not assigned,filospermoidea,pterognathiidae,pterognathia,pterognathia ugera
+hemichordata,enteropneusta,not assigned,ptychoderidae,balanoglossus,balanoglossus clavigerus
+mollusca,bivalvia,nuculoida,nuculidae,nucula,nucula turgida
+mollusca,bivalvia,ostreoida,pectinidae,aequipecten,no match
+mollusca,bivalvia,ostreoida,pectinidae,pecten,no match
+mollusca,bivalvia,pholadomyoida,lyonsiidae,lyonsia,lyonsia bracteata
+mollusca,bivalvia,pholadomyoida,pandoridae,pandora,heteroclidus punctatus
+mollusca,bivalvia,pholadomyoida,poromyidae,poromya,cetomya elongata
+mollusca,bivalvia,pholadomyoida,thraciidae,thracia,thracia morrisoni
+mollusca,bivalvia,veneroida,lasaeidae,mysella,spheniopsis triquetra
+mollusca,bivalvia,veneroida,veneridae,circomphalus,globivenus strigillina
+mollusca,bivalvia,veneroida,veneridae,tivela,tivela trigonella
+mollusca,bivalvia,veneroida,vesicomyidae,vesicomya,kelliella pilula
+mollusca,bivalvia,veneroida,vesicomyidae,vesicomya,veneriglossa vesica
+arthropoda,malacostraca,amphipoda,lysianassidae,ambasiopsis,ambasiopsis tumicornis
+mollusca,gastropoda,acochlidiacea,microhedylidae,hedylopsis,asperspina riseri
+mollusca,gastropoda,archaeogastropoda,scissurellidae,scissurella,scissurella coronata
+mollusca,gastropoda,archaeogastropoda,trochidae,solariella,lamellitrochus pourtalesi
+mollusca,gastropoda,cephalaspidea,bullinidae,bullina,bullina exquisita
+mollusca,gastropoda,cephalaspidea,cylichnidae,tornatina,tornatinidae incertae sedis inconspicua
+mollusca,gastropoda,cephalaspidea,philinidae,philine,praephiline finmarchica
+mollusca,gastropoda,heterostropha,acteonidae,acteon,acteon danaida
+mollusca,gastropoda,heterostropha,acteonidae,acteon,acteon incisus
+mollusca,gastropoda,heterostropha,acteonidae,acteon,acteon perforatus
+mollusca,gastropoda,heterostropha,architectonicidae,pseudotorinia,pseudotorinia bullisi
+mollusca,gastropoda,heterostropha,mathildidae,mathilda,mathilda scitula
+mollusca,gastropoda,heterostropha,mathildidae,mathilda,mathilda yucatecana
+mollusca,gastropoda,heterostropha,pyramidellidae,chrysallida,chrysallida cancellata
+mollusca,gastropoda,heterostropha,pyramidellidae,houbricka,houbricka incisa
+mollusca,gastropoda,heterostropha,pyramidellidae,liostomia,liostomia eburnea
+mollusca,gastropoda,heterostropha,pyramidellidae,menestho,menestho albula
+mollusca,gastropoda,heterostropha,pyramidellidae,miralda,miralda scopulorum
+mollusca,gastropoda,heterostropha,pyramidellidae,odostomia,odostomia acutidens
+mollusca,gastropoda,heterostropha,pyramidellidae,petitilla,petitilla crosseana
+mollusca,gastropoda,heterostropha,pyramidellidae,rissopsetia,rissopsetia hummelincki
+mollusca,gastropoda,heterostropha,pyramidellidae,turbonilla,turbonilla belotheca
+mollusca,gastropoda,heterostropha,pyramidellidae,turbonilla,turbonilla exilis
+mollusca,gastropoda,heterostropha,pyramidellidae,turbonilla,turbonilla levis
+mollusca,gastropoda,heterostropha,pyramidellidae,turbonilla,turbonilla punicea
+mollusca,gastropoda,heterostropha,pyramidellidae,turbonilla,turbonilla corgani
+mollusca,gastropoda,heterostropha,pyramidellidae,turbonilla,turbonilla stimpsoni
+mollusca,gastropoda,heterostropha,pyramidellidae,turbonilla,turbonilla virga
+mollusca,gastropoda,neogastropoda,buccinidae,ptychosalpinx,ptychosalpinx globulus
+mollusca,gastropoda,neogastropoda,conidae,pleurotomella,azorilla lottae
+mollusca,gastropoda,neotaenioglossa,cerithiopsidae,cerithiopsis,prolixodens ara
+mollusca,gastropoda,neotaenioglossa,cerithiopsidae,cerithiopsis,cerithiopsis io
+mollusca,gastropoda,neotaenioglossa,cerithiopsidae,cerithiopsis,cerithiopsis vicola
+mollusca,gastropoda,neotaenioglossa,cerithiopsidae,horologica,horologica pupa
+mollusca,gastropoda,neotaenioglossa,cypraeidae,talparia,no match
+mollusca,gastropoda,neotaenioglossa,epitoniidae,alexania,alexania floridana
+mollusca,gastropoda,neotaenioglossa,epitoniidae,cirsotrema,cirsotrema pilsbryi
+mollusca,gastropoda,neotaenioglossa,epitoniidae,depressiscala,epitonium nautlae
+mollusca,gastropoda,neotaenioglossa,epitoniidae,epitonium,epitonium babylonia
+mollusca,gastropoda,neotaenioglossa,epitoniidae,epitonium,epitonium matthewsae
+mollusca,gastropoda,neotaenioglossa,epitoniidae,epitonium,epitonium phymanthi
+mollusca,gastropoda,neotaenioglossa,epitoniidae,opalia,opalia abbotti
+mollusca,gastropoda,neotaenioglossa,epitoniidae,opalia,no match
+mollusca,gastropoda,neotaenioglossa,lamellariidae,lamellaria,lamellaria leucosphaera
+mollusca,gastropoda,neotaenioglossa,naticidae,haliotinella,haliotinella patinaria
+mollusca,gastropoda,neotaenioglossa,planaxidae,fossarus,fossarus elegans
+mollusca,gastropoda,neotaenioglossa,planaxidae,hinea,hinea lineata
+mollusca,gastropoda,neotaenioglossa,rissoidae,alvania,alexania moerchi
+mollusca,gastropoda,neotaenioglossa,rissoidae,schwartziella,schwartziella bouryi
+mollusca,gastropoda,neotaenioglossa,triphoridae,metaxia,metaxia taeniolata
+mollusca,gastropoda,neotaenioglossa,triphoridae,triphora,triphora calva
+mollusca,gastropoda,neotaenioglossa,triphoridae,triphora,triphora longissima
+mollusca,gastropoda,neotaenioglossa,triphoridae,triphora,inella longissima
+mollusca,gastropoda,neotaenioglossa,triphoridae,triphora,inella triserialis
+mollusca,gastropoda,neotaenioglossa,turritellidae,turritella,turritella hookeri
+mollusca,gastropoda,rhodopemorpha,rhodopidae,helminthope,helminthope psammobionta
+mollusca,gastropoda,sacoglossa,elysiidae,bosellia,elysia marcusi
+mollusca,gastropoda,sacoglossa,elysiidae,elysia,elysia serca
+mollusca,gastropoda,sacoglossa,oxynoidae,oxynoe,oxynoe azuropunctata
+mollusca,gastropoda,sacoglossa,volvatellidae,ascobulla,ascobulla ulla
+mollusca,polyplacophora,lepidopleurida,leptochitonidae,lepidopleurus,no match
+platyhelminthes,turbellaria,nemertodermatida,nemertodermatidae,nemertoderma,nemertoderma bathycola
+porifera,calcarea,murrayonida,murrayonidae,murrayona,murrayona phanolepis
+arthropoda,malacostraca,decapoda,penaeidae,metapenaeopsis,no match
+mollusca,bivalvia,ostreoida,ostreidae,crassostrea,magallana rivularis
+kamptozoa,not assigned,loxosomatida,loxosomatidae,loxomitra,loxomitra tetraorganon
+mollusca,bivalvia,veneroida,veneridae,venerupis,polititapes durus
+kamptozoa,not assigned,loxosomatida,loxosomatidae,loxosoma,loxosoma pectinaricola
+kamptozoa,not assigned,loxosomatida,loxosomatidae,loxosoma,loxosoma rhodinicola
+kamptozoa,not assigned,loxosomatida,loxosomatidae,loxosomella,loxosomella elegans
+kamptozoa,not assigned,loxosomatida,loxosomatidae,loxosomella,loxosomella polita
+kamptozoa,not assigned,loxosomatida,loxosomatidae,loxosomella,loxosomella marsypos
+kamptozoa,not assigned,loxosomatida,loxosomatidae,loxosomella,loxosomella harmeri
+kamptozoa,not assigned,loxosomatida,loxosomatidae,loxosomella,loxosomella nitschei
+kamptozoa,not assigned,loxosomatida,loxosomatidae,loxosomella,loxosomella compressa
+kamptozoa,not assigned,loxosomatida,loxosomatidae,loxosomella,loxosomella nordgaardi
+kamptozoa,not assigned,loxosomatida,loxosomatidae,loxosomella,loxosomella discopoda
+kamptozoa,not assigned,loxosomatida,loxosomatidae,loxosomella,loxosomella obesa
+mollusca,cephalopoda,octopoda,octopodidae,octopus,octopus variabilis
+kamptozoa,not assigned,loxosomatida,loxosomatidae,loxosoma,loxosoma significans
+mollusca,aplacophora,cavibelonia,proneomeniidae,dorymenia,dorymenia sarsii
+mollusca,aplacophora,pholidoskepia,macellomeniidae,macellomenia,macellomenia aciculata
+mollusca,aplacophora,cavibelonia,simrothiellidae,plawenia,plawenia argentinensis
+platyhelminthes,turbellaria,acoela,otocelididae,notocelis,notocelis gullmarensis
+platyhelminthes,turbellaria,acoela,haploposthiidae,haploposthia,haploposthia lactomaculata
+platyhelminthes,turbellaria,acoela,paratomellidae,paratomella,paratomella unichaeta
+platyhelminthes,turbellaria,acoela,otocelididae,otocelis,otocelis sandara
+platyhelminthes,turbellaria,acoela,otocelididae,philocelis,philocelis brueggemanni
+mollusca,scaphopoda,gadilida,pulsellidae,pulsellum,no match
+mollusca,gastropoda,sacoglossa,juliidae,julia,julia zebra
+mollusca,gastropoda,sacoglossa,elysiidae,elysia,elysia rufescens
+mollusca,gastropoda,notaspidea,pleurobranchidae,berthella,berthella tupala
+arthropoda,maxillopoda,sessilia,balanidae,megabalanus,megabalanus tulipiformis
+mollusca,gastropoda,heterostropha,architectonicidae,architectonica,architectonica grandiosa
+echinodermata,holothuroidea,elasipodida,deimatidae,deima,deima validum
+arthropoda,malacostraca,isopoda,aegidae,aega,aega novizealandiae
+annelida,polychaeta,aciculata,polynoidae,harmothoe,harmothoe minuta
+gastrotricha,not assigned,macrodasyoidea,thaumastodermatidae,tetranchyroderma,tetranchyroderma swedmarki
+arthropoda,maxillopoda,pedunculata,calanticidae,calantica,calantica kampeni
+arthropoda,maxillopoda,sessilia,pyrgomatidae,cantellius,cantellius gregarius
+mollusca,bivalvia,mytiloida,mytilidae,musculus,no match
+mollusca,bivalvia,ostreoida,ostreidae,striostrea,ostrea parasitica
+arthropoda,maxillopoda,pedunculata,calanticidae,euscalpellum,euscalpellum rostratum
+arthropoda,maxillopoda,sessilia,archaeobalanidae,euacasta,euacasta porata
+arthropoda,malacostraca,decapoda,alpheidae,alpheus,alpheus ochrostriatus
+annelida,polychaeta,aciculata,myzostomidae,notopharyngoides,no match
+mollusca,bivalvia,veneroida,psammobiidae,psammotellina,no match
+mollusca,bivalvia,myoida,teredinidae,lyrodus,no match
+arthropoda,maxillopoda,sessilia,verrucidae,altiverruca,altiverruca quadrangularis
+arthropoda,maxillopoda,pedunculata,scalpellidae,arcoscalpellum,arcoscalpellum sociabile
+mollusca,gastropoda,neotaenioglossa,pickworthiidae,mareleptopoma,mareleptopoma vaubani
+arthropoda,maxillopoda,pedunculata,scalpellidae,smilium,smilium vaubanianum
+mollusca,bivalvia,arcoida,glycymerididae,melaxinaea,no match
+mollusca,bivalvia,ostreoida,pectinidae,annachlamys,no match
+mollusca,bivalvia,ostreoida,pectinidae,cryptopectan,no match
+mollusca,bivalvia,veneroida,cardiidae,vepricardium,no match
+mollusca,bivalvia,veneroida,cardiidae,ctenocardia,no match
+mollusca,bivalvia,veneroida,cardiidae,afrocardium,no match
+porifera,demospongiae,hadromerida,tethyidae,melibe,melibe capucina
+arthropoda,maxillopoda,pedunculata,heteralepadidae,paralepas,paralepas nodulosa
+arthropoda,maxillopoda,pedunculata,poecilasmatidae,glyptelasma,glyptelasma gracile
+arthropoda,maxillopoda,pedunculata,calanticidae,calantica,calantica graphica
+arthropoda,maxillopoda,pedunculata,calanticidae,calantica,calantica trispinosa
+arthropoda,maxillopoda,pedunculata,calanticidae,paracalantica,paracalantica rossi
+arthropoda,maxillopoda,pedunculata,scalpellidae,trianguloscalpellum,trianguloscalpellum balanoides
+arthropoda,maxillopoda,pedunculata,scalpellidae,trianguloscalpellum,trianguloscalpellum hamulus
+arthropoda,maxillopoda,pedunculata,scalpellidae,trianguloscalpellum,diotascalpellum rubrum
+arthropoda,maxillopoda,sessilia,archaeobalanidae,conopea,conopea granulata
+mollusca,gastropoda,neotaenioglossa,siliquariidae,tenagodus,tenagodus cumingii
+mollusca,gastropoda,neotaenioglossa,epitoniidae,epitonium,epitonium aculeatum
+mollusca,gastropoda,neotaenioglossa,epitoniidae,epitonium,epitonium muricatum
+arthropoda,maxillopoda,pedunculata,scalpellidae,annandaleum,annandaleum lambda
+arthropoda,maxillopoda,sessilia,archaeobalanidae,solidobalanus,solidobalanus hawaiensis
+arthropoda,maxillopoda,pedunculata,poecilasmatidae,glyptelasma,glyptelasma gigas
+arthropoda,maxillopoda,sessilia,pyrgomatidae,pyrgopsella,pyrgospongia stellula
+mollusca,gastropoda,neotaenioglossa,pickworthiidae,sansonia,sansonia kirkpatricki
+mollusca,gastropoda,neotaenioglossa,pickworthiidae,microliotia,microliotia koizumii
+mollusca,gastropoda,neotaenioglossa,pickworthiidae,microliotia,microliotia ohashii
+mollusca,gastropoda,neotaenioglossa,pickworthiidae,sansonia,sansonia shigemitsui
+arthropoda,malacostraca,decapoda,epialtidae,naxioides,no match
+arthropoda,maxillopoda,sessilia,pyrgomatidae,savignium,neotrevathana elongata
+annelida,polychaeta,not assigned,paraonidae,allia,allia quadrilobata
+arthropoda,maxillopoda,sessilia,verrucidae,rostratoverruca,rostratoverruca koehleri
+arthropoda,maxillopoda,pedunculata,calanticidae,euscalpellum,euscalpellum squamuliferum
+arthropoda,maxillopoda,pedunculata,heteralepadidae,heteralepas,heteralepas smilius
+arthropoda,maxillopoda,apygophora,trypetesidae,tomlinsonia,tomlinsonia mclaughlinae
+arthropoda,maxillopoda,sessilia,archaeobalanidae,conopea,acasta squamosa
+arthropoda,malacostraca,stomatopoda,squillidae,squilla,no match
+mollusca,bivalvia,pterioida,pinnidae,atrina,no match
+mollusca,bivalvia,veneroida,veneridae,phacosoma,no match
+mollusca,bivalvia,veneroida,tellinidae,merisca,no match
+mollusca,bivalvia,myoida,xylophagidae,neoxylophaga,no match
+mollusca,bivalvia,myoida,teredinidae,austroteredo,no match
+mollusca,bivalvia,veneroida,montacutidae,mysella,rochefortia triangularis
+arthropoda,maxillopoda,pedunculata,calanticidae,calantica,calantica pollicipedoides
+arthropoda,maxillopoda,sessilia,archaeobalanidae,acasta,acasta conica
+mollusca,gastropoda,neotaenioglossa,cerithiidae,bittium,cacozeliana variegata
+mollusca,gastropoda,neotaenioglossa,cerithiidae,bittium,cerithium variegatum
+mollusca,gastropoda,neotaenioglossa,epitoniidae,cycloscala,cycloscala sardellae
+mollusca,gastropoda,caenogastropoda,provannidae,provanna,provanna nassariaeformis
+arthropoda,malacostraca,decapoda,dromiidae,cryptodromiopsis,no match
+gastrotricha,not assigned,macrodasyoidea,thaumastodermatidae,thaumastoderma,thaumastoderma ramuliferum
+hemichordata,enteropneusta,not assigned,harrimaniidae,harrimania,harrimania planktophilus
+annelida,polychaeta,not assigned,capitellidae,scyphoproctus,scyphoproctus aciculatus
+arthropoda,maxillopoda,sessilia,chthamalidae,chthamalus,chthamalus barnesi
+nematoda,secernentea,ascaridida,cucullanidae,cucullanus,cucullanus cyprini
+mollusca,bivalvia,pterioida,isognomonidae,parviperna,no match
+cnidaria,anthozoa,scleractinia,faviidae,echinopora,echinopora grandicula
+mollusca,bivalvia,veneroida,galeommatidae,scintilla,scintilla opalina
+mollusca,bivalvia,veneroida,kelliidae,pseudopythina,no match
+mollusca,bivalvia,veneroida,montacutidae,mysella,no match
+mollusca,bivalvia,arcoida,glycymerididae,barbatia,no match
+mollusca,bivalvia,ostreoida,pectinidae,bractechlamys,no match
+mollusca,bivalvia,veneroida,cardiidae,fragum,no match
+mollusca,bivalvia,veneroida,cardiidae,trigoniocardia,no match
+mollusca,bivalvia,veneroida,cardiidae,clinocardium,no match
+arthropoda,maxillopoda,pedunculata,scalpellidae,arcoscalpellum,arcoscalpellum pertosum
+arthropoda,maxillopoda,sessilia,archaeobalanidae,chirona,no match
+arthropoda,maxillopoda,pedunculata,calanticidae,euscalpellum,euscalpellum stratum
+arthropoda,maxillopoda,pedunculata,poecilasmatidae,glyptelasma,glyptelasma annandalei
+mollusca,bivalvia,veneroida,veneridae,gomphina,no match
+mollusca,bivalvia,pterioida,malleidae,malleus,no match
+mollusca,bivalvia,veneroida,psammobiidae,gobraeus,no match
+mollusca,bivalvia,veneroida,psammobiidae,sanguinolaria,no match
+arthropoda,maxillopoda,pedunculata,poecilasmatidae,octolasmis,no match
+arthropoda,malacostraca,tanaidacea,cryptocopidae,cryptocopoides,cryptocopoides arcticus
+gastrotricha,not assigned,macrodasyoidea,thaumastodermatidae,tetranchyroderma,tetranchyroderma papii
+gastrotricha,not assigned,chaetonotoidea,chaetonotidae,chaetonotus,chaetonotus (chaetonotus) aegilonensis
+gastrotricha,not assigned,chaetonotoidea,chaetonotidae,chaetonotus,chaetonotus (chaetonotus) apechochaetus
+gastrotricha,not assigned,chaetonotoidea,chaetonotidae,chaetonotus,chaetonotus (hystricochaetonotus) lacunosus
+gastrotricha,not assigned,chaetonotoidea,xenotrichulidae,xenotrichula,xenotrichula punctata
+gastrotricha,not assigned,macrodasyoidea,dactylopodolidae,dactylopodola,dactylopodola mesotyphle
+gastrotricha,not assigned,macrodasyida,cephalodasyidae,mesodasys,mesodasys adenotubulatus
+gastrotricha,not assigned,macrodasyoidea,thaumastodermatidae,pseudostomella,pseudostomella etrusca
+gastrotricha,not assigned,macrodasyoidea,thaumastodermatidae,ptychostomella,ptychostomella tyrrhenica
+gastrotricha,not assigned,macrodasyoidea,thaumastodermatidae,tetranchyroderma,tetranchyroderma heterotubulatum
+gastrotricha,not assigned,macrodasyoidea,thaumastodermatidae,tetranchyroderma,tetranchyroderma polyprobolostomum
+gastrotricha,not assigned,chaetonotoidea,chaetonotidae,halichaetonotus,halichaetonotus decipiens
+mollusca,gastropoda,archaeogastropoda,orbitestellidae,lurifax,lurifax vitreus
+gastrotricha,not assigned,chaetonotoidea,chaetonotidae,halichaetonotus,halichaetonotus marivagus
+gastrotricha,not assigned,macrodasyoidea,thaumastodermatidae,tetranchyroderma,tetranchyroderma quadritentaculatum
+gastrotricha,not assigned,macrodasyoidea,thaumastodermatidae,tetranchyroderma,tetranchyroderma thysanophorum
+gastrotricha,not assigned,macrodasyoidea,thaumastodermatidae,thaumastoderma,thaumastoderma mediterraneum
+platyhelminthes,turbellaria,acoela,sagittiferidae,symsagittifera,symsagittifera corsicae
+arthropoda,pycnogonida,pantopoda,callipallenidae,bradypallene,bradypallene espina
+gastrotricha,not assigned,macrodasyoidea,thaumastodermatidae,tetranchyroderma,tetranchyroderma hirtum
+gastrotricha,not assigned,macrodasyoidea,turbanellidae,paraturbanella,paraturbanella aggregotubulata
+gastrotricha,not assigned,macrodasyoidea,thaumastodermatidae,platydasys,oregodasys maximus
+gastrotricha,not assigned,macrodasyoidea,thaumastodermatidae,platydasys,oregodasys ocellatus
+gastrotricha,not assigned,macrodasyoidea,dactylopodolidae,dactylopodola,dactylopodola cornuta
+gastrotricha,not assigned,macrodasyoidea,thaumastodermatidae,tetranchyroderma,tetranchyroderma tribolosum
+loricifera,not assigned,nanaloricida,pliciloricidae,rugiloricus,rugiloricus cauliculus
+kamptozoa,not assigned,loxosomatida,loxosomatidae,loxosomella,loxosomella similis
+kamptozoa,not assigned,loxosomatida,loxosomatidae,loxosomella,loxosomella fauveli
+kamptozoa,not assigned,loxosomatida,loxosomatidae,loxosoma,loxosoma agile
+platyhelminthes,turbellaria,acoela,childiidae,childia,childia vivipara
+nemertea,enopla,hoplonemertea,tetrastemmatidae,tetrastemma,quasitetrastemma bicolor
+mollusca,aplacophora,pholidoskepia,lepidomeniidae,tegulaherpia,tegulaherpia myodoryata
+mollusca,gastropoda,neotaenioglossa,cerithiidae,cerithiella,cerithiella amblytera
+arthropoda,maxillopoda,pedunculata,calanticidae,euscalpellum,euscalpellum renei
+arthropoda,malacostraca,isopoda,stenetriidae,hansenium,stenetriidae incertae sedis expansum
+arthropoda,ostracoda,podocopida,trachyleberididae,venericythere,venericythere darwini
+echinodermata,ophiuroidea,ophiurida,ophiuridae,ophiomastus,ophiomastus tegulitius
+mollusca,gastropoda,caenogastropoda,provannidae,desbruyeresia,desbruyeresia spinosa
+mollusca,bivalvia,myoida,teredinidae,nausitora,nausitora aurita
+mollusca,bivalvia,arcoida,arcidae,acar,no match
+arthropoda,maxillopoda,pedunculata,scalpellidae,trianguloscalpellum,trianguloscalpellum annandalei
+mollusca,gastropoda,neotaenioglossa,pickworthiidae,sansonia,sansonia alisonae
+arthropoda,malacostraca,amphipoda,iciliidae,icilius,icilius caledoniana
+echinodermata,asteroidea,valvatida,asteropseidae,asteropsis,asteropsis lissoterga
+mollusca,gastropoda,sacoglossa,caliphyllidae,polybranchia,polybranchia westralis
+mollusca,gastropoda,heterostropha,acteonidae,obrussena,obrussena bracteata
+gnathostomulida,not assigned,filospermoidea,pterognathiidae,pterognathia,pterognathia ctenifera
+arthropoda,pycnogonida,pantopoda,callipallenidae,safropallene,safropallene longimana
+priapulida,priapulomorpha,not assigned,priapulidae,priapulopsis,priapulopsis australis
+mollusca,gastropoda,sacoglossa,elysiidae,elysia,thuridilla moebii
+arthropoda,maxillopoda,pedunculata,scalpellidae,catherinum,catherinum recurvitergum
+arthropoda,maxillopoda,sessilia,verrucidae,metaverruca,metaverruca trisulcata
+mollusca,gastropoda,sacoglossa,elysiidae,elysia,elysia furvacauda
+mollusca,gastropoda,sacoglossa,stiligeridae,aplysiopsis,aplysiopsis formosa
+mollusca,gastropoda,sacoglossa,stiligeridae,ercolania,ercolania margaritae
+mollusca,gastropoda,nudibranchia,discodorididae,discodoris,discodoris paroa
+porifera,calcarea,leucosolenida,leucosoleniidae,leucosolenia,no match
+mollusca,aplacophora,pholidoskepia,lepidomeniidae,tegulaherpia,tegulaherpia tasmanica
+arthropoda,maxillopoda,sessilia,chionelasmatidae,chionelasmus,chionelasmus crosnieri
+annelida,polychaeta,canalipalpata,sabellariidae,bathysabellaria,bathysabellaria spinifera
+mollusca,gastropoda,neotaenioglossa,epitoniidae,gregorioiscala,gregorioiscala barazeri
+mollusca,gastropoda,neotaenioglossa,cerithiopsidae,prolixodens,prolixodens crassa
+mollusca,bivalvia,pholadomyoida,thraciidae,parvithracia,parvithracia melchior
+mollusca,bivalvia,pholadomyoida,cuspidariidae,austroneaera,austroneaera tangaroa
+gnathostomulida,not assigned,bursovaginoidea,austrognathiidae,austrognathia,austrognathia christianae
+mollusca,gastropoda,not assigned,newtoniellidae,marshallaskeya,retilaskeya elegantula
+mollusca,gastropoda,neotaenioglossa,cerithiopsidae,mendax,mendax trizonaloides
+mollusca,gastropoda,neotaenioglossa,cerithiopsidae,mendax,mendax hebetatus
+mollusca,gastropoda,neotaenioglossa,cerithiopsidae,aliptina,aliptina acheronae
+mollusca,gastropoda,neotaenioglossa,cerithiopsidae,cerithiopsidella,cerithiopsidella blacki
+mollusca,gastropoda,neotaenioglossa,triphoridae,joculator,joculator sublima
+mollusca,gastropoda,neotaenioglossa,cerithiopsidae,seila,seila maoria
+mollusca,gastropoda,neotaenioglossa,cerithiopsidae,seila,seila dilecta
+mollusca,gastropoda,neotaenioglossa,cerithiopsidae,seila,seila regia
+mollusca,bivalvia,pholadomyoida,thraciidae,parvithracia,parvithracia suteri
+mollusca,gastropoda,neotaenioglossa,cerithiopsidae,horologica,horologica cowei
+chordata,cephalochordata,not assigned,branchiostomidae,epigonichthys,epigonichthys hectori
+mollusca,bivalvia,pholadomyoida,parilimyidae,parilimya,parilimya neozelanica
+mollusca,gastropoda,vetigastropoda,chilodontidae,brookula,brookula powelli
+mollusca,gastropoda,neotaenioglossa,cerithiopsidae,cerithiella,cerithiella astrolabiensis
+mollusca,bivalvia,pholadomyoida,thraciidae,parvithracia,parvithracia fragilissima
+mollusca,bivalvia,pholadomyoida,cuspidariidae,pseudoneaera,pseudoneaera wellmani
+mollusca,gastropoda,neotaenioglossa,cerithiopsidae,mendax,mendax trizonalis
+mollusca,aplacophora,cavibelonia,proneomeniidae,dorymenia,dorymenia quincarinata
+mollusca,bivalvia,pholadomyoida,thraciidae,asthenothaerus,asthenothaerus maxwelli
+mollusca,bivalvia,pholadomyoida,cuspidariidae,austroneaera,austroneaera brooki
+mollusca,gastropoda,neotaenioglossa,cerithiidae,cerithiella,cerithiella nucleoproducta
+mollusca,gastropoda,neotaenioglossa,epitoniidae,asperiscala,epitonium eltanini
+arthropoda,maxillopoda,pedunculata,scalpellidae,litoscalpellum,litoscalpellum aurorae
+mollusca,aplacophora,sterrofustia,phyllomeniidae,ocheyoherpia,ocheyoherpia lituifera
+mollusca,gastropoda,gasorder,tjaernoeidae,tjaernoeia,tjaernoeia michaeli
+mollusca,aplacophora,cavibelonia,pararrhopaliidae,metamenia,metamenia triglandulata
+arthropoda,pycnogonida,pantopoda,ammotheidae,boehmia,boehmia dubia
+arthropoda,maxillopoda,pedunculata,scalpellidae,weltnerium,weltnerium bouvieri
+mollusca,aplacophora,cavibelonia,proneomeniidae,dorymenia,dorymenia usarpi
+mollusca,bivalvia,pholadomyoida,cuspidariidae,octoporia,octoporia octaporosa
+mollusca,aplacophora,neomeniamorpha,neomeniidae,neomenia,neomenia herwigi
+annelida,polychaeta,phyllodocida,syllidae,opisthodonta,no match
+annelida,polychaeta,not assigned,paraonidae,acmira,aricidea (acmira) philbinae
+annelida,polychaeta,not assigned,paraonidae,acmira,aricidea (acmira) taylori
+annelida,polychaeta,not assigned,paraonidae,allia,aricidea (strelzovia) suecica
+annelida,polychaeta,not assigned,paraonidae,cirrophorus,paradoneis perdidoensis
+annelida,polychaeta,not assigned,paraonidae,cirrophorus,paradoneis perkinsi
+annelida,polychaeta,not assigned,scalibregmatidae,sclerocheilus,sclerocheilus unoculus
+mollusca,bivalvia,myoida,corbulidae,caryocorbula,no match
+mollusca,gastropoda,heterostropha,pyramidellidae,turbonilla,asmunda turrita
+mollusca,gastropoda,heterostropha,pyramidellidae,turbonilla,turbonilla brasiliensis
+mollusca,gastropoda,neotaenioglossa,cerithiopsidae,cerithiopsis,cerithiopsis balaustium
+mollusca,gastropoda,neotaenioglossa,cerithiopsidae,cerithiopsis,cerithiopsis capixaba
+mollusca,bivalvia,ostreoida,ostreidae,crassostrea,crassostrea guyanensis
+mollusca,gastropoda,heterostropha,pyramidellidae,eulimella,eulimella rudis
+annelida,polychaeta,not assigned,paraonidae,acmira,aricidea (acmira) simplex
+mollusca,bivalvia,pholadomyoida,verticordiidae,spinosipella,spinosipella agnes
+cnidaria,hydrozoa,anthoathecata,bougainvilliidae,lizzia,lizzia alvarinoae
+arthropoda,malacostraca,isopoda,desmosomatidae,disparella,no match
+echinodermata,holothuroidea,aspidochirotida,synallactidae,hansenothuria,hansenothuria benti
+mollusca,gastropoda,neotaenioglossa,pickworthiidae,microliotia,microliotia alvanioides
+arthropoda,malacostraca,decapoda,xanthidae,rata,rata tuamotense
+arthropoda,maxillopoda,sessilia,chthamalidae,jehlius,jehlius cirratus
+echinodermata,crinoidea,comatulida,comasteridae,comanthoides,comatulidae incertae sedis gillstromi
+mollusca,gastropoda,heterostropha,pyramidellidae,eulimella,turbonilla argentina
+mollusca,gastropoda,neotaenioglossa,velutinidae,lamellaria,lamellaria ampla
+cnidaria,anthozoa,actiniaria,actiniidae,bunodactis,bunodactis hermafroditica
+arthropoda,malacostraca,isopoda,stenetriidae,tenupedunculus,stenetriidae incertae sedis beddardi
+arthropoda,malacostraca,isopoda,stenetriidae,tenupedunculus,stenetriidae incertae sedis dentimanum
+mollusca,gastropoda,heterostropha,acteonidae,neactaeonina,neactaeonina cingulata
+gnathostomulida,not assigned,bursovaginoidea,austrognathiidae,austrognatharia,austrognatharia medusifera
+arthropoda,maxillopoda,sessilia,verrucidae,altiverruca,altiverruca erecta
+mollusca,gastropoda,neogastropoda,muricidae,panamurex,no match
+mollusca,bivalvia,veneroida,veneridae,transennella,transennella caboblanquensis
+mollusca,gastropoda,neogastropoda,muricidae,dermomurex,dermomurex abyssicola
+mollusca,bivalvia,pholadomyoida,cuspidariidae,myonera,myonera gigantea
+mollusca,gastropoda,neotaenioglossa,triphoridae,strobiligera,strobiligera filata
+porifera,hexactinellida,hexactinosida,euretidae,myliusia,myliusia seriata
+mollusca,bivalvia,pholadomyoida,cuspidariidae,cardiomya,cardiomya alternata
+cnidaria,hydrozoa,anthoathecata,corynidae,sarsia,sarsia angulata
+platyhelminthes,turbellaria,acoela,proporidae,proporus,proporus carolinensis
+gnathostomulida,not assigned,bursovaginoidea,agnathiellidae,agnathiella,agnathiella beckeri
+gnathostomulida,not assigned,bursovaginoidea,onychognathiidae,nanognathia,nanognathia exigua
+gnathostomulida,not assigned,bursovaginoidea,onychognathiidae,onychognathia,onychognathia filifera
+arthropoda,maxillopoda,akentrogonida,thompsoniidae,thylacoplethus,thylacoplethus cubensis
+mollusca,gastropoda,neotaenioglossa,triphoridae,triphora,triphora abacoensis
+mollusca,gastropoda,neotaenioglossa,epitoniidae,eccliseogyra,eccliseogyra performosa
+mollusca,gastropoda,neotaenioglossa,epitoniidae,gregorioiscala,gregorioiscala pachya
+loricifera,not assigned,nanaloricida,pliciloricidae,pliciloricus,pliciloricus dubius
+loricifera,not assigned,nanaloricida,pliciloricidae,pliciloricus,pliciloricus enigmaticus
+loricifera,not assigned,nanaloricida,pliciloricidae,pliciloricus,pliciloricus orphanus
+loricifera,not assigned,nanaloricida,pliciloricidae,pliciloricus,pliciloricus profundus
+loricifera,not assigned,nanaloricida,pliciloricidae,rugiloricus,rugiloricus carolinensis
+mollusca,gastropoda,cephalaspidea,diaphanidae,diaphana,diaphana lottae
+mollusca,gastropoda,neotaenioglossa,rissoidae,rissoina,opalia pumilio
+arthropoda,maxillopoda,sessilia,verrucidae,costatoverruca,costatoverruca floridana
+cnidaria,hydrozoa,leptothecata,haleciidae,halecium,halecium capillare
+gastrotricha,not assigned,macrodasyoidea,thaumastodermatidae,pseudostomella,pseudostomella plumosa
+gastrotricha,not assigned,macrodasyoidea,thaumastodermatidae,tetranchyroderma,tetranchyroderma bunti
+gastrotricha,not assigned,macrodasyoidea,turbanellidae,turbanella,turbanella ocellata
+mollusca,aplacophora,pholidoskepia,meiomeniidae,meiomenia,meiomenia arenicola
+gastrotricha,not assigned,macrodasyoidea,thaumastodermatidae,tetranchyroderma,tetranchyroderma paradoxum
+arthropoda,maxillopoda,pedunculata,scalpellidae,amigdoscalpellum,amigdoscalpellum semisculptum
+arthropoda,maxillopoda,pedunculata,poecilasmatidae,dichelaspis,dichelaspis thieli
+arthropoda,maxillopoda,sessilia,verrucidae,metaverruca,metaverruca aequalis
+platyhelminthes,turbellaria,polycladida,euryleptidae,eurylepta,eurylepta californica
+platyhelminthes,turbellaria,polycladida,pseudoceritidae,pseudoceros,pseudoceros luteus
+platyhelminthes,turbellaria,acoela,isodiametridae,isodiametra,isodiametra hortulus
+platyhelminthes,turbellaria,acoela,isodiametridae,aphanostoma,aphanostoma bruscai
+echinodermata,echinoidea,spatangoida,pourtalesiidae,ceratophysa,no match
+gastrotricha,not assigned,macrodasyida,cephalodasyidae,mesodasys,mesodasys brittanica
+mollusca,gastropoda,patellogastropoda,lepetidae,iothia,piliscus commodus
+cnidaria,hydrozoa,leptothecata,sertulariidae,abietinaria,abietinaria turgida
+gastrotricha,not assigned,macrodasyoidea,thaumastodermatidae,tetranchyroderma,tetranchyroderma faroense

@@ -1,0 +1,622 @@
+###################################
+### Helper functions in general ###
+###################################
+here_anx <- function(f = '') { 
+  ### create file path to git-annex dir for project
+  f_anx <- sprintf('/home/shares/ohi/spp_vuln/spp_vuln_mapping/%s', f)
+}
+
+#####################################
+### Helper functions for AquaMaps ###
+#####################################
+
+am_dir <- '/home/shares/ohi/spp_vuln/aquamaps_2021'
+get_am_spp_info <- function() {
+  ### resolves AquaMaps species names according to WoRMS classification,
+  ### drops subspp names
+  am_spp_resolve <- read_csv(here('_data/worms_taxa/aquamaps_aphia_records.csv'))
+  
+  spp_info <- data.table::fread(file.path(am_dir, 'ver10_2019_speciesoccursum_iucn.csv')) %>%
+    janitor::clean_names() %>%
+    rename(am_sid = species_id, iucn_sid = iucn_id, comname = f_bname) %>%
+    mutate(am_sciname = tolower(paste(genus, species))) %>%
+    full_join(am_spp_resolve, by = 'am_sciname') %>%
+    mutate(sciname = ifelse(is.na(valid_name), am_sciname, valid_name)) %>%
+    mutate(sciname = case_when(str_detect(sciname, 'incertae sedis') ~ sciname,
+                               str_detect(sciname, ' var\\.') ~ str_remove(sciname, ' var\\. .+'),
+                               str_detect(sciname, '\\(|\\)') ~ str_extract(sciname, '[^ ]+ \\(.+?\\) [^ ]+'),
+                               TRUE ~ str_extract(sciname, '[^ ]+ [^ ]+')))
+  
+  return(spp_info)
+}
+
+get_am_spp_envelopes <- function() {
+  env_file <- file.path(am_dir, 'species_envelope_summary.csv')
+  
+  ### create a tidy summary of environmental envelopes
+  # if(!file.exists) { ### create from scratch
+  #   env_info <- data.table::fread(file.path(am_dir, 'ver10_2019_hspen.csv')) %>%
+  #     janitor::clean_names() %>%
+  #     rename(am_sid = species_id)
+  #   
+  #   params <- c('depth', 'temp', 'salinity', 'prim_prod', 'ice_con', 'oxy', 'land_dist')
+  #   prm_or <- paste0(params, collapse = '|')
+  #   dist_vals <- c('min', 'pref_min', 'mean', 'pref_max', 'max')
+  #   env_sum_df <- env_info %>%
+  #     rename(depth_mean = mean_depth) %>%
+  #     select(am_sid, contains(params)) %>%
+  #     gather(param_full, value, -am_sid) %>%
+  #     mutate(param = str_extract(param_full, prm_or),
+  #            dist = str_replace(param_full, paste0('(', prm_or, ')_'), '')) %>%
+  #     select(-param_full) %>%
+  #     spread(dist, value) %>%
+  #     filter(yn == 1) %>%
+  #     select(-yn) %>%
+  #     gather(dist, value, -am_sid, -param) %>%
+  #     mutate(dist = factor(dist, levels = dist_vals),
+  #            value = ifelse(param == 'depth', log10(value + 1), value),
+  #            param = ifelse(param == 'depth', 'log10_depth', param))
+  #   
+  #   write_csv(env_sum_df, env_file)
+  # }
+  return(read_csv(env_file))
+}
+
+get_hcaf_info <- function() {
+  hcaf_info <- data.table::fread(file.path(am_dir, 'hcaf_v7.csv')) %>%
+    janitor::clean_names() %>%
+    mutate(across(where(is.numeric), ~ ifelse(.x == -9999, NA, .x)))
+  return(hcaf_info)
+}
+
+get_hcaf_rast <- function() {
+  rast_base <- raster::raster(ext = raster::extent(c(-180, 180, -90, 90)), 
+                              resolution = 0.5, crs = '+init=epsg:4326') %>%
+    raster::setValues(1:raster::ncell(.))
+  return(rast_base)
+}
+
+map_to_hcaf <- function(df, by = 'loiczid', which, xfm = NULL) {
+  if(!by %in% names(df)) stop('Dataframe needs a valid column for "by" (e.g., loiczid)!')
+  if(!which %in% names(df)) stop('Dataframe needs a valid column for "which" (e.g., n_spp)!')
+  if(any(is.na(df[[by]]))) stop('Dataframe contains NA values for "by"!')
+  
+  r_base <- get_hcaf_rast()
+  
+  out_rast <- raster::subs(x = r_base, y = df, 
+                           by = by, which = which)
+  
+  if(!is.null(xfm)) {
+    if(class(xfm) != 'function') stop('xfm argument must be a function!')
+    out_rast <- xfm(out_rast)
+  }
+  return(out_rast)
+}
+
+get_am_spp_cells <- function(occurcells_cut = 10, prob_cut = 0) {
+  
+  spp_cell_file <- file.path(am_dir, 'hcaf_species_native_clean.csv')
+  
+  ### create a cleaner version  of spp native file for speed and size!
+  # if(!file.exists(spp_cell_file)) {
+  #   csq_loiczid <- get_hcaf_info() %>%
+  #     select(loiczid, csquare_code) %>%
+  #     distinct()
+  #   spp_cells <- data.table::fread(file.path(am_dir, 'hcaf_species_native.csv')) %>%
+  #     janitor::clean_names() %>%
+  #     left_join(csq_loiczid) %>%
+  #     select(am_sid = species_id, loiczid, prob = probability) %>%
+  #     distinct()
+  # 
+  #   write_csv(spp_cells, spp_cell_file)
+  # }
+  
+  spp_cells <- data.table::fread(spp_cell_file) 
+  
+  if(occurcells_cut > 0) {
+    spp_valid <- get_am_spp_info() %>%
+      filter(occur_cells >= occurcells_cut) %>%
+      dplyr::select(am_sid, sciname)
+    spp_cells <- spp_cells %>%
+      filter(am_sid %in% spp_valid$am_sid)
+  }
+  if(prob_cut > 0) {
+    spp_cells <- spp_cells %>%
+      filter(prob >=  prob_cut)
+  }
+  return(spp_cells)
+}
+
+#####################################################
+###    Helper functions for vulnerability data    ###
+#####################################################
+get_spp_vuln <- function() {
+  vuln_tx <- data.table::fread(here('_data/vuln_data/vuln_gapfilled_tx.csv'))
+  vuln_score <- data.table::fread(here('_data/vuln_data/vuln_gapfilled_score.csv')) %>%
+    gather(stressor, score, -vuln_gf_id)
+  vuln_sd <- data.table::fread(here('_data/vuln_data/vuln_gapfilled_sd.csv')) %>%
+    gather(stressor, sd_score, -vuln_gf_id)
+  vuln_df <- vuln_tx %>%
+    full_join(vuln_score, by = c('vuln_gf_id')) %>%
+    full_join(vuln_sd,    by = c('vuln_gf_id', 'stressor')) %>%
+    dplyr::select(-vuln_gf_id)
+  return(vuln_df)
+}
+
+#####################################################
+### Helper functions for FishBase and SeaLifeBase ###
+#####################################################
+get_fb_slb <- function(fxn = species, 
+                       keep_cols = NULL, keep_fxn = contains, 
+                       drop_cols = NULL, drop_fxn = all_of) {
+  fb <- fxn(server = 'fishbase') %>%
+    janitor::clean_names() %>%
+    mutate(db = 'fb')
+  slb <- fxn(server = 'sealifebase') %>%
+    janitor::clean_names() %>%
+    mutate(db = 'slb')
+  if(!is.null(keep_cols)) {
+    fb <- fb %>%
+      dplyr::select(spec_code, species, db, keep_fxn(keep_cols))
+    slb <- slb %>%
+      dplyr::select(spec_code, species, db, keep_fxn(keep_cols))
+  }
+  if(!is.null(drop_cols)) {
+    fb <- fb %>%
+      dplyr::select(-drop_fxn(drop_cols))
+    slb <- slb %>%
+      dplyr::select(-drop_fxn(drop_cols))
+  }
+  ### sometimes class of a column from one server mismatches that of the other.
+  ### This should only be a problem for character vs. numeric - i.e.,
+  ### not a problem for numeric vs. integer
+  cols_check <- data.frame(
+    type_fb = sapply(fb, class),
+    col = names(fb)) %>%
+    inner_join(data.frame(
+      type_slb = sapply(slb, class),
+      col = names(slb))) %>%
+    filter(type_fb != type_slb) %>%
+    filter(type_fb == 'character' | type_slb == 'character')
+  if(nrow(cols_check) > 0) {
+    message('Conflicting column types; coercing all to character:')
+    message(cols_check)
+    fb <- fb %>%
+      mutate(across(all_of(cols_check$col), as.character))
+    slb <- slb %>%
+      mutate(across(all_of(cols_check$col), as.character))
+  }
+  
+  return(bind_rows(fb, slb) %>% mutate(species = tolower(species)))
+}
+
+#################################################
+### function for downstream direct match fill ###
+#################################################
+
+downfill <- function(df) {
+  x <- data.table::fread(here_anx('vuln_post_gapfill/vuln_gapfilled_all_tx.csv')) %>%
+    dplyr::select(-vuln_gf_id) %>%
+    filter_dupe_spp(level = 'class')
+  
+  ranks <- c('species', 'genus', 'family', 'order', 'class')
+  
+  rank_list <- vector('list', length = length(ranks)) %>%
+    setNames(ranks)
+  for(rank in ranks) { ### rank <- ranks[2]
+    xx <- x %>%
+      filter(match_rank == rank)
+    y <- df %>%
+      right_join(xx, by = c('spp_gp' = rank, 'taxon')) %>%
+      mutate(!!rank := .data[['spp_gp']])
+    rank_list[[rank]] <- y
+  }
+  rank_df <- bind_rows(rank_list) %>%
+    dplyr::select(taxon, spp_gp, # category, 
+           class, order, family, genus, species, 
+           gapfill, match_rank, everything())
+  
+  return(rank_df)
+}
+
+################################################
+### function for upstream/downstream gapfill ###
+################################################
+gapfill_up_down <- function(df, col) {
+  ### gf_level: 
+  ### 1 = match/species, 2 = genus, 3 = family, 4 = order, 5 = class
+  
+  col_sd   <- paste(col, 'sd', sep = '_')
+  col_nspp <- paste(col, 'nspp', sep = '_')
+  
+  if(!'kingdom' %in% names(df)) df$kingdom <- NA_character_
+  if(!'phylum' %in% names(df)) df$phylum <- NA_character_
+  if(!'db' %in% names(df)) df$db <- 'worms'
+  if(!'spec_code' %in% names(df)) df$spec_code <- NA_real_
+  df_tmp <- df %>%
+    mutate(tmp = .data[[col]])
+  gf_genus <- df_tmp %>%
+    group_by(kingdom, phylum, class, order, family, genus) %>%
+    summarize(across(matches('tmp'),
+                     .fns = list(g_mean = ~mean(.x, na.rm = TRUE),
+                                 g_sd   = ~sd(.x, na.rm = TRUE),
+                                 g_cov  = ~sd(.x, na.rm = TRUE) / mean(.x, na.rm = TRUE),
+                                 g_nspp = ~sum(!is.na(.x))),
+                     na.rm = TRUE, .names = '{.fn}_{.col}'),
+              .groups = 'drop')
+  gf_family <- df_tmp %>%
+    group_by(kingdom, phylum, class, order, family) %>%
+    summarize(across(matches('tmp'),
+                     .fns = list(f_mean = ~mean(.x, na.rm = TRUE),
+                                 f_sd   = ~sd(.x, na.rm = TRUE),
+                                 f_cov  = ~sd(.x, na.rm = TRUE) / mean(.x, na.rm = TRUE),
+                                 f_nspp = ~sum(!is.na(.x))),
+                     na.rm = TRUE, .names = '{.fn}_{.col}'),
+              .groups = 'drop')
+  gf_order <- df_tmp %>%
+    group_by(kingdom, phylum, class, order) %>%
+    summarize(across(matches('tmp'),
+                     .fns = list(o_mean = ~mean(.x, na.rm = TRUE),
+                                 o_sd   = ~sd(.x, na.rm = TRUE),
+                                 o_cov  = ~sd(.x, na.rm = TRUE) / mean(.x, na.rm = TRUE),
+                                 o_nspp = ~sum(!is.na(.x))),
+                     na.rm = TRUE, .names = '{.fn}_{.col}'),
+              .groups = 'drop')
+  gf_class <- df_tmp %>%
+    group_by(kingdom, phylum, class) %>%
+    summarize(across(matches('tmp'),
+                     .fns = list(c_mean = ~mean(.x, na.rm = TRUE),
+                                 c_sd   = ~sd(.x, na.rm = TRUE),
+                                 c_cov  = ~sd(.x, na.rm = TRUE) / mean(.x, na.rm = TRUE),
+                                 c_nspp = ~sum(!is.na(.x))),
+                     na.rm = TRUE, .names = '{.fn}_{.col}'),
+              .groups = 'drop')
+  
+  df_gf_all <- df_tmp %>%
+    left_join(gf_genus) %>%
+    left_join(gf_family) %>%
+    left_join(gf_order) %>%
+    left_join(gf_class) %>%
+    dplyr::select(-all_of(col)) %>%
+    mutate(gf_level = case_when(!is.na(tmp) ~ 1,
+                                !is.na(g_mean_tmp) ~ 2,
+                                !is.na(f_mean_tmp) ~ 3,
+                                !is.na(o_mean_tmp) ~ 4,
+                                !is.na(c_mean_tmp) ~ 5,
+                                TRUE ~ NA_real_)) %>%
+    mutate(value = case_when(gf_level == 1  ~ tmp,
+                             gf_level == 2  ~ g_mean_tmp,
+                             gf_level == 3 ~ f_mean_tmp,
+                             gf_level == 4  ~ o_mean_tmp,
+                             gf_level == 5  ~ c_mean_tmp,
+                             TRUE ~ NA_real_)) %>%
+    mutate(sd = case_when(gf_level == 1  ~ NA_real_,
+                          gf_level == 2  ~ g_sd_tmp,
+                          gf_level == 3 ~ f_sd_tmp,
+                          gf_level == 4  ~ o_sd_tmp,
+                          gf_level == 5  ~ c_sd_tmp,
+                          TRUE ~ NA_real_)) %>%
+    mutate(nspp = case_when(gf_level == 1  ~ NA_integer_,
+                            gf_level == 2  ~ g_nspp_tmp,
+                            gf_level == 3 ~ f_nspp_tmp,
+                            gf_level == 4  ~ o_nspp_tmp,
+                            gf_level == 5  ~ c_nspp_tmp,
+                            TRUE ~ NA_integer_)) %>%
+    ungroup() %>%
+    mutate(trait = col) %>%
+    dplyr::select(db, spec_code, 
+           kingdom, phylum, class, order, family, genus, species, 
+           trait, value, sd, nspp, gf_level) %>%
+    distinct()
+  
+  return(df_gf_all)
+}
+
+
+###################################################################
+### assemble overall species taxonomy from extracted WoRMS data ###
+###################################################################
+assemble_worms <- function(aspect = 'wide', seabirds_only = TRUE, am_patch = TRUE) {
+  ### Note: this drops all kingdoms but Animalia 
+  
+  p_from_k <- read_csv(here('_data/worms_taxa', 
+                            'expand1_phylum_from_kingdom_worms.csv'), 
+                       col_types = c(id = 'i')) %>%
+    filter(!is.na(id))
+  c_from_p <- read_csv(here('_data/worms_taxa', 
+                            'expand2_class_from_phylum_worms.csv'), 
+                       col_types = c(id = 'i')) %>%
+    filter(!is.na(id))
+  o_from_c <- read_csv(here('_data/worms_taxa', 
+                            'expand3_order_from_class_worms.csv'), 
+                       col_types = c(id = 'i')) %>%
+    filter(!is.na(id))
+  f_from_o <- read_csv(here('_data/worms_taxa', 
+                            'expand4_family_from_order_worms.csv'), 
+                       col_types = c(id = 'i')) %>%
+    filter(!is.na(id))
+  g_from_f <- read_csv(here('_data/worms_taxa', 
+                            'expand5_genus_from_family_worms.csv'), 
+                       col_types = c(id = 'i')) %>%
+    filter(!is.na(id))
+  s_from_g <- read_csv(here('_data/worms_taxa', 
+                            'expand6_species_from_genus_worms.csv'), 
+                       col_types = c(id = 'i')) %>%
+    filter(!is.na(id))
+  
+  if(am_patch) {
+    am_patch_wide <- read_csv(here('_data/worms_taxa',
+                                   'expand7_aquamaps_patch.csv'),
+                              col_types = cols(.default = 'c')) %>%
+      distinct() %>% 
+      mutate(source = 'am')
+  } else {
+    am_patch_wide <- data.frame(source = 'am') ### blank dataframe for bind_rows
+  }
+  
+  rank_lvls <- c('kingdom', 'phylum', 'class', 'order', 'family', 'genus', 'species')
+  
+  ### create wide for complete classification for each species
+  spp_wide <- s_from_g %>%
+    select(genus = parent, species = name) %>%
+    left_join(g_from_f %>% select(family = parent, genus = name), 
+              by = c('genus')) %>%
+    left_join(f_from_o %>% select(order = parent, family = name), 
+              by = c('family')) %>%
+    left_join(o_from_c %>% select(class = parent, order = name), 
+              by = c('order')) %>%
+    left_join(c_from_p %>% select(phylum = parent, class = name), 
+              by = c('class')) %>%
+    left_join(p_from_k %>% select(kingdom = parent, phylum = name),
+              by = c('phylum')) %>%
+    select(phylum, class, order, family, genus, species) %>%
+    mutate(source = 'worms') %>%
+    bind_rows(am_patch_wide) %>%
+    filter(phylum %in% p_from_k$name) %>%
+    ### since p_from_k only includes Animalia, this phylum selection drops
+    ### AquaMaps non-animalia phyla, e.g., chlorophytes, cyanobacteria, plants
+    distinct()
+  
+  spp_wide_disambiguated <- disambiguate_species(spp_wide)
+  
+  spp_wide_am_resolved <- resolve_am_disputes(spp_wide_disambiguated)
+  
+  ### disambiguate "not assigned" - these appear at order and class levels; 
+  ### this would only matter when doing upstream/downstream imputation at 
+  ### order/class levels...
+  spp_df <- spp_wide_am_resolved %>%
+    mutate(class = ifelse(class == 'not assigned', paste(phylum, 'not assigned'), class),
+           order = ifelse(order == 'not assigned', paste(class, 'not assigned'), order))
+  
+  
+  if(seabirds_only == TRUE) {
+    seabird_list <- readxl::read_excel(here('_raw/species_numbers.xlsx'),
+                                       sheet = 'seabirds', skip = 1) %>%
+      janitor::clean_names() %>%
+      select(spp = scientific_name_fixed) %>%
+      filter(!is.na(spp)) %>%
+      mutate(spp = tolower(spp) %>% str_trim) %>%
+      .$spp
+    spp_df <- spp_df %>%
+      filter(!(tolower(class) == 'aves' & !tolower(species) %in% seabird_list))
+  }
+  
+  if(aspect == 'long') {
+    
+    ### make that long, but keeping structure for each species
+    spp_df_long <- spp_df %>%
+      mutate(spp = species) %>%
+      gather(rank, name, phylum:species) %>%
+      mutate(rank = factor(rank, levels = rank_lvls))
+    return(spp_df_long)
+    
+  } else {
+    
+    return(spp_df)
+    
+  }
+}
+
+resolve_am_disputes <- function(spp_wide) {
+  ## coerce AM classifications to match WoRMS
+  dupes_g <- show_dupes(spp_wide %>%
+                          select(-species) %>%
+                          distinct(),
+                        'genus') %>%
+    group_by(genus) %>%
+    filter(n_distinct(class) > 1 | n_distinct(order) > 1 | n_distinct(family) > 1) %>%
+    mutate(am_count = sum(source == 'am'),
+           non_am_count = sum(source == 'worms'))
+  ### identify duplicated genera that are included (uniquely) in WoRMS
+  worms_fill <- dupes_g %>%
+    filter(non_am_count > 0) %>%
+    filter(source == 'worms')
+  
+  dupes_g_force_worms <- spp_wide %>%
+    filter(genus %in% worms_fill$genus) %>%
+    rowwise() %>%
+    mutate(family = worms_fill$family[genus == worms_fill$genus],
+           order  = worms_fill$order[genus == worms_fill$genus],
+           class  = worms_fill$class[genus == worms_fill$genus]) %>%
+    ungroup()
+  
+  nonworms_fill <- dupes_g %>%
+    filter(!genus %in% dupes_g_force_worms$genus) %>%
+    mutate(genus  = case_when(genus == 'lamellaria'    ~ 'lamellidea',
+                              genus == 'leptocephalus' ~ 'conger',
+                              TRUE ~ genus)) %>%
+    mutate(family = case_when(genus == 'conger'        ~ 'congridae',
+                              genus == 'cerithiella'   ~ 'newtoniellidae',
+                              genus == 'elysia'        ~ 'plakobranchidae',
+                              genus == 'euciroa'       ~ 'euciroidae',
+                              genus == 'eulimastoma'   ~ 'pyramidellidae',
+                              genus == 'lamellidea'    ~ 'achatinellidae',
+                              genus == 'mathilda'      ~ 'mathildidae',
+                              genus == 'polybranchia'  ~ 'hermaeidae',
+                              genus == 'tjaernoeia'    ~ 'tjaernoeiidae',
+                              TRUE ~ family)) %>%
+    mutate(order = case_when(genus == 'elysia' ~ 'sacoglossa',
+                             genus == 'eulimastoma' ~ 'pylopulmonata',
+                             genus == 'conger' ~ 'anguilliformes',
+                             genus == 'polybranchia' ~ 'sacoglossa',
+                             genus == 'tjaernoeia' ~ '[unassigned] euthyneura',
+                             TRUE ~ order)) %>%
+    mutate(class = case_when(order == 'sacoglossa' ~ 'gastropoda',
+                             TRUE ~ class)) %>%
+    mutate(phylum = case_when(class == 'gastropoda' ~ 'mollusca',
+                             TRUE ~ class)) %>%
+    distinct()
+  
+  dupes_g_force_nonworms <- spp_wide %>%
+    filter(genus %in% dupes_g$genus & !genus %in% worms_fill$genus) %>%
+    rowwise() %>%
+    mutate(genus  = case_when(genus == 'lamellaria'    ~ 'lamellidea',
+                              genus == 'leptocephalus' ~ 'conger',
+                              TRUE ~ genus)) %>%
+    mutate(family = nonworms_fill$family[genus == nonworms_fill$genus],
+           order  = nonworms_fill$order[genus  == nonworms_fill$genus],
+           class  = nonworms_fill$class[genus  == nonworms_fill$genus],
+           phylum = nonworms_fill$phylum[genus == nonworms_fill$genus]) %>%
+    ungroup() %>%
+    distinct()
+  
+  spp_wide_am_resolved <- spp_wide %>%
+    filter(!genus %in% dupes_g$genus) %>%
+    bind_rows(dupes_g_force_worms, dupes_g_force_nonworms) %>%
+    select(-source) %>%
+    distinct()
+  
+  return(spp_wide_am_resolved)
+}
+
+disambiguate_species <- function(spp_wide) {
+  
+  dupes <- spp_wide %>%
+    oharac::show_dupes('species')
+  dupes_drop_source <- dupes %>%
+    select(-source) %>%
+    distinct() %>%
+    show_dupes('species')
+  
+  spp_wide_nodupes <- spp_wide %>%
+    filter(!species %in% dupes_drop_source$species)
+  
+  dupes_fixed <- dupes %>%
+    mutate(keep = case_when(genus == 'pinctada' & order == 'ostreida'         ~ TRUE,
+                            family == 'margaritidae' & order == 'trochida' & genus != 'pinctada' ~ TRUE,
+                            genus == 'atractotrema' & class == 'gastropoda'   ~ TRUE,
+                            genus == 'chaperia' & phylum == 'bryozoa'         ~ TRUE,
+                            family == 'molgulidae' & genus == 'eugyra'        ~ TRUE,
+                            genus == 'aturia' & order == 'nautilida'          ~ TRUE,
+                            genus == 'spongicola' & family == 'spongicolidae' ~ TRUE,
+                            genus == 'stictostega' & family == 'hippothoidae' ~ TRUE,
+                            genus == 'favosipora' & family == 'densiporidae'  ~ TRUE,
+                            genus == 'cladochonus' & family ==  'pyrgiidae'   ~ TRUE,
+                            genus == 'bathya' & order == 'amphipoda'          ~ TRUE,
+                            genus == 'bergia' & family == 'drepanophoridae'   ~ TRUE,
+                            genus == 'geminella' & family == 'catenicellidae' ~ TRUE,
+                            genus == 'ctenella' & family ==  'ctenellidae'    ~ TRUE,
+                            genus == 'nematoporella' & family ==  'arthrostylidae' ~ TRUE,
+                            genus == 'pleurifera' & family == 'columbellidae' ~ TRUE,
+                            genus == 'philippiella' & family == 'steinmanellidae' ~ TRUE,
+                            genus == 'thoe' & family == 'mithracidae'         ~ TRUE,
+                            genus == 'trachyaster' & family == 'palaeostomatidae' ~ TRUE,
+                            genus == 'diplocoenia' & family == 'acroporidae'  ~ TRUE,
+                            genus == 'versuriga' & family == 'versurigidae'   ~ TRUE,
+                            genus == 'tremaster' & family == 'asterinidae'    ~ TRUE,
+                            genus == 'distefanella' & family == 'radiolitidae' ~ TRUE,
+                            TRUE ~ FALSE)) %>%
+    filter(keep) %>%
+    select(-keep) %>%
+    distinct()
+  
+  spp_wide_clean <- bind_rows(spp_wide_nodupes, dupes_fixed)
+  
+  return(spp_wide_clean)
+}
+
+
+check_dupe_spp <- function(df) {
+  x <- show_dupes(df, 'species') %>%
+    left_join(read_csv(here('_data/spp_traits_valid.csv')) %>% 
+                downfill() %>%
+                dplyr::select(taxon, species) %>%
+                distinct()) %>%
+    group_by(species) %>%
+    summarize(n_phyla = n_distinct(phylum),
+              phyla   = paste(unique(phylum), collapse = ';'),
+              n_class = n_distinct(class),
+              classes = paste(unique(class), collapse = ';'),
+              orders = paste(unique(order), collapse = ';'),
+              families = paste(unique(family), collapse = ';'),
+              genus = paste(unique(genus), collapse = ';'))
+  return(x)
+}
+
+filter_dupe_spp <- function(df, level = c('all', 'class')[1]) {
+  df_out <- df %>%
+    filter(!(genus %in% c('aturia', 'pleurifera', 'distefanella', 'philippiella') & class != 'mollusca')) %>%
+    filter(!(family == 'margaritidae' & class  != 'gastropoda')) %>%
+    filter(!(genus == 'spongicola' & class != 'malacostraca')) %>%
+    filter(!(genus == 'trachyaster' & class != 'echinoidea')) %>%
+    filter(!(genus == 'nematoporella' & class != 'stenolaemata')) %>%
+    filter(!(genus == 'tremaster' & class != 'asteroidea')) %>%
+    filter(!(genus == 'versuriga' & family != 'versurigidae')) %>%
+    filter(!(genus == 'diplocoenia' & family != 'faviidae')) %>%
+    filter(!(genus == 'stictostega' & family != 'hippothoidae')) %>%
+    filter(!(genus == 'cladochonus' & family != 'auloporidae')) %>%
+    distinct()
+  
+  if(level == 'all') {
+    df_out <- df_out %>%
+      filter(kingdom == 'animalia') %>%
+      filter(!(genus  == 'eugyra' & phylum != 'chordata')) %>%
+      filter(!(genus %in% c('bathya', 'thoe') & phylum != 'arthropoda')) %>%
+      filter(!(genus %in% c('bergia', 'geminella') & phylum != 'cnidaria')) %>%
+      filter(!(genus %in% c('chaperia', 'favosipora') & phylum != 'bryozoa')) %>%
+      filter(!(genus == 'atractotrema' & phylum != 'platyhelminthes')) %>%
+      filter(!(genus == 'ctenella' & phylum != 'ctenophora'))
+  }
+  return(df_out)
+}
+
+
+### Get vulnerability traits by species
+get_vuln_traits <- function() {
+  read_csv(here('_data/traits_vulnerability/spp_traits_valid.csv'))
+}
+
+### Resolve names using WoRMS API fuzzy match
+
+fuzzy_match <- function(spp_vec, marine_only = TRUE) {
+  
+  spp_fix <- str_replace_all(spp_vec, ' +', '%20')
+  spp_arg <- paste0('scientificnames[]=', spp_fix, collapse = '&')
+  
+  mar_flag <- tolower(as.character(marine_only))
+  matchname_stem <- 'https://www.marinespecies.org/rest/AphiaRecordsByMatchNames?%s&marine_only=%s'
+  matchname_url  <- sprintf(matchname_stem, spp_arg, mar_flag)
+  
+  Sys.sleep(0.25) ### slight pause for API etiquette
+  match_records <- try(jsonlite::fromJSON(matchname_url)) 
+  if(class(match_records) == 'try-error') {
+    match_df <- data.frame(orig_sciname = spp_vec,
+                           valid_name = 'no match',
+                           aphia_id = -9999) 
+    return(match_df)
+  } else {
+    match_df <- match_records %>%
+      setNames(spp_vec) %>%
+      bind_rows(.id = 'orig_sciname')
+    
+    still_unmatched <- data.frame(orig_sciname = spp_vec) %>%
+      filter(!orig_sciname %in% match_df$orig_sciname) %>%
+      mutate(valid_name = 'no match', aphia_id = -9999)
+    out_df <- match_df %>%
+      bind_rows(still_unmatched) %>%
+      select(orig_sciname, valid_name, aphia_id = valid_AphiaID) %>%
+      mutate(valid_name = tolower(valid_name))
+    return(out_df)
+  }
+}
+

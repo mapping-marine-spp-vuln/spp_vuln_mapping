@@ -1,0 +1,190 @@
+---
+title: "Read AquaMaps data"
+author: "*Compiled on `r date()` by `r Sys.info()['user']`*"
+output: 
+  html_document:
+    code_folding: hide
+    toc: true
+    toc_depth: 3
+    toc_float: yes
+    number_sections: true
+    theme: cerulean
+    highlight: haddock
+    includes: 
+      in_header: '~/github/src/templates/ohara_hdr.html'
+  pdf_document:
+    toc: true
+---
+
+``` {r setup, echo = TRUE, message = FALSE, warning = FALSE}
+
+knitr::opts_chunk$set(fig.width = 6, fig.height = 4, fig.path = 'figs/',
+                      echo = TRUE, message = FALSE, warning = FALSE)
+
+library(raster)
+library(oharac)
+oharac::setup()
+source(here('fb_slb_fxns.R'))
+am_dir <- '/home/shares/ohi/git-annex/aquamaps_2021'
+```
+
+# Summary
+
+Read in and examine the newest AquaMaps data.  Extract thermal tolerances from envelope file and use these to replace the thermal max trait.
+
+# Methods
+
+## Read in and examine species summary file
+
+```{r}
+spp_info <- data.table::fread(file.path(am_dir, 'ver10_2019_speciesoccursum_iucn.csv')) %>%
+  janitor::clean_names() %>%
+  rename(am_sid = species_id, iucn_sid = iucn_id, comname = f_bname) %>%
+  mutate(sciname = tolower(paste(genus, species)))
+```
+Number of unique species (by AM species ID): `r n_distinct(spp_info$am_sid)`
+
+Number of unique IUCN species (by IUCN species ID): `r spp_info %>% filter(!is.na(iucn_sid)) %>% .$iucn_sid %>% n_distinct()`
+
+## Read in and examine species environmental envelope file
+
+```{r}
+env_info <- data.table::fread(file.path(am_dir, 'ver10_2019_hspen.csv')) %>%
+  janitor::clean_names() %>%
+  rename(am_sid = species_id)
+table(env_info$temp_yn)
+
+names(env_info)
+```
+
+## Extract thermal tolerance
+
+```{r}
+
+env_info_thermal <- env_info %>%
+  mutate(therm_range_abs  = temp_max - temp_min,
+         therm_range_pref = temp_pref_max - temp_pref_min) %>%
+  mutate(therm_range_abs_bin = cut(therm_range_abs, breaks = c(0, 5, 10, 15, 20, 25, Inf), include.lowest=TRUE)) %>%
+  mutate(therm_range_pref_bin = cut(therm_range_pref, breaks = c(0, 2.5, 5, 7.5, 10, 15, Inf), include.lowest=TRUE)) %>%
+  mutate(trait = "thermal_tolerance_range") %>%
+  left_join(spp_info, by=c("am_sid")) %>%
+  ### format the trait value
+  mutate(trait_value = str_replace(therm_range_pref_bin, ',', '-'),
+         trait_value = str_remove_all(trait_value, '[\\[\\(\\]]'),
+         trait_value = str_replace(trait_value, '15-Inf', '>15'),
+         trait_value = paste0(trait_value, 'c'))
+
+write_csv(env_info_thermal %>%
+            select(am_sid, species = sciname, trait, trait_value),
+          here('explore/thermal_categories/aquamaps_spp_thermal_range.csv'))
+```
+
+
+``` {r view distributions}
+ggplot(data = env_info_thermal, aes(x = therm_range_pref)) +
+  geom_histogram() +
+  labs(title = 'distribution of preferred thermal range')
+
+ggplot(data = filter(env_info_thermal, depth_min>100), 
+       aes(x = therm_range_pref)) +
+  geom_histogram() +
+  labs(title = 'dist of pref thermal range (deeper than 100m)')
+
+ggplot(data = filter(env_info_thermal, depth_min>200), 
+       aes(x = therm_range_pref)) +
+  geom_histogram() +
+  labs(title = 'dist of pref thermal range (deeper than 200m)')
+
+ggplot(data = env_info_thermal, aes(x = therm_range_abs, y = therm_range_pref)) + 
+  geom_point(alpha=0.05) +
+  labs(title = 'absolute range vs preferred range')
+
+```
+
+```{r spp tolerances to spp_gp tolerances}
+therm_tol_am <- read_csv(here('explore/thermal_categories', 
+                              'aquamaps_spp_thermal_range.csv'))
+spp_worms <- get_worms()
+
+### the left_join here gets full classification of spp with values
+therm_tol_worms <- therm_tol_am %>%
+  left_join(spp_worms, by = 'species') %>%
+  gather(rank, name, species, genus, family, order, class)
+
+
+therm_tol_spp <- therm_tol_worms %>%
+  filter(rank == 'species') %>%
+  mutate(trait_prob = 1)
+therm_tol_gen <- therm_tol_worms %>%
+  filter(rank == 'genus') %>%
+  group_by(name, rank) %>%
+  mutate(nspp = n()) %>%
+  group_by(name, trait_value, rank) %>%
+  summarize(trait_prob = n() / first(nspp))
+
+therm_tol_fam <- therm_tol_worms %>%
+  filter(rank == 'family') %>%
+  group_by(name, rank) %>%
+  mutate(nspp = n()) %>%
+  group_by(name, trait_value, rank) %>%
+  summarize(trait_prob = n() / first(nspp))
+therm_tol_ord <- therm_tol_worms %>%
+  filter(rank == 'order') %>%
+  group_by(name, rank) %>%
+  mutate(nspp = n()) %>%
+  group_by(name, trait_value, rank) %>%
+  summarize(trait_prob = n() / first(nspp))
+therm_tol_cls <- therm_tol_worms %>%
+  filter(rank == 'class') %>%
+  group_by(name, rank) %>%
+  mutate(nspp = n()) %>%
+  group_by(name, trait_value, rank) %>%
+  summarize(trait_prob = n() / first(nspp))
+
+
+therm_tol_all <- bind_rows(therm_tol_spp, 
+                             therm_tol_gen,
+                             therm_tol_fam,
+                             therm_tol_ord,
+                             therm_tol_cls) %>%
+  select(name, rank, trait, trait_value, trait_prob) %>%
+  fill(trait) %>%
+  drop_na()
+```
+
+``` {r expand to spp_gp}
+
+### Modified downfill function (drop taxon column for join)
+  x <- data.table::fread(here_anx('vuln_gapfilled_all_tx.csv')) %>%
+    dplyr::select(-vuln_gf_id) %>%
+    filter_dupe_spp(level = 'class')
+  
+  ranks <- c('species', 'genus', 'family', 'order', 'class')
+  
+  rank_list <- vector('list', length = length(ranks)) %>%
+    setNames(ranks)
+  for(rank in ranks) { ### rank <- ranks[2]
+    xx <- x %>%
+      filter(match_rank == rank)
+    y <- therm_tol_all %>%
+      rename(spp_gp = name) %>%
+      right_join(xx, by = c('spp_gp' = rank)) %>%
+      mutate(!!rank := .data[['spp_gp']])
+    rank_list[[rank]] <- y
+  }
+  rank_df <- bind_rows(rank_list) %>%
+    dplyr::select(taxon, spp_gp, # category, 
+           class, order, family, genus, species, 
+           gapfill, match_rank, everything())
+####### end mod gapfill function
+
+spp_gps <- read_csv(here('from_spp_vuln/spp_gp_vuln_w_distribution.csv')) %>%
+  select(taxon, spp_gp) %>%
+  distinct()
+
+spp_gps_nomatch <- anti_join(spp_gps, rank_df, by = 'spp_gp')
+### 18 gps still missing... use max data instead...
+
+write_csv(therm_tol_all, here('explore/thermal_categories', 
+                              'aquamaps_spp_gp_thermal_range.csv'))
+```
