@@ -88,7 +88,7 @@ table(mob_vuln_gf %>% select(class, mob_cat)) %>% knitr::kable()
 
 mob_vuln_out <- mob_vuln_gf %>%
   select(species, trait, value, sd, nspp, gf_level) %>%
-  filter(gf_level <= 4) %>%
+  # filter(gf_level <= 4) %>%
   distinct() %>%
   arrange(species, gf_level)
 write_csv(mob_vuln_out, here('_data/traits_grouping/trait_mobility.csv'))

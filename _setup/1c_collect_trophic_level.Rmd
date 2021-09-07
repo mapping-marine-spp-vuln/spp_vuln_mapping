@@ -161,22 +161,21 @@ FishBase/SeaLifeBase is thin on trophic data for a few classes that can be manua
         
 ```{r expand and save}
 
+record_df <- collect_records(troph_df, field = 'troph', file_tag = 'resolve_names_fb_troph') %>%
+  filter(aphia_id != -9999)
+
 prob_classes <- c('anthozoa', 'demospongiae', 'echinoidea', 'holothuroidea')
+
 troph_df_gf <- troph_df %>%
-  right_join(assemble_worms()) %>%
+  left_join(record_df, by = c('species' = 'orig_sciname')) %>%
+  mutate(species = ifelse(!is.na(valid_name), valid_name, species)) %>%
+  right_join(assemble_worms(), by = 'species') %>%
   gapfill_up_down('troph') %>%
   filter(gf_level <= 4 | class %in% prob_classes) %>%
   mutate(value = ifelse(is.na(value) & class %in% prob_classes, 2, value)) %>%
   select(species, trait, value, sd, nspp, gf_level)
 
-# troph_se_df_gf <- troph_df %>%
-#   right_join(assemble_worms()) %>%
-#   gapfill_up_down('troph_se') %>%
-#   select(species, trait, value, sd, nspp, gf_level) %>%
-#   filter(gf_level <= 4)
-
 write_csv(troph_df_gf, here('_data/traits_grouping/trait_trophic_level.csv'))
-# write_csv(troph_se_df_gf, here('_data/traits_grouping/trait_trophic_se.csv'))
 
 ```
 

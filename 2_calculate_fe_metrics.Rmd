@@ -1,0 +1,206 @@
+---
+title: "Calculate functional diversity metrics"
+author: "Casey O'Hara"
+date: "7/25/2021"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE, 
+                      fig.height = 4, fig.width = 7)
+
+library(raster)
+library(oharac)
+oharac::setup()
+source(here('common_fxns.R'))
+```
+
+# Summary
+
+Using functional entities defined in a prior script based on a suite of categorical traits, in combination with spatial distribution of species from AquaMaps, calculate functional diversity metrics based on Mouillot et al (2014) and code from Sebastien Villeger: functional richness, functional vulnerability, functional redundancy, and functional over-redundancy.
+
+# Methods
+
+## Load data
+
+```{r load data}
+
+fe_metrics_file <- here('_output/functional_entities', 'fe_metrics.csv')
+# unlink(fe_metrics_file)
+if(!file.exists(fe_metrics_file)) {
+  am_to_worms_fixes <- read_csv(here('_raw/aquamaps_to_worms_fixes.csv'))
+  spp_fe <- read_csv(here('_output/functional_entities/species_fe.csv'))
+  am_spp_cells <- get_am_spp_cells()
+  am_spp_info  <- get_am_spp_info() %>%
+    select(-species, species = sciname) %>%
+    filter(kingdom == 'Animalia')
+}
+```
+
+## Identify AquaMaps species included in Functional Entity calculations
+
+Then filter the species-cell lookup to just those species, for better performance.
+
+```{r join FEs to aquamaps}
+if(!file.exists(fe_metrics_file)) {
+  am_spp_fe <- inner_join(am_spp_info, spp_fe, by = c('species')) %>%
+    select(am_sid, species, occur_cells, iucn_sid, fe_code, fe_id, n_spp)
+  am_cells_fe <- oharac::dt_join(am_spp_fe, am_spp_cells, by = 'am_sid', type = 'left') %>%
+    select(loiczid, am_sid, fe_code, fe_id, prob)
+  
+  am_spp_nonfe <- am_spp_info %>%
+    filter(!species %in% spp_fe$species)
+  table(am_spp_nonfe$class)
+  worms_spp <- assemble_worms() 
+  worms_am <- worms_spp %>%
+    full_join(am_to_worms_fixes, by = c('species' = 'species_worms'))
+  am_spp_nonworms <- am_spp_info %>%
+    filter(!species %in% worms_spp$species & !species %in% am_to_worms_fixes$species_am)
+  
+  spp_fe_all <- spp_fe %>%
+    left_join(worms_spp, by = 'species')
+  mammals <- am_spp_info %>%
+    filter(class == 'Mammalia') %>%
+    full_join(spp_fe_all %>% filter(class == 'mammalia'), 
+              by = c('species' = 'species')) %>%
+    select(am_sid, species, fe_id) %>%
+    filter(is.na(am_sid) | is.na(fe_id))
+  
+}
+```
+
+## Calculate functional diversity metrics 
+
+This set of calculations replicates the results of Villeger's function but without resorting to a presence/absence matrix, instead just relying on the original AquaMaps species-cell table.
+
+* spp_fe_df joined to am_spp_cell; 
+* group by cell and functional group;
+* calculate number of spp per functional group;
+* group by cell;
+* calculate functional entity metrics - 
+    * Species richness
+    * Functional entity richness
+    * Functional vulnerability (% of FEs represented by a single spp)
+    * Weighted functional vulnerability (new: vuln of an FE is $\frac{1}{2^{n-1}}$, take average over all FE)
+    * Functional redundancy (mean spp count per FE)
+    * Functional over-redundancy (sum of spp per FE above mean, divided by total number of spp)
+    
+
+```{r calc fe metrics}
+
+if(!file.exists(fe_metrics_file)) {
+  # system.time({
+  
+    am_cells_fe_thresh <- am_cells_fe %>%
+      filter(prob >= .4) %>%
+      select(-prob) %>%
+      distinct()
+    
+    # system.time({
+      nspp_df <- am_cells_fe_thresh %>%
+        group_by(loiczid) %>%
+        summarize(n_spp = n_distinct(am_sid),
+                  n_fe  = n_distinct(fe_code),
+                  .groups = 'drop')
+    # }) ### 17 seconds
+    
+    ### this one is a bit slow:
+    # system.time({
+      nspp_fe_df <- am_cells_fe_thresh %>%
+        group_by(loiczid, fe_code) %>%
+        summarize(nspp_fe = n(), .groups = 'drop')
+          ### using n() instead of n_distinct(); if no dupes
+          ### in am_sid/loiczid/fe_code then should be fine.
+    # }) ### 175 seconds
+    
+    # system.time({
+      f_vuln_df <- nspp_fe_df %>%
+        left_join(nspp_df, by = 'loiczid') %>%
+        group_by(loiczid) %>%
+        summarize(n_fe = first(n_fe), n_spp = first(n_spp),
+                  f_vuln = sum(nspp_fe == 1) / n_fe, 
+                  f_wvuln = mean(0.5^(nspp_fe-1)),
+                  f_red  = mean(nspp_fe),
+                  .groups = 'drop')
+      f_overred_df <- nspp_fe_df %>%
+        left_join(f_vuln_df) %>%
+        mutate(f_over = ifelse(nspp_fe > f_red, nspp_fe - f_red, 0)) %>%
+        group_by(loiczid) %>% 
+        summarize(f_overred = sum(f_over) / sum(nspp_fe),
+                  .groups = 'drop')
+    # }) ### 7 sec
+    
+    fe_metrics_df <- f_vuln_df %>%
+      full_join(f_overred_df, by = 'loiczid') %>%
+      mutate(across(where(is.numeric), .fns = ~round(.x, 6)))
+      ### rounding to 6 dec places saves a lot of storage for tifs
+  # })
+    # ggplot(fe_metrics_df, aes(x = f_vuln, y = f_wvuln)) +
+    #   geom_point(alpha = .3) +
+    #   geom_abline(slope = 1, intercept = 0)
+  
+  write_csv(fe_metrics_df, fe_metrics_file)
+}
+
+```
+
+## Map functional diversity metrics
+
+Create and save rasters of functional diversity metrics
+
+
+```{r create rasts}
+fe_metrics_df <- read_csv(fe_metrics_file)
+
+n_spp_rast  <- map_to_hcaf(fe_metrics_df, which = 'n_spp')
+n_fe_rast   <- map_to_hcaf(fe_metrics_df, which = 'n_fe')
+f_vuln_rast <- map_to_hcaf(fe_metrics_df, which = 'f_vuln')
+f_wvuln_rast <- map_to_hcaf(fe_metrics_df, which = 'f_wvuln')
+f_red_rast  <- map_to_hcaf(fe_metrics_df, which = 'f_red')
+f_overred_rast <- map_to_hcaf(fe_metrics_df, which = 'f_overred')
+
+writeRaster(n_spp_rast,   here('_output/functional_entities/n_spp.tif'),   overwrite = TRUE)
+writeRaster(n_fe_rast,    here('_output/functional_entities/n_fe.tif'),    overwrite = TRUE)
+writeRaster(f_vuln_rast,  here('_output/functional_entities/f_vuln.tif'),  overwrite = TRUE)
+writeRaster(f_wvuln_rast, here('_output/functional_entities/f_wvuln.tif'), overwrite = TRUE)
+writeRaster(f_red_rast,   here('_output/functional_entities/f_red.tif'),   overwrite = TRUE)
+writeRaster(f_overred_rast, here('_output/functional_entities/f_overred.tif'), overwrite = TRUE)
+```
+
+Examine distributions of each raster.
+
+```{r histograms}
+hist(n_spp_rast)
+hist(n_fe_rast)
+hist(f_vuln_rast)
+hist(f_wvuln_rast)
+hist(f_red_rast)
+hist(f_overred_rast)
+```
+
+Plot each raster.
+```{r plot rasters}
+plot_map <- function(r, main) {
+  var_name <- sym(names(r))
+  r_df <- as.data.frame(r, xy = TRUE)
+  ### set fill scale limits based on raster values, from 0 to at least 1
+  var_lim  <- c(0, max(1, maxValue(r)))
+  ggplot(r_df, aes(x, y, fill = !!var_name)) +
+    geom_raster() +
+    scale_fill_viridis_c(limits = var_lim) +
+    coord_sf() +
+    theme_void() +
+    labs(title = main)
+}
+plot_map(n_spp_rast,   main = 'Species richness')
+plot_map(log10(n_spp_rast) %>% setNames('log10_n_spp'),  main = 'log_10(Species richness)')
+plot_map(n_fe_rast,    main = 'Functional richness')
+plot_map(log10(n_fe_rast) %>% setNames('log10_n_fe'),  main = 'log_10(Functional richness)')
+plot_map(f_vuln_rast,  main = 'Functional vulnerability')
+plot_map(f_wvuln_rast, main = 'Weighted functional vulnerability')
+plot_map(f_red_rast,   main = 'Functional redundancy')
+plot_map(log10(f_red_rast) %>% setNames('log10_f_red'),  main = 'log_10(Functional redundancy)')
+plot_map(f_overred_rast, main = 'Functional overredundancy')
+```

@@ -576,6 +576,8 @@ am_patch <- am_animals_nomatch %>%
   filter(!is.na(species)) %>%
   distinct()
 
+table(am_patch$class)
+
 write_csv(am_patch, here('_data/worms_taxa/expand7_aquamaps_patch.csv'))
 
 ```

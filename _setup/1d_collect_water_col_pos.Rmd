@@ -95,18 +95,24 @@ keep_cols <- c('demers_pelag')
 dem_pel_fb_raw <- get_fb_slb(fxn = species, 
                             keep_cols = keep_cols, keep_fxn = contains,
                             drop_cols = '_ref',    drop_fxn = ends_with) %>%
-  mutate(demers_pelag = tolower(demers_pelag))
+  mutate(demers_pelag = tolower(demers_pelag)) %>%
+  filter(!is.na(demers_pelag))
 
 table(dem_pel_fb_raw$demers_pelag)
 
+record_df <- collect_records(dem_pel_fb_raw, field = 'demers_pelag', file_tag = 'resolve_names_fb_depth') %>%
+  filter(aphia_id != -9999)
+
 depth_fb <- dem_pel_fb_raw %>%
-  mutate(benthic = str_detect(demers_pelag, 'benthic|sessile|demersal'),
+  left_join(record_df, by = c('species' = 'orig_sciname')) %>%
+  mutate(species = ifelse(!is.na(valid_name), valid_name, species)) %>%
+  mutate(benthic = str_detect(demers_pelag, 'benth|sessile|demersal'),
          pelagic = str_detect(demers_pelag, 'pelagic'),
          reef    = str_detect(demers_pelag, 'reef')) %>%
   select(-demers_pelag) %>%
   filter(benthic | pelagic | reef) ### drop any that aren't counted here
   
-
+table(depth_fb %>% select(benthic, pelagic, reef))
 ### note the benthic/pelagic etc in the ecology table don't match up as well
   
 ```

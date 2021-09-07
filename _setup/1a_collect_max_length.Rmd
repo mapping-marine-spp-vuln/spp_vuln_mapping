@@ -118,72 +118,19 @@ length_fb <- length_fb_num %>%
 
 For purposes of identifying functional groups.  To combine length data, first preference is for continuous length measures from FB/SLB.  Where possible, we will upstream/downstream gap these values to unknown species in each represented family.  These will be compared to values from the spp vulnerability data for accuracy.  Any species not captured in this way can be gapfilled using length bins from the spp vulnerability data.  
 
-```{r}
-spp_from_worms <- assemble_worms()
-
-length_worms_fb <- spp_from_worms %>%
-  left_join(length_fb, by = 'species') %>%
-  mutate(db = ifelse(is.na(db), 'worms', db))
-
-no_match <- anti_join(length_fb, spp_from_worms, by = 'species')
-no_match_w_vals <- no_match %>%
-  filter(!is.na(length)) %>%
-  mutate(genus = str_extract(species, '[a-z]+(?= ?)'),
-         genus_match = genus %in% spp_from_worms$genus)
-### many of these non-matches appear to be freshwater fish, but 4489 are from
-### SeaLifeBase implying saltwater.
-table(no_match_w_vals %>% select(genus_match, db))
-
-```
-Use WoRMS API to resolve names
-
-```{r resolve unmatched spp from fishbase}
-
-aphia_records_csv <- here('int/resolve_names_fb_length.csv')
-
-names_to_resolve <- no_match_w_vals %>%
-  filter(genus_match) %>%
-  .$species %>% unique() %>% sort()
-
-if(!file.exists(aphia_records_csv)) {
-  
-  chunk_size <- 25
-  n_chunks <- ceiling(length(names_to_resolve) / chunk_size)
-  record_chunk_stem <- 'tmp/resolve_length_fb_chunk_%s_%s.csv'
-  ### unlink(list.files(here('tmp'), pattern = 'resolve_length_fb_chunk_', full.names = TRUE))
-  
-  for(i in 1:n_chunks) { ### i <- 1
-    message('Processing chunk ', i, ' of ', n_chunks)
-    i_start <- (i-1) * chunk_size + 1
-    i_end   <- min(i * chunk_size, length(names_to_resolve))
-    chunk_csv <- here(sprintf(record_chunk_stem, i_start, i_end))
-    if(file.exists(chunk_csv)) {
-      message('Chunk exists: ', basename(chunk_csv), '... skipping!')
-      next()
-    }
-    spp_vec <- names_to_resolve[i_start:i_end]
-    chunk_df <- fuzzy_match(spp_vec, marine_only = FALSE)
-    write_csv(chunk_df, chunk_csv)
-  }
-  
-  chunk_fs <- list.files(here('tmp'), pattern = 'resolve_length_fb_chunk_', full.name = TRUE)
-  record_df <- parallel::mclapply(chunk_fs, read_csv) %>%
-    bind_rows() %>%
-    distinct()
-  write_csv(record_df, aphia_records_csv)
-}
-
-```
-
-
+### Use WoRMS API to resolve names
 
 ``` {r}
 
-record_df <- read_csv(aphia_records_csv) %>%
+record_df <- collect_records(length_fb, field = 'length', file_tag = 'resolve_names_fb_length') %>%
   filter(aphia_id != -9999)
+
 length_fb_fixed <- length_fb %>%
   left_join(record_df, by = c('species' = 'orig_sciname')) %>%
   mutate(species = ifelse(!is.na(valid_name), valid_name, species))
+  
+
+spp_from_worms <- assemble_worms()
 
 length_worms_fb <- spp_from_worms %>%
   left_join(length_fb_fixed, by = 'species') %>%

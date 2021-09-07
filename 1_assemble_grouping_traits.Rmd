@@ -1,0 +1,404 @@
+---
+title: "Assemble grouping traits and form Functional Entities"
+author: "*Compiled on `r date()` by `r Sys.info()['user']`*"
+output: 
+  html_document:
+    code_folding: hide
+    toc: true
+    toc_depth: 3
+    toc_float: yes
+    number_sections: true
+    theme: cerulean
+    highlight: haddock
+    includes: 
+      in_header: '~/github/src/templates/ohara_hdr.html'
+  pdf_document:
+    toc: true
+---
+
+``` {r setup, echo = TRUE, message = FALSE, warning = FALSE}
+
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
+
+library(oharac)
+oharac::setup()
+source(here('common_fxns.R'))
+
+
+```
+
+# Summary
+
+Gather processed traits data and assemble into a dataframe.  Assign bins for trait values.  Use trait bins to identify functional entities (FE) per Villeger and others.
+
+# Data
+
+See individual trait scripts.
+
+# Methods
+
+## Gather traits
+
+Here we will read in each trait set and assign the values into specific bins as appropriate.  Inspired by Sebastien Villeger's code, I will create text codes for each trait/value combo, but with a few more letters so they are a little more comprehensible.
+
+### mobility traits
+
+```{r mobility}
+mob_codes <- c('sessile'           = 'ses',
+               'sedentary'         = 'sed',
+               'mobile resident'   = 'res',
+               'migratory/nomadic' = 'mig')
+mob_traits <- read_csv(here('_data/traits_grouping/trait_mobility.csv')) %>%
+  mutate(mob = mob_codes[value],
+         mob = factor(mob, levels = mob_codes, ordered = TRUE)) %>%
+  group_by(species) %>%
+  filter(mob == max(mob)) %>%
+  ungroup() %>%
+  select(species, mob) %>%
+  distinct()
+
+# x <- show_dupes(mob_traits, 'species')
+
+table(mob_traits$mob) %>% knitr::kable()
+```
+
+### water column position traits
+
+```{r water col position}
+trait_val_codes <- c(reef    = 'rf',
+                     pelagic = 'pel',
+                     benthic = 'ben',
+                     benthopelagic = 'bp')
+water_col_traits <- read_csv(here('_data/traits_grouping/trait_water_col_position.csv')) %>%
+  mutate(wcol = trait_val_codes[value],
+         wcol = factor(wcol, levels = trait_val_codes, ordered = FALSE)) %>%
+  select(species, wcol) %>%
+  distinct()
+
+# x <- show_dupes(water_col_traits, 'species')
+
+
+table(water_col_traits$wcol) %>% knitr::kable()
+```
+
+### Reproduction traits
+
+Here we have options of:
+
+* generation time
+* fecundity
+* parental investment
+* planktonic larval duration
+* post-birth/hatching parental dependence
+
+Generation time and fecundity seem most important, but others can be included as separate traits as well.  For spp with multiple fecundity and generation time values, take the largest category.
+
+#### Fecundity
+
+```{r fecundity}
+repr_traits <- read_csv(here('_data/traits_grouping/trait_reproduction.csv')) %>%
+  filter(!is.na(value))
+
+fecund_codes <- c('<1'         = 'lo',
+                  '1-2'        = 'lo',
+                  '2-5'        = 'lo',
+                  '5-10'       = 'lo',
+                  '10-20'      = 'med',
+                  '20-50'      = 'med',
+                  '50-100'     = 'med',
+                  '100-1000'   = 'hi',
+                  '1000-10000' = 'vhi',
+                  '>10000'     = 'vhi')
+
+fecund_traits <- repr_traits %>%
+  filter(trait == 'fec') %>%
+  mutate(fec = fecund_codes[value],
+         fec = factor(fec, levels = unique(fecund_codes), ordered = TRUE)) %>%
+  group_by(species) %>%
+  filter(fec == max(fec)) %>%
+  ungroup() %>%
+  select(species, fec) %>%
+  distinct()
+
+table(fecund_traits$fec)
+```
+
+#### Generation time
+
+```{r gen time}
+
+gen_codes <- c("<1yr"     = 'vshort',
+               "1-5yrs"   = 'short',
+               "5-10yrs"  = 'med',
+               "10-20yrs" = 'long',
+               ">20yrs"   = 'long')
+
+gen_time_traits <- repr_traits %>%
+  filter(trait == 'age_mat') %>%
+  mutate(gen = gen_codes[value],
+         gen = factor(gen, levels = unique(gen_codes), ordered = TRUE)) %>%
+  group_by(species) %>%
+  filter(gen == max(gen)) %>%
+  ungroup() %>%
+  select(species, gen) %>%
+  distinct()
+
+table(gen_time_traits$gen)
+```
+
+#### check correlation between gen time and fecundity 
+
+```{r}
+gen_fec_df <- full_join(fecund_traits, gen_time_traits, by = 'species') %>%
+  drop_na()
+
+gen_fec_mtx <- gen_fec_df %>%
+  group_by(gen, fec) %>%
+  summarize(n = n()) %>%
+  mutate(fec = paste0('f:', fec),
+         gen = paste0('g:', gen)) %>%
+  spread(fec, n) %>%
+  column_to_rownames('gen') %>%
+  as.matrix()
+
+chi2 <- chisq.test(gen_fec_mtx, correct=F)
+c(chi2$statistic, chi2$p.value)
+
+ggplot(gen_fec_df, aes(x = gen, y = fec)) +
+  geom_jitter(alpha = .2)
+```
+
+While there is obviously correlation, there seems to be enough variation to keep both variables in for now.
+
+### Trophic level
+
+Similar to Mireia's classifications: classify into primary producers (1), primary consumers (herbivores/detritivores) 2), secondary (2-3), tertiary (3-4), apex (>4).  Examine potential break points to see distributions.
+
+Some considerations:
+
+* _Orcinus orca_ is 4.6
+* _Carcharodon carcharias_ is 4.48
+* _Oncorhynchus_ spp are from 3.23 (Sockeye) to 4.18 (Coho, the only one above 4.0)
+
+Here we set break points at the top value for each category ($\leq$ 2 = primary consumer, $\leq$ 3 = secondary consumer, $\leq$ 4 = tertiary consumer, >4 = apex consumer)
+
+```{r trophic level}
+troph_traits <- read_csv(here('_data/traits_grouping/trait_trophic_level.csv')) %>%
+  filter(!is.na(value))
+
+summary(troph_traits)
+
+troph_qtile <- ecdf(troph_traits$value)
+troph_qtile(c(2, 3, 3.5, 4, 4.4, 5))
+
+troph_traits <- troph_traits %>%
+  mutate(trp = case_when(value <= 2 ~ 'pri', ### anything above 2 suggests some carnivory
+                         value <= 3 ~ 'sec',
+                         value <= 4 ~ 'ter',
+                         value > 4  ~ 'apex',
+                         TRUE ~ 'oops'),
+         trp = factor(trp, levels = c('pri', 'sec', 'ter', 'apex'), ordered = TRUE)) %>%
+  select(species, trp) %>%
+  distinct()
+
+table(troph_traits$trp)
+```
+
+### Max length
+
+Examine distribution of lengths to see if there are good break points, or choose break points to achieve a reasonable distribution across reasonable size classes (~ factor of 10 for each class).
+
+```{r max length}
+length_traits <- read_csv(here('_data/traits_grouping/trait_length_cm.csv')) %>%
+  filter(!is.na(value))
+
+summary(length_traits$value)
+quantile(log10(length_traits$value), c(.2, .4, .6, .8))
+
+length_traits <- length_traits %>%
+  mutate(len = case_when(value <    1.5 ~ 'vsm', ### smaller than 1.5 cm
+                         value <    5.0 ~ 'sm',  ### 1.5 - 5 cm
+                         value <   15.0 ~ 'med', ### 5 - 15 cm
+                         value <  150.0 ~ 'lg',  ### 15 - 150 cm
+                         value >= 150.0 ~ 'vlg', ### larger than 1.5 meters
+                         TRUE ~ 'oops'),
+         len = factor(len, levels = c('vsm', 'sm', 'med', 'lg', 'vlg'), ordered = TRUE)) %>%
+  select(species, len) %>%
+  distinct()
+
+table(length_traits$len)
+```
+
+The number of uniquely identified species with full complement of traits will be limited by data availability in the Species Vulnerability project as well as data availability in Fishbase/Sealifebase.  See individual scripts for various gapfilling and assignation of traits for each distinct trait set.
+
+## Assemble and assign to functional entities
+
+Here we will full-join all trait dataframes by species, eliminate any with NA values for any traits, and then collapse the trait values together into a specific functional entity character code (which will also be assigned a numeric FE code).
+
+```{r}
+n_fe_possible <- n_distinct(mob_traits$mob) *
+                 n_distinct(fecund_traits$fec) *
+                 n_distinct(gen_time_traits$gen) *
+                 n_distinct(troph_traits$trp) *
+                 n_distinct(length_traits$len) *
+                 n_distinct(water_col_traits$wcol)
+```
+
+Based on the given trait categories, we could see up to `r n_fe_possible` functional entities, though most will not be populated (e.g., not so likely to find a very large apex predator species with a high fecundity and short generation time).
+
+### Number of spp included, by class
+
+``` {r check inclusion}
+worms_spp <- assemble_worms()
+
+all_traits_df <- mob_traits %>%
+  full_join(fecund_traits, by = 'species') %>%
+  full_join(gen_time_traits, by = 'species') %>%
+  full_join(troph_traits, by = 'species') %>%
+  full_join(length_traits, by = 'species') %>%
+  full_join(water_col_traits, by = 'species') %>%
+  left_join(worms_spp, by = 'species') %>%
+  distinct()
+
+incl_spp <- all_traits_df %>%
+  drop_na() %>%
+  group_by(class) %>%
+  summarize(n_spp = n_distinct(species))
+
+knitr::kable(incl_spp)
+```
+
+### Number of spp with NAs for one or more traits
+
+``` {r na_check}
+fe_nas <- all_traits_df %>%
+  select(-c(phylum:genus)) %>%
+  gather(trait, val, -species) %>%
+  group_by(species) %>%
+  summarize(n_na = sum(is.na(val)))
+table(fe_nas$n_na)
+
+```
+
+### Number of spp unmatched by WoRMS names
+
+``` {r}
+unmatched_taxa <- all_traits_df %>%
+  filter(is.na(genus)) %>%
+  select(-c(phylum:genus)) %>%
+  gather(trait, val, -species) %>%
+  group_by(species) %>%
+  summarize(na_traits = sum(is.na(val))) %>%
+  mutate(genus = str_extract(species, '[a-z]+(?= )')) %>%
+  group_by(na_traits) %>%
+  summarize(n_spp = n_distinct(species),
+            n_gen = n_distinct(genus))
+knitr::kable(unmatched_taxa)
+
+```
+
+All the unmatched spp are missing values for most traits, and these only contain trait values for water column position.  Genus-level gapfilling in the water column position script was used to extract traits from these unmatched species to help gapfill for WoRMS-matched species in the same genera.
+
+``` {r check missing spp by genus}
+
+missing_water_col <- all_traits_df %>%
+  gather(trait, val, -species, -genus) %>%
+  group_by(genus, species) %>%
+  summarize(n_na = sum(is.na(val)),
+            missing_wcol = (is.na(val) & trait == 'wcol')) %>%
+  filter(n_na == 1 & missing_wcol)
+
+worms_genus_to_class <- worms_spp %>%
+  select(class, order, family, genus) %>%
+  distinct()
+genus_match <- all_traits_df %>%
+  filter(is.na(genus)) %>%
+  select(-c(phylum:genus)) %>% ### all NAs
+  mutate(genus = str_extract(species, '[a-z]+(?= )')) %>%
+  mutate(genus_match = genus %in% worms_spp$genus,
+         potential_fill = genus %in% missing_water_col$genus) %>%
+  left_join(worms_genus_to_class, by = 'genus') %>%
+  group_by(class, genus_match, potential_fill) %>%
+  summarize(n_spp = n_distinct(species),
+            n_gen = n_distinct(genus))
+```
+
+#### potential fills with additional gapfilling?
+
+Gapfilling skipped any genera represented by only one species, which may be why a few of these are still unmatched.
+
+`r knitr::kable(genus_match %>% filter(genus_match & potential_fill))`
+
+### Check traits causing drops
+
+Which traits are responsible for dropping most species?  examine species dropped for one or two NAs.
+
+``` {r check which traits are causing drops}
+traits <- c('mob', 'fec', 'gen', 'trp', 'len', 'wcol')
+fe_trait_single_na <- all_traits_df %>% gather(trait, val, all_of(traits)) %>%
+  group_by(species) %>%
+  filter(is.na(val)) %>%
+  filter(n() == 1) %>%
+  ungroup()
+table(fe_trait_single_na$trait)
+
+fe_trait_double_na <- all_traits_df %>% gather(trait, val, all_of(traits)) %>%
+  group_by(species) %>%
+  filter(is.na(val)) %>%
+  filter(n() == 2) %>%
+  arrange(trait) %>%
+  summarize(t1 = first(trait), t2 = last(trait)) %>%
+  ungroup()
+table(fe_trait_double_na %>% select(t1, t2))
+
+fe_trait_triple_na <- all_traits_df %>% gather(trait, val, all_of(traits)) %>%
+  group_by(species) %>%
+  filter(is.na(val)) %>%
+  filter(n() == 3) %>%
+  arrange(trait) %>%
+  summarize(t1 = first(trait), t2 = nth(trait, 2), t3 = last(trait)) %>%
+  ungroup()
+table(fe_trait_triple_na %>% select(t1, t2, t3))
+
+```
+
+### assign FE codes
+
+```{r}
+fe_df <- all_traits_df %>%
+  drop_na() %>%
+  mutate(fe_code = sprintf('MOB%s_FEC%s_GEN%s_TRP%s_LEN%s_WCOL%s', mob, fec, gen, trp, len, wcol)) %>%
+  group_by(fe_code) %>%
+  mutate(n = n()) %>%
+  ungroup() %>%
+  arrange(desc(n)) %>%
+  mutate(fe_code = fct_inorder(fe_code))
+```
+
+``` {r examine distributions of species across functional entities}
+
+fe_df_summary <- fe_df %>%
+  group_by(fe_code) %>%
+  summarize(n_spp = n_distinct(species)) 
+
+hist(log10(fe_df_summary$n_spp))
+DT::datatable(fe_df_summary)
+```
+
+## Write out functional entities
+
+```{r}
+fe_out_df <- fe_df %>%
+  select(species, fe_code, n_spp = n) %>%
+  mutate(fe_id = as.integer(fe_code))
+
+write_csv(fe_out_df, here('_output/functional_entities/species_fe.csv'))
+
+fe_traits_df <- fe_df %>%
+  select(fe_code, n_spp = n, mob, fec, gen, trp, len, wcol) %>%
+  distinct()
+
+write_csv(fe_traits_df, here('_output/functional_entities/fe_traits.csv'))
+
+```
+

@@ -32,11 +32,7 @@ spp_from_worms <- assemble_worms() ### from common_fxns.R
 
 # Summary
 
-Gather data on reproductive traits from FishBase and the species vulnerability project: Max fecundity, generation time, parental care (pre-birth/hatch), parental dependence (post-birth/hatch), PLD.  Gapfill using downfill and upstream-downstream gapfill methodology.  Finally use PCA to reduce dimensionality across multiple traits, keeping the first two components.
-
-NOTE: from https://journals.plos.org/ploscompbiol/article?id=10.1371/journal.pcbi.1006907:
-
-> On the other hand, if the mixed dataset contains a large number of categorical variables, multiple factor analysis (MFA) [31] can be used. The method applies PCA on numerical and MCA on categorical variables and combines the results by weighing variable groups.
+Gather data on reproductive traits from FishBase and the species vulnerability project: Max fecundity, generation time, parental care (pre-birth/hatch), parental dependence (post-birth/hatch), PLD.  Gapfill using downfill and upstream-downstream gapfill methodology.  
 
 # Data
 
@@ -110,129 +106,11 @@ mat_fb <- mat_fb_num %>%
   summarize(age_mat = mean(t_maturity), .groups = 'drop')
 ```
 
-```{r}
-spp_from_worms <- assemble_worms()
-
-mat_worms_fb <- spp_from_worms %>%
-  left_join(mat_fb, by = 'species') %>%
-  mutate(db = ifelse(is.na(db), 'worms', db))
-
-no_match <- anti_join(length_fb, spp_from_worms, by = 'species')
-no_match_w_vals <- no_match %>%
-  filter(!is.na(age_mat)) %>%
-  mutate(genus = str_extract(species, '[a-z]+(?= ?)'),
-         genus_match = genus %in% spp_from_worms$genus)
-
-table(no_match_w_vals %>% select(genus_match, db))
-
-```
-
 Use WoRMS API to resolve names
 
 ```{r resolve unmatched spp from fishbase}
 
-aphia_records_csv <- here('int/resolve_names_fb_maturity.csv')
-
-names_to_resolve <- no_match_w_vals %>%
-  filter(genus_match) %>%
-  .$species %>% unique() %>% sort()
-
-if(!file.exists(aphia_records_csv)) {
-  
-  chunk_size <- 25
-  n_chunks <- ceiling(length(names_to_resolve) / chunk_size)
-  record_chunk_stem <- 'tmp/resolve_age_mat_fb_chunk_%s_%s.csv'
-  ### unlink(list.files(here('tmp'), pattern = 'resolve_age_mat_fb_chunk_', full.names = TRUE))
-  
-  for(i in 1:n_chunks) { ### i <- 1
-    message('Processing chunk ', i, ' of ', n_chunks)
-    i_start <- (i-1) * chunk_size + 1
-    i_end   <- min(i * chunk_size, length(names_to_resolve))
-    chunk_csv <- here(sprintf(record_chunk_stem, i_start, i_end))
-    if(file.exists(chunk_csv)) {
-      message('Chunk exists: ', basename(chunk_csv), '... skipping!')
-      next()
-    }
-    spp_vec <- names_to_resolve[i_start:i_end]
-    chunk_df <- fuzzy_match(spp_vec, marine_only = FALSE)
-    write_csv(chunk_df, chunk_csv)
-  }
-  
-  chunk_fs <- list.files(here('tmp'), pattern = 'resolve_age_mat_fb_chunk_', full.name = TRUE)
-  record_df <- parallel::mclapply(chunk_fs, read_csv) %>%
-    bind_rows() %>%
-    distinct()
-  write_csv(record_df, aphia_records_csv)
-}
-
-```
-
-
-
-```{r}
-collect_records <- function(fb_df, field, file_tag) {
-  
-  spp_from_worms <- assemble_worms()
-  
-  fb_df <- fb_df %>%
-    rename(tmp := !!field)
-  
-  mat_worms_fb <- spp_from_worms %>%
-    left_join(fb_df, by = 'species') %>%
-    mutate(db = ifelse(is.na(db), 'worms', db))
-  
-  no_match <- anti_join(fb_df, spp_from_worms, by = 'species')
-  no_match_w_vals <- no_match %>%
-    filter(!is.na(tmp)) %>%
-    mutate(genus = str_extract(species, '[a-z]+(?= ?)'),
-           genus_match = genus %in% spp_from_worms$genus)
-  
-  table(no_match_w_vals %>% select(genus_match, db))
-  
-  aphia_records_csv <- sprintf(here('int/%s.csv'), file_tag)
-  
-  names_to_resolve <- no_match_w_vals %>%
-    filter(genus_match) %>%
-    .$species %>% unique() %>% sort()
-  
-  if(!file.exists(aphia_records_csv)) {
-    
-    chunk_size <- 25
-    n_chunks <- ceiling(length(names_to_resolve) / chunk_size)
-    record_chunk_stem <- 'tmp/resolve_age_mat_fb_chunk_%s_%s.csv'
-    ### unlink(list.files(here('tmp'), pattern = 'resolve_age_mat_fb_chunk_', full.names = TRUE))
-    
-    for(i in 1:n_chunks) { ### i <- 1
-      message('Processing chunk ', i, ' of ', n_chunks)
-      i_start <- (i-1) * chunk_size + 1
-      i_end   <- min(i * chunk_size, length(names_to_resolve))
-      chunk_csv <- here(sprintf(record_chunk_stem, i_start, i_end))
-      if(file.exists(chunk_csv)) {
-        message('Chunk exists: ', basename(chunk_csv), '... skipping!')
-        next()
-      }
-      spp_vec <- names_to_resolve[i_start:i_end]
-      chunk_df <- fuzzy_match(spp_vec, marine_only = FALSE)
-      write_csv(chunk_df, chunk_csv)
-    }
-    
-    chunk_fs <- list.files(here('tmp'), pattern = 'resolve_age_mat_fb_chunk_', full.name = TRUE)
-    record_df <- parallel::mclapply(chunk_fs, read_csv) %>%
-      bind_rows() %>%
-      distinct()
-    write_csv(record_df, aphia_records_csv)
-  }
-}
-```
-
-
-
-
-
-
-
-``` {r}
-record_df <- read_csv(aphia_records_csv) %>%
+record_df <- collect_records(mat_fb, field = 'age_mat', file_tag = 'resolve_names_fb_maturity') %>%
   filter(aphia_id != -9999)
 
 mat_fb_gf <- mat_fb %>%
@@ -316,65 +194,9 @@ fecund_fb <- fecund_fb_num %>%
   filter(!is.na(max_fecundity))
 ```
 
-```{r}
 
-fecund_worms_fb <- spp_from_worms %>%
-  left_join(fecund_fb, by = 'species') %>%
-  mutate(db = ifelse(is.na(db), 'worms', db))
-
-no_match <- anti_join(fecund_fb, spp_from_worms, by = 'species')
-no_match_w_vals <- no_match %>%
-  filter(!is.na(max_fecundity)) %>%
-  mutate(genus = str_extract(species, '[a-z]+(?= ?)'),
-         genus_match = genus %in% spp_from_worms$genus)
-
-table(no_match_w_vals %>% select(genus_match, db))
-
-```
-
-Use WoRMS API to resolve names
-
-```{r resolve unmatched spp from fishbase}
-
-aphia_records_csv <- here('int/resolve_names_fb_fecundity.csv')
-
-names_to_resolve <- no_match_w_vals %>%
-  filter(genus_match) %>%
-  .$species %>% unique() %>% sort()
-
-if(!file.exists(aphia_records_csv)) {
-  
-  chunk_size <- 25
-  n_chunks <- ceiling(length(names_to_resolve) / chunk_size)
-  record_chunk_stem <- 'tmp/resolve_fecund_fb_chunk_%s_%s.csv'
-  ### unlink(list.files(here('tmp'), pattern = 'resolve_fecund_fb_chunk_', full.names = TRUE))
-  
-  for(i in 1:n_chunks) { ### i <- 1
-    message('Processing chunk ', i, ' of ', n_chunks)
-    i_start <- (i-1) * chunk_size + 1
-    i_end   <- min(i * chunk_size, length(names_to_resolve))
-    chunk_csv <- here(sprintf(record_chunk_stem, i_start, i_end))
-    if(file.exists(chunk_csv)) {
-      message('Chunk exists: ', basename(chunk_csv), '... skipping!')
-      next()
-    }
-    spp_vec <- names_to_resolve[i_start:i_end]
-    chunk_df <- fuzzy_match(spp_vec, marine_only = FALSE)
-    write_csv(chunk_df, chunk_csv)
-  }
-  
-  chunk_fs <- list.files(here('tmp'), pattern = 'resolve_fecund_fb_chunk_', full.name = TRUE)
-  record_df <- parallel::mclapply(chunk_fs, read_csv) %>%
-    bind_rows() %>%
-    distinct()
-  write_csv(record_df, aphia_records_csv)
-}
-
-```
-
-
-``` {r}
-record_df <- read_csv(aphia_records_csv) %>%
+``` {r resolve and finalize fecundity}
+record_df <- collect_records(fecund_fb, field = 'max_fecundity', file_tag = 'resolve_names_fb_fecundity') %>%
   filter(aphia_id != -9999)
 
 fecund_fb_gf <- fecund_fb %>%
@@ -426,33 +248,29 @@ Read in data from vulnerability project and fishbase/sealifebase.  Here we have 
 ```{r parental investment from fishbase}
 fields <- c('parental', 'guild')
 
-reprod_df_raw <- get_fb_slb(fxn = reproduction,
+reprod_fb_raw <- get_fb_slb(fxn = reproduction,
                      keep_cols = fields, keep_fxn = contains,
                      drop_cols = '_ref', drop_fxn = ends_with)
-# summary(reprod_df_raw)
 
-# x <- reprod_df_raw %>% filter(!is.na(rep_guild1) | !is.na(parental_care))
-
-# parent_df <- reprod_df_raw %>%
-#   mutate(parental_score = case_when(parental_care == 'none' ~ 0,
-#                                   str_detect(parental_care, 'aternal') ~ 1,
-#                                   parental_care == 'biparental' ~ 2)) %>%
-#   select(db, spec_code, species, parental_score) %>%
-#   group_by(db, spec_code, species) %>%
-#   summarize(parental_score = mean(parental_score), .groups = 'drop') %>%
-#   right_join(spp_from_worms, by = 'species')
-# 
-# parent_df %>% filter(!is.na(parental_score)) %>% select(db, parental_score) %>% table()
-
-protect_df <- reprod_df_raw %>%
+protect_fb <- reprod_fb_raw %>%
   mutate(rep_guild1 = factor(rep_guild1, levels = c('nonguarders', 'guarders', 'bearers')),
          protect_score = as.integer(rep_guild1)) %>%
+  filter(!is.na(protect_score) & !is.na(species)) %>%
   select(db, spec_code, species, protect_score) %>%
   group_by(db, spec_code, species) %>%
-  summarize(protect_score = mean(protect_score), .groups = 'drop') %>%
+  summarize(protect_score = mean(protect_score), .groups = 'drop')
+
+record_df <- collect_records(protect_fb, field = 'protect_score', file_tag = 'resolve_names_fb_protect') %>%
+  filter(aphia_id != -9999)
+
+protect_df <- protect_fb %>%
+  left_join(record_df, by = c('species' = 'orig_sciname')) %>%
+  mutate(species = ifelse(!is.na(valid_name), valid_name, species)) %>%
   right_join(spp_from_worms, by = 'species')
 
-protect_df %>% filter(!is.na(protect_score)) %>% select(db, protect_score) %>% table()
+protect_df %>% 
+  filter(!is.na(protect_score)) %>% 
+  select(db, protect_score) %>% table()
 
 ```
 

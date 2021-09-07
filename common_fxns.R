@@ -14,7 +14,12 @@ am_dir <- '/home/shares/ohi/spp_vuln/aquamaps_2021'
 get_am_spp_info <- function() {
   ### resolves AquaMaps species names according to WoRMS classification,
   ### drops subspp names
-  am_spp_resolve <- read_csv(here('_data/worms_taxa/aquamaps_aphia_records.csv'))
+  am_spp_resolve <- read_csv(here('_data/worms_taxa/aquamaps_aphia_records.csv')) %>%
+    filter(!is.na(aphia_id)) %>%
+    group_by(am_sciname) %>%
+    mutate(match = am_sciname == valid_name) %>%
+    arrange(desc(match)) %>% ### get TRUE on top, if any
+    summarize(valid_name = first(valid_name), aphia_id = first(aphia_id))
   
   spp_info <- data.table::fread(file.path(am_dir, 'ver10_2019_speciesoccursum_iucn.csv')) %>%
     janitor::clean_names() %>%
@@ -25,7 +30,9 @@ get_am_spp_info <- function() {
     mutate(sciname = case_when(str_detect(sciname, 'incertae sedis') ~ sciname,
                                str_detect(sciname, ' var\\.') ~ str_remove(sciname, ' var\\. .+'),
                                str_detect(sciname, '\\(|\\)') ~ str_extract(sciname, '[^ ]+ \\(.+?\\) [^ ]+'),
-                               TRUE ~ str_extract(sciname, '[^ ]+ [^ ]+')))
+                               TRUE ~ str_extract(sciname, '[^ ]+ [^ ]+'))) %>%
+    mutate(across(where(is.character), ~tolower(.x))) %>%
+    clean_scinames('sciname')
   
   return(spp_info)
 }
@@ -130,16 +137,29 @@ get_am_spp_cells <- function(occurcells_cut = 10, prob_cut = 0) {
 #####################################################
 ###    Helper functions for vulnerability data    ###
 #####################################################
-get_spp_vuln <- function() {
-  vuln_tx <- data.table::fread(here('_data/vuln_data/vuln_gapfilled_tx.csv'))
-  vuln_score <- data.table::fread(here('_data/vuln_data/vuln_gapfilled_score.csv')) %>%
-    gather(stressor, score, -vuln_gf_id)
-  vuln_sd <- data.table::fread(here('_data/vuln_data/vuln_gapfilled_sd.csv')) %>%
-    gather(stressor, sd_score, -vuln_gf_id)
+get_spp_vuln <- function(gapfill = c('family', 'all')[2]) {
+  if(gapfill == 'family') {
+    ### read from pre-filtered gapfill files in Github
+    vuln_tx <- data.table::fread(here('_data/vuln_data/vuln_gapfilled_tx.csv'))
+    vuln_score <- data.table::fread(here('_data/vuln_data/vuln_gapfilled_score.csv')) %>%
+      gather(stressor, score, -vuln_gf_id)
+    vuln_sd <- data.table::fread(here('_data/vuln_data/vuln_gapfilled_sd.csv')) %>%
+      gather(stressor, sd_score, -vuln_gf_id)
+  } else {
+    ### read from unfiltered gapfilled files on Mazu server
+    mazu_dir <- '/home/shares/ohi/spp_vuln/spp_vuln_framework/post_gapfill'
+    vuln_tx <- data.table::fread(file.path(mazu_dir, 'vuln_gapfilled_all_tx.csv'))
+    vuln_score <- data.table::fread(file.path(mazu_dir, 'vuln_gapfilled_all_score.csv')) %>%
+      gather(stressor, score, -vuln_gf_id)
+    vuln_sd <- data.table::fread(file.path(mazu_dir, 'vuln_gapfilled_all_sd.csv')) %>%
+      gather(stressor, sd_score, -vuln_gf_id)
+  }
   vuln_df <- vuln_tx %>%
     full_join(vuln_score, by = c('vuln_gf_id')) %>%
     full_join(vuln_sd,    by = c('vuln_gf_id', 'stressor')) %>%
-    dplyr::select(-vuln_gf_id)
+    dplyr::select(-vuln_gf_id) %>%
+    clean_scinames('species') %>%
+    clean_scinames('genus')
   return(vuln_df)
 }
 
@@ -322,34 +342,47 @@ assemble_worms <- function(aspect = 'wide', seabirds_only = TRUE, am_patch = TRU
   p_from_k <- read_csv(here('_data/worms_taxa', 
                             'expand1_phylum_from_kingdom_worms.csv'), 
                        col_types = c(id = 'i')) %>%
-    filter(!is.na(id))
+    filter(!is.na(id)) %>%
+    clean_scinames('name') %>%
+    clean_scinames('parent')
   c_from_p <- read_csv(here('_data/worms_taxa', 
                             'expand2_class_from_phylum_worms.csv'), 
                        col_types = c(id = 'i')) %>%
-    filter(!is.na(id))
+    filter(!is.na(id)) %>%
+    clean_scinames('name') %>%
+    clean_scinames('parent')
   o_from_c <- read_csv(here('_data/worms_taxa', 
                             'expand3_order_from_class_worms.csv'), 
                        col_types = c(id = 'i')) %>%
-    filter(!is.na(id))
+    filter(!is.na(id)) %>%
+    clean_scinames('name') %>%
+    clean_scinames('parent')
   f_from_o <- read_csv(here('_data/worms_taxa', 
                             'expand4_family_from_order_worms.csv'), 
                        col_types = c(id = 'i')) %>%
-    filter(!is.na(id))
+    filter(!is.na(id)) %>%
+    clean_scinames('name') %>%
+    clean_scinames('parent')
   g_from_f <- read_csv(here('_data/worms_taxa', 
                             'expand5_genus_from_family_worms.csv'), 
                        col_types = c(id = 'i')) %>%
-    filter(!is.na(id))
+    filter(!is.na(id)) %>%
+    clean_scinames('name') %>%
+    clean_scinames('parent')
   s_from_g <- read_csv(here('_data/worms_taxa', 
                             'expand6_species_from_genus_worms.csv'), 
                        col_types = c(id = 'i')) %>%
-    filter(!is.na(id))
+    filter(!is.na(id)) %>%
+    clean_scinames('name') %>%
+    clean_scinames('parent')
   
   if(am_patch) {
     am_patch_wide <- read_csv(here('_data/worms_taxa',
                                    'expand7_aquamaps_patch.csv'),
                               col_types = cols(.default = 'c')) %>%
       distinct() %>% 
-      mutate(source = 'am')
+      mutate(source = 'am') %>%
+      clean_scinames('species')
   } else {
     am_patch_wide <- data.frame(source = 'am') ### blank dataframe for bind_rows
   }
@@ -359,15 +392,15 @@ assemble_worms <- function(aspect = 'wide', seabirds_only = TRUE, am_patch = TRU
   ### create wide for complete classification for each species
   spp_wide <- s_from_g %>%
     select(genus = parent, species = name) %>%
-    left_join(g_from_f %>% select(family = parent, genus = name), 
+    full_join(g_from_f %>% select(family = parent, genus = name), 
               by = c('genus')) %>%
-    left_join(f_from_o %>% select(order = parent, family = name), 
+    full_join(f_from_o %>% select(order = parent, family = name), 
               by = c('family')) %>%
-    left_join(o_from_c %>% select(class = parent, order = name), 
+    full_join(o_from_c %>% select(class = parent, order = name), 
               by = c('order')) %>%
-    left_join(c_from_p %>% select(phylum = parent, class = name), 
+    full_join(c_from_p %>% select(phylum = parent, class = name), 
               by = c('class')) %>%
-    left_join(p_from_k %>% select(kingdom = parent, phylum = name),
+    full_join(p_from_k %>% select(kingdom = parent, phylum = name),
               by = c('phylum')) %>%
     select(phylum, class, order, family, genus, species) %>%
     mutate(source = 'worms') %>%
@@ -583,10 +616,12 @@ filter_dupe_spp <- function(df, level = c('all', 'class')[1]) {
 
 ### Get vulnerability traits by species
 get_vuln_traits <- function() {
-  read_csv(here('_data/traits_vulnerability/spp_traits_valid.csv'))
+  x <- read_csv(here('_data/traits_vulnerability/spp_traits_valid.csv'))
 }
 
-### Resolve names using WoRMS API fuzzy match
+####################################################=
+####  Resolve names using WoRMS API fuzzy match  ####
+####################################################=
 
 fuzzy_match <- function(spp_vec, marine_only = TRUE) {
   
@@ -620,3 +655,68 @@ fuzzy_match <- function(spp_vec, marine_only = TRUE) {
   }
 }
 
+collect_records <- function(fb_df, field, file_tag) {
+  
+  ### get names with values that don't match WoRMS names
+  spp_from_worms <- assemble_worms()
+  
+  fb_df <- fb_df %>%
+    rename(tmp := !!field)
+  
+  no_match <- anti_join(fb_df, spp_from_worms, by = 'species')
+  no_match_w_vals <- no_match %>%
+    filter(!is.na(tmp)) %>%
+    mutate(genus = str_extract(species, '[a-z]+(?= ?)'),
+           genus_match = genus %in% spp_from_worms$genus)
+  
+  # table(no_match_w_vals %>% select(genus_match, db))
+  
+  names_to_resolve <- no_match_w_vals %>%
+    filter(genus_match) %>%
+    .$species %>% unique() %>% sort()
+  
+  ### Define file and check whether it exists
+  aphia_records_csv <- sprintf(here('int/%s.csv'), file_tag)
+  
+  
+  if(!file.exists(aphia_records_csv)) {
+    
+    chunk_size <- 25
+    n_chunks <- ceiling(length(names_to_resolve) / chunk_size)
+    record_chunk_stem <- 'tmp/%s_chunk_%s_%s.csv'
+    ### unlink(list.files(here('tmp'), pattern = sprintf('%s_chunk', file_tag), full.names = TRUE))
+    
+    for(i in 1:n_chunks) { ### i <- 1
+      message('Processing chunk ', i, ' of ', n_chunks)
+      i_start <- (i-1) * chunk_size + 1
+      i_end   <- min(i * chunk_size, length(names_to_resolve))
+      chunk_csv <- here(sprintf(record_chunk_stem, file_tag, i_start, i_end))
+      if(file.exists(chunk_csv)) {
+        message('Chunk exists: ', basename(chunk_csv), '... skipping!')
+        next()
+      }
+      spp_vec <- names_to_resolve[i_start:i_end]
+      chunk_df <- fuzzy_match(spp_vec, marine_only = FALSE)
+      write_csv(chunk_df, chunk_csv)
+    }
+    
+    chunk_fs <- list.files(here('tmp'), pattern = sprintf('%s_chunk', file_tag), full.name = TRUE)
+    record_df <- parallel::mclapply(chunk_fs, read_csv) %>%
+      bind_rows() %>%
+      distinct()
+    write_csv(record_df, aphia_records_csv)
+  }
+  record_df <- read_csv(aphia_records_csv) %>%
+    clean_scinames('valid_name')
+}
+
+clean_scinames <- function(df, field) {
+  ### eliminate confounding clutter in taxonomic names
+  df_clean <- df %>%
+    rename(tmp := !!field) %>%
+    mutate(tmp = str_remove_all(tmp, '\\(.+?\\)'), ### parentheticals
+           tmp = str_remove_all(tmp, '\\[.+?\\]'), ### brackets
+           tmp = str_remove_all(tmp, '[^a-z ]')) %>% ### punctuation
+    mutate(tmp = str_squish(tmp)) %>%
+    rename(!!field := tmp)
+}

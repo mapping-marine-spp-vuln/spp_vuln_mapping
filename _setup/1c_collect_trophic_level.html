@@ -9,7 +9,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
 
 
-<meta name="author" content="Compiled on Thu Sep 2 12:32:18 2021 by ohara" />
+<meta name="author" content="Compiled on Tue Sep 7 13:58:29 2021 by ohara" />
 
 
 <title>Collect trophic level trait</title>
@@ -356,7 +356,7 @@ div.tocify {
 
 
 <h1 class="title toc-ignore">Collect trophic level trait</h1>
-<h4 class="author"><em>Compiled on Thu Sep 2 12:32:18 2021 by ohara</em></h4>
+<h4 class="author"><em>Compiled on Tue Sep 7 13:58:29 2021 by ohara</em></h4>
 
 </div>
 
@@ -526,22 +526,21 @@ div.tocify {
 </tr>
 </tbody>
 </table>
-<div class="sourceCode" id="cb10"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>prob_classes <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">&#39;anthozoa&#39;</span>, <span class="st">&#39;demospongiae&#39;</span>, <span class="st">&#39;echinoidea&#39;</span>, <span class="st">&#39;holothuroidea&#39;</span>)</span>
-<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>troph_df_gf <span class="ot">&lt;-</span> troph_df <span class="sc">%&gt;%</span></span>
-<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">right_join</span>(<span class="fu">assemble_worms</span>()) <span class="sc">%&gt;%</span></span>
-<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">gapfill_up_down</span>(<span class="st">&#39;troph&#39;</span>) <span class="sc">%&gt;%</span></span>
-<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(gf_level <span class="sc">&lt;=</span> <span class="dv">4</span> <span class="sc">|</span> class <span class="sc">%in%</span> prob_classes) <span class="sc">%&gt;%</span></span>
-<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">value =</span> <span class="fu">ifelse</span>(<span class="fu">is.na</span>(value) <span class="sc">&amp;</span> class <span class="sc">%in%</span> prob_classes, <span class="dv">2</span>, value)) <span class="sc">%&gt;%</span></span>
-<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(species, trait, value, sd, nspp, gf_level)</span>
-<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a><span class="co"># troph_se_df_gf &lt;- troph_df %&gt;%</span></span>
-<span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a><span class="co">#   right_join(assemble_worms()) %&gt;%</span></span>
-<span id="cb10-11"><a href="#cb10-11" aria-hidden="true" tabindex="-1"></a><span class="co">#   gapfill_up_down(&#39;troph_se&#39;) %&gt;%</span></span>
-<span id="cb10-12"><a href="#cb10-12" aria-hidden="true" tabindex="-1"></a><span class="co">#   select(species, trait, value, sd, nspp, gf_level) %&gt;%</span></span>
-<span id="cb10-13"><a href="#cb10-13" aria-hidden="true" tabindex="-1"></a><span class="co">#   filter(gf_level &lt;= 4)</span></span>
+<div class="sourceCode" id="cb10"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>record_df <span class="ot">&lt;-</span> <span class="fu">collect_records</span>(troph_df, <span class="at">field =</span> <span class="st">&#39;troph&#39;</span>, <span class="at">file_tag =</span> <span class="st">&#39;resolve_names_fb_troph&#39;</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(aphia_id <span class="sc">!=</span> <span class="sc">-</span><span class="dv">9999</span>)</span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>prob_classes <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">&#39;anthozoa&#39;</span>, <span class="st">&#39;demospongiae&#39;</span>, <span class="st">&#39;echinoidea&#39;</span>, <span class="st">&#39;holothuroidea&#39;</span>)</span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a>troph_df_gf <span class="ot">&lt;-</span> troph_df <span class="sc">%&gt;%</span></span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">left_join</span>(record_df, <span class="at">by =</span> <span class="fu">c</span>(<span class="st">&#39;species&#39;</span> <span class="ot">=</span> <span class="st">&#39;orig_sciname&#39;</span>)) <span class="sc">%&gt;%</span></span>
+<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">species =</span> <span class="fu">ifelse</span>(<span class="sc">!</span><span class="fu">is.na</span>(valid_name), valid_name, species)) <span class="sc">%&gt;%</span></span>
+<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">right_join</span>(<span class="fu">assemble_worms</span>(), <span class="at">by =</span> <span class="st">&#39;species&#39;</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">gapfill_up_down</span>(<span class="st">&#39;troph&#39;</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb10-11"><a href="#cb10-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(gf_level <span class="sc">&lt;=</span> <span class="dv">4</span> <span class="sc">|</span> class <span class="sc">%in%</span> prob_classes) <span class="sc">%&gt;%</span></span>
+<span id="cb10-12"><a href="#cb10-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">value =</span> <span class="fu">ifelse</span>(<span class="fu">is.na</span>(value) <span class="sc">&amp;</span> class <span class="sc">%in%</span> prob_classes, <span class="dv">2</span>, value)) <span class="sc">%&gt;%</span></span>
+<span id="cb10-13"><a href="#cb10-13" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(species, trait, value, sd, nspp, gf_level)</span>
 <span id="cb10-14"><a href="#cb10-14" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-15"><a href="#cb10-15" aria-hidden="true" tabindex="-1"></a><span class="fu">write_csv</span>(troph_df_gf, <span class="fu">here</span>(<span class="st">&#39;_data/traits_grouping/trait_trophic_level.csv&#39;</span>))</span>
-<span id="cb10-16"><a href="#cb10-16" aria-hidden="true" tabindex="-1"></a><span class="co"># write_csv(troph_se_df_gf, here(&#39;_data/traits_grouping/trait_trophic_se.csv&#39;))</span></span></code></pre></div>
+<span id="cb10-15"><a href="#cb10-15" aria-hidden="true" tabindex="-1"></a><span class="fu">write_csv</span>(troph_df_gf, <span class="fu">here</span>(<span class="st">&#39;_data/traits_grouping/trait_trophic_level.csv&#39;</span>))</span></code></pre></div>
 </div>
 </div>
 
