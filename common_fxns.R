@@ -14,7 +14,7 @@ am_dir <- '/home/shares/ohi/spp_vuln/aquamaps_2021'
 get_am_spp_info <- function() {
   ### resolves AquaMaps species names according to WoRMS classification,
   ### drops subspp names
-  am_spp_resolve <- read_csv(here('_data/worms_taxa/aquamaps_aphia_records.csv')) %>%
+  am_spp_resolve <- data.table::fread(here('_data/worms_taxa/aquamaps_aphia_records.csv')) %>%
     filter(!is.na(aphia_id)) %>%
     group_by(am_sciname) %>%
     mutate(match = am_sciname == valid_name) %>%
@@ -66,7 +66,7 @@ get_am_spp_envelopes <- function() {
   #   
   #   write_csv(env_sum_df, env_file)
   # }
-  return(read_csv(env_file))
+  return(data.table::fread(env_file))
 }
 
 get_hcaf_info <- function() {
@@ -111,14 +111,15 @@ get_am_spp_cells <- function(occurcells_cut = 10, prob_cut = 0) {
   #     distinct()
   #   spp_cells <- data.table::fread(file.path(am_dir, 'hcaf_species_native.csv')) %>%
   #     janitor::clean_names() %>%
-  #     left_join(csq_loiczid) %>%
+  #     oharac::dt_join(csq_loiczid, by = 'csquare_code', type = 'left') %>%
   #     select(am_sid = species_id, loiczid, prob = probability) %>%
-  #     distinct()
+  #     distinct() %>%
+  #     mutate(am_sid = tolower(am_sid))
   # 
   #   write_csv(spp_cells, spp_cell_file)
   # }
   
-  spp_cells <- data.table::fread(spp_cell_file) 
+  spp_cells <- data.table::fread(spp_cell_file)
   
   if(occurcells_cut > 0) {
     spp_valid <- get_am_spp_info() %>%
@@ -155,8 +156,8 @@ get_spp_vuln <- function(gapfill = c('family', 'all')[2]) {
       gather(stressor, sd_score, -vuln_gf_id)
   }
   vuln_df <- vuln_tx %>%
-    full_join(vuln_score, by = c('vuln_gf_id')) %>%
-    full_join(vuln_sd,    by = c('vuln_gf_id', 'stressor')) %>%
+    oharac::dt_join(vuln_score, by = c('vuln_gf_id'), type = 'full') %>%
+    oharac::dt_join(vuln_sd,    by = c('vuln_gf_id', 'stressor'), type = 'full') %>%
     dplyr::select(-vuln_gf_id) %>%
     clean_scinames('species') %>%
     clean_scinames('genus')
@@ -339,50 +340,42 @@ gapfill_up_down <- function(df, col) {
 assemble_worms <- function(aspect = 'wide', seabirds_only = TRUE, am_patch = TRUE) {
   ### Note: this drops all kingdoms but Animalia 
   
-  p_from_k <- read_csv(here('_data/worms_taxa', 
-                            'expand1_phylum_from_kingdom_worms.csv'), 
-                       col_types = c(id = 'i')) %>%
+  p_from_k <- data.table::fread(here('_data/worms_taxa', 
+                            'expand1_phylum_from_kingdom_worms.csv')) %>%
     filter(!is.na(id)) %>%
-    clean_scinames('name') %>%
-    clean_scinames('parent')
-  c_from_p <- read_csv(here('_data/worms_taxa', 
-                            'expand2_class_from_phylum_worms.csv'), 
-                       col_types = c(id = 'i')) %>%
+    select(-id) %>%
+    distinct()
+  c_from_p <- data.table::fread(here('_data/worms_taxa', 
+                            'expand2_class_from_phylum_worms.csv')) %>%
     filter(!is.na(id)) %>%
-    clean_scinames('name') %>%
-    clean_scinames('parent')
-  o_from_c <- read_csv(here('_data/worms_taxa', 
-                            'expand3_order_from_class_worms.csv'), 
-                       col_types = c(id = 'i')) %>%
+    select(-id) %>%
+    distinct()
+  o_from_c <- data.table::fread(here('_data/worms_taxa', 
+                            'expand3_order_from_class_worms.csv')) %>%
     filter(!is.na(id)) %>%
-    clean_scinames('name') %>%
-    clean_scinames('parent')
-  f_from_o <- read_csv(here('_data/worms_taxa', 
-                            'expand4_family_from_order_worms.csv'), 
-                       col_types = c(id = 'i')) %>%
+    select(-id) %>%
+    distinct()
+  f_from_o <- data.table::fread(here('_data/worms_taxa', 
+                            'expand4_family_from_order_worms.csv')) %>%
     filter(!is.na(id)) %>%
-    clean_scinames('name') %>%
-    clean_scinames('parent')
-  g_from_f <- read_csv(here('_data/worms_taxa', 
-                            'expand5_genus_from_family_worms.csv'), 
-                       col_types = c(id = 'i')) %>%
+    select(-id) %>%
+    distinct()
+  g_from_f <- data.table::fread(here('_data/worms_taxa', 
+                            'expand5_genus_from_family_worms.csv')) %>%
     filter(!is.na(id)) %>%
-    clean_scinames('name') %>%
-    clean_scinames('parent')
-  s_from_g <- read_csv(here('_data/worms_taxa', 
-                            'expand6_species_from_genus_worms.csv'), 
-                       col_types = c(id = 'i')) %>%
+    select(-id) %>%
+    distinct()
+  s_from_g <- data.table::fread(here('_data/worms_taxa', 
+                            'expand6_species_from_genus_worms.csv')) %>%
     filter(!is.na(id)) %>%
-    clean_scinames('name') %>%
-    clean_scinames('parent')
+    select(-id) %>%
+    distinct()
   
   if(am_patch) {
-    am_patch_wide <- read_csv(here('_data/worms_taxa',
-                                   'expand7_aquamaps_patch.csv'),
-                              col_types = cols(.default = 'c')) %>%
+    am_patch_wide <- data.table::fread(here('_data/worms_taxa',
+                                   'expand7_aquamaps_patch.csv')) %>%
       distinct() %>% 
-      mutate(source = 'am') %>%
-      clean_scinames('species')
+      mutate(source = 'am')
   } else {
     am_patch_wide <- data.frame(source = 'am') ### blank dataframe for bind_rows
   }
@@ -392,15 +385,15 @@ assemble_worms <- function(aspect = 'wide', seabirds_only = TRUE, am_patch = TRU
   ### create wide for complete classification for each species
   spp_wide <- s_from_g %>%
     select(genus = parent, species = name) %>%
-    full_join(g_from_f %>% select(family = parent, genus = name), 
+    left_join(g_from_f %>% select(family = parent, genus = name), 
               by = c('genus')) %>%
-    full_join(f_from_o %>% select(order = parent, family = name), 
+    left_join(f_from_o %>% select(order = parent, family = name), 
               by = c('family')) %>%
-    full_join(o_from_c %>% select(class = parent, order = name), 
+    left_join(o_from_c %>% select(class = parent, order = name), 
               by = c('order')) %>%
-    full_join(c_from_p %>% select(phylum = parent, class = name), 
+    left_join(c_from_p %>% select(phylum = parent, class = name), 
               by = c('class')) %>%
-    full_join(p_from_k %>% select(kingdom = parent, phylum = name),
+    left_join(p_from_k %>% select(kingdom = parent, phylum = name),
               by = c('phylum')) %>%
     select(phylum, class, order, family, genus, species) %>%
     mutate(source = 'worms') %>%
@@ -408,6 +401,12 @@ assemble_worms <- function(aspect = 'wide', seabirds_only = TRUE, am_patch = TRU
     filter(phylum %in% p_from_k$name) %>%
     ### since p_from_k only includes Animalia, this phylum selection drops
     ### AquaMaps non-animalia phyla, e.g., chlorophytes, cyanobacteria, plants
+    clean_scinames('species') %>%
+    clean_scinames('genus') %>%
+    clean_scinames('family') %>%
+    clean_scinames('order') %>%
+    clean_scinames('class') %>%
+    clean_scinames('phylum') %>%
     distinct()
   
   spp_wide_disambiguated <- disambiguate_species(spp_wide)
@@ -456,6 +455,7 @@ resolve_am_disputes <- function(spp_wide) {
                           select(-species) %>%
                           distinct(),
                         'genus') %>%
+    filter(!(genus == 'gammarus' & family == 'paratanaidae')) %>%
     group_by(genus) %>%
     filter(n_distinct(class) > 1 | n_distinct(order) > 1 | n_distinct(family) > 1) %>%
     mutate(am_count = sum(source == 'am'),
@@ -487,8 +487,10 @@ resolve_am_disputes <- function(spp_wide) {
                               genus == 'mathilda'      ~ 'mathildidae',
                               genus == 'polybranchia'  ~ 'hermaeidae',
                               genus == 'tjaernoeia'    ~ 'tjaernoeiidae',
+                              genus == 'lamellitrochus' ~ 'solariellidae',
                               TRUE ~ family)) %>%
-    mutate(order = case_when(genus == 'elysia' ~ 'sacoglossa',
+    mutate(order = case_when(genus == 'lamellitrochus' ~ 'trochida',
+                             genus == 'elysia' ~ 'sacoglossa',
                              genus == 'eulimastoma' ~ 'pylopulmonata',
                              genus == 'conger' ~ 'anguilliformes',
                              genus == 'polybranchia' ~ 'sacoglossa',
@@ -530,39 +532,49 @@ disambiguate_species <- function(spp_wide) {
     select(-source) %>%
     distinct() %>%
     show_dupes('species')
+  ### currently, none due to appearing in both AM and WoRMS
   
   spp_wide_nodupes <- spp_wide %>%
     filter(!species %in% dupes_drop_source$species)
   
   dupes_fixed <- dupes %>%
-    mutate(keep = case_when(genus == 'pinctada' & order == 'ostreida'         ~ TRUE,
-                            family == 'margaritidae' & order == 'trochida' & genus != 'pinctada' ~ TRUE,
-                            genus == 'atractotrema' & class == 'gastropoda'   ~ TRUE,
-                            genus == 'chaperia' & phylum == 'bryozoa'         ~ TRUE,
-                            family == 'molgulidae' & genus == 'eugyra'        ~ TRUE,
-                            genus == 'aturia' & order == 'nautilida'          ~ TRUE,
-                            genus == 'spongicola' & family == 'spongicolidae' ~ TRUE,
-                            genus == 'stictostega' & family == 'hippothoidae' ~ TRUE,
-                            genus == 'favosipora' & family == 'densiporidae'  ~ TRUE,
-                            genus == 'cladochonus' & family ==  'pyrgiidae'   ~ TRUE,
-                            genus == 'bathya' & order == 'amphipoda'          ~ TRUE,
-                            genus == 'bergia' & family == 'drepanophoridae'   ~ TRUE,
-                            genus == 'geminella' & family == 'catenicellidae' ~ TRUE,
-                            genus == 'ctenella' & family ==  'ctenellidae'    ~ TRUE,
-                            genus == 'nematoporella' & family ==  'arthrostylidae' ~ TRUE,
-                            genus == 'pleurifera' & family == 'columbellidae' ~ TRUE,
-                            genus == 'philippiella' & family == 'steinmanellidae' ~ TRUE,
-                            genus == 'thoe' & family == 'mithracidae'         ~ TRUE,
-                            genus == 'trachyaster' & family == 'palaeostomatidae' ~ TRUE,
-                            genus == 'diplocoenia' & family == 'acroporidae'  ~ TRUE,
-                            genus == 'versuriga' & family == 'versurigidae'   ~ TRUE,
-                            genus == 'tremaster' & family == 'asterinidae'    ~ TRUE,
-                            genus == 'distefanella' & family == 'radiolitidae' ~ TRUE,
+    filter(species != 'no match') %>%
+    mutate(genus  = ifelse(species == 'praephiline finmarchica', 'praephiline', genus),
+           family = ifelse(species == 'praephiline finmarchica', 'laonidae', family),
+           genus  = ifelse(species == 'polititapes rhomboides', 'polititapes', genus)) %>%
+    mutate(keep = case_when(family == 'margaritidae' & order == 'trochida' & genus != 'pinctada' ~ TRUE,
+                            genus  == 'pinctada'     & order == 'ostreida'       ~ TRUE,
+                            genus  == 'atractotrema' & class == 'gastropoda'     ~ TRUE,
+                            genus  == 'chaperia'     & phylum == 'bryozoa'       ~ TRUE,
+                            family == 'molgulidae'   & genus == 'eugyra'         ~ TRUE,
+                            genus  == 'aturia'       & order == 'nautilida'      ~ TRUE,
+                            genus  == 'spongicola'   & family == 'spongicolidae' ~ TRUE,
+                            genus  == 'stictostega'  & family == 'hippothoidae'  ~ TRUE,
+                            genus  == 'favosipora'   & family == 'densiporidae'  ~ TRUE,
+                            genus  == 'cladochonus'  & family == 'pyrgiidae'     ~ TRUE,
+                            genus  == 'bathya'       & order == 'amphipoda'      ~ TRUE,
+                            genus  == 'ctenella'     & family == 'ctenellidae'   ~ TRUE,
+                            genus  == 'pleurifera'   & family == 'columbellidae' ~ TRUE,
+                            genus  == 'thoe'         & family == 'mithracidae'   ~ TRUE,
+                            genus  == 'diplocoenia'  & family == 'acroporidae'   ~ TRUE,
+                            genus  == 'versuriga'    & family == 'versurigidae'  ~ TRUE,
+                            genus  == 'tremaster'    & family == 'asterinidae'   ~ TRUE,
+                            genus  == 'distefanella' & family == 'radiolitidae'  ~ TRUE,
+                            genus  == 'bracthelia'   & family == 'agatheliidae'  ~ TRUE,
+                            genus  == 'dinetia'      & family == 'draconematidae'   ~ TRUE,
+                            genus  == 'bergia'       & family == 'drepanophoridae'  ~ TRUE,
+                            genus  == 'geminella'    & family == 'catenicellidae'   ~ TRUE,
+                            genus  == 'nematoporella' & family == 'arthrostylidae'  ~ TRUE,
+                            genus  == 'philippiella' & family == 'steinmanellidae'  ~ TRUE,
+                            genus  == 'trachyaster'  & family == 'palaeostomatidae' ~ TRUE,
                             TRUE ~ FALSE)) %>%
+    group_by(species) %>%
+    mutate(gen_match = str_detect(species, paste0('^', genus, ' ')) & source == 'am',
+           keep = ifelse(sum(!keep) > 1 & gen_match, TRUE, keep)) %>%
     filter(keep) %>%
-    select(-keep) %>%
+    select(-keep, -gen_match) %>%
     distinct()
-  
+
   spp_wide_clean <- bind_rows(spp_wide_nodupes, dupes_fixed)
   
   return(spp_wide_clean)
@@ -571,7 +583,7 @@ disambiguate_species <- function(spp_wide) {
 
 check_dupe_spp <- function(df) {
   x <- show_dupes(df, 'species') %>%
-    left_join(read_csv(here('_data/spp_traits_valid.csv')) %>% 
+    left_join(data.table::fread(here('_data/spp_traits_valid.csv')) %>% 
                 downfill() %>%
                 dplyr::select(taxon, species) %>%
                 distinct()) %>%
@@ -616,7 +628,7 @@ filter_dupe_spp <- function(df, level = c('all', 'class')[1]) {
 
 ### Get vulnerability traits by species
 get_vuln_traits <- function() {
-  x <- read_csv(here('_data/traits_vulnerability/spp_traits_valid.csv'))
+  x <- data.table::fread(here('_data/traits_vulnerability/spp_traits_valid.csv'))
 }
 
 ####################################################=
@@ -655,7 +667,7 @@ fuzzy_match <- function(spp_vec, marine_only = TRUE) {
   }
 }
 
-collect_records <- function(fb_df, field, file_tag) {
+collect_records <- function(fb_df, field, file_tag, force = FALSE) {
   
   ### get names with values that don't match WoRMS names
   spp_from_worms <- assemble_worms()
@@ -666,7 +678,7 @@ collect_records <- function(fb_df, field, file_tag) {
   no_match <- anti_join(fb_df, spp_from_worms, by = 'species')
   no_match_w_vals <- no_match %>%
     filter(!is.na(tmp)) %>%
-    mutate(genus = str_extract(species, '[a-z]+(?= ?)'),
+    mutate(genus = str_extract(species, '^[a-z]+(?= ?)'),
            genus_match = genus %in% spp_from_worms$genus)
   
   # table(no_match_w_vals %>% select(genus_match, db))
@@ -679,12 +691,15 @@ collect_records <- function(fb_df, field, file_tag) {
   aphia_records_csv <- sprintf(here('int/%s.csv'), file_tag)
   
   
-  if(!file.exists(aphia_records_csv)) {
+  if(!file.exists(aphia_records_csv) | force) {
     
     chunk_size <- 25
     n_chunks <- ceiling(length(names_to_resolve) / chunk_size)
     record_chunk_stem <- 'tmp/%s_chunk_%s_%s.csv'
-    ### unlink(list.files(here('tmp'), pattern = sprintf('%s_chunk', file_tag), full.names = TRUE))
+    
+    if(force) {
+      unlink(list.files(here('tmp'), pattern = sprintf('%s_chunk', file_tag), full.names = TRUE))
+    }
     
     for(i in 1:n_chunks) { ### i <- 1
       message('Processing chunk ', i, ' of ', n_chunks)
@@ -701,12 +716,12 @@ collect_records <- function(fb_df, field, file_tag) {
     }
     
     chunk_fs <- list.files(here('tmp'), pattern = sprintf('%s_chunk', file_tag), full.name = TRUE)
-    record_df <- parallel::mclapply(chunk_fs, read_csv) %>%
+    record_df <- parallel::mclapply(chunk_fs, data.table::fread) %>%
       bind_rows() %>%
       distinct()
     write_csv(record_df, aphia_records_csv)
   }
-  record_df <- read_csv(aphia_records_csv) %>%
+  record_df <- data.table::fread(aphia_records_csv) %>%
     clean_scinames('valid_name')
 }
 

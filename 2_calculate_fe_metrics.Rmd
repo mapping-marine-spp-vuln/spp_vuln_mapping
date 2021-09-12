@@ -23,23 +23,59 @@ Using functional entities defined in a prior script based on a suite of categori
 
 # Methods
 
+## Check inclusion
+
+## Identify AquaMaps species included in Functional Entity calculations
+
+```{r}
+
+spp_fe <- read_csv(here('_output/func_entities/species_fe.csv')) %>%
+  select(species) %>%
+  mutate(fe = TRUE) %>%
+  distinct()
+spp_am <- get_am_spp_info()  %>%
+  select(species = sciname) %>%
+  mutate(am = TRUE) %>%
+  distinct()
+spp_vuln <- get_spp_vuln() %>%
+  select(species) %>%
+  mutate(vuln = TRUE) %>%
+  distinct()
+spp_worms <- assemble_worms() %>%
+  select(species) %>%
+  mutate(worms = TRUE) %>%
+  distinct()
+
+all_spp <- spp_worms %>%
+  full_join(spp_vuln, by = 'species') %>%
+  full_join(spp_am,   by = 'species') %>%
+  full_join(spp_fe,   by = 'species')
+
+worms_mismatch <- all_spp %>% filter(is.na(worms))
+
+### all AquaMaps spp
+am_check <- get_am_spp_info() %>%
+  filter(sciname %in% worms_mismatch$species)
+table(am_check %>% select(kingdom, phylum))
+table(am_check %>% filter(kingdom == 'animalia') %>% select(class, kingdom))
+```
+
 ## Load data
 
 ```{r load data}
 
-fe_metrics_file <- here('_output/functional_entities', 'fe_metrics.csv')
+fe_metrics_file <- here('_output/func_entities', 'fe_metrics.csv')
 # unlink(fe_metrics_file)
 if(!file.exists(fe_metrics_file)) {
-  am_to_worms_fixes <- read_csv(here('_raw/aquamaps_to_worms_fixes.csv'))
-  spp_fe <- read_csv(here('_output/functional_entities/species_fe.csv'))
+  spp_fe <- read_csv(here('_output/func_entities/species_fe.csv'))
   am_spp_cells <- get_am_spp_cells()
   am_spp_info  <- get_am_spp_info() %>%
     select(-species, species = sciname) %>%
-    filter(kingdom == 'Animalia')
+    filter(kingdom == 'animalia')
 }
 ```
 
-## Identify AquaMaps species included in Functional Entity calculations
+
 
 Then filter the species-cell lookup to just those species, for better performance.
 
@@ -54,10 +90,8 @@ if(!file.exists(fe_metrics_file)) {
     filter(!species %in% spp_fe$species)
   table(am_spp_nonfe$class)
   worms_spp <- assemble_worms() 
-  worms_am <- worms_spp %>%
-    full_join(am_to_worms_fixes, by = c('species' = 'species_worms'))
   am_spp_nonworms <- am_spp_info %>%
-    filter(!species %in% worms_spp$species & !species %in% am_to_worms_fixes$species_am)
+    filter(!species %in% worms_spp$species)
   
   spp_fe_all <- spp_fe %>%
     left_join(worms_spp, by = 'species')
@@ -150,7 +184,6 @@ if(!file.exists(fe_metrics_file)) {
 
 Create and save rasters of functional diversity metrics
 
-
 ```{r create rasts}
 fe_metrics_df <- read_csv(fe_metrics_file)
 
@@ -161,12 +194,18 @@ f_wvuln_rast <- map_to_hcaf(fe_metrics_df, which = 'f_wvuln')
 f_red_rast  <- map_to_hcaf(fe_metrics_df, which = 'f_red')
 f_overred_rast <- map_to_hcaf(fe_metrics_df, which = 'f_overred')
 
-writeRaster(n_spp_rast,   here('_output/functional_entities/n_spp.tif'),   overwrite = TRUE)
-writeRaster(n_fe_rast,    here('_output/functional_entities/n_fe.tif'),    overwrite = TRUE)
-writeRaster(f_vuln_rast,  here('_output/functional_entities/f_vuln.tif'),  overwrite = TRUE)
-writeRaster(f_wvuln_rast, here('_output/functional_entities/f_wvuln.tif'), overwrite = TRUE)
-writeRaster(f_red_rast,   here('_output/functional_entities/f_red.tif'),   overwrite = TRUE)
-writeRaster(f_overred_rast, here('_output/functional_entities/f_overred.tif'), overwrite = TRUE)
+writeRaster(n_spp_rast,   here('_output/func_entities/n_spp.tif'),   
+            overwrite = TRUE)
+writeRaster(n_fe_rast,    here('_output/func_entities/n_fe.tif'),    
+            overwrite = TRUE)
+writeRaster(f_vuln_rast,  here('_output/func_entities/f_vuln.tif'), 
+            overwrite = TRUE)
+writeRaster(f_wvuln_rast, here('_output/func_entities/f_wvuln.tif'), 
+            overwrite = TRUE)
+writeRaster(f_red_rast,   here('_output/func_entities/f_red.tif'),   
+            overwrite = TRUE)
+writeRaster(f_overred_rast, here('_output/func_entities/f_overred.tif'), 
+            overwrite = TRUE)
 ```
 
 Examine distributions of each raster.
@@ -181,12 +220,13 @@ hist(f_overred_rast)
 ```
 
 Plot each raster.
+
 ```{r plot rasters}
 plot_map <- function(r, main) {
   var_name <- sym(names(r))
   r_df <- as.data.frame(r, xy = TRUE)
   ### set fill scale limits based on raster values, from 0 to at least 1
-  var_lim  <- c(0, max(1, maxValue(r)))
+  var_lim  <- c(min(0, minValue(r)), max(1, maxValue(r)))
   ggplot(r_df, aes(x, y, fill = !!var_name)) +
     geom_raster() +
     scale_fill_viridis_c(limits = var_lim) +

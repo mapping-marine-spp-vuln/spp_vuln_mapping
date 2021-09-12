@@ -48,7 +48,10 @@ mob_codes <- c('sessile'           = 'ses',
                'sedentary'         = 'sed',
                'mobile resident'   = 'res',
                'migratory/nomadic' = 'mig')
-mob_traits <- read_csv(here('_data/traits_grouping/trait_mobility.csv')) %>%
+mob_traits_raw <- read_csv(here('_data/traits_grouping/trait_mobility.csv')) 
+
+mob_traits <- mob_traits_raw %>%
+  filter(gf_level <= 4) %>%
   mutate(mob = mob_codes[value],
          mob = factor(mob, levels = mob_codes, ordered = TRUE)) %>%
   group_by(species) %>%
@@ -69,7 +72,9 @@ trait_val_codes <- c(reef    = 'rf',
                      pelagic = 'pel',
                      benthic = 'ben',
                      benthopelagic = 'bp')
-water_col_traits <- read_csv(here('_data/traits_grouping/trait_water_col_position.csv')) %>%
+water_col_traits_raw <- read_csv(here('_data/traits_grouping/trait_water_col_position.csv')) 
+
+water_col_traits <- water_col_traits_raw %>%
   mutate(wcol = trait_val_codes[value],
          wcol = factor(wcol, levels = trait_val_codes, ordered = FALSE)) %>%
   select(species, wcol) %>%
@@ -96,7 +101,7 @@ Generation time and fecundity seem most important, but others can be included as
 #### Fecundity
 
 ```{r fecundity}
-repr_traits <- read_csv(here('_data/traits_grouping/trait_reproduction.csv')) %>%
+repr_traits_raw <- read_csv(here('_data/traits_grouping/trait_reproduction.csv')) %>%
   filter(!is.na(value))
 
 fecund_codes <- c('<1'         = 'lo',
@@ -110,8 +115,9 @@ fecund_codes <- c('<1'         = 'lo',
                   '1000-10000' = 'vhi',
                   '>10000'     = 'vhi')
 
-fecund_traits <- repr_traits %>%
+fecund_traits <- repr_traits_raw %>%
   filter(trait == 'fec') %>%
+  filter(gf_level <= 4) %>%
   mutate(fec = fecund_codes[value],
          fec = factor(fec, levels = unique(fecund_codes), ordered = TRUE)) %>%
   group_by(species) %>%
@@ -133,8 +139,9 @@ gen_codes <- c("<1yr"     = 'vshort',
                "10-20yrs" = 'long',
                ">20yrs"   = 'long')
 
-gen_time_traits <- repr_traits %>%
+gen_time_traits <- repr_traits_raw %>%
   filter(trait == 'age_mat') %>%
+  filter(gf_level <= 4) %>%
   mutate(gen = gen_codes[value],
          gen = factor(gen, levels = unique(gen_codes), ordered = TRUE)) %>%
   group_by(species) %>%
@@ -183,15 +190,16 @@ Some considerations:
 Here we set break points at the top value for each category ($\leq$ 2 = primary consumer, $\leq$ 3 = secondary consumer, $\leq$ 4 = tertiary consumer, >4 = apex consumer)
 
 ```{r trophic level}
-troph_traits <- read_csv(here('_data/traits_grouping/trait_trophic_level.csv')) %>%
+troph_traits_raw <- read_csv(here('_data/traits_grouping/trait_trophic_level.csv')) %>%
   filter(!is.na(value))
 
-summary(troph_traits)
+summary(troph_traits_raw)
 
-troph_qtile <- ecdf(troph_traits$value)
+troph_qtile <- ecdf(troph_traits_raw$value)
 troph_qtile(c(2, 3, 3.5, 4, 4.4, 5))
 
-troph_traits <- troph_traits %>%
+troph_traits <- troph_traits_raw %>%
+  filter(gf_level <= 4) %>%
   mutate(trp = case_when(value <= 2 ~ 'pri', ### anything above 2 suggests some carnivory
                          value <= 3 ~ 'sec',
                          value <= 4 ~ 'ter',
@@ -209,13 +217,14 @@ table(troph_traits$trp)
 Examine distribution of lengths to see if there are good break points, or choose break points to achieve a reasonable distribution across reasonable size classes (~ factor of 10 for each class).
 
 ```{r max length}
-length_traits <- read_csv(here('_data/traits_grouping/trait_length_cm.csv')) %>%
+length_traits_raw <- read_csv(here('_data/traits_grouping/trait_length_cm.csv')) %>%
   filter(!is.na(value))
 
-summary(length_traits$value)
-quantile(log10(length_traits$value), c(.2, .4, .6, .8))
+summary(length_traits_raw$value)
+quantile(log10(length_traits_raw$value), c(.2, .4, .6, .8))
 
-length_traits <- length_traits %>%
+length_traits <- length_traits_raw %>%
+  filter(gf_level <= 4) %>%
   mutate(len = case_when(value <    1.5 ~ 'vsm', ### smaller than 1.5 cm
                          value <    5.0 ~ 'sm',  ### 1.5 - 5 cm
                          value <   15.0 ~ 'med', ### 5 - 15 cm
@@ -331,30 +340,40 @@ Gapfilling skipped any genera represented by only one species, which may be why 
 
 ### Check traits causing drops
 
-Which traits are responsible for dropping most species?  examine species dropped for one or two NAs.
+Which traits are responsible for dropping most species?  examine species dropped for one or more NAs.
 
 ``` {r check which traits are causing drops}
 traits <- c('mob', 'fec', 'gen', 'trp', 'len', 'wcol')
-fe_trait_single_na <- all_traits_df %>% gather(trait, val, all_of(traits)) %>%
+fe_trait_nas <- all_traits_df %>% 
+  gather(trait, val, all_of(traits)) %>%
   group_by(species) %>%
   filter(is.na(val)) %>%
-  filter(n() == 1) %>%
+  mutate(n_traits = n()) %>%
   ungroup()
+
+fe_trait_single_na <- fe_trait_nas %>%
+  filter(n_traits == 1)
+
 table(fe_trait_single_na$trait)
 
-fe_trait_double_na <- all_traits_df %>% gather(trait, val, all_of(traits)) %>%
-  group_by(species) %>%
-  filter(is.na(val)) %>%
-  filter(n() == 2) %>%
+for(t in traits) { ### t <- 'mob'
+  fe_trait_single_na %>%
+    filter(trait == t) %>%
+    group_by(class, trait) %>%
+    summarize(n_spp = n_distinct(species)) %>%
+    knitr::kable() %>%
+    print()
+}
+
+fe_trait_double_na <- fe_trait_nas %>%
+  filter(n_traits == 2) %>%
   arrange(trait) %>%
   summarize(t1 = first(trait), t2 = last(trait)) %>%
   ungroup()
 table(fe_trait_double_na %>% select(t1, t2))
 
-fe_trait_triple_na <- all_traits_df %>% gather(trait, val, all_of(traits)) %>%
-  group_by(species) %>%
-  filter(is.na(val)) %>%
-  filter(n() == 3) %>%
+fe_trait_triple_na <- fe_trait_nas %>%
+  filter(n_traits == 3) %>%
   arrange(trait) %>%
   summarize(t1 = first(trait), t2 = nth(trait, 2), t3 = last(trait)) %>%
   ungroup()
@@ -367,7 +386,8 @@ table(fe_trait_triple_na %>% select(t1, t2, t3))
 ```{r}
 fe_df <- all_traits_df %>%
   drop_na() %>%
-  mutate(fe_code = sprintf('MOB%s_FEC%s_GEN%s_TRP%s_LEN%s_WCOL%s', mob, fec, gen, trp, len, wcol)) %>%
+  mutate(fe_code = sprintf('MOB%s_FEC%s_GEN%s_TRP%s_LEN%s_WCOL%s', 
+                           mob, fec, gen, trp, len, wcol)) %>%
   group_by(fe_code) %>%
   mutate(n = n()) %>%
   ungroup() %>%

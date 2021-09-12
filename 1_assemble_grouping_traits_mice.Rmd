@@ -1,0 +1,284 @@
+---
+title: "Assemble grouping traits and gapfill using MICE"
+author: "*Compiled on `r date()` by `r Sys.info()['user']`*"
+output: 
+  html_document:
+    code_folding: hide
+    toc: true
+    toc_depth: 3
+    toc_float: yes
+    number_sections: true
+    theme: cerulean
+    highlight: haddock
+    includes: 
+      in_header: '~/github/src/templates/ohara_hdr.html'
+  pdf_document:
+    toc: true
+---
+
+``` {r setup, echo = TRUE, message = FALSE, warning = FALSE}
+
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
+
+library(oharac)
+oharac::setup()
+source(here('common_fxns.R'))
+
+
+```
+
+# Summary
+
+Gather processed traits data, dropping prior gapfills and keeping only data from FishBase/SeaLifeBase (vulnerability traits will be analyzed separately). Assemble into a dataframe.  Identify missing rate, then apply Multiple Imputation by Chained Equations (MICE) approach.
+
+# Data
+
+See individual trait scripts.
+
+# Methods
+
+## Gather traits
+
+Read in each dataset based on FishBase/SeaLifeBase data:
+
+* max length
+* trophic level
+* max fecundity
+* generation/max age to maturity
+* water column position (categorical)
+
+Note: Adult mobility data is taken only from the Traits Vulnerability project so is excluded here.
+
+### Max length
+
+Gather FB/SLB max length data, ungapfilled.  These values are in centimeters.
+
+```{r max length}
+length_df <- read_csv(here('_data/traits_grouping/trait_length_cm.csv')) %>%
+  filter(!is.na(length)) %>%
+  filter(length > 0) %>%
+  select(species, spec_code, length)
+
+summary(length_df$length)
+hist(length_df$length)
+summary(log(length_df$length))
+hist(log(length_df$length))
+```
+
+Values appear to reasonably approach a log-normal distribution...  we can transform prior to running MICE, and/or use Predictive mean matching (PMM).
+
+### Fecundity
+
+```{r fecundity}
+fecund_df <- read_csv(here('_data/traits_grouping/trait_reproduction.csv')) %>%
+  filter(trait == 'fec') %>%
+  filter(source == 'fb') %>%
+  select(species, fecund = val_num) %>%
+  filter(!is.na(fecund))
+
+summary(fecund_df$fecund)
+hist(fecund_df$fecund)
+summary(log(fecund_df$fecund))
+hist(log(fecund_df$fecund))
+```
+
+### Generation time
+
+```{r gen time}
+
+gen_time_df <- read_csv(here('_data/traits_grouping/trait_reproduction.csv')) %>%
+  filter(trait == 'age_mat') %>%
+  filter(source == 'fb') %>%
+  select(species, age_mat = val_num) %>%
+  filter(!is.na(age_mat))
+
+summary(gen_time_df$age_mat)
+hist(gen_time_df$age_mat)
+summary(log(gen_time_df$age_mat))
+hist(log(gen_time_df$age_mat))
+
+```
+
+
+### water column position traits
+
+Since values from FB/SLB are categorical variables, let's include the categorical values from the traits-vulnerability project here as well.  They may provide additional data for imputing other missing variables.
+
+```{r water col position}
+water_col_traits_raw <- read_csv(here('_data/traits_grouping/trait_water_col_position.csv')) 
+
+water_col_traits_raw$source %>% table()
+   # fishbase     gapfill vuln_traits 
+   #   102616       67951        8288 
+
+trait_val_codes <- c(reef    = 'rf',
+                     pelagic = 'pel',
+                     benthic = 'ben',
+                     benthopelagic = 'bp')
+
+water_col_df <- water_col_traits_raw %>%
+  filter(source != 'gapfill') %>%
+  mutate(wcol = trait_val_codes[value],
+         wcol = factor(wcol, levels = trait_val_codes, ordered = FALSE)) %>%
+  select(species, wcol) %>%
+  distinct()
+
+table(water_col_df$wcol) %>% knitr::kable()
+```
+
+### Trophic level
+
+```{r trophic level}
+troph_df <- read_csv(here('_data/traits_grouping/trait_trophic_level.csv')) %>%
+  filter(gf_level == 1) %>%
+  select(# spec_code, 
+         species, troph = value) %>%
+  filter(!is.na(troph) & troph > 0)
+
+summary(troph_df$troph)
+hist(troph_df$troph)
+summary(log(troph_df$troph))
+hist(log(troph_df$troph))
+
+```
+
+## Assemble and identify missingness
+
+Filter to those species found in WoRMS dataset, to exclude non-marine species, then count up missing observations for each variable.
+
+```{r}
+
+worms_spp <- assemble_worms()
+traits_df_all <- length_df %>%
+  full_join(fecund_df) %>%
+  full_join(gen_time_df) %>%
+  full_join(troph_df) %>%
+  full_join(water_col_df) %>%
+  inner_join(worms_spp, by = 'species')
+  
+
+### this will have at least one variable as not NA for each species...
+
+missingness <- traits_df_all %>%
+  summarize(missing_length  = sum(is.na(length))  / n(),
+            missing_fecund  = sum(is.na(fecund))  / n(),
+            missing_age_mat = sum(is.na(age_mat)) / n(),
+            missing_troph   = sum(is.na(troph))   / n(),
+            missing_wcol    = sum(is.na(wcol))    / n()) %>%
+  gather(variable, missing_rate, everything()) %>%
+  mutate(variable = str_remove(variable, 'missing_'),
+         missing_rate = round(missing_rate, 3),
+         partial_response_rate = 1 - missing_rate,
+         partial_response_rate = paste0(partial_response_rate * 100, '%'))
+
+knitr::kable(missingness)
+```
+
+Based on this quick assessment, we are low on observations for fecundity (only 559 spp), age to maturity (666 spp), and trophic level (7711 spp).  MICE should be OK with 10% partial response rates, but that is pretty slim margin to have two variables at that level.
+
+* Can additional values be filled using traits from other FishBase/SeaLifeBase tables?
+* Since our goal is rough binning of values to inform FEs, we can probably get away with using vulnerability traits to fill gaps in fecundity and maturity since those have a relatively high number of bins...
+* We may need other methods to fill trophic level.  Perhaps genus-level imputation can fill some gaps here?  Try a cross validation of this to check assumptions...
+* We can use listwise deletion for rows where only water column position is available...  While this won't gain us more observations, it will eliminate a bunch of observations where MICE is unlikely to provide good answers (i.e., inferring missing traits ONLY on water column position...)
+
+## Gapfill fecundity and age to maturity from trait framework
+
+### Fecundity take 2
+
+For each bin assigned using the data for trait-based vulnerability framework, find the log midpoint of the bin, and assign this as the val_num.  Attach to the values from FishBase/SeaLifeBase.  If values available for FB/SLB, use those.
+
+```{r fecundity}
+fecund_v_df <- read_csv(here('_data/traits_grouping/trait_reproduction.csv')) %>%
+  filter(trait == 'fec') %>%
+  filter(source %in% c('vuln')) %>%
+  filter(!is.na(value)) %>%
+  mutate(val_low = str_extract(value, '[0-9]+'),
+         val_high = str_remove(value, '^[0-9]+') %>% str_extract('[0-9]+'),
+         low = case_when(value == '<1'     ~ -1,
+                         value == '>10000' ~  4,
+                         TRUE ~ log10(as.numeric(val_low))),
+         high = case_when(value == '<1'     ~ 0,
+                         value == '>10000' ~  8, ### some spp upwards of 100M
+                         TRUE ~ log10(as.numeric(val_high)))) %>%
+  mutate(exp_mean = (low + high)/2,
+         val_num = 10^exp_mean) %>%
+  select(species,
+         fecund = val_num) %>%
+  mutate(source = 'vuln') %>%
+  distinct()
+
+fecund2_df <- fecund_df %>%
+  mutate(source = 'fb') %>%
+  bind_rows(fecund_v_df)# %>%
+  # group_by(species) %>%
+  # mutate(keep = all(c('fb', 'vuln') %in% source) & source == 'fb')
+summary(fecund2_df$fecund)
+hist(fecund2_df$fecund)
+summary(log(fecund2_df$fecund))
+hist(log(fecund2_df$fecund))
+```
+
+### Generation time take 2
+
+```{r gen time}
+
+gen_time_v_df <- read_csv(here('_data/traits_grouping/trait_reproduction.csv')) %>%
+  filter(trait == 'age_mat') %>%
+  filter(source %in% c('vuln')) %>%
+  filter(!is.na(value)) %>%
+  mutate(age_mat = case_when(value == '<1yr' ~ .5,
+                             value == '1-5yrs' ~ 3,
+                             value == '5-10yrs' ~ 7.5,
+                             value == '10-20yrs' ~ 15,
+                             value == '>20yrs' ~ 25,
+                             TRUE ~ -9999)) %>%
+  select(species, age_mat) %>%
+  mutate(source = 'vuln') %>%
+  distinct()
+
+gen_time2_df <- gen_time_df %>%
+  mutate(source = 'fb') %>%
+  bind_rows(gen_time_v_df)
+
+summary(gen_time2_df$age_mat)
+hist(gen_time2_df$age_mat)
+summary(log(gen_time2_df$age_mat))
+hist(log(gen_time2_df$age_mat))
+
+```
+
+### check missingness again:
+
+Apply listwise deletion to water-column-only observations.
+
+```{r}
+traits_df_all <- length_df %>%
+  full_join(fecund2_df) %>%
+  full_join(gen_time2_df) %>%
+  full_join(troph_df) %>%
+  full_join(water_col_df) %>%
+  inner_join(worms_spp, by = 'species')
+
+### this will have at least one variable as not NA for each species...
+
+missingness2 <- traits_df_all %>%
+  filter(!(is.na(length) & is.na(fecund) & is.na(troph) & is.na(age_mat))) %>%
+  summarize(missing_length  = sum(is.na(length))  / n(),
+            missing_fecund  = sum(is.na(fecund))  / n(),
+            missing_age_mat = sum(is.na(age_mat)) / n(),
+            missing_troph   = sum(is.na(troph))   / n(),
+            missing_wcol    = sum(is.na(wcol))    / n()) %>%
+  gather(variable, missing_rate, everything()) %>%
+  mutate(variable = str_remove(variable, 'missing_'),
+         missing_rate = round(missing_rate, 3),
+         partial_response_rate = 1 - missing_rate,
+         partial_response_rate = paste0(partial_response_rate * 100, '%'))
+
+knitr::kable(missingness2)
+```
+Using listwise deletion on the water-column-position-only species in combination with gapfilling fecundity and generation time based on vulnerability traits ensures that the partial response rate for all variables is above 10%.
+
+
+
+
+
