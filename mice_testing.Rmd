@@ -1,0 +1,380 @@
+---
+title: "Assemble grouping traits and gapfill using MICE"
+author: "*Compiled on `r date()` by `r Sys.info()['user']`*"
+output: 
+  html_document:
+    code_folding: hide
+    toc: true
+    toc_depth: 3
+    toc_float: yes
+    number_sections: true
+    theme: cerulean
+    highlight: haddock
+    includes: 
+      in_header: '~/github/src/templates/ohara_hdr.html'
+  pdf_document:
+    toc: true
+---
+
+# Part 1
+
+from https://www.gerkovink.com/miceVignettes/Ad_hoc_and_mice/Ad_hoc_methods.html
+
+``` {r}
+library(tidyverse)
+library(lattice)
+library(mice)
+```
+
+``` {r}
+nhanes
+
+md.pattern(nhanes)
+
+fit <- with(nhanes, lm(age ~ bmi))
+summary(fit)
+```
+
+### Impute the missing data in the nhanes dataset with mean imputation
+
+``` {r}
+
+imp <- mice(nhanes, method = "mean", m = 1, maxit = 1)
+complete(imp)
+
+fit <- with(imp, lm(age ~ bmi))
+summary(fit)
+```
+
+### Impute the missing data in the nhanes dataset with regression imputation
+
+``` {r}
+
+imp <- mice(nhanes, method = "norm.predict", m = 1, maxit = 1)
+complete(imp)
+
+fit <- with(imp, lm(age ~ bmi))
+summary(fit)
+```
+
+### Impute the missing data in the nhanes dataset with stochastic regression imputation
+
+``` {r}
+
+imp <- mice(nhanes, method = "norm.nob", m = 1, maxit = 1)
+
+complete(imp)
+fit <- with(imp, lm(age ~ bmi))
+summary(fit)
+```
+
+### Let us impute the missing data in the nhanes dataset
+
+``` {r}
+
+imp <- mice(nhanes)
+imp
+attributes(imp)
+imp$data ### the data
+imp$imp  ### the imputations
+
+# Extract the completed data
+c3 <- complete(imp, 3) 
+md.pattern(c3)
+```
+
+``` {r}
+
+# The collection of the m imputed data sets can be exported by function 
+# complete() in long, broad and repeated formats. For example,
+c.long <- complete(imp, "long")  
+c.long
+
+c.broad <- complete(imp, "broad")
+c.broad
+```
+
+### Inspect the convergence of the algorithm
+
+don't want to see trends, but good intermingling of the various iterations
+
+``` {r}
+
+imp <- mice(nhanes, m = 10, maxit = 50, print=F)
+plot(imp)
+
+imp <- mice(nhanes, seed=123, print=F)
+plot(imp)
+imp$meth
+```
+
+### Change the imputation method
+
+``` {r}
+
+imp <- mice(nhanes2, print=F)
+imp$meth
+
+ini <- mice(nhanes2, maxit = 0)
+meth <- ini$meth
+meth
+meth["bmi"] <- "norm"
+meth
+
+imp <- mice(nhanes2, meth = meth, print=F)
+plot(imp)
+```
+
+### Extend the number of iterations
+
+``` {r}
+
+imp40 <- mice.mids(imp, maxit=35, print=F)
+plot(imp40)
+```
+
+### Further diagnostic checking. Use function stripplot()
+
+``` {r}
+
+### - look for similar distributions of data (blue) and imputations (red)
+stripplot(imp, chl~.imp, pch=20, cex=2)
+
+stripplot(imp)
+
+```
+
+#### Perform the following regression analysis on the multiply imputed data. 
+
+Store the solution in object fit.
+
+$$bmi = \beta_0 + \beta_1 chl + \epsilon$$
+
+``` {r}
+
+fit <- with(imp, lm(bmi ~ chl))
+fit
+class(fit)
+ls(fit)
+summary(fit$analyses[[2]])
+```
+
+### Pool the analyses from object fit.
+
+``` {r}
+
+pool.fit <- pool(fit)
+summary(pool.fit)
+```
+
+### compare distribution of missing values
+
+in this case the missing cases of the gen variable are not equally distributed by age
+
+``` {r}
+
+g <- is.na(boys$gen) 
+
+histogram(~age|g, data=boys)
+```
+
+### Impute the boys dataset with mice using all default settings 
+
+and name the mids (multiply imputed data set) object `imp1`
+
+``` {r}
+
+imp1 <- mice(boys, print=FALSE)
+
+# Compare the means of the imputed data with the means of the incomplete data.
+# One can use the function complete() with a mids-object as argument to
+# obtain an imputed dataset. As default, the first imputed dataset will be 
+# given by this function
+summary(boys)           ### orig data
+summary(complete(imp1)) ### completed data
+```
+
+# part 3
+
+1. Open R and load the packages mice and lattice. Also, fix the random seed.
+
+
+``` {r}
+
+require(mice)
+require(lattice)
+set.seed(123)
+```
+
+We choose seed value 123. This is an arbitrary value; any value would be an equally good seed value. Fixing the random seed enables you (and others) to exactly replicate anything that involves random number generators. If you set the seed in your R instance to 123, you will get the exact same results and plots as we present in this document.
+
+2. The boys dataset is part of mice. It is a subset of a large Dutch dataset containing growth measures from the Fourth Dutch Growth Study. Inspect the help for boys dataset and make yourself familiar with its contents.
+
+3. Get an overview of the data. Find information about the size of the data, the variables measured and the amount of missingness.
+
+``` {r}
+head(boys)
+nrow(boys)
+summary(boys)
+```
+
+4. As we have seen before, the function md.pattern() can be used to display all different missing data patterns. How many different missing data patterns are present in the boys dataframe and which pattern occurs most frequently in the data?
+  
+``` {r}
+md.pattern(boys)
+```
+
+
+There are 13 patterns in total, with the pattern where `gen`, `phb` and `tv` are missing occuring the most.
+
+5. How many patterns occur for which the variable gen (genital Tannerstage) is missing?
+  
+```{r}
+mpat <- md.pattern(boys)
+
+
+sum(mpat[, "gen"] == 0)
+
+```
+
+Answer: 8 patterns (503 cases)
+
+6. Let us focus more precisely on the missing data patterns. Does the missing data of gen depend on age? One could for example check this by making a histogram of age separately for the cases with known genital stages and for cases with missing genital stages.
+
+To create said histogram in R, a missingness indicator for gen has to be created. A missingness indicator is a dummy variable with value 1 for observed values (in this case genital status) and 0 for missing values. Create a missingness indicator for gen by typing
+
+``` {r}
+R <- is.na(boys$gen) 
+```
+
+As we can see, the missingness indicator tells us for each value in gen whether it is missing (`TRUE`) or observed (`FALSE`).
+
+A histogram can be made with the function `histogram()`.
+
+``` {r}
+histogram(boys$gen)
+
+### or, equivalently, one could use
+
+# histogram(~ gen, data = boys)
+```
+
+Writing the latter line of code for plots is more efficient than selecting every part of the boys data with the `boys$...` command, especially if plots become more advanced. The code for a conditional histogram of age given R is
+
+``` {r}
+histogram(~age|R, data=boys)
+```
+
+The histogram shows that the missingness in gen is not equally distributed across age.
+
+7. Impute the boys dataset with mice using all default settings and name the mids (multiply imputed data set) object `imp1`.
+
+``` {r}
+imp1 <- mice(boys, print=FALSE)
+```
+
+8. Compare the means of the imputed data with the means of the incomplete data. One can use the function `complete()` with a mids-object as argument to obtain an imputed dataset. As default, the first imputed dataset will be given by this function.
+
+``` {r}
+summary(boys)
+
+summary(complete(imp1))
+```
+
+Most means are roughly equal, except the mean of `tv`, which is much lower in the first imputed data set, when compared to the incomplete data. This makes sense because most genital measures are unobserved for the lower ages. When imputing these values, the means should decrease.
+
+Investigating univariate properties by using functions such as `summary()`, may not be ideal in the case of hundreds of variables. To extract just the information you need, for all imputed datasets, we can make use of the `with()` function. To obtain summaries for each imputed `tv` only, type
+
+``` {r}
+summary(with(imp1, mean(tv)))
+
+```
+
+## The importance of the imputation model
+
+The `mammalsleep` dataset is part of `mice`. It contains the Allison and Cicchetti (1976) data for mammalian species. To learn more about this data, type
+
+``` {r}
+# help(mammalsleep)
+```
+
+9. Get an overview of the data. Find information about the size of the data, the variables measured and the amount of missingness.
+
+``` {r}
+head(mammalsleep)
+
+summary(mammalsleep)
+
+str(mammalsleep)
+```
+
+As we have seen before, the function `md.pattern() `can be used to display all different missing data patterns. How many different missing data patterns are present in the mammalsleep dataframe and which pattern occurs most frequently in the data?
+  
+``` {r}
+  md.pattern(mammalsleep)
+```
+
+Answer: 8 patterns in total, with the pattern where everything is observed occuring the most (42 times).
+
+10. Generate five imputed datasets with the default method pmm. Give the algorithm 10 iterations.
+
+``` {r}
+imp <- mice(mammalsleep, maxit = 10, print=F)
+```
+
+## Inspect the trace lines
+``` {r}
+plot(imp)
+```
+
+11. Perform a regression analysis on the imputed dataset with `sws` as dependent variable and `log(bw)` and `odi` as independent variables.
+
+``` {r}
+fit1 <- with(imp, lm(sws ~ log10(bw) + odi), print=F)
+```
+
+12. Pool the regression analysis and inspect the pooled analysis.
+
+``` {r}
+pool(fit1)
+
+
+summary(pool(fit1))
+
+```
+
+The fmi and lambda are much too high. This is due to `species` being included in the imputation model. Because there are 62 species and mice automatically converts factors (categorical variables) to dummy variables, each species is modeled by its own imputation model.
+
+13. Impute `mammalsleep` again, but now exclude `species` from the data. Name the new imputed dataset `impnew`.
+
+``` {r}
+impnew <- mice(mammalsleep[ , -1], maxit = 10, print = F)
+```
+
+14. Compute and pool the regression analysis again.
+
+``` {r}
+fit2 <- with(impnew, lm(sws ~ log10(bw) + odi))
+pool(fit2)
+
+summary(pool(fit2))
+
+```
+
+Note that the fmi and lambda have dramatically decreased. The imputation model has been greatly improved.
+
+15. Plot the trace lines for `impnew`
+
+``` {r}
+plot(impnew)
+```
+
+Even though the fraction of information missing due to nonresponse (`fmi`) and the relative increase in variance due to nonresponse (`lambda`) are nice and low, the convergence turns out to be a real problem. The reason is the structure in the data. Total sleep (`ts`) is the sum of paradoxical sleep (`ps`) and short wave sleep (`sws`). This relation is ignored in the imputations, but it is necessary to take this relation into account. `mice` offers a routine called passive imputation, which allows users to take transformations, combinations and recoded variables into account when imputing their data.
+
+We explain passive imputation in detail in the this vignette.
+
+Conclusion
+We have seen that the practical execution of multiple imputation and pooling is straightforward with the R package mice. The package is designed to allow you to assess and control the imputations themselves, the convergence of the algorithm and the distributions and multivariate relations of the observed and imputed data.
+
+It is important to ‘gain’ this control as a user. After all, we are imputing values and we aim to properly adress the uncertainty about the missingness problem.
+
