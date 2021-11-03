@@ -9,7 +9,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
 
 
-<meta name="author" content="Compiled on Tue Sep 7 13:58:29 2021 by ohara" />
+<meta name="author" content="Compiled on Tue Nov 2 11:16:49 2021 by ohara" />
 
 
 <title>Collect trophic level trait</title>
@@ -75,6 +75,7 @@ In here, put in a link to repo and website?
 pre > code.sourceCode { white-space: pre; position: relative; }
 pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
 pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
 code.sourceCode > span { color: inherit; text-decoration: inherit; }
 div.sourceCode { margin: 1em 0; }
 pre.sourceCode { margin: 0; }
@@ -356,7 +357,7 @@ div.tocify {
 
 
 <h1 class="title toc-ignore">Collect trophic level trait</h1>
-<h4 class="author"><em>Compiled on Tue Sep 7 13:58:29 2021 by ohara</em></h4>
+<h4 class="author"><em>Compiled on Tue Nov 2 11:16:49 2021 by ohara</em></h4>
 
 </div>
 
@@ -368,24 +369,24 @@ div.tocify {
 <span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(rfishbase)</span>
 <span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="fu">source</span>(<span class="fu">here</span>(<span class="st">&#39;common_fxns.R&#39;</span>))</span></code></pre></div>
 <div id="summary" class="section level1" number="1">
-<h1 number="1"><span class="header-section-number">1</span> Summary</h1>
+<h1><span class="header-section-number">1</span> Summary</h1>
 <p>Gather data on trophic level from FishBase. Gapfill using downfill and upstream-downstream gapfill methodology.</p>
 </div>
 <div id="data" class="section level1" number="2">
-<h1 number="2"><span class="header-section-number">2</span> Data</h1>
+<h1><span class="header-section-number">2</span> Data</h1>
 <p>This script will use processed valid species traits from FishBase and SeaLifeBase.</p>
 <p>FishBase is a scientific database, and this has the implication - among others - that its use and the use of its contents are free as long as due credit is given.</p>
 <p>This may be done at different levels, for which we suggest different forms of citations:</p>
 <p>when referring to FishBase concepts and design, cite its architects (Froese and Pauly 2000); when referring to a set of values extracted from a FishBase table, cite the author(s) of the original data, e.g., “Houde and Zastrow (1993)”, or “Welcomme (1988)”. To help us track the use of FishBase in the literature, we would appreciate your also citing Froese and Pauly (2000) in an appropriate part of your text, as the source of the information; when discussing the features of a FishBase table, cite the section documenting that table, e.g., “Sa-a et al. (2000).”</p>
 <div id="references" class="section level2" number="2.1">
-<h2 number="2.1"><span class="header-section-number">2.1</span> References</h2>
+<h2><span class="header-section-number">2.1</span> References</h2>
 <p>Froese, R. and D. Pauly, Editors. 2000. FishBase 2000: concepts, design and data sources. ICLARM, Los Baños, Laguna, Philippines. 344 p. Houde, E.D. and C.E. Zastrow. 1993. Ecosystem- and taxon-specific dynamic energetics properties of fish larvae assemblages. Bull. Mar. Sci. 53(2):290-335. Sa-a, P., M.L. Palomares and D. Pauly. 2000. The FOOD ITEMS table, p. 182-188. In R. Froese and D. Pauly (eds.) FishBase 2000: concepts, design and data sources. ICLARM, Los Baños, Laguna, Philippines. 344 p. Welcomme, R.L. 1988. International introductions of inland aquatic species. FAO Fish. Tech. Pap. 294, 318 p.</p>
 </div>
 </div>
 <div id="methods" class="section level1" number="3">
-<h1 number="3"><span class="header-section-number">3</span> Methods</h1>
+<h1><span class="header-section-number">3</span> Methods</h1>
 <div id="find-trophic-data-in-fishbase" class="section level2" number="3.1">
-<h2 number="3.1"><span class="header-section-number">3.1</span> Find trophic data in FishBase</h2>
+<h2><span class="header-section-number">3.1</span> Find trophic data in FishBase</h2>
 <div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>food_df <span class="ot">&lt;-</span> <span class="fu">get_fb_slb</span>(<span class="at">fxn =</span> fooditems, </span>
 <span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>                      <span class="at">keep_cols =</span> <span class="fu">c</span>(<span class="st">&#39;food_i&#39;</span>, <span class="st">&#39;troph&#39;</span>), <span class="at">keep_fxn =</span> contains) <span class="sc">%&gt;%</span></span>
 <span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">distinct</span>() <span class="sc">%&gt;%</span></span>
@@ -453,7 +454,7 @@ div.tocify {
 ## Multiple R-squared:  0.6964, Adjusted R-squared:  0.6963 
 ## F-statistic:  3992 on 1 and 1740 DF,  p-value: &lt; 2.2e-16</code></pre>
 <div id="number-of-species-in-each-table" class="section level3" number="3.1.1">
-<h3 number="3.1.1"><span class="header-section-number">3.1.1</span> Number of species in each table:</h3>
+<h3><span class="header-section-number">3.1.1</span> Number of species in each table:</h3>
 <p>Diet: 2480 distinct species with non-NA <code>troph</code> value, 980 of which are unrepresented in <code>ecol_df$food_troph</code>, and 1164 of which are unrepresented in <code>ecol_df$diet_troph</code> Food: 42 distinct species with non-NA <code>prey_troph</code> value, all of which are represented <code>ecol_df$food_troph</code> Ecology: 10094 distinct species with non-NA <code>food_troph</code> values, and 2030 distinct species with non-NA <code>diet_troph</code> values. Combined, this is 10437 distinct species (343 <code>diet_troph</code> spp with no <code>food_troph</code>)</p>
 <p>For this grouping variable, we will use the Ecology table <code>food_troph</code> variable, to capture the most species in one variable. To gapfill, we can use the Food table <code>food_i</code> variable to fill trophic level = 2 for detritivores and herbivores. Filling higher-order consumers will introduce more uncertainty, so perhaps better to use upstream/downstream gapfilling for those.</p>
 <p>The standard error term is a hint at omnivory - ideally, standard deviation around trophic level would tell of the distribution of observed values… so save that as well.</p>
@@ -506,7 +507,7 @@ div.tocify {
 </div>
 </div>
 <div id="write-out-results" class="section level2" number="3.2">
-<h2 number="3.2"><span class="header-section-number">3.2</span> Write out results</h2>
+<h2><span class="header-section-number">3.2</span> Write out results</h2>
 <p>FishBase/SeaLifeBase is thin on trophic data for a few classes that can be manually gapfilled, as these are generally primary consumers:</p>
 <table>
 <thead>
@@ -534,13 +535,15 @@ div.tocify {
 <span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a>troph_df_gf <span class="ot">&lt;-</span> troph_df <span class="sc">%&gt;%</span></span>
 <span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">left_join</span>(record_df, <span class="at">by =</span> <span class="fu">c</span>(<span class="st">&#39;species&#39;</span> <span class="ot">=</span> <span class="st">&#39;orig_sciname&#39;</span>)) <span class="sc">%&gt;%</span></span>
 <span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">species =</span> <span class="fu">ifelse</span>(<span class="sc">!</span><span class="fu">is.na</span>(valid_name), valid_name, species)) <span class="sc">%&gt;%</span></span>
-<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">right_join</span>(<span class="fu">assemble_worms</span>(), <span class="at">by =</span> <span class="st">&#39;species&#39;</span>) <span class="sc">%&gt;%</span></span>
-<span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">gapfill_up_down</span>(<span class="st">&#39;troph&#39;</span>) <span class="sc">%&gt;%</span></span>
-<span id="cb10-11"><a href="#cb10-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(gf_level <span class="sc">&lt;=</span> <span class="dv">4</span> <span class="sc">|</span> class <span class="sc">%in%</span> prob_classes) <span class="sc">%&gt;%</span></span>
-<span id="cb10-12"><a href="#cb10-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">value =</span> <span class="fu">ifelse</span>(<span class="fu">is.na</span>(value) <span class="sc">&amp;</span> class <span class="sc">%in%</span> prob_classes, <span class="dv">2</span>, value)) <span class="sc">%&gt;%</span></span>
-<span id="cb10-13"><a href="#cb10-13" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(species, trait, value, sd, nspp, gf_level)</span>
-<span id="cb10-14"><a href="#cb10-14" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-15"><a href="#cb10-15" aria-hidden="true" tabindex="-1"></a><span class="fu">write_csv</span>(troph_df_gf, <span class="fu">here</span>(<span class="st">&#39;_data/traits_grouping/trait_trophic_level.csv&#39;</span>))</span></code></pre></div>
+<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">species =</span> <span class="fu">str_extract</span>(species, <span class="st">&#39;^[a-z]+ [a-z]+&#39;</span>)) <span class="sc">%&gt;%</span></span>
+<span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a>    <span class="do">### this drops subspp and var. names</span></span>
+<span id="cb10-11"><a href="#cb10-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">right_join</span>(<span class="fu">assemble_worms</span>(), <span class="at">by =</span> <span class="st">&#39;species&#39;</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb10-12"><a href="#cb10-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">gapfill_up_down</span>(<span class="st">&#39;troph&#39;</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb10-13"><a href="#cb10-13" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(gf_level <span class="sc">&lt;=</span> <span class="dv">4</span> <span class="sc">|</span> class <span class="sc">%in%</span> prob_classes) <span class="sc">%&gt;%</span></span>
+<span id="cb10-14"><a href="#cb10-14" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">value =</span> <span class="fu">ifelse</span>(<span class="fu">is.na</span>(value) <span class="sc">&amp;</span> class <span class="sc">%in%</span> prob_classes, <span class="dv">2</span>, value)) <span class="sc">%&gt;%</span></span>
+<span id="cb10-15"><a href="#cb10-15" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(species, trait, value, sd, nspp, gf_level)</span>
+<span id="cb10-16"><a href="#cb10-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-17"><a href="#cb10-17" aria-hidden="true" tabindex="-1"></a><span class="fu">write_csv</span>(troph_df_gf, <span class="fu">here</span>(<span class="st">&#39;_data/traits_grouping/trait_trophic_level.csv&#39;</span>))</span></code></pre></div>
 </div>
 </div>
 

@@ -59,9 +59,9 @@ mob_vals <- c('sessile'                  = 'sessile',
 
 mob_vuln <- get_vuln_traits() %>%
   filter(str_detect(trait, 'adult_mobility')) %>%
+  downfill() %>%
   mutate(mob_cat = mob_vals[trait_value],
          mob_cat = factor(mob_cat, levels = unique(mob_vals), ordered = TRUE)) %>%
-  downfill() %>%
   filter(!is.na(mob_cat)) %>%
   distinct()
 

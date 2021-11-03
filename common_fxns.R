@@ -215,27 +215,63 @@ get_fb_slb <- function(fxn = species,
 ### function for downstream direct match fill ###
 #################################################
 
+assign_repr_level <- function(df) {
+  # message('Assigning representative ranks to species-level info...')
+  # repres_fish <- readxl::read_excel(here('_raw/xlsx/fish_traits_add_bp.xlsx'), 
+  #                                   sheet = 'repres_expanded')
+  # write_csv(repres_fish, here('_raw/spp_gp_repres_fish.csv'))
+  repres_fish <- read_csv(here('_raw/spp_gp_repres_fish.csv'), show_col_types = FALSE)
+  # repres_df   <- readxl::read_excel(here('_raw/xlsx/spp_gp_representativeness.xlsx')) %>%
+  #   janitor::clean_names() %>%
+  #   select(taxon, species, repres = representative_rank)
+  # write_csv(repres_df, here('_raw/spp_gp_repres_all_else.csv'))
+  repres_df   <- read_csv(here('_raw/spp_gp_repres_all_else.csv'), show_col_types = FALSE) %>%
+    bind_rows(repres_fish) %>%
+    mutate(species = tolower(species),
+           repres = tolower(repres)) %>%
+    filter(!is.na(repres) & repres != 'species')
+  
+  spp_all_wide <- assemble_worms(aspect = 'wide')
+  
+  ### create new dataframe including all representative species, with
+  ### spp_gp_new assigned to the representative rank
+  repr_spp <- df %>%
+    inner_join(repres_df, by = c('taxon', 'spp_gp' = 'species')) %>%
+    inner_join(spp_all_wide, by = c('spp_gp' = 'species')) %>%
+    mutate(spp_gp_new = case_when(repres == 'genus'  ~ genus,
+                                  repres == 'family' ~ family,
+                                  repres == 'order'  ~ order,
+                                  repres == 'class'  ~ class,
+                                  TRUE ~ NA_character_)) %>%
+    select(taxon, spp_gp_orig = spp_gp, spp_gp = spp_gp_new,
+           everything()) %>%
+    select(-spp_gp_orig) %>%
+    distinct()
+  
+  df_out <- bind_rows(df, repr_spp)
+}
 downfill <- function(df) {
-  x <- data.table::fread(here_anx('vuln_post_gapfill/vuln_gapfilled_all_tx.csv')) %>%
-    dplyr::select(-vuln_gf_id) %>%
-    filter_dupe_spp(level = 'class')
   
+  df_repres <- assign_repr_level(df)
+
+  spp_all_wide <- assemble_worms(aspect = 'wide')
+
   ranks <- c('species', 'genus', 'family', 'order', 'class')
-  
   rank_list <- vector('list', length = length(ranks)) %>%
     setNames(ranks)
   for(rank in ranks) { ### rank <- ranks[2]
-    xx <- x %>%
-      filter(match_rank == rank)
-    y <- df %>%
-      right_join(xx, by = c('spp_gp' = rank, 'taxon')) %>%
+    y <- df_repres %>%
+      inner_join(spp_all_wide, by = c('spp_gp' = rank)) %>%
       mutate(!!rank := .data[['spp_gp']])
     rank_list[[rank]] <- y
   }
   rank_df <- bind_rows(rank_list) %>%
-    dplyr::select(taxon, spp_gp, # category, 
-           class, order, family, genus, species, 
-           gapfill, match_rank, everything())
+    distinct() %>%
+    group_by(species) %>%
+    filter(n() == 1 | spp_gp == species) %>%
+      ### this drops instances where info for a spp given at spp level, and
+      ###  other info downfilled from above that may conflict w/spp level info
+    ungroup()
   
   return(rank_df)
 }
@@ -422,15 +458,17 @@ assemble_worms <- function(aspect = 'wide', seabirds_only = TRUE, am_patch = TRU
   
   
   if(seabirds_only == TRUE) {
-    seabird_list <- readxl::read_excel(here('_raw/species_numbers.xlsx'),
-                                       sheet = 'seabirds', skip = 1) %>%
-      janitor::clean_names() %>%
-      select(spp = scientific_name_fixed) %>%
-      filter(!is.na(spp)) %>%
-      mutate(spp = tolower(spp) %>% str_trim) %>%
-      .$spp
+    # seabird_list <- readxl::read_excel(here('_raw/species_numbers.xlsx'),
+    #                                    sheet = 'seabirds', skip = 1) %>%
+    #   janitor::clean_names() %>%
+    #   select(spp = scientific_name_fixed) %>%
+    #   filter(!is.na(spp)) %>%
+    #   mutate(spp = tolower(spp) %>% str_trim) %>%
+    #   select(spp) %>%
+    #   distinct()
+    seabird_list <- read_csv(here('_data/seabird_list.csv'), show_col_types = FALSE)
     spp_df <- spp_df %>%
-      filter(!(tolower(class) == 'aves' & !tolower(species) %in% seabird_list))
+      filter(!(tolower(class) == 'aves' & !tolower(species) %in% seabird_list$spp))
   }
   
   if(aspect == 'long') {

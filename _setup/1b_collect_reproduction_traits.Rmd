@@ -32,7 +32,7 @@ spp_from_worms <- assemble_worms() ### from common_fxns.R
 
 # Summary
 
-Gather data on reproductive traits from FishBase and the species vulnerability project: Max fecundity, generation time, parental care (pre-birth/hatch), parental dependence (post-birth/hatch), PLD.  Gapfill using downfill and upstream-downstream gapfill methodology.  
+Gather data on reproductive traits from FishBase and the species vulnerability project: Max fecundity, generation time, parental care (pre-birth/hatch), parental dependence (post-birth/hatch), PLD.  Gapfill using downfill where appropriate (no up/down; that will be done later via MICE)
 
 # Data
 
@@ -58,7 +58,7 @@ This may be done at different levels, for which we suggest different forms of ci
 
 ## Age at maturity: Read in data
 
-Read in data from vulnerability project and fishbase/sealifebase.  First priority is to understand max age at maturity with data from species vulnerability trait data, which can achieve ~11000 spp.  FB/SLB have many NAs for these, but with a continuous value for age to maturity, we can use upstream/downstream gapfilling (to the order level) to plug in values for additional species not included in the vulnerability dataset.
+Read in data from vulnerability project and fishbase/sealifebase.  First priority is to understand max age at maturity with data from species vulnerability trait data, which can achieve ~11000 spp.  FB/SLB have many NAs for these, but with a continuous value for age to maturity, we could potentially use upstream/downstream gapfilling (to the order level) to plug in values for additional species not included in the vulnerability dataset - however, we will rely on MICE to perform this gapfill later.
 
 ### Vulnerability traits
 
@@ -126,7 +126,9 @@ record_df <- collect_records(mat_fb, field = 'age_mat', file_tag = 'resolve_name
 
 mat_fb_clean <- mat_fb %>%
   left_join(record_df, by = c('species' = 'orig_sciname')) %>%
-  mutate(species = ifelse(!is.na(valid_name), valid_name, species))
+  mutate(species = ifelse(!is.na(valid_name), valid_name, species)) %>%
+  mutate(species = str_extract(species, '^[a-z]+ [a-z]+'))
+    ### this drops subspp and var. names
 
 summary(mat_fb_clean$value)
 
@@ -215,7 +217,9 @@ record_df <- collect_records(fecund_fb, field = 'max_fecundity', file_tag = 'res
 
 fecund_fb_clean <- fecund_fb %>%
   left_join(record_df, by = c('species' = 'orig_sciname')) %>%
-  mutate(species = ifelse(!is.na(valid_name), valid_name, species))
+  mutate(species = ifelse(!is.na(valid_name), valid_name, species)) %>%
+  mutate(species = str_extract(species, '^[a-z]+ [a-z]+'))
+    ### this drops subspp and var. names
 
 summary(fecund_fb_clean$max_fecundity)
 
@@ -268,6 +272,8 @@ record_df <- collect_records(protect_fb, field = 'protect_score', file_tag = 're
 protect_df <- protect_fb %>%
   left_join(record_df, by = c('species' = 'orig_sciname')) %>%
   mutate(species = ifelse(!is.na(valid_name), valid_name, species)) %>%
+  mutate(species = str_extract(species, '^[a-z]+ [a-z]+')) %>%
+    ### this drops subspp and var. names
   right_join(spp_from_worms, by = 'species')
 
 protect_df %>% 

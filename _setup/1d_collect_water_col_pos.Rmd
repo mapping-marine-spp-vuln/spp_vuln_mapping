@@ -29,7 +29,7 @@ source(here('common_fxns.R'))
 
 # Summary
 
-Gather data on water column position from FishBase and the species vulnerability project.  Gapfill using upstream-downstream gapfill methodology.
+Gather data on water column position from FishBase and the species vulnerability project.  Gapfill using downfill methodology.
 
 # Data
 
@@ -78,13 +78,14 @@ mid_terms <- c('pelagic', 'mid', 'ocean') %>%
 
 depth_vuln <- zone_vuln %>%
   group_by(taxon, spp_gp) %>%
-  summarize(pelagic = any(str_detect(trait_value, mid_terms)),
+  summarize(trait_value = paste0(trait_value, collapse = ';')) %>%
+  downfill() %>%
+  mutate(pelagic = any(str_detect(trait_value, mid_terms)),
             benthic = any(str_detect(trait_value, btm_terms)),
             reef    = any(str_detect(trait_value, reef_terms)),
             .groups = 'drop') %>%
   mutate(reef = reef | taxon == 'sponges') %>%
-  downfill() %>%
-  select(taxon, species, match_rank, benthic, pelagic, reef)
+  select(taxon, species, benthic, pelagic, reef)
 ```
 
 
@@ -106,6 +107,8 @@ record_df <- collect_records(dem_pel_fb_raw, field = 'demers_pelag', file_tag = 
 depth_fb <- dem_pel_fb_raw %>%
   left_join(record_df, by = c('species' = 'orig_sciname')) %>%
   mutate(species = ifelse(!is.na(valid_name), valid_name, species)) %>%
+  mutate(species = str_extract(species, '^[a-z]+ [a-z]+')) %>%
+    ### this drops subspp and var. names
   mutate(benthic = str_detect(demers_pelag, 'benth|sessile|demersal'),
          pelagic = str_detect(demers_pelag, 'pelagic'),
          reef    = str_detect(demers_pelag, 'reef')) %>%
@@ -125,10 +128,10 @@ check <- depth_vuln %>%
   inner_join(depth_fb, by = c('species')) %>%
   mutate(match = (v_ben == benthic) + (v_pel == pelagic) + (v_rf == reef))
 
-table(check %>% select(match, match_rank))
+table(check %>% select(match, taxon))
 ```
 
-"match" of 3 indicates all of (pelagic, benthic, reef) match between FishBase/SealifeBase and the vulnerability traits.  Species given at the species level (for vulnerability) tend to be closer matches to FishBase values, with more mismatches when filling to higher ranks.  In general, heuristic: use FishBase where available (as these are all at species level and should be peer reviewed), then fill in with other spp based on vulnerability scores.
+"match" of 3 indicates all of (pelagic, benthic, reef) match between FishBase/SealifeBase and the vulnerability traits.  In general, matching at least one set of habitats.  Heuristic: use FishBase where available (as these are all at species level and should be peer reviewed), then fill in with other spp based on vulnerability scores.
 
 ```{r}
 DT::datatable(check %>% filter(match == 0) %>% select(-spec_code, -db))

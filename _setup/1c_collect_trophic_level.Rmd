@@ -169,6 +169,8 @@ prob_classes <- c('anthozoa', 'demospongiae', 'echinoidea', 'holothuroidea')
 troph_df_gf <- troph_df %>%
   left_join(record_df, by = c('species' = 'orig_sciname')) %>%
   mutate(species = ifelse(!is.na(valid_name), valid_name, species)) %>%
+  mutate(species = str_extract(species, '^[a-z]+ [a-z]+')) %>%
+    ### this drops subspp and var. names
   right_join(assemble_worms(), by = 'species') %>%
   gapfill_up_down('troph') %>%
   filter(gf_level <= 4 | class %in% prob_classes) %>%

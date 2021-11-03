@@ -23,6 +23,7 @@ knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
 library(oharac)
 oharac::setup()
 source(here('common_fxns.R'))
+library(mice)
 
 
 ```
@@ -55,9 +56,11 @@ Gather FB/SLB max length data, ungapfilled.  These values are in centimeters.
 
 ```{r max length}
 length_df <- read_csv(here('_data/traits_grouping/trait_length_cm.csv')) %>%
+  filter(gf_level == 1) %>%
+  mutate(length = value) %>%
   filter(!is.na(length)) %>%
   filter(length > 0) %>%
-  select(species, spec_code, length)
+  select(species, length)
 
 # summary(length_df$length)
 # hist(length_df$length)
@@ -68,6 +71,8 @@ length_df <- read_csv(here('_data/traits_grouping/trait_length_cm.csv')) %>%
 Values appear to reasonably approach a log-normal distribution...  we can transform prior to running MICE, and/or use Predictive mean matching (PMM).
 
 ### Fecundity
+
+Reproduction traits are only downfilled (from vulnerability traits), not gapfilled using taxa-level mean imputation.
 
 ```{r fecundity}
 fecund_df <- read_csv(here('_data/traits_grouping/trait_reproduction.csv')) %>%
@@ -83,6 +88,8 @@ fecund_df <- read_csv(here('_data/traits_grouping/trait_reproduction.csv')) %>%
 ```
 
 ### Generation time
+
+Reproduction traits are only downfilled (from vulnerability traits), not gapfilled using taxa-level mean imputation.
 
 ```{r gen time}
 
@@ -369,7 +376,6 @@ With an improved dataset, we can use MICE to impute missing values.
 For now let's just use phylum and order as a predictor, dropping family.  Including family greatly slows the imputation (5 `m` x 5 `maxit` = 4 minutes vs. 44 seconds for order vs. 8 seconds for phylum... on a 1000-sample dataframe).
 
 ```{r}
-library(mice)
 
 wcol_levels <- c('rf', 'pel', 'ben', 'bp')
 mob_levels  <- c('ses', 'sed', 'mob', 'mig')
@@ -388,6 +394,9 @@ traits_premice_all <- traits2_all %>%
   mutate(phylum = factor(phylum, ordered = FALSE),
          order  = factor(order, ordered = FALSE),
          family = factor(family, ordered = FALSE))
+
+### write out traits pre-imputation for reference
+write_csv(traits_premice_all,  here_anx('mice/gp_traits_mice_preimputation.csv'))
 
 am_spp <- get_am_spp_info()
 # n_samples <- 1000
@@ -440,8 +449,6 @@ meth_vec
 ### perform the imputation!
 
 ``` {r}
-### write out traits pre-imputation for reference
-write_csv(traits_premice,  here_anx('mice/gp_traits_mice_preimputation.csv'))
 
 ### set up file for imputed traits
 post_impute_f <- here_anx('mice/gp_traits_mice.csv')

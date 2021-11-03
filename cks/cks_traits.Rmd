@@ -22,6 +22,9 @@ knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
 
 library(oharac) ### remotes::install_github('oharac/oharac')
 oharac::setup()
+source(here('common_fxns.R'))
+library(taxize)
+library(rfishbase)
 
 ```
 
@@ -42,78 +45,238 @@ From other scripts scraping details from FishBase, SeaLifeBase, and the species 
 ## Read in CKS list
 
 ```{r}
-cks <- readxl::read_excel(here('cks/cks_list_210714.xls'), sheet = 1) %>%
+cks_df <- readxl::read_excel(here('cks/cks_list_210714.xlsx'), sheet = 1) %>%
   janitor::clean_names() %>%
   mutate(species = tolower(species), 
-         group   = tolower(group)) %>%
-  filter(group %in% c('fish', 'reptile', 'mollusk', 'crustacean'))
+         taxa    = tolower(taxa))
+
+cks_df$taxa %>% unique()
 ```
 
-## Gather traits from FishBase
+## Gather traits
+
+Gather traits with preliminary match.  Identify unmatched spp and identify cause of non-match.
 
 ```{r}
-keep_cols <- c('length', 'f_bname')
-length_fb_raw <- get_fb_slb(fxn = species, 
-                            keep_cols = keep_cols, keep_fxn = contains,
-                            drop_cols = '_ref',    drop_fxn = ends_with) 
+t_df <- read_csv(here_anx('mice/gp_traits_mice_preimputation.csv'))
+  
+cks_traits_prematch_df <- cks_df %>%
+  left_join(t_df, by = 'species') %>%
+  filter(taxa %in% c('crustacean', 'fish', 'mollusk', 'reptile'))
 
-length_fb <- length_fb_raw %>%
-  mutate(species = tolower(species)) %>%
-  select(species, comname = f_bname, contains('length'), source = db) %>%
+spp_unmatched <- cks_traits_prematch_df %>%
+  filter(is.na(phylum)) %>%
+  select(taxa, species) %>%
   distinct()
 
-cks_length <- cks %>%
-  left_join(length_fb, by = 'species') %>%
-  mutate(source = ifelse(!is.na(length), source, NA))
+DT::datatable(spp_unmatched)
 ```
 
+### Freshwater crayfish:
+
+These are not likely in SeaLifeBase nor in vulnerability trait data; drop them.
+
+* cherax cainii
+* cherax destructor
+* cherax tenuimanus
+* euastacus armatus
+* paranephrops planifrons
+* paranephrops zealandicus
+
+### Freshwater fish:
+
+These or close relatives should be in FishBase but not in vulnerability trait data, but confounded by differences in species name:
+
+* acanthicus hystrix (pleco from Amazon and Orinoco)
+* arapaima gigas (pirarucu from Amazon)
+* lasiancistrus heteracanthus (pleco from Peru/Ecuador)
+* maccullochella peelii (Australian freshwater cod)
+* panaqolus dentex (pleco from SA)
+
+### Freshwater molluscs:
+
+Not likely in SeaLifeBase nor in vulnerability trait data.
+
+* echyridella menziesii (freshwater mussel)
+
+### Saltwater fish:
+
+These or close relatives should be in FishBase and vulnerability trait data, but confounded by differences in species name.
+
+* etrumeus teres
+* lampetra tridentata
+
+### Saltwater molluscs:
+
+These or close relatives may be in SeaLifeBase and in vulnerability trait data, but confounded by differences in species name
+
+* anadara tuberculosa (ark clam)
+* fasciolaria princeps (tulip snail)
+* strombus galeatus (eastern pacific giant conch)
+
+### Terrestrial reptiles:
+
+These will not be in SeaLifeBase nor in vulnerability trait data; drop.
+
+* bitis arietans (puff adder)
+* dendroaspis angusticeps (green mamba)
+* geochelone pardalis (leopard tortoise)
+* glyptemys muhlenbergii (bog turtle)
+* naja haje (Egyptian cobra)
+* sphenodon punctatus (tuatara)
+
+## fuzzymatch to fix names
+
 ```{r}
+spp_to_fuzzymatch <- spp_unmatched %>%
+  filter(!taxa %in% c('crustacean', 'reptile'))
+
+fuzzy_matched_df <- fuzzy_match(spp_to_fuzzymatch$species, marine_only = FALSE)
+```
+
+## For fuzzy-matched species, gather traits from FishBase/SeaLifeBase
+
+```{r log_l}
+keep_cols <- c('f_bname', 'length')
+length_fb_raw <- get_fb_slb(fxn = species, 
+                            keep_cols = keep_cols, keep_fxn = contains,
+                            drop_cols = '_ref',    drop_fxn = ends_with)
+
+length_fb_num <- length_fb_raw %>%
+  mutate(across(contains('length'), ~ as.numeric(.x)),
+         spec_code = as.integer(spec_code))
+
+length_match <- length_fb_num %>%
+  filter(species %in% fuzzy_matched_df$valid_name) %>%
+  mutate(log_l = log(length)) %>%
+  select(species, log_l) %>%
+  distinct()
+```
+
+```{r log_f}
+fields <- c('fecun')
+fecund_fb_raw <- get_fb_slb(fxn = fecundity,
+                     keep_cols = fields, keep_fxn = contains,
+                     drop_cols = '_ref', drop_fxn = ends_with) %>%
+  select(db, spec_code, species, starts_with('fecun'))
+
+fecund_fb_num <- fecund_fb_raw %>%
+  mutate(spec_code = as.integer(spec_code),
+         across(contains(c('max', 'min', 'mean')), ~as.numeric(.x)))
+
+fecund_match <- fecund_fb_num %>%
+  filter(species %in% fuzzy_matched_df$valid_name) %>%
+  mutate(f = ifelse(!is.na(fecundity_max), fecundity_max, fecundity_min)) %>%
+  mutate(log_f = log(f)) %>%
+  select(species, log_f) %>%
+  distinct()
+
+```
+
+```{r age_mat}
 fields <- c('age', 'tm')
 
-mat_df_raw <- get_fb_slb(rfishbase::maturity,
+mat_fb_raw <- get_fb_slb(rfishbase::maturity,
                        keep_cols = fields, keep_fxn = contains,
                        drop_cols = '_ref', drop_fxn = ends_with) %>%
   select(db, spec_code, species, tm, age_mat_min, age_mat_min2) %>%
   filter(!is.na(tm) | !is.na(age_mat_min) | !is.na(age_mat_min2))
 
-mat_df <- mat_df_raw %>%
+mat_fb_num <- mat_fb_raw %>%
+  mutate(spec_code = as.integer(spec_code),
+         across(contains(fields), ~as.numeric(.x)))
+
+mat_match <- mat_fb_num %>%
+  filter(species %in% fuzzy_matched_df$valid_name) %>%
+  mutate(age_mat = case_when(!is.na(tm) ~ tm,
+                             TRUE ~ age_mat_min)) %>%
+  select(species, age_mat) %>%
+  distinct()
+
+```
+
+```{r troph}
+ecol_df <- get_fb_slb(fxn = ecology,
+                   keep_cols = c('troph', 'diet'), keep_fxn = contains,
+                   drop_cols = '_ref', drop_fxn = ends_with) %>%
+  mutate(spec_code = as.integer(spec_code),
+         across(contains('troph'), ~as.numeric(.x)))
+
+troph_match <- ecol_df %>%
+  filter(!is.na(food_troph) | !is.na(diet_troph)) %>%
+  filter(species %in% fuzzy_matched_df$valid_name) %>%
+  mutate(troph = ifelse(!is.na(food_troph), food_troph, est_troph)) %>%
+  select(species, troph) %>%
+  distinct()
+
+```
+
+```{r wcol}
+keep_cols <- c('demers_pelag')
+dem_pel_fb_raw <- get_fb_slb(fxn = species, 
+                            keep_cols = keep_cols, keep_fxn = contains,
+                            drop_cols = '_ref',    drop_fxn = ends_with) %>%
+  mutate(demers_pelag = tolower(demers_pelag)) %>%
+  filter(!is.na(demers_pelag))
+
+depth_match <- dem_pel_fb_raw %>%
+  filter(species %in% fuzzy_matched_df$valid_name) %>%
+  mutate(benthic = str_detect(demers_pelag, 'benth|sessile|demersal'),
+         pelagic = str_detect(demers_pelag, 'pelagic'),
+         reef    = str_detect(demers_pelag, 'reef')) %>%
+  select(-demers_pelag) %>%
+  mutate(wcol = case_when(benthic & pelagic ~ 'benthopelagic',
+                          pelagic ~ 'pelagic',
+                          reef ~ 'reef',
+                          benthic ~ 'benthic',
+                          TRUE ~ 'oops')) %>%
+  select(species, wcol) %>%
+  distinct()
+  
+```
+
+```{r}
+all_traits_match <- length_match %>% 
+  full_join(fecund_match, by = 'species') %>% 
+  full_join(troph_match, by = 'species') %>% 
+  full_join(mat_match, by = 'species') %>% 
+  full_join(depth_match, by = 'species')
+  
+```
+
+```{r}
+cks_traits_df <- cks_df %>%
+  left_join(fuzzy_matched_df, by = c('species' = 'orig_sciname')) %>%
+  mutate(species = ifelse(!is.na(valid_name), valid_name, species)) %>%
+  left_join(t_df, by = 'species') %>%
+  filter(taxa %in% c('crustacean', 'fish', 'mollusk', 'reptile')) %>%
+  bind_rows(all_traits_match)
+
+wcol_codes <- c(rf  = 'reef',
+                pel = 'pelagic',
+                ben = 'benthic',
+                bp  = 'benthopelagic')
+mob_codes  <- c(mob = 'mobile resident',
+                mig = 'migratory',
+                ses = 'sessile',
+                sed = 'sedentary')
+
+cks_traits_summary <- cks_traits_df %>%
+  mutate(wcol = wcol_codes[wcol],
+         adult_mob = mob_codes[adult_mob]) %>%
   group_by(species) %>%
-  summarize(n_tm = sum(!is.na(tm)),
-            n_amm = sum(!is.na(age_mat_min)),
-            n_amm2 = sum(!is.na(age_mat_min2)),
-            tm = mean(tm, na.rm = TRUE),
-            age_mat_min = mean(age_mat_min, na.rm = TRUE),
-            age_mat_min2 = mean(age_mat_min2, na.rm = TRUE))
-  # mutate(t_maturity = case_when(!is.na(tm) ~ tm,
-  #                               !is.na(age_mat_min2) ~ age_mat_min2 / coef_amm2,
-  #                               TRUE ~ age_mat_min / coef_amm)) %>%
-  # distinct()
+  summarize(across(where(is.numeric), 
+                   .fns = function(x) {
+                      ifelse(all(is.na(x)), NA, mean(x, na.rm = TRUE))
+                   }),
+                   across(where(is.character), 
+                   .fns = function(x) {
+                      ifelse(all(is.na(x)), NA, paste(x[!is.na(x)], sep = ';'))
+                   })
+            ) %>%
+  select(taxon = taxa, species, source, compiler, 
+         log_l, log_f, age_mat, troph, wcol, adult_mob)
 
-cks_age_mat <- cks %>%
-  left_join(mat_df_raw) %>%
-  distinct()
-
-```
-
-```{r}
-fields <- c('fecun')
-fecund_df_raw <- get_fb_slb(fxn = fecundity,
-                     keep_cols = fields, keep_fxn = contains,
-                     drop_cols = '_ref', drop_fxn = ends_with) %>%
-  select(db, spec_code, species, starts_with('fecun')) %>%
-  distinct()
-# summary(fecund_df_raw)
-# fecund_df_raw %>% summarize(across(starts_with('fecun'), .fns = ~sum(!is.na(.x))))
-
-cks_fecund <- cks %>%
-  left_join(fecund_df_raw) %>%
-  distinct()
-
-```
-
-```{r}
-write_csv(cks_length, here('cks/cks_length.csv'))
-write_csv(cks_age_mat, here('cks/cks_age_mat.csv'))
-write_csv(cks_fecund, here('cks/cks_fecund.csv'))
+write_csv(cks_traits_summary, here('cks', 'cks_trait_val_summary.csv'))
 ```
 

@@ -9,7 +9,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
 
 
-<meta name="author" content="Compiled on Thu Sep 9 15:24:11 2021 by ohara" />
+<meta name="author" content="Compiled on Wed Nov 3 12:41:17 2021 by ohara" />
 
 
 <title>Collect length/body size trait</title>
@@ -75,6 +75,7 @@ In here, put in a link to repo and website?
 pre > code.sourceCode { white-space: pre; position: relative; }
 pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
 pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
 code.sourceCode > span { color: inherit; text-decoration: inherit; }
 div.sourceCode { margin: 1em 0; }
 pre.sourceCode { margin: 0; }
@@ -356,7 +357,7 @@ div.tocify {
 
 
 <h1 class="title toc-ignore">Collect length/body size trait</h1>
-<h4 class="author"><em>Compiled on Thu Sep 9 15:24:11 2021 by ohara</em></h4>
+<h4 class="author"><em>Compiled on Wed Nov 3 12:41:17 2021 by ohara</em></h4>
 
 </div>
 
@@ -368,11 +369,11 @@ div.tocify {
 <span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(rfishbase)</span>
 <span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="fu">source</span>(<span class="fu">here</span>(<span class="st">&#39;common_fxns.R&#39;</span>))</span></code></pre></div>
 <div id="summary" class="section level1" number="1">
-<h1 number="1"><span class="header-section-number">1</span> Summary</h1>
+<h1><span class="header-section-number">1</span> Summary</h1>
 <p>Gather data on body length from FishBase and the species vulnerability project. Gapfill using downfill and upstream-downstream gapfill methodology.</p>
 </div>
 <div id="data" class="section level1" number="2">
-<h1 number="2"><span class="header-section-number">2</span> Data</h1>
+<h1><span class="header-section-number">2</span> Data</h1>
 <p>This script will use processed valid species traits from the species vulnerability project, plus FishBase and SeaLifeBase.</p>
 <p>FishBase is a scientific database, and this has the implication - among others - that its use and the use of its contents are free as long as due credit is given.</p>
 <p>This may be done at different levels, for which we suggest different forms of citations:</p>
@@ -382,7 +383,7 @@ div.tocify {
 <li>when discussing the features of a FishBase table, cite the section documenting that table, e.g., “Sa-a et al. (2000).”</li>
 </ul>
 <div id="references" class="section level2" number="2.1">
-<h2 number="2.1"><span class="header-section-number">2.1</span> References</h2>
+<h2><span class="header-section-number">2.1</span> References</h2>
 <ul>
 <li>Froese, R. and D. Pauly, Editors. 2000. FishBase 2000: concepts, design and data sources. ICLARM, Los Baños, Laguna, Philippines. 344 p.</li>
 <li>Houde, E.D. and C.E. Zastrow. 1993. Ecosystem- and taxon-specific dynamic energetics properties of fish larvae assemblages. Bull. Mar. Sci. 53(2):290-335.</li>
@@ -393,9 +394,9 @@ div.tocify {
 </div>
 </div>
 <div id="methods" class="section level1" number="3">
-<h1 number="3"><span class="header-section-number">3</span> Methods</h1>
+<h1><span class="header-section-number">3</span> Methods</h1>
 <div id="read-in-data" class="section level2" number="3.1">
-<h2 number="3.1"><span class="header-section-number">3.1</span> Read in data</h2>
+<h2><span class="header-section-number">3.1</span> Read in data</h2>
 <p>Read in data from fishbase/sealifebase, from Species table.</p>
 <div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>l_spp_fb_f <span class="ot">&lt;-</span> <span class="fu">here</span>(<span class="st">&#39;int/fb_length_spp_raw.csv&#39;</span>)</span>
 <span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span>(<span class="sc">!</span><span class="fu">file.exists</span>(l_spp_fb_f)) {</span>
@@ -423,7 +424,7 @@ div.tocify {
 <span id="cb2-24"><a href="#cb2-24" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb2-25"><a href="#cb2-25" aria-hidden="true" tabindex="-1"></a>length_spp_fb <span class="ot">&lt;-</span> <span class="fu">read_csv</span>(l_spp_fb_f)</span></code></pre></div>
 <div id="gapfill-max-length-using-common-length-or-female-length" class="section level3" number="3.1.1">
-<h3 number="3.1.1"><span class="header-section-number">3.1.1</span> Gapfill max length using common length or female length</h3>
+<h3><span class="header-section-number">3.1.1</span> Gapfill max length using common length or female length</h3>
 <p>Because the FishBase/SeaLifeBase species contains multiple columns with length information, use that to help gapfill species where <code>length</code> data is NA but <code>common_length</code> or <code>length_female</code> is not NA. First remove the outlier of common length = 916000 (<em>Dermochelys coriacea</em> are not nine kilometers long)</p>
 <div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>length_df_outlier_removed <span class="ot">&lt;-</span> length_spp_fb <span class="sc">%&gt;%</span></span>
 <span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>    <span class="fu">filter</span>(common_length <span class="sc">&lt;</span> <span class="dv">2500</span> <span class="sc">|</span> <span class="fu">is.na</span>(common_length))</span>
@@ -495,10 +496,10 @@ div.tocify {
 </div>
 </div>
 <div id="check-other-tables" class="section level2" number="3.2">
-<h2 number="3.2"><span class="header-section-number">3.2</span> Check other tables</h2>
+<h2><span class="header-section-number">3.2</span> Check other tables</h2>
 <p>These tables were mentioned in SI for Boyce et al. Climate Vulnerability Index</p>
 <div id="morphology" class="section level3" number="3.2.1">
-<h3 number="3.2.1"><span class="header-section-number">3.2.1</span> Morphology</h3>
+<h3><span class="header-section-number">3.2.1</span> Morphology</h3>
 <div class="sourceCode" id="cb10"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>l_morpho_fb_f <span class="ot">&lt;-</span> <span class="fu">here</span>(<span class="st">&#39;int/fb_length_morpho_raw.csv&#39;</span>)</span>
 <span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span>(<span class="sc">!</span><span class="fu">file.exists</span>(l_morpho_fb_f)) {</span>
 <span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>  </span>
@@ -527,7 +528,7 @@ div.tocify {
 <p>The small number of species with <code>total_length</code>, <code>fork_length</code>, or <code>standard_length_cm</code> values in the Morpohology table are already included in the Species table.</p>
 </div>
 <div id="popll" class="section level3" number="3.2.2">
-<h3 number="3.2.2"><span class="header-section-number">3.2.2</span> PopLL</h3>
+<h3><span class="header-section-number">3.2.2</span> PopLL</h3>
 <div class="sourceCode" id="cb11"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>l_popll_fb_f <span class="ot">&lt;-</span> <span class="fu">here</span>(<span class="st">&#39;int/fb_length_popll_raw.csv&#39;</span>)</span>
 <span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span>(<span class="sc">!</span><span class="fu">file.exists</span>(l_popll_fb_f)) {</span>
 <span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>  </span>
@@ -552,7 +553,7 @@ div.tocify {
 <p>A few species here (~55) not included in the Species table…</p>
 </div>
 <div id="poplw" class="section level3" number="3.2.3">
-<h3 number="3.2.3"><span class="header-section-number">3.2.3</span> PopLW</h3>
+<h3><span class="header-section-number">3.2.3</span> PopLW</h3>
 <div class="sourceCode" id="cb12"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a>l_poplw_fb_f <span class="ot">&lt;-</span> <span class="fu">here</span>(<span class="st">&#39;int/fb_length_poplw_raw.csv&#39;</span>)</span>
 <span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span>(<span class="sc">!</span><span class="fu">file.exists</span>(l_poplw_fb_f)) {</span>
 <span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>  </span>
@@ -577,7 +578,7 @@ div.tocify {
 <p>A few more species here (~293) not included in the Species table…</p>
 </div>
 <div id="popchar" class="section level3" number="3.2.4">
-<h3 number="3.2.4"><span class="header-section-number">3.2.4</span> PopChar</h3>
+<h3><span class="header-section-number">3.2.4</span> PopChar</h3>
 <div class="sourceCode" id="cb13"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a>l_popchar_fb_f <span class="ot">&lt;-</span> <span class="fu">here</span>(<span class="st">&#39;int/fb_length_popchar_fb_raw.csv&#39;</span>)</span>
 <span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span>(<span class="sc">!</span><span class="fu">file.exists</span>(l_popchar_fb_f)) {</span>
 <span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a>  </span>
@@ -602,7 +603,7 @@ div.tocify {
 <p>Quite a few more species here (~895) not included in the Species table…</p>
 </div>
 <div id="maturity" class="section level3" number="3.2.5">
-<h3 number="3.2.5"><span class="header-section-number">3.2.5</span> Maturity</h3>
+<h3><span class="header-section-number">3.2.5</span> Maturity</h3>
 <div class="sourceCode" id="cb14"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a>l_mat_fb_f <span class="ot">&lt;-</span> <span class="fu">here</span>(<span class="st">&#39;int/fb_length_maturity_raw.csv&#39;</span>)</span>
 <span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span>(<span class="sc">!</span><span class="fu">file.exists</span>(l_mat_fb_f)) {</span>
 <span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a>  </span>
@@ -629,7 +630,7 @@ div.tocify {
 </div>
 </div>
 <div id="gather-the-tables-together" class="section level2" number="3.3">
-<h2 number="3.3"><span class="header-section-number">3.3</span> Gather the tables together</h2>
+<h2><span class="header-section-number">3.3</span> Gather the tables together</h2>
 <div class="sourceCode" id="cb15"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a>length_fb_all <span class="ot">&lt;-</span> length_lm_fb <span class="sc">%&gt;%</span></span>
 <span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">table =</span> <span class="st">&#39;species&#39;</span>) <span class="sc">%&gt;%</span></span>
 <span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">bind_rows</span>(length_popchar_fb <span class="sc">%&gt;%</span> <span class="fu">rename</span>(<span class="at">length =</span> length_max)) <span class="sc">%&gt;%</span></span>
@@ -656,16 +657,16 @@ div.tocify {
 <span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">distinct</span>()</span></code></pre></div>
 </div>
 <div id="use-worms-api-to-resolve-names" class="section level2" number="3.4">
-<h2 number="3.4"><span class="header-section-number">3.4</span> Use WoRMS API to resolve names</h2>
+<h2><span class="header-section-number">3.4</span> Use WoRMS API to resolve names</h2>
 <div class="sourceCode" id="cb17"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a>record_df <span class="ot">&lt;-</span> <span class="fu">collect_records</span>(length_fb, <span class="at">field =</span> <span class="st">&#39;length&#39;</span>, </span>
 <span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a>                             <span class="at">file_tag =</span> <span class="st">&#39;resolve_names_fb_length&#39;</span>) <span class="sc">%&gt;%</span></span>
-<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(aphia_id <span class="sc">!=</span> <span class="sc">-</span><span class="dv">9999</span>)</span></code></pre></div>
-<pre><code>## Error in open.connection(con, &quot;rb&quot;) : HTTP error 400.</code></pre>
-<div class="sourceCode" id="cb19"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a>length_fb_fixed <span class="ot">&lt;-</span> length_fb <span class="sc">%&gt;%</span></span>
-<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">left_join</span>(record_df, <span class="at">by =</span> <span class="fu">c</span>(<span class="st">&#39;species&#39;</span> <span class="ot">=</span> <span class="st">&#39;orig_sciname&#39;</span>)) <span class="sc">%&gt;%</span></span>
-<span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">species =</span> <span class="fu">ifelse</span>(<span class="sc">!</span><span class="fu">is.na</span>(valid_name), valid_name, species))</span>
-<span id="cb19-4"><a href="#cb19-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb19-5"><a href="#cb19-5" aria-hidden="true" tabindex="-1"></a><span class="fu">write_csv</span>(length_fb_fixed, <span class="fu">here</span>(<span class="st">&#39;_data/traits_grouping/trait_length_cm.csv&#39;</span>))</span></code></pre></div>
+<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(aphia_id <span class="sc">!=</span> <span class="sc">-</span><span class="dv">9999</span>)</span>
+<span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-5"><a href="#cb17-5" aria-hidden="true" tabindex="-1"></a>length_fb_fixed <span class="ot">&lt;-</span> length_fb <span class="sc">%&gt;%</span></span>
+<span id="cb17-6"><a href="#cb17-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">left_join</span>(record_df, <span class="at">by =</span> <span class="fu">c</span>(<span class="st">&#39;species&#39;</span> <span class="ot">=</span> <span class="st">&#39;orig_sciname&#39;</span>)) <span class="sc">%&gt;%</span></span>
+<span id="cb17-7"><a href="#cb17-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">species =</span> <span class="fu">ifelse</span>(<span class="sc">!</span><span class="fu">is.na</span>(valid_name), valid_name, species))</span>
+<span id="cb17-8"><a href="#cb17-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-9"><a href="#cb17-9" aria-hidden="true" tabindex="-1"></a><span class="fu">write_csv</span>(length_fb_fixed, <span class="fu">here</span>(<span class="st">&#39;_data/traits_grouping/trait_length_cm.csv&#39;</span>))</span></code></pre></div>
 </div>
 </div>
 

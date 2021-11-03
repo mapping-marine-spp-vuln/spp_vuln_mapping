@@ -9,7 +9,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
 
 
-<meta name="author" content="Compiled on Sun Sep 12 12:57:06 2021 by ohara" />
+<meta name="author" content="Compiled on Wed Nov 3 12:04:05 2021 by ohara" />
 
 
 <title>Collect reproductivity traits</title>
@@ -75,6 +75,7 @@ In here, put in a link to repo and website?
 pre > code.sourceCode { white-space: pre; position: relative; }
 pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
 pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
 code.sourceCode > span { color: inherit; text-decoration: inherit; }
 div.sourceCode { margin: 1em 0; }
 pre.sourceCode { margin: 0; }
@@ -356,7 +357,7 @@ div.tocify {
 
 
 <h1 class="title toc-ignore">Collect reproductivity traits</h1>
-<h4 class="author"><em>Compiled on Sun Sep 12 12:57:06 2021 by ohara</em></h4>
+<h4 class="author"><em>Compiled on Wed Nov 3 12:04:05 2021 by ohara</em></h4>
 
 </div>
 
@@ -371,11 +372,11 @@ div.tocify {
 <span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="do">### used for joining and gapfilling</span></span>
 <span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>spp_from_worms <span class="ot">&lt;-</span> <span class="fu">assemble_worms</span>() <span class="do">### from common_fxns.R</span></span></code></pre></div>
 <div id="summary" class="section level1" number="1">
-<h1 number="1"><span class="header-section-number">1</span> Summary</h1>
-<p>Gather data on reproductive traits from FishBase and the species vulnerability project: Max fecundity, generation time, parental care (pre-birth/hatch), parental dependence (post-birth/hatch), PLD. Gapfill using downfill and upstream-downstream gapfill methodology.</p>
+<h1><span class="header-section-number">1</span> Summary</h1>
+<p>Gather data on reproductive traits from FishBase and the species vulnerability project: Max fecundity, generation time, parental care (pre-birth/hatch), parental dependence (post-birth/hatch), PLD. Gapfill using downfill where appropriate (no up/down; that will be done later via MICE)</p>
 </div>
 <div id="data" class="section level1" number="2">
-<h1 number="2"><span class="header-section-number">2</span> Data</h1>
+<h1><span class="header-section-number">2</span> Data</h1>
 <p>This script will use processed valid species traits from the species vulnerability project, plus FishBase and SeaLifeBase.</p>
 <p>FishBase is a scientific database, and this has the implication - among others - that its use and the use of its contents are free as long as due credit is given.</p>
 <p>This may be done at different levels, for which we suggest different forms of citations:</p>
@@ -385,7 +386,7 @@ div.tocify {
 <li>when discussing the features of a FishBase table, cite the section documenting that table, e.g., “Sa-a et al. (2000).”</li>
 </ul>
 <div id="references" class="section level2" number="2.1">
-<h2 number="2.1"><span class="header-section-number">2.1</span> References</h2>
+<h2><span class="header-section-number">2.1</span> References</h2>
 <ul>
 <li>Froese, R. and D. Pauly, Editors. 2000. FishBase 2000: concepts, design and data sources. ICLARM, Los Baños, Laguna, Philippines. 344 p.</li>
 <li>Houde, E.D. and C.E. Zastrow. 1993. Ecosystem- and taxon-specific dynamic energetics properties of fish larvae assemblages. Bull. Mar. Sci. 53(2):290-335.</li>
@@ -396,12 +397,12 @@ div.tocify {
 </div>
 </div>
 <div id="methods" class="section level1" number="3">
-<h1 number="3"><span class="header-section-number">3</span> Methods</h1>
+<h1><span class="header-section-number">3</span> Methods</h1>
 <div id="age-at-maturity-read-in-data" class="section level2" number="3.1">
-<h2 number="3.1"><span class="header-section-number">3.1</span> Age at maturity: Read in data</h2>
-<p>Read in data from vulnerability project and fishbase/sealifebase. First priority is to understand max age at maturity with data from species vulnerability trait data, which can achieve ~11000 spp. FB/SLB have many NAs for these, but with a continuous value for age to maturity, we can use upstream/downstream gapfilling (to the order level) to plug in values for additional species not included in the vulnerability dataset.</p>
+<h2><span class="header-section-number">3.1</span> Age at maturity: Read in data</h2>
+<p>Read in data from vulnerability project and fishbase/sealifebase. First priority is to understand max age at maturity with data from species vulnerability trait data, which can achieve ~11000 spp. FB/SLB have many NAs for these, but with a continuous value for age to maturity, we could potentially use upstream/downstream gapfilling (to the order level) to plug in values for additional species not included in the vulnerability dataset - however, we will rely on MICE to perform this gapfill later.</p>
 <div id="vulnerability-traits" class="section level3" number="3.1.1">
-<h3 number="3.1.1"><span class="header-section-number">3.1.1</span> Vulnerability traits</h3>
+<h3><span class="header-section-number">3.1.1</span> Vulnerability traits</h3>
 <div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>age_mat_vuln <span class="ot">&lt;-</span> <span class="fu">get_vuln_traits</span>() <span class="sc">%&gt;%</span></span>
 <span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(trait <span class="sc">==</span> <span class="st">&#39;age_to_1st_reproduction_generation_time&#39;</span>) <span class="sc">%&gt;%</span></span>
 <span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">trait_value =</span> <span class="fu">factor</span>(trait_value,</span>
@@ -414,7 +415,7 @@ div.tocify {
 <span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">source =</span> <span class="st">&#39;vuln&#39;</span>)</span></code></pre></div>
 </div>
 <div id="fishbasesealifebase" class="section level3" number="3.1.2">
-<h3 number="3.1.2"><span class="header-section-number">3.1.2</span> Fishbase/Sealifebase</h3>
+<h3><span class="header-section-number">3.1.2</span> Fishbase/Sealifebase</h3>
 <div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>age_mat_fb_f <span class="ot">&lt;-</span> <span class="fu">here</span>(<span class="st">&#39;int/fb_age_mat_raw.csv&#39;</span>)</span>
 <span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span>(<span class="sc">!</span><span class="fu">file.exists</span>(age_mat_fb_f)) {</span>
@@ -456,9 +457,11 @@ div.tocify {
 <span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>mat_fb_clean <span class="ot">&lt;-</span> mat_fb <span class="sc">%&gt;%</span></span>
 <span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">left_join</span>(record_df, <span class="at">by =</span> <span class="fu">c</span>(<span class="st">&#39;species&#39;</span> <span class="ot">=</span> <span class="st">&#39;orig_sciname&#39;</span>)) <span class="sc">%&gt;%</span></span>
-<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">species =</span> <span class="fu">ifelse</span>(<span class="sc">!</span><span class="fu">is.na</span>(valid_name), valid_name, species))</span>
-<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(mat_fb_clean<span class="sc">$</span>value)</span></code></pre></div>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">species =</span> <span class="fu">ifelse</span>(<span class="sc">!</span><span class="fu">is.na</span>(valid_name), valid_name, species)) <span class="sc">%&gt;%</span></span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">species =</span> <span class="fu">str_extract</span>(species, <span class="st">&#39;^[a-z]+ [a-z]+&#39;</span>))</span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a>    <span class="do">### this drops subspp and var. names</span></span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(mat_fb_clean<span class="sc">$</span>value)</span></code></pre></div>
 <pre><code>## Length  Class   Mode 
 ##      0   NULL   NULL</code></pre>
 <div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>mat_fb_binned <span class="ot">&lt;-</span> mat_fb_clean <span class="sc">%&gt;%</span></span>
@@ -478,12 +481,12 @@ div.tocify {
 <span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a>age_mat_all<span class="sc">$</span>value <span class="sc">%&gt;%</span> <span class="fu">table</span>()</span></code></pre></div>
 <pre><code>## .
 ##     &lt;1yr   &gt;20yrs   1-5yrs 10-20yrs  5-10yrs 
-##     8865      141    14467      585     1593</code></pre>
+##     2483       88     9746      459     1258</code></pre>
 <p>Without gapfilling, we get 1589 distinct species, at least some of which are freshwater.</p>
 </div>
 </div>
 <div id="fecundity" class="section level2" number="3.2">
-<h2 number="3.2"><span class="header-section-number">3.2</span> Fecundity</h2>
+<h2><span class="header-section-number">3.2</span> Fecundity</h2>
 <p>Read in data from vulnerability project and fishbase/sealifebase. Examine potential for variables to be used to gapfill for max fecundity.</p>
 <div class="sourceCode" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>f_vals <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">&#39;&lt;1&#39;</span>, <span class="st">&#39;1-2&#39;</span> , <span class="st">&#39;2-5&#39;</span>, <span class="st">&#39;5-10&#39;</span>, <span class="st">&#39;10-20&#39;</span>, <span class="st">&#39;20-50&#39;</span>, <span class="st">&#39;50-100&#39;</span>, <span class="st">&#39;100-1000&#39;</span>, <span class="st">&#39;1000-10000&#39;</span>, <span class="st">&#39;&gt;10000&#39;</span>)      </span>
 <span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a></span>
@@ -537,9 +540,11 @@ div.tocify {
 <span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>fecund_fb_clean <span class="ot">&lt;-</span> fecund_fb <span class="sc">%&gt;%</span></span>
 <span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">left_join</span>(record_df, <span class="at">by =</span> <span class="fu">c</span>(<span class="st">&#39;species&#39;</span> <span class="ot">=</span> <span class="st">&#39;orig_sciname&#39;</span>)) <span class="sc">%&gt;%</span></span>
-<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">species =</span> <span class="fu">ifelse</span>(<span class="sc">!</span><span class="fu">is.na</span>(valid_name), valid_name, species))</span>
-<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(fecund_fb_clean<span class="sc">$</span>max_fecundity)</span></code></pre></div>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">species =</span> <span class="fu">ifelse</span>(<span class="sc">!</span><span class="fu">is.na</span>(valid_name), valid_name, species)) <span class="sc">%&gt;%</span></span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">species =</span> <span class="fu">str_extract</span>(species, <span class="st">&#39;^[a-z]+ [a-z]+&#39;</span>))</span>
+<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a>    <span class="do">### this drops subspp and var. names</span></span>
+<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(fecund_fb_clean<span class="sc">$</span>max_fecundity)</span></code></pre></div>
 <pre><code>##      Min.   1st Qu.    Median      Mean   3rd Qu.      Max. 
 ##         1       306     13400   1299444    195120 873775333</code></pre>
 <div class="sourceCode" id="cb12"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a>fecund_fb_binned <span class="ot">&lt;-</span> fecund_fb_clean <span class="sc">%&gt;%</span></span>
@@ -565,12 +570,12 @@ div.tocify {
 <span id="cb12-21"><a href="#cb12-21" aria-hidden="true" tabindex="-1"></a>fecund_all<span class="sc">$</span>value <span class="sc">%&gt;%</span> <span class="fu">table</span>()</span></code></pre></div>
 <pre><code>## .
 ##         &lt;1        1-2        2-5       5-10      10-20      20-50     50-100 
-##        389        655        833       1182       1439       1383       1380 
+##        267         76        122        123        149        250        155 
 ##   100-1000 1000-10000     &gt;10000 
-##       8999       2845       2320</code></pre>
+##       9520       3137       7435</code></pre>
 </div>
 <div id="parental-investment-skip" class="section level2" number="3.3">
-<h2 number="3.3"><span class="header-section-number">3.3</span> Parental investment [SKIP]</h2>
+<h2><span class="header-section-number">3.3</span> Parental investment [SKIP]</h2>
 <p>Read in data from vulnerability project and fishbase/sealifebase. Here we have data on parental investment (maternal/paternal/both/neither) and protection mode (bearers/guarders/non-guarders). Assign protection mode from bearers (high) to non-guarders (low). Because the parental investment score here only covers FishBase, and is not comparable to that in the vulnerability traits data (which is closer to the protection trait), let’s skip it in favor of the post-birth dependence trait in the vulnerability traits data.</p>
 <div class="sourceCode" id="cb14"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a>fields <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">&#39;parental&#39;</span>, <span class="st">&#39;guild&#39;</span>)</span>
 <span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a></span>
@@ -592,11 +597,13 @@ div.tocify {
 <span id="cb14-18"><a href="#cb14-18" aria-hidden="true" tabindex="-1"></a>protect_df <span class="ot">&lt;-</span> protect_fb <span class="sc">%&gt;%</span></span>
 <span id="cb14-19"><a href="#cb14-19" aria-hidden="true" tabindex="-1"></a>  <span class="fu">left_join</span>(record_df, <span class="at">by =</span> <span class="fu">c</span>(<span class="st">&#39;species&#39;</span> <span class="ot">=</span> <span class="st">&#39;orig_sciname&#39;</span>)) <span class="sc">%&gt;%</span></span>
 <span id="cb14-20"><a href="#cb14-20" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">species =</span> <span class="fu">ifelse</span>(<span class="sc">!</span><span class="fu">is.na</span>(valid_name), valid_name, species)) <span class="sc">%&gt;%</span></span>
-<span id="cb14-21"><a href="#cb14-21" aria-hidden="true" tabindex="-1"></a>  <span class="fu">right_join</span>(spp_from_worms, <span class="at">by =</span> <span class="st">&#39;species&#39;</span>)</span>
-<span id="cb14-22"><a href="#cb14-22" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-23"><a href="#cb14-23" aria-hidden="true" tabindex="-1"></a>protect_df <span class="sc">%&gt;%</span> </span>
-<span id="cb14-24"><a href="#cb14-24" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(<span class="sc">!</span><span class="fu">is.na</span>(protect_score)) <span class="sc">%&gt;%</span> </span>
-<span id="cb14-25"><a href="#cb14-25" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(db, protect_score) <span class="sc">%&gt;%</span> <span class="fu">table</span>()</span></code></pre></div>
+<span id="cb14-21"><a href="#cb14-21" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">species =</span> <span class="fu">str_extract</span>(species, <span class="st">&#39;^[a-z]+ [a-z]+&#39;</span>)) <span class="sc">%&gt;%</span></span>
+<span id="cb14-22"><a href="#cb14-22" aria-hidden="true" tabindex="-1"></a>    <span class="do">### this drops subspp and var. names</span></span>
+<span id="cb14-23"><a href="#cb14-23" aria-hidden="true" tabindex="-1"></a>  <span class="fu">right_join</span>(spp_from_worms, <span class="at">by =</span> <span class="st">&#39;species&#39;</span>)</span>
+<span id="cb14-24"><a href="#cb14-24" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-25"><a href="#cb14-25" aria-hidden="true" tabindex="-1"></a>protect_df <span class="sc">%&gt;%</span> </span>
+<span id="cb14-26"><a href="#cb14-26" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(<span class="sc">!</span><span class="fu">is.na</span>(protect_score)) <span class="sc">%&gt;%</span> </span>
+<span id="cb14-27"><a href="#cb14-27" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(db, protect_score) <span class="sc">%&gt;%</span> <span class="fu">table</span>()</span></code></pre></div>
 <p>For parental investment: We get 5042 distinct species, all of which are from FishBase, guessing some of which are freshwater. For protection mode, we get 21890 species across both FB and SLB.</p>
 <p>For the vulnerability data, parental investment is based on: (egg-layer unattended, egg-layer, live birth/egg care, spawner) - which seems comparable to protection mode above. Post-birth/hatching parental dependence is a time scale: less than a week up to more than a year.</p>
 <div class="sourceCode" id="cb15"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a>parent_vuln <span class="ot">&lt;-</span> <span class="fu">get_vuln_traits</span>() <span class="sc">%&gt;%</span></span>
@@ -622,7 +629,7 @@ div.tocify {
 <span id="cb15-21"><a href="#cb15-21" aria-hidden="true" tabindex="-1"></a>  <span class="fu">distinct</span>()</span></code></pre></div>
 </div>
 <div id="planktonic-larval-duration-skip" class="section level2" number="3.4">
-<h2 number="3.4"><span class="header-section-number">3.4</span> Planktonic larval duration [SKIP]</h2>
+<h2><span class="header-section-number">3.4</span> Planktonic larval duration [SKIP]</h2>
 <p>From the vulnerability traits, we can identify PLD as a potential variable for discerning functional groups.</p>
 <div class="sourceCode" id="cb16"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a>pld_vals <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">&#39;not larvae&#39;</span>, <span class="st">&#39;&lt;1day&#39;</span>, <span class="st">&#39;&lt;1week&#39;</span>, <span class="st">&#39;&lt;1month&#39;</span>, <span class="st">&#39;&lt;4months&#39;</span>, <span class="st">&#39;4months-1yr&#39;</span>, <span class="st">&#39;&gt;1yr&#39;</span>)</span>
 <span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a></span>
@@ -637,7 +644,7 @@ div.tocify {
 <span id="cb16-11"><a href="#cb16-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">trait =</span> <span class="st">&#39;pld&#39;</span>) <span class="sc">%&gt;%</span></span>
 <span id="cb16-12"><a href="#cb16-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">distinct</span>()</span></code></pre></div>
 <div id="combine-data-into-a-single-dataframe-and-save" class="section level3" number="3.4.1">
-<h3 number="3.4.1"><span class="header-section-number">3.4.1</span> Combine data into a single dataframe and save</h3>
+<h3><span class="header-section-number">3.4.1</span> Combine data into a single dataframe and save</h3>
 <p>Write out the results. In this case, no gapfilling (all down-filling). Some species might have multiple values of a trait so this must be addressed eventually.</p>
 <div class="sourceCode" id="cb17"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a>repr_out_df <span class="ot">&lt;-</span> <span class="fu">bind_rows</span>(<span class="co"># depend_vuln_gf,</span></span>
 <span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a>                         <span class="co"># parent_vuln_gf,</span></span>

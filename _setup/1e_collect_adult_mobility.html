@@ -9,7 +9,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
 
 
-<meta name="author" content="Compiled on Tue Sep 7 13:29:00 2021 by ohara" />
+<meta name="author" content="Compiled on Wed Nov 3 11:48:18 2021 by ohara" />
 
 
 <title>Collect adult mobility traits</title>
@@ -75,6 +75,7 @@ In here, put in a link to repo and website?
 pre > code.sourceCode { white-space: pre; position: relative; }
 pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
 pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
 code.sourceCode > span { color: inherit; text-decoration: inherit; }
 div.sourceCode { margin: 1em 0; }
 pre.sourceCode { margin: 0; }
@@ -356,7 +357,7 @@ div.tocify {
 
 
 <h1 class="title toc-ignore">Collect adult mobility traits</h1>
-<h4 class="author"><em>Compiled on Tue Sep 7 13:29:00 2021 by ohara</em></h4>
+<h4 class="author"><em>Compiled on Wed Nov 3 11:48:18 2021 by ohara</em></h4>
 
 </div>
 
@@ -367,21 +368,21 @@ div.tocify {
 <span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>oharac<span class="sc">::</span><span class="fu">setup</span>()</span>
 <span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="fu">source</span>(<span class="fu">here</span>(<span class="st">&#39;common_fxns.R&#39;</span>))</span></code></pre></div>
 <div id="summary" class="section level1" number="1">
-<h1 number="1"><span class="header-section-number">1</span> Summary</h1>
+<h1><span class="header-section-number">1</span> Summary</h1>
 <p>Gather data on mobility traits from vulnerability project (are there options on FishBase or SeaLifeBase?). Gapfill using downfill (and upstream-downstream gapfill? only reasonable for continuous) methodology.</p>
 <p>This paper (<a href="https://www.ncbi.nlm.nih.gov/pmc/articles/PMC4548538/" class="uri">https://www.ncbi.nlm.nih.gov/pmc/articles/PMC4548538/</a>) seems to indicate that certain traits including mobility should be available in WoRMS…?</p>
 </div>
 <div id="data" class="section level1" number="2">
-<h1 number="2"><span class="header-section-number">2</span> Data</h1>
+<h1><span class="header-section-number">2</span> Data</h1>
 <p>This script will use processed valid species traits from the species vulnerability project</p>
 <ul>
 <li>Butt, N. et al. 2021.</li>
 </ul>
 </div>
 <div id="methods" class="section level1" number="3">
-<h1 number="3"><span class="header-section-number">3</span> Methods</h1>
+<h1><span class="header-section-number">3</span> Methods</h1>
 <div id="adult-mobility-read-in-data" class="section level2" number="3.1">
-<h2 number="3.1"><span class="header-section-number">3.1</span> Adult mobility: Read in data</h2>
+<h2><span class="header-section-number">3.1</span> Adult mobility: Read in data</h2>
 <p>Here we reassign mobility classifications to different bins, of ascending mobility.</p>
 <ul>
 <li>sessile &lt; sedentary &lt; mobile resident &lt; migratory/nomadic</li>
@@ -397,9 +398,9 @@ div.tocify {
 <span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>mob_vuln <span class="ot">&lt;-</span> <span class="fu">get_vuln_traits</span>() <span class="sc">%&gt;%</span></span>
 <span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(<span class="fu">str_detect</span>(trait, <span class="st">&#39;adult_mobility&#39;</span>)) <span class="sc">%&gt;%</span></span>
-<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">mob_cat =</span> mob_vals[trait_value],</span>
-<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a>         <span class="at">mob_cat =</span> <span class="fu">factor</span>(mob_cat, <span class="at">levels =</span> <span class="fu">unique</span>(mob_vals), <span class="at">ordered =</span> <span class="cn">TRUE</span>)) <span class="sc">%&gt;%</span></span>
-<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a>  <span class="fu">downfill</span>() <span class="sc">%&gt;%</span></span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">downfill</span>() <span class="sc">%&gt;%</span></span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">mob_cat =</span> mob_vals[trait_value],</span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a>         <span class="at">mob_cat =</span> <span class="fu">factor</span>(mob_cat, <span class="at">levels =</span> <span class="fu">unique</span>(mob_vals), <span class="at">ordered =</span> <span class="cn">TRUE</span>)) <span class="sc">%&gt;%</span></span>
 <span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(<span class="sc">!</span><span class="fu">is.na</span>(mob_cat)) <span class="sc">%&gt;%</span></span>
 <span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a>  <span class="fu">distinct</span>()</span></code></pre></div>
 <p>Can we upstream/downstream these values roughly, since they are an ordered factor?</p>
@@ -426,9 +427,9 @@ div.tocify {
 <tbody>
 <tr class="odd">
 <td align="left">actinopterygii</td>
-<td align="right">1868</td>
-<td align="right">14109</td>
-<td align="right">2581</td>
+<td align="right">1668</td>
+<td align="right">14332</td>
+<td align="right">2558</td>
 <td align="right">0</td>
 </tr>
 <tr class="even">
@@ -436,7 +437,7 @@ div.tocify {
 <td align="right">0</td>
 <td align="right">0</td>
 <td align="right">0</td>
-<td align="right">9434</td>
+<td align="right">9403</td>
 </tr>
 <tr class="odd">
 <td align="left">asteroidea</td>
@@ -448,7 +449,7 @@ div.tocify {
 <tr class="even">
 <td align="left">aves</td>
 <td align="right">341</td>
-<td align="right">280</td>
+<td align="right">0</td>
 <td align="right">0</td>
 <td align="right">0</td>
 </tr>
@@ -457,12 +458,12 @@ div.tocify {
 <td align="right">0</td>
 <td align="right">0</td>
 <td align="right">0</td>
-<td align="right">10985</td>
+<td align="right">10990</td>
 </tr>
 <tr class="even">
 <td align="left">cephalopoda</td>
-<td align="right">317</td>
-<td align="right">564</td>
+<td align="right">285</td>
+<td align="right">553</td>
 <td align="right">0</td>
 <td align="right">0</td>
 </tr>
@@ -478,7 +479,7 @@ div.tocify {
 <td align="right">0</td>
 <td align="right">0</td>
 <td align="right">0</td>
-<td align="right">9573</td>
+<td align="right">7482</td>
 </tr>
 <tr class="odd">
 <td align="left">echinoidea</td>
@@ -489,8 +490,8 @@ div.tocify {
 </tr>
 <tr class="even">
 <td align="left">elasmobranchii</td>
-<td align="right">94</td>
-<td align="right">1244</td>
+<td align="right">73</td>
+<td align="right">1182</td>
 <td align="right">0</td>
 <td align="right">0</td>
 </tr>
@@ -498,27 +499,27 @@ div.tocify {
 <td align="left">gastropoda</td>
 <td align="right">0</td>
 <td align="right">3450</td>
-<td align="right">34065</td>
+<td align="right">34072</td>
 <td align="right">0</td>
 </tr>
 <tr class="even">
 <td align="left">holothuroidea</td>
 <td align="right">0</td>
-<td align="right">1559</td>
+<td align="right">1557</td>
 <td align="right">233</td>
 <td align="right">0</td>
 </tr>
 <tr class="odd">
 <td align="left">malacostraca</td>
-<td align="right">33412</td>
-<td align="right">65</td>
+<td align="right">1259</td>
+<td align="right">32245</td>
 <td align="right">0</td>
 <td align="right">0</td>
 </tr>
 <tr class="even">
 <td align="left">mammalia</td>
-<td align="right">50</td>
-<td align="right">224</td>
+<td align="right">5</td>
+<td align="right">220</td>
 <td align="right">0</td>
 <td align="right">0</td>
 </tr>
@@ -539,21 +540,21 @@ div.tocify {
 <tr class="odd">
 <td align="left">polychaeta</td>
 <td align="right">0</td>
-<td align="right">4553</td>
-<td align="right">2616</td>
-<td align="right">3355</td>
+<td align="right">4497</td>
+<td align="right">2618</td>
+<td align="right">3334</td>
 </tr>
 <tr class="even">
 <td align="left">pycnogonida</td>
 <td align="right">272</td>
-<td align="right">1148</td>
+<td align="right">1095</td>
 <td align="right">0</td>
 <td align="right">0</td>
 </tr>
 <tr class="odd">
 <td align="left">reptilia</td>
 <td align="right">8</td>
-<td align="right">107</td>
+<td align="right">97</td>
 <td align="right">0</td>
 <td align="right">0</td>
 </tr>
