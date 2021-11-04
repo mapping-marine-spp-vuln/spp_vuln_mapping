@@ -56,9 +56,9 @@ Gather FB/SLB max length data, ungapfilled.  These values are in centimeters.
 
 ```{r max length}
 length_df <- read_csv(here('_data/traits_grouping/trait_length_cm.csv')) %>%
-  filter(gf_level == 1) %>%
-  mutate(length = value) %>%
+  rename(length = value) %>%
   filter(!is.na(length)) %>%
+  filter(gf_level == 1) %>%
   filter(length > 0) %>%
   select(species, length)
 
@@ -135,9 +135,11 @@ table(water_col_df$wcol) %>% knitr::kable()
 
 ### Trophic level
 
+Allow trophic level to be gapfilled to genus level.
+
 ```{r trophic level}
 troph_df <- read_csv(here('_data/traits_grouping/trait_trophic_level.csv')) %>%
-  filter(gf_level == 1) %>%
+  filter(gf_level <= 2) %>%
   select(# spec_code, 
          species, troph = value) %>%
   filter(!is.na(troph) & troph > 0)
@@ -152,9 +154,11 @@ troph_df <- read_csv(here('_data/traits_grouping/trait_trophic_level.csv')) %>%
 
 ### Adult mobility
 
+Allow mobility to be gapfilled to genus level.
+
 ```{r}
 mob_df <- read_csv(here('_data/traits_grouping/trait_mobility.csv')) %>%
-  filter(gf_level == 1) %>%
+  filter(gf_level <= 2) %>%
   select(species, adult_mob = value)
 
 table(mob_df$adult_mob)
@@ -181,6 +185,8 @@ traits_df_all <- length_df %>%
 
 ### this will have at least one variable as not NA for each species...
 
+n_obs <- nrow(traits_df_all)
+
 missingness <- traits_df_all %>%
   summarize(missing_length  = sum(is.na(length))  / n(),
             missing_fecund  = sum(is.na(fecund))  / n(),
@@ -190,13 +196,14 @@ missingness <- traits_df_all %>%
             missing_mob     = sum(is.na(adult_mob)) / n()) %>%
   gather(variable, missing_rate, everything()) %>%
   mutate(variable = str_remove(variable, 'missing_'),
+         valid_num    = as.integer((1 - missing_rate) * n_obs),
          missing_rate = round(missing_rate, 3),
          missing_rate = paste0(missing_rate * 100, '%'))
 
 knitr::kable(missingness)
 ```
 
-Based on this quick assessment, we are low on observations for fecundity (1269 spp), age to maturity (1204 spp), trophic level (7690 spp), and adult mobility (11823), compared with length (28980) and water column position (80614).  With missing rates approaching 90% for several variables, this seems like a stretch.  But Multiple Imputation can work with pretty high missing rates (from https://vbn.aau.dk/ws/files/257318283/ejbrm_volume15_issue1_article450.pdf):
+Based on this quick assessment, we are low on observations for fecundity and age to maturity, compared with length and water column position.  With missing rates around 90% for two variables, this seems like a stretch.  But Multiple Imputation can work with pretty high missing rates (from https://vbn.aau.dk/ws/files/257318283/ejbrm_volume15_issue1_article450.pdf):
 
 > A natural question is whether the missing rate can be too high to use MI. Studies have shown that MI is unbiased to around 50%, but gets unstable for higher rates, especially if the data have skewed distributions (Haji-Maghsoudi et al. 2013; Lee & Carlin 2012). However, this does not imply that listwise deletion should be preferred as MI exhibits superior performance even for a 75% data loss despite biased estimates (Marshall et al. 2010). In praxis, though, high computation times caused by a very high missing data rate may make MI infeasible. 
 
@@ -271,81 +278,15 @@ gen_time2_df <- gen_time_df %>%
 
 ```
 
-### Trophic level take 2
-
-```{r trophic crossvalidation}
-troph_worms_df <- worms_spp %>%
-  left_join(troph_df, by = 'species') %>%
-  group_by(genus) %>%
-  filter(!all(is.na(troph))) %>%
-  ungroup()
-
-### df of species in genera with at least two scored spp...
-### crossvalidate by dropping one spp and filling gap, then comparing
-xv_check <- troph_worms_df %>%
-  filter(!is.na(troph)) %>%
-  group_by(genus) %>%
-  filter(n_distinct(species) >= 2) %>%
-  ungroup()
-xv_spp <- xv_check$species %>% unique() %>% sort()
-xv_list <- parallel::mclapply(xv_spp, mc.cores = 30,
-             FUN = function(s) {
-               tmp_df <- xv_check %>%
-                 group_by(genus) %>%
-                 filter(s %in% species) %>% ### get the genus with this spp
-                 filter(species != s) %>%   ### drop this species
-                 ungroup() %>%
-                 summarize(xv_troph = mean(troph)) %>%
-                 mutate(species = s)
-               })
-xv_df <- xv_list %>%
-  bind_rows() %>%
-  full_join(xv_check, by = 'species') %>%
-  mutate(diff = troph - xv_troph) 
-
-ggplot(xv_df, aes(x = abs(diff))) +
-  geom_histogram()
-
-xv_df %>%
-  summarize(within_half_category = sum(abs(diff) <= 0.5) / n())
-
-xv_df_sum <- xv_df %>%
-  group_by(class) %>%
-  summarize(rmse = sqrt(sum(diff^2)/n()),
-            max = max(abs(diff)))
-
-knitr::kable(xv_df_sum)
-
-# summary(troph_df$troph)
-# hist(troph_df$troph)
-# summary(log(troph_df$troph))
-# hist(log(troph_df$troph))
-
-troph2_df <- troph_worms_df %>%
-  group_by(genus) %>%
-  mutate(troph = ifelse(is.na(troph), mean(troph, na.rm = TRUE), troph)) %>%
-  ungroup() %>%
-  select(species, troph) %>%
-  distinct()
-```
-
-Gapfilling trophic level using a genus-wide mean for the most part estimates within a half a trophic level (0.5 difference) for nearly 90% of testable species, with 65% within a quarter of trophic level.
-
 ### check missingness again:
 
 Apply listwise deletion to water-column-only observations.  Include bolstered fecundity and gen time variables, but use non-gapfilled trophic level for now.
 
 ```{r}
-traits2_all <- length_df %>%
-  full_join(fecund2_df) %>%
-  full_join(gen_time2_df) %>%
-  full_join(troph_df) %>%
-  full_join(water_col_df) %>%
-  full_join(mob_df) %>%
-  inner_join(worms_spp, by = 'species')
+traits_delete_wcol_only <- traits_df_all %>%
+  filter(!(is.na(length) & is.na(fecund) & is.na(troph) & is.na(age_mat) & is.na(adult_mob)))
 
-missingness2 <- traits2_all %>%
-  filter(!(is.na(length) & is.na(fecund) & is.na(troph) & is.na(age_mat))) %>%
+missingness2 <- traits_delete_wcol_only %>%
   summarize(missing_length  = sum(is.na(length))  / n(),
             missing_fecund  = sum(is.na(fecund))  / n(),
             missing_age_mat = sum(is.na(age_mat)) / n(),
@@ -354,13 +295,71 @@ missingness2 <- traits2_all %>%
             missing_mob     = sum(is.na(adult_mob)) / n()) %>%
   gather(variable, missing_rate, everything()) %>%
   mutate(variable = str_remove(variable, 'missing_'),
+         valid_num    = as.integer((1 - missing_rate) * nrow(traits_delete_wcol_only)),
          missing_rate = round(missing_rate, 3),
          missing_rate = paste0(missing_rate * 100, '%'))
 
-knitr::kable(missingness2)
+traits2_all <- length_df %>%
+  full_join(fecund2_df) %>%
+  full_join(gen_time2_df) %>%
+  full_join(troph_df) %>%
+  full_join(water_col_df) %>%
+  full_join(mob_df) %>%
+  inner_join(worms_spp, by = 'species') %>%
+  filter(!(is.na(length) & is.na(fecund) & is.na(troph) & is.na(age_mat) & is.na(adult_mob)))
+  
+
+missingness3 <- traits2_all %>%
+  summarize(missing_length  = sum(is.na(length))  / n(),
+            missing_fecund  = sum(is.na(fecund))  / n(),
+            missing_age_mat = sum(is.na(age_mat)) / n(),
+            missing_troph   = sum(is.na(troph))   / n(),
+            missing_wcol    = sum(is.na(wcol))    / n(),
+            missing_mob     = sum(is.na(adult_mob)) / n()) %>%
+  gather(variable, missing_rate, everything()) %>%
+  mutate(variable = str_remove(variable, 'missing_'),
+         valid_num    = as.integer((1 - missing_rate) * nrow(traits2_all)),
+         missing_rate = round(missing_rate, 3),
+         missing_rate = paste0(missing_rate * 100, '%'))
+
+
+traits3_all <- length_df %>%
+  full_join(fecund2_df) %>%
+  full_join(gen_time2_df) %>%
+  full_join(troph_df) %>%
+  full_join(water_col_df) %>%
+  full_join(mob_df) %>%
+  inner_join(worms_spp, by = 'species') %>%
+  select(species, length, fecund, age_mat, adult_mob, wcol, troph) %>%
+  filter(rowSums(is.na(.)) <= 4)
+    ### dropping 6-NA rows, we're left with 110k obs of 98k spp...
+    ### but 32k of those obs are water col position only...
+    ### dropping 5- and 6-NA rows, we're left with 66k obs of 54700 spp...
+  
+
+missingness4 <- traits3_all %>%
+  summarize(missing_length  = sum(is.na(length))  / n(),
+            missing_fecund  = sum(is.na(fecund))  / n(),
+            missing_age_mat = sum(is.na(age_mat)) / n(),
+            missing_troph   = sum(is.na(troph))   / n(),
+            missing_wcol    = sum(is.na(wcol))    / n(),
+            missing_mob     = sum(is.na(adult_mob)) / n()) %>%
+  gather(variable, missing_rate, everything()) %>%
+  mutate(variable = str_remove(variable, 'missing_'),
+         valid_num    = as.integer((1 - missing_rate) * nrow(traits3_all)),
+         missing_rate = round(missing_rate, 3),
+         missing_rate = paste0(missing_rate * 100, '%'))
+
 ```
 
-Using listwise deletion on the water-column-position-only species, in combination with gapfilling fecundity and generation time based on vulnerability traits and genus-level gapfilling on trophic level considerably reduces missingness of variables.
+``` {r}
+knitr::kable(missingness)
+knitr::kable(missingness2)
+knitr::kable(missingness3)
+knitr::kable(missingness4)
+```
+
+Using listwise deletion on the water-column-position-only species, in combination with gapfilling fecundity and generation time based on vulnerability traits considerably reduces missingness of variables in the remaining set.
 
 ## Performing MICE to fill gaps
 
@@ -380,14 +379,11 @@ For now let's just use phylum and order as a predictor, dropping family.  Includ
 wcol_levels <- c('rf', 'pel', 'ben', 'bp')
 mob_levels  <- c('ses', 'sed', 'mob', 'mig')
 
-traits_premice_all <- traits2_all %>%
+traits_premice_all <- traits3_all %>%
+  inner_join(worms_spp, by = 'species') %>%
   mutate(log_l = log(length), log_f = log(fecund)) %>%
   select(species, phylum, order, family, 
          log_l, log_f, troph, age_mat, wcol, adult_mob) %>%
-  filter(rowSums(is.na(.)) <= 4) %>%
-    ### dropping 6-NA rows, we're left with 103k obs of 80730 spp...
-    ### but 40k of those obs are water col position only...
-    ### dropping 5- and 6-NA rows, we're left with 61k obs of 38900 spp...
   mutate(wcol      = factor(wcol, levels = wcol_levels, ordered = FALSE),
          adult_mob = str_extract(adult_mob, '^...'),
          adult_mob = factor(adult_mob, levels = mob_levels, ordered = TRUE)) %>%
@@ -398,6 +394,9 @@ traits_premice_all <- traits2_all %>%
 ### write out traits pre-imputation for reference
 write_csv(traits_premice_all,  here_anx('mice/gp_traits_mice_preimputation.csv'))
 
+```
+
+``` {r}
 am_spp <- get_am_spp_info()
 # n_samples <- 1000
 # set.seed(42)

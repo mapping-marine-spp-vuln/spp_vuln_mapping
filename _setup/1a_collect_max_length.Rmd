@@ -328,7 +328,15 @@ record_df <- collect_records(length_fb, field = 'length',
 
 length_fb_fixed <- length_fb %>%
   left_join(record_df, by = c('species' = 'orig_sciname')) %>%
-  mutate(species = ifelse(!is.na(valid_name), valid_name, species))
+  mutate(species = ifelse(!is.na(valid_name), valid_name, species)) %>%
+  mutate(species = str_extract(species, '^[a-z]+ [a-z]+')) %>%
+    ### this drops subspp and var. names
+  right_join(assemble_worms(), by = 'species') %>%
+  gapfill_up_down('length') %>%
+  filter(gf_level <= 4) %>%
+  select(species, trait, value, sd, nspp, gf_level) %>%
+  distinct()
+
 
 write_csv(length_fb_fixed, here('_data/traits_grouping/trait_length_cm.csv'))
 ```

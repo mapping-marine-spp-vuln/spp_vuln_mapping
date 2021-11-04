@@ -274,9 +274,18 @@ cks_traits_summary <- cks_traits_df %>%
                       ifelse(all(is.na(x)), NA, paste(x[!is.na(x)], sep = ';'))
                    })
             ) %>%
+  mutate(length_cm = exp(log_l),
+         fecundity = exp(log_f)) %>%
+  mutate(across(where(is.numeric), ~ round(.x, 3))) %>%
   select(taxon = taxa, species, source, compiler, 
-         log_l, log_f, age_mat, troph, wcol, adult_mob)
+         length_cm, fecundity, 
+         age_maturity = age_mat, 
+         trophic_level = troph, 
+         water_col_position = wcol, 
+         adult_mobility = adult_mob)
 
 write_csv(cks_traits_summary, here('cks', 'cks_trait_val_summary.csv'))
+
+DT::datatable(cks_traits_summary)
 ```
 
