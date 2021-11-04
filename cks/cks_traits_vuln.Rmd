@@ -1,0 +1,101 @@
+---
+title: 'Gather traits for Cultural Keystone Species part 2'
+author: "*Compiled on `r date()` by `r Sys.info()['user']`*"
+output: 
+  html_document:
+    code_folding: hide
+    toc: true
+    toc_depth: 3
+    toc_float: yes
+    number_sections: true
+    theme: cerulean
+    highlight: haddock
+    includes: 
+      in_header: '~/github/src/templates/ohara_hdr.html'
+  pdf_document:
+    toc: true
+---
+
+``` {r setup, echo = TRUE, message = FALSE, warning = FALSE}
+
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
+
+library(oharac) ### remotes::install_github('oharac/oharac')
+oharac::setup()
+source(here('common_fxns.R'))
+library(taxize)
+
+```
+
+# Summary
+
+From the Vulnerability Framework data, identify cultural keystone species and extract full traits data.
+
+# Methods
+
+## Read in CKS list
+
+```{r}
+cks_df_raw <- readxl::read_excel(here('cks/cks_list_210714.xlsx'), sheet = 1) %>%
+  janitor::clean_names() %>%
+  mutate(species = tolower(species), 
+         taxa    = tolower(taxa))
+
+cks_df_raw$taxa %>% unique()
+
+cks_marine_raw <- cks_df_raw %>%
+  filter(taxa %in% c('fish', 'reptile', 'crustacean', 'mollusk', 'mammal'))
+record_df <- collect_records(cks_marine_raw, field = 'compiler', file_tag = 'resolve_names_cks') %>%
+  filter(aphia_id != -9999)
+
+cks_df <- cks_marine_raw %>%
+  left_join(record_df, by = c('species' = 'orig_sciname')) %>%
+  mutate(species_full = ifelse(is.na(valid_name), species, valid_name),
+         species = str_extract(tolower(species_full), '[a-z]+ [a-z]+')) %>%
+  select(-valid_name, -aphia_id) %>%
+  distinct()
+
+```
+
+## Read in traits
+
+Read in trait sets from vulnerability framework.
+
+```{r}
+traits_df <- read_csv(here('../spp_vuln_framework/_data/spp_traits_valid.csv')) 
+
+traits_df$taxon %>% unique()
+
+traits_taxa_df <- traits_df %>%
+  filter(taxon %in% c('fish', 'crustacea_arthropods', 'marine_mammals', 'molluscs', 'reptiles'))
+
+```
+
+Use `downfill()` to flesh out the species membership from higher ranks and/or from representative species.
+
+``` {r}
+trait_spp_gps <- traits_taxa_df %>%
+  select(taxon, spp_gp) %>%
+  mutate(trait_spp_gp = spp_gp) %>%
+  distinct()
+
+trait_spp_gps_downfilled <- downfill(trait_spp_gps) %>%
+  select(taxon, trait_spp_gp, spp_gp, species) %>%
+  distinct()
+```
+
+Filter the fleshed out species list to just those in CKS list, then join the traits.  Clean the result by collapsing multiple values into a single cell.
+
+```{r}
+cks_traits_df <- trait_spp_gps_downfilled %>%
+  filter(species %in% cks_df$species) %>%
+  left_join(traits_taxa_df, by = c('taxon', 'trait_spp_gp' = 'spp_gp'))
+
+cks_traits_clean <- cks_traits_df %>%
+  group_by(taxon, species, spp_gp = trait_spp_gp, category, trait) %>%
+  summarize(trait_value = paste0(trait_value, collapse = ';')) %>%
+  ungroup()
+  
+write_csv(cks_traits_clean, here('cks', 'cks_traits_from_vuln.csv'))
+```
+

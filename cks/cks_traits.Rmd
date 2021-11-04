@@ -34,7 +34,10 @@ From Fishbase and SeaLifeBase, gather relevant traits for the CKS project.
 
 * body size
 * age at maturity
-* number of offspring/litter
+* fecundity
+* trophic level
+* position in water column
+* adult mobility
 
 These are gathered in the functional grouping scripts and compiled into files in `_data/traits_grouping`
 

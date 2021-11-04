@@ -231,6 +231,9 @@ assign_repr_level <- function(df) {
            repres = tolower(repres)) %>%
     filter(!is.na(repres) & repres != 'species')
   
+  if(any(c('phylum', 'class', 'order', 'family', 'genus') %in% names(df))) {
+    stop('get rid of taxonomic ranks higher than species!')
+  }
   spp_all_wide <- assemble_worms(aspect = 'wide')
   
   ### create new dataframe including all representative species, with
@@ -245,11 +248,12 @@ assign_repr_level <- function(df) {
                                   TRUE ~ NA_character_)) %>%
     select(taxon, spp_gp_orig = spp_gp, spp_gp = spp_gp_new,
            everything()) %>%
-    select(-spp_gp_orig) %>%
+    select(-spp_gp_orig, -phylum, -class, -order, -family, -genus) %>%
     distinct()
   
   df_out <- bind_rows(df, repr_spp)
 }
+
 downfill <- function(df) {
   
   df_repres <- assign_repr_level(df)
