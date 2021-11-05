@@ -9,7 +9,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
 
 
-<meta name="author" content="Compiled on Wed Nov 3 12:04:05 2021 by ohara" />
+<meta name="author" content="Compiled on Thu Nov 4 17:57:55 2021 by ohara" />
 
 
 <title>Collect reproductivity traits</title>
@@ -357,7 +357,7 @@ div.tocify {
 
 
 <h1 class="title toc-ignore">Collect reproductivity traits</h1>
-<h4 class="author"><em>Compiled on Wed Nov 3 12:04:05 2021 by ohara</em></h4>
+<h4 class="author"><em>Compiled on Thu Nov 4 17:57:55 2021 by ohara</em></h4>
 
 </div>
 
@@ -405,14 +405,19 @@ div.tocify {
 <h3><span class="header-section-number">3.1.1</span> Vulnerability traits</h3>
 <div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>age_mat_vuln <span class="ot">&lt;-</span> <span class="fu">get_vuln_traits</span>() <span class="sc">%&gt;%</span></span>
 <span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(trait <span class="sc">==</span> <span class="st">&#39;age_to_1st_reproduction_generation_time&#39;</span>) <span class="sc">%&gt;%</span></span>
-<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">trait_value =</span> <span class="fu">factor</span>(trait_value,</span>
-<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>                              <span class="at">levels =</span> <span class="fu">c</span>(<span class="st">&#39;&lt;1yr&#39;</span>, <span class="st">&#39;1-5yrs&#39;</span>, <span class="st">&#39;5-10yrs&#39;</span>, <span class="st">&#39;10-20yrs&#39;</span>, <span class="st">&#39;&gt;20yrs&#39;</span>)),</span>
-<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>         <span class="at">bin =</span> <span class="fu">as.integer</span>(trait_value))</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(taxon, spp_gp) <span class="sc">%&gt;%</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarize</span>(<span class="at">trait_value =</span> <span class="fu">paste0</span>(<span class="fu">unique</span>(trait_value), <span class="at">collapse =</span> <span class="st">&#39;;&#39;</span>),</span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>            <span class="at">.groups =</span> <span class="st">&#39;drop&#39;</span>)</span>
 <span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>age_mat_vuln_gf <span class="ot">&lt;-</span> <span class="fu">downfill</span>(age_mat_vuln) <span class="sc">%&gt;%</span></span>
-<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(species, trait, <span class="at">value =</span> trait_value) <span class="sc">%&gt;%</span></span>
-<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">distinct</span>() <span class="sc">%&gt;%</span></span>
-<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">source =</span> <span class="st">&#39;vuln&#39;</span>)</span></code></pre></div>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>age_mat_downfilled <span class="ot">&lt;-</span> <span class="fu">downfill</span>(age_mat_vuln) <span class="sc">%&gt;%</span></span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">distinct</span>()</span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>age_mat_expanded <span class="ot">&lt;-</span> age_mat_downfilled <span class="sc">%&gt;%</span></span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">trait_value =</span> <span class="fu">str_split</span>(trait_value, <span class="st">&#39;;&#39;</span>)) <span class="sc">%&gt;%</span></span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">unnest</span>(trait_value) <span class="sc">%&gt;%</span></span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(species, <span class="at">value =</span> trait_value) <span class="sc">%&gt;%</span></span>
+<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a>  <span class="fu">distinct</span>() <span class="sc">%&gt;%</span></span>
+<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">source =</span> <span class="st">&#39;vuln&#39;</span>)</span></code></pre></div>
 </div>
 <div id="fishbasesealifebase" class="section level3" number="3.1.2">
 <h3><span class="header-section-number">3.1.2</span> Fishbase/Sealifebase</h3>
@@ -475,13 +480,13 @@ div.tocify {
 <span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">distinct</span>() <span class="sc">%&gt;%</span></span>
 <span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">source =</span> <span class="st">&#39;fb&#39;</span>)</span>
 <span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a>age_mat_all <span class="ot">&lt;-</span> <span class="fu">bind_rows</span>(age_mat_vuln_gf, mat_fb_binned) <span class="sc">%&gt;%</span></span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a>age_mat_all <span class="ot">&lt;-</span> <span class="fu">bind_rows</span>(age_mat_expanded, mat_fb_binned) <span class="sc">%&gt;%</span></span>
 <span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">trait =</span> <span class="st">&#39;age_mat&#39;</span>)</span>
 <span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a>age_mat_all<span class="sc">$</span>value <span class="sc">%&gt;%</span> <span class="fu">table</span>()</span></code></pre></div>
 <pre><code>## .
-##     &lt;1yr   &gt;20yrs   1-5yrs 10-20yrs  5-10yrs 
-##     2483       88     9746      459     1258</code></pre>
+##     &lt;1yr   &gt;20yrs   1-5yrs 10-20yrs  5-10yrs  unknown 
+##    15620      141    24624     1599     5981     5550</code></pre>
 <p>Without gapfilling, we get 1589 distinct species, at least some of which are freshwater.</p>
 </div>
 </div>
@@ -492,14 +497,19 @@ div.tocify {
 <span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>fecund_vuln <span class="ot">&lt;-</span> <span class="fu">get_vuln_traits</span>() <span class="sc">%&gt;%</span></span>
 <span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(trait <span class="sc">==</span> <span class="st">&#39;fecundity&#39;</span>) <span class="sc">%&gt;%</span></span>
-<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">trait_value =</span> <span class="fu">factor</span>(trait_value,</span>
-<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>                              <span class="at">levels =</span> f_vals),</span>
-<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a>         <span class="at">bin =</span> <span class="fu">as.integer</span>(trait_value))</span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(taxon, spp_gp) <span class="sc">%&gt;%</span></span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarize</span>(<span class="at">trait_value =</span> <span class="fu">paste0</span>(<span class="fu">unique</span>(trait_value), <span class="at">collapse =</span> <span class="st">&#39;;&#39;</span>),</span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a>            <span class="at">.groups =</span> <span class="st">&#39;drop&#39;</span>)</span>
 <span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a>fecund_vuln_gf <span class="ot">&lt;-</span> <span class="fu">downfill</span>(fecund_vuln) <span class="sc">%&gt;%</span></span>
-<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(species, trait, <span class="at">value =</span> trait_value) <span class="sc">%&gt;%</span></span>
-<span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">distinct</span>() <span class="sc">%&gt;%</span></span>
-<span id="cb8-12"><a href="#cb8-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">source =</span> <span class="st">&#39;vuln&#39;</span>)</span></code></pre></div>
+<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a>fecund_downfilled <span class="ot">&lt;-</span> <span class="fu">downfill</span>(fecund_vuln) <span class="sc">%&gt;%</span></span>
+<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">distinct</span>()</span>
+<span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-12"><a href="#cb8-12" aria-hidden="true" tabindex="-1"></a>fecund_expanded <span class="ot">&lt;-</span> fecund_downfilled <span class="sc">%&gt;%</span></span>
+<span id="cb8-13"><a href="#cb8-13" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">trait_value =</span> <span class="fu">str_split</span>(trait_value, <span class="st">&#39;;&#39;</span>)) <span class="sc">%&gt;%</span></span>
+<span id="cb8-14"><a href="#cb8-14" aria-hidden="true" tabindex="-1"></a>  <span class="fu">unnest</span>(trait_value) <span class="sc">%&gt;%</span></span>
+<span id="cb8-15"><a href="#cb8-15" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(species, <span class="at">value =</span> trait_value) <span class="sc">%&gt;%</span></span>
+<span id="cb8-16"><a href="#cb8-16" aria-hidden="true" tabindex="-1"></a>  <span class="fu">distinct</span>() <span class="sc">%&gt;%</span></span>
+<span id="cb8-17"><a href="#cb8-17" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">source =</span> <span class="st">&#39;vuln&#39;</span>)</span></code></pre></div>
 <div class="sourceCode" id="cb9"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>fecund_fb_f <span class="ot">&lt;-</span> <span class="fu">here</span>(<span class="st">&#39;int/fb_fecund_raw.csv&#39;</span>)</span>
 <span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span>(<span class="sc">!</span><span class="fu">file.exists</span>(fecund_fb_f)) {</span>
@@ -563,16 +573,16 @@ div.tocify {
 <span id="cb12-14"><a href="#cb12-14" aria-hidden="true" tabindex="-1"></a>  <span class="fu">distinct</span>() <span class="sc">%&gt;%</span></span>
 <span id="cb12-15"><a href="#cb12-15" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">source =</span> <span class="st">&#39;fb&#39;</span>)</span>
 <span id="cb12-16"><a href="#cb12-16" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-17"><a href="#cb12-17" aria-hidden="true" tabindex="-1"></a>fecund_all <span class="ot">&lt;-</span> <span class="fu">bind_rows</span>(fecund_vuln_gf, fecund_fb_binned) <span class="sc">%&gt;%</span></span>
+<span id="cb12-17"><a href="#cb12-17" aria-hidden="true" tabindex="-1"></a>fecund_all <span class="ot">&lt;-</span> <span class="fu">bind_rows</span>(fecund_expanded, fecund_fb_binned) <span class="sc">%&gt;%</span></span>
 <span id="cb12-18"><a href="#cb12-18" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">trait =</span> <span class="st">&#39;fec&#39;</span>) <span class="sc">%&gt;%</span></span>
 <span id="cb12-19"><a href="#cb12-19" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">value =</span> <span class="fu">factor</span>(value, <span class="at">levels =</span> f_vals))</span>
 <span id="cb12-20"><a href="#cb12-20" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb12-21"><a href="#cb12-21" aria-hidden="true" tabindex="-1"></a>fecund_all<span class="sc">$</span>value <span class="sc">%&gt;%</span> <span class="fu">table</span>()</span></code></pre></div>
 <pre><code>## .
 ##         &lt;1        1-2        2-5       5-10      10-20      20-50     50-100 
-##        267         76        122        123        149        250        155 
+##        385        649        827       1161       1457       1788       2229 
 ##   100-1000 1000-10000     &gt;10000 
-##       9520       3137       7435</code></pre>
+##      12325      11601      13388</code></pre>
 </div>
 <div id="parental-investment-skip" class="section level2" number="3.3">
 <h2><span class="header-section-number">3.3</span> Parental investment [SKIP]</h2>

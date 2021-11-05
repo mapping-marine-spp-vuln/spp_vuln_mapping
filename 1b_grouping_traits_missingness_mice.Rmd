@@ -1,0 +1,772 @@
+---
+title: "Assemble grouping traits and gapfill using MICE"
+author: "*Compiled on `r date()` by `r Sys.info()['user']`*"
+output: 
+  html_document:
+    code_folding: hide
+    toc: true
+    toc_depth: 3
+    toc_float: yes
+    number_sections: true
+    theme: cerulean
+    highlight: haddock
+    includes: 
+      in_header: '~/github/src/templates/ohara_hdr.html'
+  pdf_document:
+    toc: true
+---
+
+``` {r setup, echo = TRUE, message = FALSE, warning = FALSE}
+
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
+
+library(oharac)
+oharac::setup()
+source(here('common_fxns.R'))
+library(mice)
+
+
+```
+
+# Summary
+
+Gather processed traits data, dropping prior gapfills and keeping only data from FishBase/SeaLifeBase (vulnerability traits will be analyzed separately). Assemble into a dataframe.  Identify missing rate, then apply Multiple Imputation by Chained Equations (MICE) approach.
+
+# Data
+
+See individual trait scripts.
+
+# Methods
+
+## Gather traits
+
+Read in each dataset based on FishBase/SeaLifeBase data:
+
+* max length
+* trophic level
+* max fecundity
+* generation/max age to maturity
+* water column position (categorical)
+
+Also read in adult mobility data from the Vulnerability Framework traits.
+
+### Max length
+
+Gather FB/SLB max length data, ungapfilled.  These values are in centimeters.
+
+```{r max length}
+length_df <- read_csv(here('_data/traits_grouping/trait_length_cm.csv')) %>%
+  rename(length = value) %>%
+  filter(!is.na(length)) %>%
+  filter(gf_level == 1) %>%
+  filter(length > 0) %>%
+  select(species, length)
+
+# summary(length_df$length)
+# hist(length_df$length)
+# summary(log(length_df$length))
+# hist(log(length_df$length))
+```
+
+Values appear to reasonably approach a log-normal distribution...  we can transform prior to running MICE, and/or use Predictive mean matching (PMM).
+
+### Fecundity
+
+Reproduction traits are only downfilled (from vulnerability traits), not gapfilled using taxa-level mean imputation.
+
+```{r fecundity}
+fecund_df <- read_csv(here('_data/traits_grouping/trait_reproduction.csv')) %>%
+  filter(trait == 'fec') %>%
+  filter(source == 'fb') %>%
+  select(species, fecund = val_num) %>%
+  filter(!is.na(fecund))
+
+# summary(fecund_df$fecund)
+# hist(fecund_df$fecund)
+# summary(log(fecund_df$fecund))
+# hist(log(fecund_df$fecund))
+```
+
+### Generation time
+
+Reproduction traits are only downfilled (from vulnerability traits), not gapfilled using taxa-level mean imputation.
+
+```{r gen time}
+
+gen_time_df <- read_csv(here('_data/traits_grouping/trait_reproduction.csv')) %>%
+  filter(trait == 'age_mat') %>%
+  filter(source == 'fb') %>%
+  select(species, age_mat = val_num) %>%
+  filter(!is.na(age_mat))
+
+# summary(gen_time_df$age_mat)
+# hist(gen_time_df$age_mat)
+# summary(log(gen_time_df$age_mat))
+# hist(log(gen_time_df$age_mat))
+
+```
+
+
+### water column position traits
+
+Since values from FB/SLB are categorical variables, let's include the categorical values from the traits-vulnerability project here as well.  They may provide additional data for imputing other missing variables.
+
+```{r water col position}
+water_col_traits_raw <- read_csv(here('_data/traits_grouping/trait_water_col_position.csv')) 
+
+water_col_traits_raw$source %>% table()
+   # fishbase     gapfill vuln_traits 
+   #   102616       67951        8288 
+
+trait_val_codes <- c(reef    = 'rf',
+                     pelagic = 'pel',
+                     benthic = 'ben',
+                     benthopelagic = 'bp')
+
+water_col_df <- water_col_traits_raw %>%
+  filter(source != 'gapfill') %>%
+  mutate(wcol = trait_val_codes[value],
+         wcol = factor(wcol, levels = trait_val_codes, ordered = FALSE)) %>%
+  select(species, wcol) %>%
+  distinct()
+
+table(water_col_df$wcol) %>% knitr::kable()
+```
+
+### Trophic level
+
+Allow trophic level to be gapfilled to genus level.
+
+```{r trophic level}
+troph_df <- read_csv(here('_data/traits_grouping/trait_trophic_level.csv')) %>%
+  filter(gf_level <= 2) %>%
+  select(# spec_code, 
+         species, troph = value) %>%
+  filter(!is.na(troph) & troph > 0)
+
+# summary(troph_df$troph)
+# hist(troph_df$troph)
+# summary(log(troph_df$troph))
+# hist(log(troph_df$troph))
+
+```
+
+
+### Adult mobility
+
+Allow mobility to be gapfilled to genus level.
+
+```{r}
+mob_df <- read_csv(here('_data/traits_grouping/trait_mobility.csv')) %>%
+  filter(gf_level <= 2) %>%
+  select(species, adult_mob = value)
+
+table(mob_df$adult_mob)
+```
+
+## Assemble and identify missingness
+
+Filter to those species found in WoRMS dataset, to exclude non-marine species, then count up missing observations for each variable.
+
+```{r}
+
+worms_spp <- assemble_worms()
+traits_df_all <- length_df %>%
+  full_join(fecund_df) %>%
+  full_join(gen_time_df) %>%
+  full_join(troph_df) %>%
+  full_join(water_col_df) %>%
+  full_join(mob_df) %>%
+  inner_join(worms_spp, by = 'species')
+  
+# traits_df_all %>%
+#   filter(!is.na(adult_mob)) %>%
+#   .$species %>% n_distinct()
+
+### this will have at least one variable as not NA for each species...
+
+n_obs <- nrow(traits_df_all)
+
+missingness <- traits_df_all %>%
+  summarize(missing_length  = sum(is.na(length))  / n(),
+            missing_fecund  = sum(is.na(fecund))  / n(),
+            missing_age_mat = sum(is.na(age_mat)) / n(),
+            missing_troph   = sum(is.na(troph))   / n(),
+            missing_wcol    = sum(is.na(wcol))    / n(),
+            missing_mob     = sum(is.na(adult_mob)) / n()) %>%
+  gather(variable, missing_rate, everything()) %>%
+  mutate(variable = str_remove(variable, 'missing_'),
+         valid_num    = as.integer((1 - missing_rate) * n_obs),
+         missing_rate = round(missing_rate, 3),
+         missing_rate = paste0(missing_rate * 100, '%'))
+
+knitr::kable(missingness)
+```
+
+Based on this quick assessment, we are low on observations for fecundity and age to maturity, compared with length and water column position.  With missing rates around 90% for two variables, this seems like a stretch.  But Multiple Imputation can work with pretty high missing rates (from https://vbn.aau.dk/ws/files/257318283/ejbrm_volume15_issue1_article450.pdf):
+
+> A natural question is whether the missing rate can be too high to use MI. Studies have shown that MI is unbiased to around 50%, but gets unstable for higher rates, especially if the data have skewed distributions (Haji-Maghsoudi et al. 2013; Lee & Carlin 2012). However, this does not imply that listwise deletion should be preferred as MI exhibits superior performance even for a 75% data loss despite biased estimates (Marshall et al. 2010). In praxis, though, high computation times caused by a very high missing data rate may make MI infeasible. 
+
+* Can additional values be filled using traits from other FishBase/SeaLifeBase tables?
+* Since our goal is rough binning of values to inform FEs, we can probably get away with using vulnerability traits to fill gaps in fecundity and maturity since those have a relatively high number of bins...
+* We may need other methods to fill trophic level.  Perhaps genus-level imputation can fill some gaps here?  Try a cross validation of this to check assumptions...
+* We can use listwise deletion for rows where only water column position is available...  While this won't gain us more observations, it will eliminate a bunch of observations where MICE is unlikely to provide good answers (i.e., inferring missing traits ONLY on water column position...)
+
+## Gapfill fecundity and age to maturity from trait framework
+
+### Fecundity take 2
+
+For each bin assigned using the data for trait-based vulnerability framework, find the log midpoint of the bin, and assign this as the val_num.  Attach to the values from FishBase/SeaLifeBase.  If values available for FB/SLB, use those.
+
+```{r fecundity 2}
+fecund_v_df <- read_csv(here('_data/traits_grouping/trait_reproduction.csv')) %>%
+  filter(trait == 'fec') %>%
+  filter(source %in% c('vuln')) %>%
+  filter(!is.na(value)) %>%
+  mutate(val_low = str_extract(value, '[0-9]+'),
+         val_high = str_remove(value, '^[0-9]+') %>% str_extract('[0-9]+'),
+         low = case_when(value == '<1'     ~ -1,
+                         value == '>10000' ~  4,
+                         TRUE ~ log10(as.numeric(val_low))),
+         high = case_when(value == '<1'     ~ 0,
+                         value == '>10000' ~  8, ### some spp upwards of 100M
+                         TRUE ~ log10(as.numeric(val_high)))) %>%
+  mutate(exp_mean = (low + high)/2,
+         val_num = 10^exp_mean) %>%
+  select(species,
+         fecund = val_num) %>%
+  mutate(source = 'vuln') %>%
+  distinct()
+
+fecund2_df <- fecund_df %>%
+  mutate(source = 'fb') %>%
+  bind_rows(fecund_v_df)# %>%
+  # group_by(species) %>%
+  # mutate(keep = all(c('fb', 'vuln') %in% source) & source == 'fb')
+# summary(fecund2_df$fecund)
+# hist(fecund2_df$fecund)
+# summary(log(fecund2_df$fecund))
+# hist(log(fecund2_df$fecund))
+```
+
+### Generation time take 2
+
+```{r gen time 2}
+
+gen_time_v_df <- read_csv(here('_data/traits_grouping/trait_reproduction.csv')) %>%
+  filter(trait == 'age_mat') %>%
+  filter(source %in% c('vuln')) %>%
+  filter(!is.na(value)) %>%
+  mutate(age_mat = case_when(value == '<1yr' ~ .5,
+                             value == '1-5yrs' ~ 3,
+                             value == '5-10yrs' ~ 7.5,
+                             value == '10-20yrs' ~ 15,
+                             value == '>20yrs' ~ 25,
+                             TRUE ~ -9999)) %>%
+  select(species, age_mat) %>%
+  mutate(source = 'vuln') %>%
+  distinct()
+
+gen_time2_df <- gen_time_df %>%
+  mutate(source = 'fb') %>%
+  bind_rows(gen_time_v_df)
+
+# summary(gen_time2_df$age_mat)
+# hist(gen_time2_df$age_mat)
+# summary(log(gen_time2_df$age_mat))
+# hist(log(gen_time2_df$age_mat))
+
+```
+
+### check missingness again:
+
+Apply listwise deletion to water-column-only observations.  Include bolstered fecundity and gen time variables, but use non-gapfilled trophic level for now.
+
+```{r}
+traits_delete_wcol_only <- traits_df_all %>%
+  filter(!(is.na(length) & is.na(fecund) & is.na(troph) & is.na(age_mat) & is.na(adult_mob)))
+
+missingness2 <- traits_delete_wcol_only %>%
+  summarize(missing_length  = sum(is.na(length))  / n(),
+            missing_fecund  = sum(is.na(fecund))  / n(),
+            missing_age_mat = sum(is.na(age_mat)) / n(),
+            missing_troph   = sum(is.na(troph))   / n(),
+            missing_wcol    = sum(is.na(wcol))    / n(),
+            missing_mob     = sum(is.na(adult_mob)) / n()) %>%
+  gather(variable, missing_rate, everything()) %>%
+  mutate(variable = str_remove(variable, 'missing_'),
+         valid_num    = as.integer((1 - missing_rate) * nrow(traits_delete_wcol_only)),
+         missing_rate = round(missing_rate, 3),
+         missing_rate = paste0(missing_rate * 100, '%'))
+
+traits2_all <- length_df %>%
+  full_join(fecund2_df) %>%
+  full_join(gen_time2_df) %>%
+  full_join(troph_df) %>%
+  full_join(water_col_df) %>%
+  full_join(mob_df) %>%
+  inner_join(worms_spp, by = 'species') %>%
+  filter(!(is.na(length) & is.na(fecund) & is.na(troph) & is.na(age_mat) & is.na(adult_mob)))
+  
+
+missingness3 <- traits2_all %>%
+  summarize(missing_length  = sum(is.na(length))  / n(),
+            missing_fecund  = sum(is.na(fecund))  / n(),
+            missing_age_mat = sum(is.na(age_mat)) / n(),
+            missing_troph   = sum(is.na(troph))   / n(),
+            missing_wcol    = sum(is.na(wcol))    / n(),
+            missing_mob     = sum(is.na(adult_mob)) / n()) %>%
+  gather(variable, missing_rate, everything()) %>%
+  mutate(variable = str_remove(variable, 'missing_'),
+         valid_num    = as.integer((1 - missing_rate) * nrow(traits2_all)),
+         missing_rate = round(missing_rate, 3),
+         missing_rate = paste0(missing_rate * 100, '%'))
+
+
+traits3_all <- length_df %>%
+  full_join(fecund2_df) %>%
+  full_join(gen_time2_df) %>%
+  full_join(troph_df) %>%
+  full_join(water_col_df) %>%
+  full_join(mob_df) %>%
+  inner_join(worms_spp, by = 'species') %>%
+  select(species, length, fecund, age_mat, adult_mob, wcol, troph) %>%
+  filter(rowSums(is.na(.)) <= 4)
+    ### dropping 6-NA rows, we're left with 110k obs of 98k spp...
+    ### but 32k of those obs are water col position only...
+    ### dropping 5- and 6-NA rows, we're left with 66k obs of 54700 spp...
+  
+
+missingness4 <- traits3_all %>%
+  summarize(missing_length  = sum(is.na(length))  / n(),
+            missing_fecund  = sum(is.na(fecund))  / n(),
+            missing_age_mat = sum(is.na(age_mat)) / n(),
+            missing_troph   = sum(is.na(troph))   / n(),
+            missing_wcol    = sum(is.na(wcol))    / n(),
+            missing_mob     = sum(is.na(adult_mob)) / n()) %>%
+  gather(variable, missing_rate, everything()) %>%
+  mutate(variable = str_remove(variable, 'missing_'),
+         valid_num    = as.integer((1 - missing_rate) * nrow(traits3_all)),
+         missing_rate = round(missing_rate, 3),
+         missing_rate = paste0(missing_rate * 100, '%'))
+
+```
+
+``` {r}
+knitr::kable(missingness)
+knitr::kable(missingness2)
+knitr::kable(missingness3)
+knitr::kable(missingness4)
+```
+
+Using listwise deletion on the water-column-position-only species, in combination with gapfilling fecundity and generation time based on vulnerability traits considerably reduces missingness of variables in the remaining set.
+
+## Performing MICE to fill gaps
+
+With an improved dataset, we can use MICE to impute missing values.
+
+* MICE on datasets only from FishBase, vs MICE on datasets enhanced with values from Vuln trait bins
+* Continuous variables: log(length), log(fecundity), age to maturity, trophic level
+* Categorical variables: water column position; also phylum, order, family (based on Boyce et al. 2021)
+    * is there value in keeping three taxonomic ranks instead of just one? Why skip class rank? test this...
+    
+### set up dataset for imputation
+
+For now let's just use phylum and order as a predictor, dropping family.  Including family greatly slows the imputation (5 `m` x 5 `maxit` = 4 minutes vs. 44 seconds for order vs. 8 seconds for phylum... on a 1000-sample dataframe).
+
+```{r}
+
+wcol_levels <- c('rf', 'pel', 'ben', 'bp')
+mob_levels  <- c('ses', 'sed', 'mob', 'mig')
+
+traits_premice_all <- traits3_all %>%
+  inner_join(worms_spp, by = 'species') %>%
+  mutate(log_l = log(length), log_f = log(fecund)) %>%
+  select(species, phylum, order, family, 
+         log_l, log_f, troph, age_mat, wcol, adult_mob) %>%
+  mutate(wcol      = factor(wcol, levels = wcol_levels, ordered = FALSE),
+         adult_mob = str_extract(adult_mob, '^...'),
+         adult_mob = factor(adult_mob, levels = mob_levels, ordered = TRUE)) %>%
+  mutate(phylum = factor(phylum, ordered = FALSE),
+         order  = factor(order, ordered = FALSE),
+         family = factor(family, ordered = FALSE))
+
+### write out traits pre-imputation for reference
+write_csv(traits_premice_all,  here_anx('mice/gp_traits_mice_preimputation.csv'))
+
+```
+
+``` {r}
+am_spp <- get_am_spp_info()
+# n_samples <- 1000
+# set.seed(42)
+### taxonomic ranks to keep
+
+keep_ranks <- c('phylum', 'order')
+
+traits_premice <- traits_premice_all %>%
+  filter(species %in% am_spp$sciname) %>%
+  # sample_n(n_samples) %>%
+  select(species, all_of(keep_ranks),  
+         log_l, log_f, troph, age_mat, wcol, adult_mob)
+
+traits_premice$species %>% n_distinct()
+### force a few NAs in wcol column!
+# traits_premice$wcol[sample(1:n_samples, round(n_samples/10), replace = FALSE)] <- NA
+
+md.pattern(traits_premice %>%
+             select(-species, -all_of(keep_ranks)),
+           plot = TRUE)
+```
+
+### Set up predictor matrix and method vector
+
+Create a blank run (no iterations) to generate a prediction matrix and a methods vector, then update these.
+
+``` {r}
+blank_run <- mice(traits_premice, maxit = 0)
+
+### set up predictor matrix
+pred_mtx <- blank_run$pred
+
+pred_mtx[ , 'species'] <- 0
+  ### species column is all zeros - ignored for imputation
+
+pred_mtx[c('species'), ] <- 0
+pred_mtx[keep_ranks, ] <- 0
+  ### don't impute values for these... (should not be an issue since no NAs)
+
+pred_mtx
+
+
+meth_vec <- blank_run$meth
+meth_vec[keep_ranks] <- 'polyreg'
+#   ### set method for non-ordered categoricals
+meth_vec
+```
+
+### perform the imputation!
+
+``` {r}
+
+### set up file for imputed traits
+post_impute_f <- here_anx('mice/gp_traits_mice.csv')
+
+### .Rdata path for saving the imputation `mids` object
+impute_object_f <- here_anx('mice/gp_traits_mice_results.RData')
+
+if(!file.exists(post_impute_f)) {
+  ### unlink(post_impute_f)
+  system.time({
+    imp <- mice(traits_premice,
+                m = 5, maxit = 10, 
+                method = meth_vec, 
+                predictorMatrix = pred_mtx,
+                seed = 42)
+  })
+  
+  ### complete the trait set and write out the traits post-imputation. For
+  ### file size, convert wcol and adult_mob to integers instead of character
+  traits_complete <- complete(imp, 'long') %>%
+    select(-all_of(keep_ranks)) %>% ### can reattach higher ranks easily
+    mutate(log_l = round(log_l, 5),
+           log_f = round(log_f, 5),
+           age_mat = round(age_mat, 5))
+  ### from above:
+  ### wcol_levels <- c('rf',  'pel', 'ben', 'bp')
+  ### mob_levels  <- c('ses', 'sed', 'mob', 'mig')
+
+  write_csv(traits_complete, post_impute_f)
+  ### write out results to .RData
+  save(imp, file = impute_object_f)
+}
+```
+
+``` {r examine mice results}
+load(impute_object_f) ### stored as 'imp'
+summary(imp)
+
+plot(imp) ### do troph, log_f, and age_mat have convergence issues?
+
+densityplot(imp) ### doesn't show categoricals?
+```
+
+```{r plot hists of categoricals}
+traits_complete <- read_csv(post_impute_f) %>%
+  mutate(wcol = factor(wcol, levels = wcol_levels),
+         adult_mob = factor(adult_mob, levels = mob_levels, ordered = TRUE))
+
+ggplot(traits_complete, aes(x = wcol)) +
+  geom_histogram(stat = 'count') +
+  labs(title = 'water col pos post-imputation')
+ggplot(traits_premice %>% filter(!is.na(wcol)), aes(x = wcol)) +
+  geom_histogram(stat = 'count') +
+  labs(title = 'water col pos pre-imputation')
+
+ggplot(traits_complete, aes(x = adult_mob)) +
+  geom_histogram(stat = 'count') +
+  labs(title = 'adult mobility post-imputation')
+ggplot(traits_premice %>% filter(!is.na(adult_mob)), aes(x = adult_mob)) +
+  geom_histogram(stat = 'count') +
+  labs(title = 'adult mobility pre-imputation')
+```
+
+## Ensemble averaging
+
+Take mean for each species across all imputation models.  For categorical variables, examine the mode.  Note in many cases, multiple observations of a variable for a particular species resulted in multiple imputations (e.g., _Gadus morhua_) - these are averaged across all observations.
+
+```{r ensemble averaging}
+traits_complete <- read_csv(post_impute_f) %>%
+  mutate(wcol = factor(wcol, levels = wcol_levels),
+         adult_mob = factor(adult_mob, levels = mob_levels, ordered = TRUE))
+
+traits_cat_ensemble <- traits_complete %>%
+  group_by(species, adult_mob) %>%
+  mutate(n_mob = n()) %>%
+  group_by(species, wcol) %>%
+  mutate(n_wcol = n()) %>%
+  group_by(species) %>%
+  summarize(n_vals = n(),
+            mob_mean = mean(as.numeric(adult_mob)),
+            wcol_mean = mean(as.numeric(wcol)),
+            mob_sd = sd(as.numeric(adult_mob)),
+            wcol_sd = sd(as.numeric(wcol)),
+            mode_mob = first(adult_mob[n_mob == max(n_mob)]),
+            pct_mob = max(n_mob) / n_vals,
+            mode_wcol = first(wcol[n_wcol == max(n_wcol)]),
+            pct_wcol = max(n_wcol) / n_vals)
+
+traits_num_ensemble <- traits_complete %>%
+  group_by(species) %>%
+  summarize(across(c(log_l, log_f, age_mat, troph), .fns = list(mean = mean, sd = sd)),
+            n_vals = n())
+  
+traits_ensemble <- traits_cat_ensemble %>%
+  select(species, mode_mob, mode_wcol, mob_mean, mob_sd, wcol_mean, wcol_sd) %>%
+  full_join(traits_num_ensemble, by = 'species')
+```
+
+
+
+## Performing MICE to fill gaps - chunked by class
+
+With an improved dataset, we can use MICE to impute missing values.
+
+* MICE on datasets only from FishBase, vs MICE on datasets enhanced with values from Vuln trait bins
+* Continuous variables: log(length), log(fecundity), age to maturity, trophic level
+* Categorical variables: water column position; also order, family (based on Boyce et al. 2021)
+
+Here, chunk out the dataset by order, or if fewer than 30 obs, by class then phylum.  Keeping categorical variables for taxonomic ranks can perhaps affect outcomes as a fixed effect, but what if the relationship among variables is fundamentally different between, say, echinoderms and mammals?
+
+This may also have the effect of speeding processing time since smaller subsets are being analyzed, which may be helpful for eventual cross validation testing.
+
+For classes where few observations exist, aggregate up to phylum level?
+
+    
+### set up dataset for imputation
+
+```{r}
+wcol_levels <- c('rf', 'pel', 'ben', 'bp')
+mob_levels  <- c('ses', 'sed', 'mob', 'mig')
+
+traits_premice_cls <- traits2_all %>%
+  mutate(log_l = log(length), log_f = log(fecund)) %>%
+  select(species, phylum, class, order, family, 
+         log_l, log_f, troph, age_mat, wcol, adult_mob) %>%
+  filter(rowSums(is.na(.)) <= 4) %>%
+    ### dropping 6-NA rows, we're left with 103k obs of 80730 spp...
+    ### but 40k of those obs are water col position only...
+    ### dropping 5- and 6-NA rows, we're left with 61k obs of 38900 spp...
+  mutate(wcol      = factor(wcol, levels = wcol_levels, ordered = FALSE),
+         adult_mob = str_extract(adult_mob, '^...'),
+         adult_mob = factor(adult_mob, levels = mob_levels, ordered = TRUE)) %>%
+  mutate(phylum = factor(phylum, ordered = FALSE),
+         class  = factor(class, ordered = FALSE),
+         order  = factor(order, ordered = FALSE),
+         family = factor(family, ordered = FALSE))
+
+am_spp <- get_am_spp_info()
+# n_samples <- 1000
+# set.seed(42)
+### taxonomic ranks to keep
+keep_ranks <- c('order', 'family')
+
+traits_premice <- traits_premice_cls %>%
+  # filter(species %in% am_spp$sciname) %>%
+  # sample_n(n_samples) %>%
+  select(species, phylum, class, all_of(keep_ranks),  
+         log_l, log_f, troph, age_mat, wcol, adult_mob)
+
+traits_premice_chunk_order <- traits_premice %>%
+  group_by(order) %>%
+  filter(n_distinct(species) >= 30) %>%
+  mutate(chunk = 'order',
+         chunk_name = order,
+         n_chunk = n_distinct(species)) %>%
+  ungroup()
+traits_premice_chunk_class <- traits_premice %>%
+  group_by(class) %>%
+  filter(!species %in% traits_premice_chunk_order$species) %>%
+  filter(n_distinct(species) >= 30) %>%
+  mutate(chunk = 'class',
+         chunk_name = class,
+         n_chunk = n_distinct(species)) %>%
+  ungroup()
+traits_premice_chunk_phylum <- traits_premice %>%
+  group_by(phylum) %>%
+  filter(!species %in% traits_premice_chunk_order$species) %>%
+  filter(!species %in% traits_premice_chunk_class$species) %>%
+  mutate(chunk = 'phylum',
+         chunk_name = phylum,
+         n_chunk = n_distinct(species)) %>%
+  ungroup()
+
+traits_premice_chunk <- bind_rows(traits_premice_chunk_order, 
+                                  traits_premice_chunk_class, 
+                                  traits_premice_chunk_phylum)
+
+n_chunks <- n_distinct(traits_premice_chunk$chunk_name)
+### 177 different chunks of highly variable size
+
+```
+
+### Set up predictor matrix and method vector
+
+Create a blank run (no iterations) to generate a prediction matrix and a methods vector, then update these for imputation by order, class, and phylum chunks...
+
+* Order chunks: impute by variables and family
+* Class chunks: impute by variables and family, order
+* Phylum chunks: impute by variables and family, order, class
+
+``` {r}
+traits_blank <- traits_premice_chunk %>%
+  select(-contains('chunk'), -phylum)
+blank_run <- mice(traits_blank, maxit = 0)
+
+### set up predictor matrix
+pred_mtx_phy <- blank_run$pred
+
+pred_mtx_phy[ , 'species'] <- 0
+  ### species column is all zeros - ignored for imputation
+
+pred_mtx_phy[c('species'), ] <- 0
+pred_mtx_phy[c('class', 'order', 'family'), ] <- 0
+  ### don't impute values for these... (should not be an issue since no NAs)
+pred_mtx_cls <- pred_mtx_phy[-which(rownames(pred_mtx_phy) == 'class'), ]
+pred_mtx_cls <- pred_mtx_cls[, -which(colnames(pred_mtx_cls) == 'class')]
+
+pred_mtx_ord <- pred_mtx_cls[-which(rownames(pred_mtx_cls) == 'order'), ]
+pred_mtx_ord <- pred_mtx_ord[, -which(colnames(pred_mtx_ord) == 'order')]
+
+meth_vec_phy <- blank_run$meth
+meth_vec_phy[c('class', 'order', 'family')] <- 'polyreg'
+#   ### set method for non-ordered categoricals
+meth_vec_cls <- meth_vec_phy[-which(names(meth_vec_phy) == 'class')]
+meth_vec_ord <- meth_vec_cls[-which(names(meth_vec_cls) == 'order')]
+```
+
+### perform the imputation!
+
+``` {r}
+### write out traits pre-imputation for reference
+write_csv(traits_premice,  here_anx('mice/gp_traits_mice_preimputation.csv'))
+
+### set up file for imputed traits
+post_impute_f <- here_anx('mice/gp_traits_mice.csv')
+
+### .Rdata path for saving the imputation `mids` object
+impute_object_f <- here_anx('mice/gp_traits_mice_results.RData')
+
+if(!file.exists(post_impute_f)) {
+  ### unlink(post_impute_f)
+  system.time({
+    imp <- mice(traits_premice,
+                m = 5, maxit = 10, 
+                method = meth_vec, 
+                predictorMatrix = pred_mtx,
+                seed = 42)
+  })
+  
+  ### complete the trait set and write out the traits post-imputation. For
+  ### file size, convert wcol and adult_mob to integers instead of character
+  traits_complete <- complete(imp, 'long') %>%
+    select(-all_of(keep_ranks)) %>% ### can reattach higher ranks easily
+    mutate(log_l = round(log_l, 5),
+           log_f = round(log_f, 5),
+           age_mat = round(age_mat, 5))
+  ### from above:
+  ### wcol_levels <- c('rf',  'pel', 'ben', 'bp')
+  ### mob_levels  <- c('ses', 'sed', 'mob', 'mig')
+
+  write_csv(traits_complete, post_impute_f)
+  ### write out results to .RData
+  save(imp, file = impute_object_f)
+}
+```
+
+``` {r examine mice results}
+load(impute_object_f) ### stored as 'imp'
+summary(imp)
+
+plot(imp) ### do troph, log_f, and age_mat have convergence issues?
+
+densityplot(imp) ### doesn't show categoricals?
+```
+
+```{r plot hists of categoricals}
+traits_complete <- read_csv(post_impute_f) %>%
+  mutate(wcol = factor(wcol, levels = wcol_levels),
+         adult_mob = factor(adult_mob, levels = mob_levels, ordered = TRUE))
+
+ggplot(traits_complete, aes(x = wcol)) +
+  geom_histogram(stat = 'count') +
+  labs(title = 'water col pos post-imputation')
+ggplot(traits_premice %>% filter(!is.na(wcol)), aes(x = wcol)) +
+  geom_histogram(stat = 'count') +
+  labs(title = 'water col pos pre-imputation')
+
+ggplot(traits_complete, aes(x = adult_mob)) +
+  geom_histogram(stat = 'count') +
+  labs(title = 'adult mobility post-imputation')
+ggplot(traits_premice %>% filter(!is.na(adult_mob)), aes(x = adult_mob)) +
+  geom_histogram(stat = 'count') +
+  labs(title = 'adult mobility pre-imputation')
+```
+
+## Ensemble averaging
+
+Take mean for each species across all imputation models.  For categorical variables, examine the mode.  Note in many cases, multiple observations of a variable for a particular species resulted in multiple imputations (e.g., _Gadus morhua_) - these are averaged across all observations.
+
+```{r ensemble averaging}
+traits_complete <- read_csv(post_impute_f) %>%
+  mutate(wcol = factor(wcol, levels = wcol_levels),
+         adult_mob = factor(adult_mob, levels = mob_levels, ordered = TRUE))
+
+traits_cat_ensemble <- traits_complete %>%
+  group_by(species, adult_mob) %>%
+  mutate(n_mob = n()) %>%
+  group_by(species, wcol) %>%
+  mutate(n_wcol = n()) %>%
+  group_by(species) %>%
+  summarize(n_vals = n(),
+            mob_mean = mean(as.numeric(adult_mob)),
+            wcol_mean = mean(as.numeric(wcol)),
+            mob_sd = sd(as.numeric(adult_mob)),
+            wcol_sd = sd(as.numeric(wcol)),
+            mode_mob = first(adult_mob[n_mob == max(n_mob)]),
+            pct_mob = max(n_mob) / n_vals,
+            mode_wcol = first(wcol[n_wcol == max(n_wcol)]),
+            pct_wcol = max(n_wcol) / n_vals)
+
+traits_num_ensemble <- traits_complete %>%
+  group_by(species) %>%
+  summarize(across(c(log_l, log_f, age_mat, troph), .fns = list(mean = mean, sd = sd)),
+            n_vals = n())
+  
+traits_ensemble <- traits_cat_ensemble %>%
+  select(species, mode_mob, mode_wcol, mob_mean, mob_sd, wcol_mean, wcol_sd) %>%
+  full_join(traits_num_ensemble, by = 'species')
+```
+
+
+

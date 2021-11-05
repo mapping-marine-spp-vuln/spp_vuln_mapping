@@ -55,11 +55,21 @@ mob_vals <- c('sessile'                  = 'sessile',
               'mobile resident'          = 'mobile resident',
               'horizontal migrator'      = 'migratory/nomadic',
               'nomadic'                  = 'migratory/nomadic')
+### note: vertical migrator gets ignored here; we're looking at horizontal range
               
 
 mob_vuln <- get_vuln_traits() %>%
   filter(str_detect(trait, 'adult_mobility')) %>%
-  downfill() %>%
+  group_by(taxon, spp_gp) %>%
+  summarize(trait_value = paste0(trait_value, collapse = ';')) %>%
+  ungroup() 
+
+mob_vuln_downfill <- mob_vuln %>%
+  downfill() 
+
+mob_vuln_expand <- mob_vuln_downfill %>%
+  mutate(trait_value = str_split(trait_value, ';')) %>%
+  unnest(trait_value) %>%
   mutate(mob_cat = mob_vals[trait_value],
          mob_cat = factor(mob_cat, levels = unique(mob_vals), ordered = TRUE)) %>%
   filter(!is.na(mob_cat)) %>%
@@ -70,13 +80,13 @@ mob_vuln <- get_vuln_traits() %>%
 Can we upstream/downstream these values roughly, since they are an ordered factor?
 
 ```{r}
-mob_vuln_gf <- mob_vuln %>%
+mob_vuln_gf <- mob_vuln_expand %>%
   full_join(assemble_worms()) %>%
   mutate(mob_num = as.numeric(mob_cat)) %>%
   gapfill_up_down('mob_num') %>%
   mutate(value = round(value)) %>% ### round to nearest bin
-  mutate(mob_cat = levels(mob_vuln$mob_cat)[value],
-         value = factor(mob_cat, levels = levels(mob_vuln$mob_cat))) %>%
+  mutate(mob_cat = levels(mob_vuln_expand$mob_cat)[value],
+         value   = factor(mob_cat, levels = levels(mob_vuln_expand$mob_cat))) %>%
   filter(!is.na(value))
 ```
 

@@ -66,36 +66,47 @@ traits_df <- read_csv(here('../spp_vuln_framework/_data/spp_traits_valid.csv'))
 
 traits_df$taxon %>% unique()
 
-traits_taxa_df <- traits_df %>%
-  filter(taxon %in% c('fish', 'crustacea_arthropods', 'marine_mammals', 'molluscs', 'reptiles'))
-
 ```
 
 Use `downfill()` to flesh out the species membership from higher ranks and/or from representative species.
 
 ``` {r}
-trait_spp_gps <- traits_taxa_df %>%
+trait_spp_gps <- traits_df %>%
+  filter(taxon %in% c('fish', 'marine_mammals', 'crustacea_arthropods', 'molluscs', 'reptiles')) %>%
   select(taxon, spp_gp) %>%
   mutate(trait_spp_gp = spp_gp) %>%
   distinct()
 
-trait_spp_gps_downfilled <- downfill(trait_spp_gps) %>%
-  select(taxon, trait_spp_gp, spp_gp, species) %>%
+trait_gps_repr <- assign_repr_level(trait_spp_gps) %>%
+  group_by(taxon, spp_gp, repres) %>%
+  summarize(trait_spp_gp = paste0(trait_spp_gp, collapse = ';'))
+
+trait_spp_gps_downfilled <- downfill(trait_gps_repr) 
+
+trait_spp_gps_expanded <- trait_spp_gps_downfilled %>%
+  mutate(trait_spp_gp = str_split(trait_spp_gp, ';')) %>%
+  unnest(trait_spp_gp) %>%
+  group_by(species) %>%
+  filter(ifelse(species %in% trait_spp_gp, species == trait_spp_gp, TRUE)) %>%
+  select(taxon, trait_spp_gp, spp_gp, repres, species) %>%
   distinct()
 ```
 
 Filter the fleshed out species list to just those in CKS list, then join the traits.  Clean the result by collapsing multiple values into a single cell.
 
 ```{r}
-cks_traits_df <- trait_spp_gps_downfilled %>%
+cks_traits_df <- trait_spp_gps_expanded %>%
   filter(species %in% cks_df$species) %>%
-  left_join(traits_taxa_df, by = c('taxon', 'trait_spp_gp' = 'spp_gp'))
+  left_join(traits_df, by = c('taxon', 'trait_spp_gp' = 'spp_gp'))
 
 cks_traits_clean <- cks_traits_df %>%
-  group_by(taxon, species, spp_gp = trait_spp_gp, category, trait) %>%
-  summarize(trait_value = paste0(trait_value, collapse = ';')) %>%
+  group_by(taxon, species, category, trait) %>%
+  summarize(trait_spp_gp = paste0(unique(trait_spp_gp), collapse = ';'),
+            trait_value = paste0(unique(trait_value), collapse = ';')) %>%
   ungroup()
   
 write_csv(cks_traits_clean, here('cks', 'cks_traits_from_vuln.csv'))
+
+knitr::kable(cks_traits_clean %>% select(taxon, species) %>% distinct() %>% arrange(taxon))
 ```
 

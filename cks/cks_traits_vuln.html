@@ -9,7 +9,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
 
 
-<meta name="author" content="Compiled on Thu Nov 4 15:18:24 2021 by ohara" />
+<meta name="author" content="Compiled on Fri Nov 5 08:17:58 2021 by ohara" />
 
 
 <title>Gather traits for Cultural Keystone Species part 2</title>
@@ -357,7 +357,7 @@ div.tocify {
 
 
 <h1 class="title toc-ignore">Gather traits for Cultural Keystone Species part 2</h1>
-<h4 class="author"><em>Compiled on Thu Nov 4 15:18:24 2021 by ohara</em></h4>
+<h4 class="author"><em>Compiled on Fri Nov 5 08:17:58 2021 by ohara</em></h4>
 
 </div>
 
@@ -407,28 +407,162 @@ div.tocify {
 ##  [4] &quot;echinoderms&quot;          &quot;elasmobranchs&quot;        &quot;fish&quot;                
 ##  [7] &quot;marine_mammals&quot;       &quot;molluscs&quot;             &quot;polychaetes&quot;         
 ## [10] &quot;reptiles&quot;             &quot;seabirds&quot;             &quot;sponges&quot;</code></pre>
-<div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>traits_taxa_df <span class="ot">&lt;-</span> traits_df <span class="sc">%&gt;%</span></span>
-<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(taxon <span class="sc">%in%</span> <span class="fu">c</span>(<span class="st">&#39;fish&#39;</span>, <span class="st">&#39;crustacea_arthropods&#39;</span>, <span class="st">&#39;marine_mammals&#39;</span>, <span class="st">&#39;molluscs&#39;</span>, <span class="st">&#39;reptiles&#39;</span>))</span></code></pre></div>
 <p>Use <code>downfill()</code> to flesh out the species membership from higher ranks and/or from representative species.</p>
-<div class="sourceCode" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>trait_spp_gps <span class="ot">&lt;-</span> traits_taxa_df <span class="sc">%&gt;%</span></span>
-<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(taxon, spp_gp) <span class="sc">%&gt;%</span></span>
-<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">trait_spp_gp =</span> spp_gp) <span class="sc">%&gt;%</span></span>
-<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">distinct</span>()</span>
-<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>trait_spp_gps_downfilled <span class="ot">&lt;-</span> <span class="fu">downfill</span>(trait_spp_gps) <span class="sc">%&gt;%</span></span>
-<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(taxon, trait_spp_gp, spp_gp, species) <span class="sc">%&gt;%</span></span>
-<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">distinct</span>()</span></code></pre></div>
+<div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>trait_spp_gps <span class="ot">&lt;-</span> traits_df <span class="sc">%&gt;%</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(taxon <span class="sc">%in%</span> <span class="fu">c</span>(<span class="st">&#39;fish&#39;</span>, <span class="st">&#39;marine_mammals&#39;</span>, <span class="st">&#39;crustacea_arthropods&#39;</span>, <span class="st">&#39;molluscs&#39;</span>, <span class="st">&#39;reptiles&#39;</span>)) <span class="sc">%&gt;%</span></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(taxon, spp_gp) <span class="sc">%&gt;%</span></span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">trait_spp_gp =</span> spp_gp) <span class="sc">%&gt;%</span></span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">distinct</span>()</span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>trait_gps_repr <span class="ot">&lt;-</span> <span class="fu">assign_repr_level</span>(trait_spp_gps) <span class="sc">%&gt;%</span></span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(taxon, spp_gp, repres) <span class="sc">%&gt;%</span></span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarize</span>(<span class="at">trait_spp_gp =</span> <span class="fu">paste0</span>(trait_spp_gp, <span class="at">collapse =</span> <span class="st">&#39;;&#39;</span>))</span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a>trait_spp_gps_downfilled <span class="ot">&lt;-</span> <span class="fu">downfill</span>(trait_gps_repr) </span>
+<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a>trait_spp_gps_expanded <span class="ot">&lt;-</span> trait_spp_gps_downfilled <span class="sc">%&gt;%</span></span>
+<span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">trait_spp_gp =</span> <span class="fu">str_split</span>(trait_spp_gp, <span class="st">&#39;;&#39;</span>)) <span class="sc">%&gt;%</span></span>
+<span id="cb7-15"><a href="#cb7-15" aria-hidden="true" tabindex="-1"></a>  <span class="fu">unnest</span>(trait_spp_gp) <span class="sc">%&gt;%</span></span>
+<span id="cb7-16"><a href="#cb7-16" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(species) <span class="sc">%&gt;%</span></span>
+<span id="cb7-17"><a href="#cb7-17" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(<span class="fu">ifelse</span>(species <span class="sc">%in%</span> trait_spp_gp, species <span class="sc">==</span> trait_spp_gp, <span class="cn">TRUE</span>)) <span class="sc">%&gt;%</span></span>
+<span id="cb7-18"><a href="#cb7-18" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(taxon, trait_spp_gp, spp_gp, repres, species) <span class="sc">%&gt;%</span></span>
+<span id="cb7-19"><a href="#cb7-19" aria-hidden="true" tabindex="-1"></a>  <span class="fu">distinct</span>()</span></code></pre></div>
 <p>Filter the fleshed out species list to just those in CKS list, then join the traits. Clean the result by collapsing multiple values into a single cell.</p>
-<div class="sourceCode" id="cb9"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>cks_traits_df <span class="ot">&lt;-</span> trait_spp_gps_downfilled <span class="sc">%&gt;%</span></span>
-<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(species <span class="sc">%in%</span> cks_df<span class="sc">$</span>species) <span class="sc">%&gt;%</span></span>
-<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">left_join</span>(traits_taxa_df, <span class="at">by =</span> <span class="fu">c</span>(<span class="st">&#39;taxon&#39;</span>, <span class="st">&#39;trait_spp_gp&#39;</span> <span class="ot">=</span> <span class="st">&#39;spp_gp&#39;</span>))</span>
-<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>cks_traits_clean <span class="ot">&lt;-</span> cks_traits_df <span class="sc">%&gt;%</span></span>
-<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(taxon, species, <span class="at">spp_gp =</span> trait_spp_gp, category, trait) <span class="sc">%&gt;%</span></span>
-<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarize</span>(<span class="at">trait_value =</span> <span class="fu">paste0</span>(trait_value, <span class="at">collapse =</span> <span class="st">&#39;;&#39;</span>)) <span class="sc">%&gt;%</span></span>
-<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ungroup</span>()</span>
-<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a><span class="fu">write_csv</span>(cks_traits_clean, <span class="fu">here</span>(<span class="st">&#39;cks&#39;</span>, <span class="st">&#39;cks_traits_from_vuln.csv&#39;</span>))</span></code></pre></div>
+<div class="sourceCode" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>cks_traits_df <span class="ot">&lt;-</span> trait_spp_gps_expanded <span class="sc">%&gt;%</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(species <span class="sc">%in%</span> cks_df<span class="sc">$</span>species) <span class="sc">%&gt;%</span></span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">left_join</span>(traits_df, <span class="at">by =</span> <span class="fu">c</span>(<span class="st">&#39;taxon&#39;</span>, <span class="st">&#39;trait_spp_gp&#39;</span> <span class="ot">=</span> <span class="st">&#39;spp_gp&#39;</span>))</span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>cks_traits_clean <span class="ot">&lt;-</span> cks_traits_df <span class="sc">%&gt;%</span></span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(taxon, species, category, trait) <span class="sc">%&gt;%</span></span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarize</span>(<span class="at">trait_spp_gp =</span> <span class="fu">paste0</span>(<span class="fu">unique</span>(trait_spp_gp), <span class="at">collapse =</span> <span class="st">&#39;;&#39;</span>),</span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a>            <span class="at">trait_value =</span> <span class="fu">paste0</span>(<span class="fu">unique</span>(trait_value), <span class="at">collapse =</span> <span class="st">&#39;;&#39;</span>)) <span class="sc">%&gt;%</span></span>
+<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ungroup</span>()</span>
+<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a><span class="fu">write_csv</span>(cks_traits_clean, <span class="fu">here</span>(<span class="st">&#39;cks&#39;</span>, <span class="st">&#39;cks_traits_from_vuln.csv&#39;</span>))</span>
+<span id="cb8-12"><a href="#cb8-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-13"><a href="#cb8-13" aria-hidden="true" tabindex="-1"></a>knitr<span class="sc">::</span><span class="fu">kable</span>(cks_traits_clean <span class="sc">%&gt;%</span> <span class="fu">select</span>(taxon, species) <span class="sc">%&gt;%</span> <span class="fu">distinct</span>() <span class="sc">%&gt;%</span> <span class="fu">arrange</span>(taxon))</span></code></pre></div>
+<table>
+<thead>
+<tr class="header">
+<th align="left">taxon</th>
+<th align="left">species</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">fish</td>
+<td align="left">anguilla australis</td>
+</tr>
+<tr class="even">
+<td align="left">fish</td>
+<td align="left">anguilla dieffenbachii</td>
+</tr>
+<tr class="odd">
+<td align="left">fish</td>
+<td align="left">anguilla reinhardtii</td>
+</tr>
+<tr class="even">
+<td align="left">fish</td>
+<td align="left">anguilla rostrata</td>
+</tr>
+<tr class="odd">
+<td align="left">fish</td>
+<td align="left">clupea pallasii</td>
+</tr>
+<tr class="even">
+<td align="left">fish</td>
+<td align="left">engraulis encrasicolus</td>
+</tr>
+<tr class="odd">
+<td align="left">fish</td>
+<td align="left">epinephelus marginatus</td>
+</tr>
+<tr class="even">
+<td align="left">fish</td>
+<td align="left">epinephelus polyphekadion</td>
+</tr>
+<tr class="odd">
+<td align="left">fish</td>
+<td align="left">hippoglossus stenolepis</td>
+</tr>
+<tr class="even">
+<td align="left">fish</td>
+<td align="left">oncorhynchus gorbuscha</td>
+</tr>
+<tr class="odd">
+<td align="left">fish</td>
+<td align="left">oncorhynchus kisutch</td>
+</tr>
+<tr class="even">
+<td align="left">fish</td>
+<td align="left">oncorhynchus nerka</td>
+</tr>
+<tr class="odd">
+<td align="left">fish</td>
+<td align="left">oncorhynchus tshawytscha</td>
+</tr>
+<tr class="even">
+<td align="left">marine_mammals</td>
+<td align="left">balaenoptera acutorostrata</td>
+</tr>
+<tr class="odd">
+<td align="left">marine_mammals</td>
+<td align="left">balaenoptera physalus</td>
+</tr>
+<tr class="even">
+<td align="left">marine_mammals</td>
+<td align="left">delphinapterus leucas</td>
+</tr>
+<tr class="odd">
+<td align="left">marine_mammals</td>
+<td align="left">dugong dugon</td>
+</tr>
+<tr class="even">
+<td align="left">marine_mammals</td>
+<td align="left">megaptera novaeangliae</td>
+</tr>
+<tr class="odd">
+<td align="left">marine_mammals</td>
+<td align="left">monodon monoceros</td>
+</tr>
+<tr class="even">
+<td align="left">marine_mammals</td>
+<td align="left">pusa hispida</td>
+</tr>
+<tr class="odd">
+<td align="left">marine_mammals</td>
+<td align="left">ursus maritimus</td>
+</tr>
+<tr class="even">
+<td align="left">molluscs</td>
+<td align="left">crassostrea virginica</td>
+</tr>
+<tr class="odd">
+<td align="left">molluscs</td>
+<td align="left">haliotis kamtschatkana</td>
+</tr>
+<tr class="even">
+<td align="left">reptiles</td>
+<td align="left">caretta caretta</td>
+</tr>
+<tr class="odd">
+<td align="left">reptiles</td>
+<td align="left">chelonia mydas</td>
+</tr>
+<tr class="even">
+<td align="left">reptiles</td>
+<td align="left">dermochelys coriacea</td>
+</tr>
+<tr class="odd">
+<td align="left">reptiles</td>
+<td align="left">eretmochelys imbricata</td>
+</tr>
+<tr class="even">
+<td align="left">reptiles</td>
+<td align="left">lepidochelys olivacea</td>
+</tr>
+</tbody>
+</table>
 </div>
 </div>
 

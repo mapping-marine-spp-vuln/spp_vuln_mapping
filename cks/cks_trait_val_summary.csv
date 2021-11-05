@@ -3,9 +3,9 @@ fish,acanthicus hystrix,survey,Casey,53,NA,NA,NA,NA,NA
 fish,acipenser fulvescens,survey,Casey,112,567616.948,24.19,3.28,benthic,NA
 mollusk,anadara tuberculosa,literature,?,NA,NA,NA,2,benthic,sessile
 fish,anguilla australis,literature,Casey,108.25,4641588.834,15.13,3.42,benthopelagic,migratory
-fish,anguilla dieffenbachii,literature,Casey,147.5,NA,29.355,3.52,benthic,migratory
-fish,anguilla reinhardtii,literature,Casey,158,10000000,15.195,3.55,benthic,migratory
-fish,anguilla rostrata,literature/survey,Casey,83.4,17206221.233,10.419,3.62,benthic,migratory
+fish,anguilla dieffenbachii,literature,Casey,147.5,56234.133,21.626,3.52,benthic,mobile resident
+fish,anguilla reinhardtii,literature,Casey,158,205352.503,8.424,3.55,benthic,mobile resident
+fish,anguilla rostrata,literature/survey,Casey,83.4,4592675.609,9.438,3.62,benthic,mobile resident
 fish,arapaima gigas,literature/survey,Casey,450,47000,5,4.5,NA,NA
 fish,arripis trutta,literature,Casey,89,NA,4.587,3.7,pelagic,NA
 mollusk,austrovenus stutchburyi,literature,?,NA,NA,NA,2,benthic,NA
@@ -16,7 +16,7 @@ crustacean,cherax cainii,literature,?,NA,NA,NA,NA,NA,NA
 crustacean,cherax destructor,literature,?,NA,NA,NA,NA,NA,NA
 crustacean,cherax tenuimanus,literature,?,NA,NA,NA,NA,NA,NA
 mollusk,clinocardium nuttallii,literature,?,14,NA,NA,2,benthic,NA
-fish,clupea pallasii,literature,Casey,27.828,40352.553,4.142,3.46,pelagic,migratory
+fish,clupea pallasii,literature,Casey,27.828,43406.599,4.193,3.46,pelagic,migratory
 fish,coris julis,survey,Casey,16.8,NA,1,3.24,reef,NA
 mollusk,crassostrea virginica,literature,?,14.071,1000000,3.333,2,benthic,sessile
 reptile,dendroaspis angusticeps,literature,?,NA,NA,NA,NA,NA,NA
@@ -24,8 +24,8 @@ reptile,dermochelys coriacea,literature/survey,?,123,316.228,11.331,4.15,benthop
 mollusk,echyridella menziesii,literature,?,NA,NA,NA,NA,NA,NA
 fish,engraulis encrasicolus,survey,Casey,14.2,20679.331,1.471,3.12,pelagic,mobile resident
 fish,entosphenus tridentatus,literature,Casey,76,158966.663,NA,4.5,benthic,NA
-fish,epinephelus marginatus,survey,Casey,87.4,7984835,7.354,4.08,reef,mobile resident
-fish,epinephelus polyphekadion,literature,Casey,61.25,NA,NA,4.03,reef,mobile resident
+fish,epinephelus marginatus,survey,Casey,87.4,5647916.775,7.378,4.08,reef,mobile resident
+fish,epinephelus polyphekadion,literature,Casey,61.25,1000000,7.5,4.03,reef,mobile resident
 reptile,eretmochelys imbricata,literature/survey,?,87,186.759,5.455,3.51,reef,NA
 fish,etrumeus teres,literature,Casey,NA,NA,NA,NA,NA,NA
 crustacean,euastacus armatus,literature,?,NA,NA,NA,NA,NA,NA

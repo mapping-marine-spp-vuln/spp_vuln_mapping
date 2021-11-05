@@ -65,12 +65,17 @@ Read in data from vulnerability project and fishbase/sealifebase.  First priorit
 ```{r age to maturity from vulnerability}
 age_mat_vuln <- get_vuln_traits() %>%
   filter(trait == 'age_to_1st_reproduction_generation_time') %>%
-  mutate(trait_value = factor(trait_value,
-                              levels = c('<1yr', '1-5yrs', '5-10yrs', '10-20yrs', '>20yrs')),
-         bin = as.integer(trait_value))
+  group_by(taxon, spp_gp) %>%
+  summarize(trait_value = paste0(unique(trait_value), collapse = ';'),
+            .groups = 'drop')
 
-age_mat_vuln_gf <- downfill(age_mat_vuln) %>%
-  select(species, trait, value = trait_value) %>%
+age_mat_downfilled <- downfill(age_mat_vuln) %>%
+  distinct()
+
+age_mat_expanded <- age_mat_downfilled %>%
+  mutate(trait_value = str_split(trait_value, ';')) %>%
+  unnest(trait_value) %>%
+  select(species, value = trait_value) %>%
   distinct() %>%
   mutate(source = 'vuln')
 ```
@@ -143,7 +148,7 @@ mat_fb_binned <- mat_fb_clean %>%
   distinct() %>%
   mutate(source = 'fb')
 
-age_mat_all <- bind_rows(age_mat_vuln_gf, mat_fb_binned) %>%
+age_mat_all <- bind_rows(age_mat_expanded, mat_fb_binned) %>%
   mutate(trait = 'age_mat')
 
 age_mat_all$value %>% table()
@@ -161,14 +166,20 @@ f_vals <- c('<1', '1-2' , '2-5', '5-10', '10-20', '20-50', '50-100', '100-1000',
 
 fecund_vuln <- get_vuln_traits() %>%
   filter(trait == 'fecundity') %>%
-  mutate(trait_value = factor(trait_value,
-                              levels = f_vals),
-         bin = as.integer(trait_value))
+  group_by(taxon, spp_gp) %>%
+  summarize(trait_value = paste0(unique(trait_value), collapse = ';'),
+            .groups = 'drop')
 
-fecund_vuln_gf <- downfill(fecund_vuln) %>%
-  select(species, trait, value = trait_value) %>%
+fecund_downfilled <- downfill(fecund_vuln) %>%
+  distinct()
+
+fecund_expanded <- fecund_downfilled %>%
+  mutate(trait_value = str_split(trait_value, ';')) %>%
+  unnest(trait_value) %>%
+  select(species, value = trait_value) %>%
   distinct() %>%
   mutate(source = 'vuln')
+
 ```
 
 
@@ -239,7 +250,7 @@ fecund_fb_binned <- fecund_fb_clean %>%
   distinct() %>%
   mutate(source = 'fb')
 
-fecund_all <- bind_rows(fecund_vuln_gf, fecund_fb_binned) %>%
+fecund_all <- bind_rows(fecund_expanded, fecund_fb_binned) %>%
   mutate(trait = 'fec') %>%
   mutate(value = factor(value, levels = f_vals))
 

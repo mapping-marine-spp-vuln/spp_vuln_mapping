@@ -235,6 +235,9 @@ assign_repr_level <- function(df) {
     stop('get rid of taxonomic ranks higher than species!')
   }
   spp_all_wide <- assemble_worms(aspect = 'wide')
+  rank_names_long <- assemble_worms(aspect = 'long') %>%
+    select(-spp) %>%
+    distinct()
   
   ### create new dataframe including all representative species, with
   ### spp_gp_new assigned to the representative rank
@@ -248,34 +251,52 @@ assign_repr_level <- function(df) {
                                   TRUE ~ NA_character_)) %>%
     select(taxon, spp_gp_orig = spp_gp, spp_gp = spp_gp_new,
            everything()) %>%
-    select(-spp_gp_orig, -phylum, -class, -order, -family, -genus) %>%
+    select(-phylum, -class, -order, -family, -genus) %>%
     distinct()
   
-  df_out <- bind_rows(df, repr_spp)
+  df_higher <- df %>% 
+    # filter(!spp_gp %in% repres_df$species) %>%
+    left_join(rank_names_long, by = c('spp_gp' = 'name')) %>%
+    rename(repres = rank)
+    
+  df_out <- bind_rows(df_higher, repr_spp) %>%
+    select(-spp_gp_orig) %>%
+    distinct()
+  
+  return(df_out)
 }
 
 downfill <- function(df) {
-  
-  df_repres <- assign_repr_level(df)
 
+  if(!'repres' %in% names(df)) {
+    df_repres <- assign_repr_level(df)
+  } else {
+    df_repres <- df
+  }
   spp_all_wide <- assemble_worms(aspect = 'wide')
 
   ranks <- c('species', 'genus', 'family', 'order', 'class')
   rank_list <- vector('list', length = length(ranks)) %>%
     setNames(ranks)
-  for(rank in ranks) { ### rank <- ranks[2]
-    y <- df_repres %>%
-      inner_join(spp_all_wide, by = c('spp_gp' = rank)) %>%
-      mutate(!!rank := .data[['spp_gp']])
-    rank_list[[rank]] <- y
+  
+  for(i in seq_along(ranks)) { ### i <- 4
+    x <- df_repres %>%
+      filter(repres == ranks[i])
+    y <- x %>%
+      inner_join(spp_all_wide, by = c('spp_gp' = ranks[i])) %>%
+      mutate(!!ranks[i] := .data[['spp_gp']])
+    rank_list[[ranks[i]]] <- y
   }
   rank_df <- bind_rows(rank_list) %>%
     distinct() %>%
+    rowwise() %>%
+    mutate(rank_num = which(repres == ranks)) %>%
     group_by(species) %>%
-    filter(n() == 1 | spp_gp == species) %>%
+    filter(n() == 1 | rank_num == min(rank_num)) %>%
       ### this drops instances where info for a spp given at spp level, and
       ###  other info downfilled from above that may conflict w/spp level info
-    ungroup()
+    ungroup() %>%
+    select(-rank_num)
   
   return(rank_df)
 }

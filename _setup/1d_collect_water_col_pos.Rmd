@@ -76,16 +76,21 @@ reef_terms <- c('reef') %>%
 mid_terms <- c('pelagic', 'mid', 'ocean') %>%
   paste0(collapse = '|')
 
-depth_vuln <- zone_vuln %>%
+depth_vuln_downfill <- zone_vuln %>%
   group_by(taxon, spp_gp) %>%
-  summarize(trait_value = paste0(trait_value, collapse = ';')) %>%
-  downfill() %>%
+  summarize(trait_value = paste0(trait_value, collapse = ';'), .groups = 'drop') %>%
+  downfill()
+
+depth_vuln_score <- depth_vuln_downfill %>%
+  rowwise() %>%
   mutate(pelagic = any(str_detect(trait_value, mid_terms)),
-            benthic = any(str_detect(trait_value, btm_terms)),
-            reef    = any(str_detect(trait_value, reef_terms)),
-            .groups = 'drop') %>%
-  mutate(reef = reef | taxon == 'sponges') %>%
-  select(taxon, species, benthic, pelagic, reef)
+         benthic = any(str_detect(trait_value, btm_terms)),
+         reef    = any(str_detect(trait_value, reef_terms)),
+         .groups = 'drop') %>%
+  ungroup() %>%
+  mutate(reef = ifelse(taxon == 'sponges', TRUE, reef)) %>%
+  select(taxon, species, benthic, pelagic, reef) %>%
+  distinct()
 ```
 
 
@@ -123,7 +128,7 @@ table(depth_fb %>% select(benthic, pelagic, reef))
 ## compare datasets
 
 ```{r}
-check <- depth_vuln %>%
+check <- depth_vuln_score %>%
   rename(v_ben = benthic, v_pel = pelagic, v_rf = reef) %>%
   inner_join(depth_fb, by = c('species')) %>%
   mutate(match = (v_ben == benthic) + (v_pel == pelagic) + (v_rf == reef))
@@ -145,7 +150,7 @@ Only two species have traits of both "pelagic" and "reef" - and these are both b
 Because many species from FishBase appear to have non-matched names from WoRMS (e.g., unaccepted synonyms), while many WoRMS species in the same genus are unscored, use genus-level gapfill to assign traits from unmatched species to WoRMS-matched species.  Identify genera with more than one scored spp; select those traits that appear in the majority of the genus.
 
 ```{r finalize results}
-depth_df <- depth_vuln %>%
+depth_df <- depth_vuln_score %>%
   filter(!species %in% depth_fb$species) %>%
   mutate(source = 'vuln_traits') %>%
   bind_rows(depth_fb %>%

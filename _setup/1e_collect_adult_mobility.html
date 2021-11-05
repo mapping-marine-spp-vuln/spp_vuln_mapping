@@ -9,7 +9,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
 
 
-<meta name="author" content="Compiled on Wed Nov 3 11:48:18 2021 by ohara" />
+<meta name="author" content="Compiled on Thu Nov 4 20:03:35 2021 by ohara" />
 
 
 <title>Collect adult mobility traits</title>
@@ -357,7 +357,7 @@ div.tocify {
 
 
 <h1 class="title toc-ignore">Collect adult mobility traits</h1>
-<h4 class="author"><em>Compiled on Wed Nov 3 11:48:18 2021 by ohara</em></h4>
+<h4 class="author"><em>Compiled on Thu Nov 4 20:03:35 2021 by ohara</em></h4>
 
 </div>
 
@@ -394,23 +394,33 @@ div.tocify {
 <span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>              <span class="st">&#39;mobile resident&#39;</span>          <span class="ot">=</span> <span class="st">&#39;mobile resident&#39;</span>,</span>
 <span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>              <span class="st">&#39;horizontal migrator&#39;</span>      <span class="ot">=</span> <span class="st">&#39;migratory/nomadic&#39;</span>,</span>
 <span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>              <span class="st">&#39;nomadic&#39;</span>                  <span class="ot">=</span> <span class="st">&#39;migratory/nomadic&#39;</span>)</span>
-<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>              </span>
-<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>mob_vuln <span class="ot">&lt;-</span> <span class="fu">get_vuln_traits</span>() <span class="sc">%&gt;%</span></span>
-<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(<span class="fu">str_detect</span>(trait, <span class="st">&#39;adult_mobility&#39;</span>)) <span class="sc">%&gt;%</span></span>
-<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">downfill</span>() <span class="sc">%&gt;%</span></span>
-<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">mob_cat =</span> mob_vals[trait_value],</span>
-<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a>         <span class="at">mob_cat =</span> <span class="fu">factor</span>(mob_cat, <span class="at">levels =</span> <span class="fu">unique</span>(mob_vals), <span class="at">ordered =</span> <span class="cn">TRUE</span>)) <span class="sc">%&gt;%</span></span>
-<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(<span class="sc">!</span><span class="fu">is.na</span>(mob_cat)) <span class="sc">%&gt;%</span></span>
-<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a>  <span class="fu">distinct</span>()</span></code></pre></div>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a><span class="do">### note: vertical migrator gets ignored here; we&#39;re looking at horizontal range</span></span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>              </span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>mob_vuln <span class="ot">&lt;-</span> <span class="fu">get_vuln_traits</span>() <span class="sc">%&gt;%</span></span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(<span class="fu">str_detect</span>(trait, <span class="st">&#39;adult_mobility&#39;</span>)) <span class="sc">%&gt;%</span></span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(taxon, spp_gp) <span class="sc">%&gt;%</span></span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarize</span>(<span class="at">trait_value =</span> <span class="fu">paste0</span>(trait_value, <span class="at">collapse =</span> <span class="st">&#39;;&#39;</span>)) <span class="sc">%&gt;%</span></span>
+<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ungroup</span>() </span>
+<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a>mob_vuln_downfill <span class="ot">&lt;-</span> mob_vuln <span class="sc">%&gt;%</span></span>
+<span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a>  <span class="fu">downfill</span>() </span>
+<span id="cb2-18"><a href="#cb2-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-19"><a href="#cb2-19" aria-hidden="true" tabindex="-1"></a>mob_vuln_expand <span class="ot">&lt;-</span> mob_vuln_downfill <span class="sc">%&gt;%</span></span>
+<span id="cb2-20"><a href="#cb2-20" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">trait_value =</span> <span class="fu">str_split</span>(trait_value, <span class="st">&#39;;&#39;</span>)) <span class="sc">%&gt;%</span></span>
+<span id="cb2-21"><a href="#cb2-21" aria-hidden="true" tabindex="-1"></a>  <span class="fu">unnest</span>(trait_value) <span class="sc">%&gt;%</span></span>
+<span id="cb2-22"><a href="#cb2-22" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">mob_cat =</span> mob_vals[trait_value],</span>
+<span id="cb2-23"><a href="#cb2-23" aria-hidden="true" tabindex="-1"></a>         <span class="at">mob_cat =</span> <span class="fu">factor</span>(mob_cat, <span class="at">levels =</span> <span class="fu">unique</span>(mob_vals), <span class="at">ordered =</span> <span class="cn">TRUE</span>)) <span class="sc">%&gt;%</span></span>
+<span id="cb2-24"><a href="#cb2-24" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(<span class="sc">!</span><span class="fu">is.na</span>(mob_cat)) <span class="sc">%&gt;%</span></span>
+<span id="cb2-25"><a href="#cb2-25" aria-hidden="true" tabindex="-1"></a>  <span class="fu">distinct</span>()</span></code></pre></div>
 <p>Can we upstream/downstream these values roughly, since they are an ordered factor?</p>
-<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>mob_vuln_gf <span class="ot">&lt;-</span> mob_vuln <span class="sc">%&gt;%</span></span>
+<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>mob_vuln_gf <span class="ot">&lt;-</span> mob_vuln_expand <span class="sc">%&gt;%</span></span>
 <span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">full_join</span>(<span class="fu">assemble_worms</span>()) <span class="sc">%&gt;%</span></span>
 <span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">mob_num =</span> <span class="fu">as.numeric</span>(mob_cat)) <span class="sc">%&gt;%</span></span>
 <span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">gapfill_up_down</span>(<span class="st">&#39;mob_num&#39;</span>) <span class="sc">%&gt;%</span></span>
 <span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">value =</span> <span class="fu">round</span>(value)) <span class="sc">%&gt;%</span> <span class="do">### round to nearest bin</span></span>
-<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">mob_cat =</span> <span class="fu">levels</span>(mob_vuln<span class="sc">$</span>mob_cat)[value],</span>
-<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>         <span class="at">value =</span> <span class="fu">factor</span>(mob_cat, <span class="at">levels =</span> <span class="fu">levels</span>(mob_vuln<span class="sc">$</span>mob_cat))) <span class="sc">%&gt;%</span></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">mob_cat =</span> <span class="fu">levels</span>(mob_vuln_expand<span class="sc">$</span>mob_cat)[value],</span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>         <span class="at">value   =</span> <span class="fu">factor</span>(mob_cat, <span class="at">levels =</span> <span class="fu">levels</span>(mob_vuln_expand<span class="sc">$</span>mob_cat))) <span class="sc">%&gt;%</span></span>
 <span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(<span class="sc">!</span><span class="fu">is.na</span>(value))</span></code></pre></div>
 <p>Write out the results. Note the summary table contains potential duplicates where one species falls into multiple bins.</p>
 <div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="fu">table</span>(mob_vuln_gf <span class="sc">%&gt;%</span> <span class="fu">select</span>(class, mob_cat)) <span class="sc">%&gt;%</span> knitr<span class="sc">::</span><span class="fu">kable</span>()</span></code></pre></div>
@@ -427,9 +437,9 @@ div.tocify {
 <tbody>
 <tr class="odd">
 <td align="left">actinopterygii</td>
-<td align="right">1668</td>
-<td align="right">14332</td>
-<td align="right">2558</td>
+<td align="right">2772</td>
+<td align="right">14237</td>
+<td align="right">3744</td>
 <td align="right">0</td>
 </tr>
 <tr class="even">
@@ -449,7 +459,7 @@ div.tocify {
 <tr class="even">
 <td align="left">aves</td>
 <td align="right">341</td>
-<td align="right">0</td>
+<td align="right">281</td>
 <td align="right">0</td>
 <td align="right">0</td>
 </tr>
@@ -490,8 +500,8 @@ div.tocify {
 </tr>
 <tr class="even">
 <td align="left">elasmobranchii</td>
-<td align="right">73</td>
-<td align="right">1182</td>
+<td align="right">94</td>
+<td align="right">1239</td>
 <td align="right">0</td>
 <td align="right">0</td>
 </tr>
@@ -505,20 +515,20 @@ div.tocify {
 <tr class="even">
 <td align="left">holothuroidea</td>
 <td align="right">0</td>
-<td align="right">1557</td>
-<td align="right">233</td>
+<td align="right">1684</td>
+<td align="right">882</td>
 <td align="right">0</td>
 </tr>
 <tr class="odd">
 <td align="left">malacostraca</td>
-<td align="right">1259</td>
-<td align="right">32245</td>
+<td align="right">33439</td>
+<td align="right">477</td>
 <td align="right">0</td>
 <td align="right">0</td>
 </tr>
 <tr class="even">
 <td align="left">mammalia</td>
-<td align="right">5</td>
+<td align="right">49</td>
 <td align="right">220</td>
 <td align="right">0</td>
 <td align="right">0</td>
@@ -547,7 +557,7 @@ div.tocify {
 <tr class="even">
 <td align="left">pycnogonida</td>
 <td align="right">272</td>
-<td align="right">1095</td>
+<td align="right">1366</td>
 <td align="right">0</td>
 <td align="right">0</td>
 </tr>
