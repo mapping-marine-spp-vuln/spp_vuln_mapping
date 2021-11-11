@@ -89,7 +89,7 @@ fecund_df <- read_csv(here('_data/traits_grouping/trait_reproduction.csv')) %>%
 
 ### Generation time
 
-Reproduction traits are only downfilled (from vulnerability traits), not gapfilled using taxa-level mean imputation.
+Reproduction traits here are directly from FishBase, not gapfilled using taxa-level mean imputation.
 
 ```{r gen time}
 
@@ -262,7 +262,7 @@ gen_time_v_df <- read_csv(here('_data/traits_grouping/trait_reproduction.csv')) 
                              value == '5-10yrs' ~ 7.5,
                              value == '10-20yrs' ~ 15,
                              value == '>20yrs' ~ 25,
-                             TRUE ~ -9999)) %>%
+                             TRUE ~ NA_real_)) %>%
   select(species, age_mat) %>%
   mutate(source = 'vuln') %>%
   distinct()
@@ -395,8 +395,7 @@ mob_levels  <- c('ses', 'sed', 'mob', 'mig')
 traits_premice_all <- traits3_all %>%
   inner_join(worms_spp, by = 'species') %>%
   mutate(log_l = log(length), log_f = log(fecund)) %>%
-  select(species, phylum, order, family, 
-         log_l, log_f, troph, age_mat, wcol, adult_mob) %>%
+  select(species, log_l, log_f, troph, age_mat, wcol, adult_mob) %>%
   mutate(wcol      = factor(wcol, levels = wcol_levels, ordered = FALSE),
          adult_mob = str_extract(adult_mob, '^...'),
          adult_mob = factor(adult_mob, levels = mob_levels, ordered = TRUE))

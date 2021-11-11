@@ -405,7 +405,8 @@ assemble_worms <- function(aspect = 'wide', seabirds_only = TRUE, am_patch = TRU
                             'expand1_phylum_from_kingdom_worms.csv')) %>%
     filter(!is.na(id)) %>%
     select(-id) %>%
-    distinct()
+    distinct() %>%
+    mutate
   c_from_p <- data.table::fread(here('_data/worms_taxa', 
                             'expand2_class_from_phylum_worms.csv')) %>%
     filter(!is.na(id)) %>%
@@ -562,7 +563,7 @@ resolve_am_disputes <- function(spp_wide) {
     mutate(class = case_when(order == 'sacoglossa' ~ 'gastropoda',
                              TRUE ~ class)) %>%
     mutate(phylum = case_when(class == 'gastropoda' ~ 'mollusca',
-                             TRUE ~ class)) %>%
+                             TRUE ~ phylum)) %>%
     distinct()
   
   dupes_g_force_nonworms <- spp_wide %>%
