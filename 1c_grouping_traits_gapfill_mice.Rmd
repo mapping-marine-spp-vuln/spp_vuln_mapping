@@ -1,0 +1,714 @@
+---
+title: "Assemble grouping traits and gapfill using MICE"
+author: "*Compiled on `r date()` by `r Sys.info()['user']`*"
+output: 
+  html_document:
+    code_folding: hide
+    toc: true
+    toc_depth: 3
+    toc_float: yes
+    number_sections: true
+    theme: cerulean
+    highlight: haddock
+    includes: 
+      in_header: '~/github/src/templates/ohara_hdr.html'
+  pdf_document:
+    toc: true
+---
+
+``` {r setup, echo = TRUE, message = FALSE, warning = FALSE}
+
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
+
+library(oharac)
+oharac::setup()
+source(here('common_fxns.R'))
+library(mice)
+
+
+```
+
+# Summary
+
+Read in processed grouping traits, then perform MICE separately on various taxonomic groupings.
+
+* Phyla for inclusion:
+    * annelida
+    * arthropoda
+    * chordata (broken down into classes)
+    * cnidaria
+    * echinodermata
+    * mollusca
+        * further subdivided to class based on those orders that show up in AquaMaps (including family Conidae in IUCN data)
+    * porifera 
+* Classes from phylum Chordata:
+    * actinopterygii (grouped with coelacanthi, as bony fishes)
+        * while there are many many many of these, perhaps include order or family as an additional gapfilling variable, rather than further subdividing the class.
+    * elasmobranchii (grouped with holocephali, as cartilaginous fishes)
+    * mammalia
+    * aves (only 13 in the intersection of traits + AquaMaps, but 341 in traits, so MICE should work; others may be in IUCN data as well)
+    * reptilia
+    * myxini (grouped with petromyzonti, as jawless fishes)
+    * the rest are mostly tunicates or tunicate-adjacent, and won't have vulnerability trait data anyway.
+
+# Data
+
+See individual trait scripts.
+
+# Methods
+
+## set up dataset for imputation
+
+Read in the processed grouping traits data; bind WoRMS classifications; then filter to just the included taxonomic groups.
+
+```{r}
+wcol_levels <- c('rf', 'pel', 'ben', 'bp') ### not ordered
+mob_levels  <- c('ses', 'sed', 'mob', 'mig') ### in order from least to most mobile
+
+worms_spp <- assemble_worms()
+
+### file created in script 1b:
+keep_df <- read_csv(here('int/mice_grouping_taxa_to_keep.csv'))
+
+vert_keep_df <- keep_df %>%
+  filter(phylum == 'chordata') %>%
+  select(class, gp) %>%
+  distinct()
+vert_keep <- vert_keep_df$gp %>% setNames(vert_keep_df$class)
+
+traits_premice_all <- read_csv(here_anx('mice/gp_traits_mice_preimputation.csv')) %>%
+  mutate(wcol      = factor(wcol,      levels = wcol_levels, ordered = FALSE),
+         adult_mob = factor(adult_mob, levels = mob_levels,  ordered = TRUE)) %>%
+  inner_join(worms_spp, by = 'species') %>%
+  mutate(gp = case_when(phylum == 'chordata' ~ vert_keep[class],
+                        phylum == 'mollusca' & order %in% keep_df$order ~ class,
+                        !phylum %in% c('chordata', 'mollusca') & phylum %in% keep_df$phylum ~ phylum)) %>%
+  filter(!is.na(gp))
+
+### 124,462 across all spp; 122,906 for kept taxa
+```
+
+## Process gapfilling
+
+For all groups, include all traits, as well as order and family as additional predictors.  With family, imputation is much slower, but with order only, RMSE differences seem high (quick analysis looking at some invertebrates):
+
+| gp            | log_l_mean | log_f_mean | troph_mean | age_mat_mean |
+|:--------------|:----------:|:----------:|:----------:|:------------:|
+| annelida      |     0.720  |    0.772   |   0.244    |     0.108    |
+| arthropoda    |     1.17   |    2.87    |   0.279    |     0.914    |
+| cnidaria      |     0.572  |    NaN     |   0.256    |     1.58     |
+| echinodermata |     0.852  |    0.788   |   0.482    |     0.149    |
+
+
+```{r}
+keep_ranks <- c('order', 'family')
+
+invert_traits <- traits_premice_all %>%
+  filter(!phylum %in% c('chordata', 'mollusca')) %>%
+  select(log_l, log_f, troph, age_mat, wcol, adult_mob,
+         all_of(keep_ranks), species, gp) %>%
+  mutate(order   = factor(order, ordered = FALSE),
+         family  = factor(family, ordered = FALSE),
+         species = factor(species, ordered = FALSE)) %>%
+  distinct()
+```
+
+
+### Set up predictor matrix and method vector
+
+Create a blank run (no iterations) to generate a prediction matrix and a methods vector, then update these as needed.
+
+``` {r}
+
+blank_run <- mice(invert_traits %>% select(-gp), maxit = 0)
+
+### set up predictor matrix
+pred_mtx <- blank_run$pred
+
+pred_mtx[ , 'species'] <- 0
+  ### species column is all zeros - ignored for imputation
+
+pred_mtx[c('species'), ] <- 0
+pred_mtx[keep_ranks, ] <- 0
+  ### don't impute values for these... (should not be an issue since no NAs)
+```
+
+#### Predictor matrix
+
+Row names are variables to be imputed; column names are variables used to impute.  An all-zero column indicates: _do not use this variable to impute_; an all-zero row indicates: _do not impute this variable._
+
+```{r}
+pred_mtx
+```
+
+#### Method vector
+
+Values of `""` indicate no method to impute (complete variable, no imputation needed).  From `?mice`:
+
+> By default, the method uses `pmm`, predictive mean matching (numeric data); `logreg`, logistic regression imputation (binary data, factor with 2 levels); `polyreg`, polytomous regression imputation for unordered categorical data (factor > 2 levels); `polr`, proportional odds model for (ordered, > 2 levels).
+
+```{r}
+method_vec <- blank_run$meth
+method_vec
+```
+
+### iterate over invertebrate phyla to perform imputation
+
+Note that `mice` fails on molluscs at the phylum level - presumably too many orders/families.  Identify classes of molluscs in AquaMaps, limit to just those (including family Conidae, from IUCN) and run those separately.
+
+From Stack Overflow: 
+> This functions adds a star to variable names in the `mice` iteration history to signal that a ridge penalty was added. In that case, it also adds an entry to loggedEvents.  
+This happens when it was unable to invert the QR or SVD decomposition of the covariate matrix.  
+So, I think what's happening is that when you include this nominal variable as a predictor for some of those pmm variables the resulting predictor matrix for that variable is either collinear or nearly collinear. `mice` will drop any variables that are exactly collinear, but if they aren't quite collinear it might still lead to a matrix that is nearly linearly dependent and can't be inverted. In that case `mice` adds a small term to the diagonal elements which allows an inverse to be taken and the computation to continue.
+
+
+``` {r, results = 'asis'}
+
+for(p in unique(invert_traits$gp)) {
+  ### p <- unique(invert_traits$gp)[1]
+  message('Processing phylum ', p, '...')
+  
+  ### set up file for imputed traits (all small enough for Git?)
+  post_impute_f <- sprintf(here('_data/mice_out/gp_traits_%s_mice.csv'), p)
+  ### .Rdata path for saving the imputation `mids` object
+  impute_object_f <- sprintf(here_anx('mice/gp_traits_%s_mice_results.RData'), p)
+  
+  if(!file.exists(post_impute_f)) {
+    ### unlink(post_impute_f)
+    
+    ### filter to just this phylum and drop the group column
+    p_traits <- invert_traits %>%
+      filter(gp == p) %>%
+      select(-gp)
+    
+    ### impute!
+    ptm <- proc.time()
+    imp <- mice(p_traits,
+                m = 5, maxit = 10, 
+                method = method_vec, 
+                predictorMatrix = pred_mtx,
+                seed = 42)
+    message('Phylum ', p, ' took ', (proc.time() - ptm)[3], ' seconds to process')
+
+    ### complete the trait set and write out the traits post-imputation. For
+    ### file size, convert wcol and adult_mob to integers instead of character
+    traits_complete <- complete(imp, 'long') %>%
+      select(-all_of(keep_ranks)) %>% ### can reattach higher ranks easily
+      mutate(log_l   = round(log_l, 5),
+             log_f   = round(log_f, 5),
+             age_mat = round(age_mat, 5))
+    ### from above:
+    ### wcol_levels <- c('rf',  'pel', 'ben', 'bp')
+    ### mob_levels  <- c('ses', 'sed', 'mob', 'mig')
+  
+    write_csv(traits_complete, post_impute_f)
+    ### write out results to .RData?
+    save(imp, file = impute_object_f)
+    
+  } ### end analysis for imputation
+  
+  ### plot results for inspection
+  load(impute_object_f) ### stored as imp
+  
+  cat('\n\n####', p, '\n\n') ### put in a header line
+  
+  # print(summary(imp))
+  
+  print(plot(imp)) ### do troph, log_f, and age_mat have convergence issues?
+  
+  # print(densityplot(imp)) ### doesn't show categoricals?
+
+}
+```
+
+```{r compare outputs with and without family as predictor, eval = FALSE, include = FALSE}
+gps <- c('annelida', 'arthropoda', 'cnidaria', 'echinodermata')
+fs <- list.files(here('_data/mice_out'), pattern = paste0(gps, collapse = '|'), full.names = TRUE)
+df <- lapply(fs, read.csv) %>% 
+  setNames(basename(fs)) %>%
+  bind_rows(.id = 'f') %>%
+  mutate(gp = str_extract(f, paste0(gps, collapse = '|')),
+         type = case_when(str_detect(f, '_o_f.csv') ~ 'order_fam',
+                          TRUE ~ 'order')) 
+
+df_sum <- df %>%
+  select(-.id, -.imp, -wcol, -adult_mob) %>%
+  group_by(species, type, gp, f) %>%
+  summarize(across(where(is.numeric), .fns = list(mean = mean, sd = sd), na.rm = TRUE))
+
+df_sum_rmse <- df_sum %>%
+  select(-ends_with('sd')) %>%
+  group_by(species, gp) %>%
+  summarize(across(where(is.numeric), .fns = ~(first(.x) - last(.x)))) %>%
+  group_by(gp) %>%
+  summarize(across(where(is.numeric), .fns = ~(sqrt(sum(.x^2)/n()))))
+
+```
+
+### Iterate over mollusc classes
+
+Earlier, iterating over molluscs was problematic, so splitting into classes here.  Will also try running all molluscs, just to see if filtering down the mollusc orders helped avoid the problem from before.
+
+```{r}
+mollusc_traits <- traits_premice_all %>%
+  filter(phylum == 'mollusca') %>%
+  select(log_l, log_f, troph, age_mat, wcol, adult_mob,
+         all_of(keep_ranks), species, gp) %>%
+  mutate(order   = factor(order, ordered = FALSE),
+         family  = factor(family, ordered = FALSE),
+         species = factor(species, ordered = FALSE)) %>%
+  distinct()
+```
+
+``` {r molluscs by class, results = 'asis'}
+
+for(cls in unique(mollusc_traits$gp)) {
+  ### cls <- unique(mollusc_traits$gp)[1]
+  message('Processing class ', cls, '...')
+  
+  ### set up file for imputed traits (all small enough for Git?)
+  post_impute_f <- sprintf(here('_data/mice_out/gp_traits_mollusca_%s_mice.csv'), cls)
+  ### .Rdata path for saving the imputation `mids` object
+  impute_object_f <- sprintf(here_anx('mice/gp_traits_mollusca_%s_mice_results.RData'), cls)
+  
+  if(!file.exists(post_impute_f)) {
+    ### unlink(post_impute_f)
+    
+    ### filter to just this phylum and drop the group column
+    cls_traits <- mollusc_traits %>%
+      filter(gp == cls) %>%
+      select(-gp)
+    
+    ### impute!
+    ptm <- proc.time()
+    imp <- mice(cls_traits,
+                m = 5, maxit = 10, 
+                method = method_vec, 
+                predictorMatrix = pred_mtx,
+                seed = 42)
+    message('Mollusca class ', cls, ' took ', (proc.time() - ptm)[3], ' seconds to process')
+
+    ### complete the trait set and write out the traits post-imputation. For
+    ### file size, convert wcol and adult_mob to integers instead of character
+    traits_complete <- complete(imp, 'long') %>%
+      select(-all_of(keep_ranks)) %>% ### can reattach higher ranks easily
+      mutate(log_l   = round(log_l, 5),
+             log_f   = round(log_f, 5),
+             age_mat = round(age_mat, 5))
+    ### from above:
+    ### wcol_levels <- c('rf',  'pel', 'ben', 'bp')
+    ### mob_levels  <- c('ses', 'sed', 'mob', 'mig')
+  
+    write_csv(traits_complete, post_impute_f)
+    ### write out results to .RData?
+    save(imp, file = impute_object_f)
+    
+  } ### end analysis for imputation
+  
+  ### plot results for inspection
+  load(impute_object_f) ### stored as imp
+  
+  cat('\n\n#### Mollusca: ', cls, '\n\n') ### put in a header line
+  
+  # print(summary(imp))
+  
+  print(plot(imp)) ### do troph, log_f, and age_mat have convergence issues?
+  
+  # print(densityplot(imp)) ### doesn't show categoricals?
+
+}
+```
+
+``` {r molluscs all, results = 'asis'}
+message('Processing phylum mollusca as a whole... ')
+
+### set up file for imputed traits (all small enough for Git?)
+post_impute_f <- sprintf(here('_data/mice_out/gp_traits_mollusca_combined_mice.csv'), cls)
+### .Rdata path for saving the imputation `mids` object
+impute_object_f <- sprintf(here_anx('mice/gp_traits_mollusca_combined_mice_results.RData'), cls)
+
+if(!file.exists(post_impute_f)) {
+  ### unlink(post_impute_f)
+  
+  ### filter to just this phylum and drop the group column
+  p_traits <- mollusc_traits %>%
+    select(-gp)
+  
+  ### impute!
+  ptm <- proc.time()
+  imp <- mice(p_traits,
+              m = 5, maxit = 10, 
+              method = method_vec, 
+              predictorMatrix = pred_mtx,
+              seed = 42)
+  message('Mollusca combined took ', (proc.time() - ptm)[3], ' seconds to process')
+
+  ### complete the trait set and write out the traits post-imputation. For
+  ### file size, convert wcol and adult_mob to integers instead of character
+  traits_complete <- complete(imp, 'long') %>%
+    select(-all_of(keep_ranks)) %>% ### can reattach higher ranks easily
+    mutate(log_l   = round(log_l, 5),
+           log_f   = round(log_f, 5),
+           age_mat = round(age_mat, 5))
+  ### from above:
+  ### wcol_levels <- c('rf',  'pel', 'ben', 'bp')
+  ### mob_levels  <- c('ses', 'sed', 'mob', 'mig')
+
+  write_csv(traits_complete, post_impute_f)
+  ### write out results to .RData?
+  save(imp, file = impute_object_f)
+  
+} ### end analysis for imputation
+
+### plot results for inspection
+load(impute_object_f) ### stored as imp
+
+cat('\n\n#### Mollusca combined\n\n') ### put in a header line
+
+# print(summary(imp))
+
+print(plot(imp)) ### do troph, log_f, and age_mat have convergence issues?
+
+# print(densityplot(imp)) ### doesn't show categoricals?
+```
+
+
+### Iterate over chordata classes
+
+```{r}
+chordata_traits <- traits_premice_all %>%
+  filter(phylum == 'chordata') %>%
+  select(log_l, log_f, troph, age_mat, wcol, adult_mob,
+         all_of(keep_ranks), species, gp) %>%
+  mutate(order   = factor(order, ordered = FALSE),
+         family  = factor(family, ordered = FALSE),
+         species = factor(species, ordered = FALSE)) %>%
+  distinct()
+```
+
+``` {r, results = 'asis'}
+chordates <- unique(chordata_traits$gp)
+for(cls in chordates) {
+  ### cls <- chordates[1]
+  message('Processing chordata class ', cls, '...')
+  
+  ### set up file for imputed traits (all small enough for Git?)
+  post_impute_f <- sprintf(here('_data/mice_out/gp_traits_chordata_%s_mice.csv'), cls)
+  ### .Rdata path for saving the imputation `mids` object
+  impute_object_f <- sprintf(here_anx('mice/gp_traits_chordata_%s_mice_results.RData'), cls)
+  
+  if(!file.exists(post_impute_f)) {
+    ### unlink(post_impute_f)
+    
+    ### filter to just this phylum and drop the group column
+    cls_traits <- chordata_traits %>%
+      filter(gp == cls) %>%
+      select(-gp) %>%
+      distinct()
+    
+    if(cls == 'aves') {
+      ### this one row is causing an error for some reason... 
+      ### Error in apply(draws, 2, sum) : dim(X) must have a positive length
+      ### it's the only observation of a Brown Noddy, which is not in AquaMaps
+      cls_traits <- cls_traits %>%
+        filter(species != 'anous stolidus')
+    }
+    
+    ### impute!
+    ptm <- proc.time()
+    imp <- mice(cls_traits,
+                m = 5, maxit = 10, 
+                method = method_vec, 
+                predictorMatrix = pred_mtx,
+                seed = 42)
+    message('Chordata class ', cls, ' took ', (proc.time() - ptm)[3], ' seconds to process')
+
+    ### complete the trait set and write out the traits post-imputation. For
+    ### file size, convert wcol and adult_mob to integers instead of character
+    traits_complete <- complete(imp, 'long') %>%
+      select(-all_of(keep_ranks)) %>% ### can reattach higher ranks easily
+      mutate(log_l   = round(log_l, 5),
+             log_f   = round(log_f, 5),
+             age_mat = round(age_mat, 5))
+    ### from above:
+    ### wcol_levels <- c('rf',  'pel', 'ben', 'bp')
+    ### mob_levels  <- c('ses', 'sed', 'mob', 'mig')
+  
+    write_csv(traits_complete, post_impute_f)
+    ### write out results to .RData?
+    save(imp, file = impute_object_f)
+    
+  } ### end analysis for imputation
+  
+  ### plot results for inspection
+  load(impute_object_f) ### stored as imp
+  
+  cat('\n\n#### Mollusca: ', cls, '\n\n') ### put in a header line
+  
+  # print(summary(imp))
+  
+  print(plot(imp)) ### do troph, log_f, and age_mat have convergence issues?
+  
+  # print(densityplot(imp)) ### doesn't show categoricals?
+
+}
+```
+
+
+## Ensemble averaging
+
+Take mean for each species across all imputation models.  For categorical variables, examine the mode.  Note in many cases, multiple observations of a variable for a particular species resulted in multiple imputations (e.g., _Gadus morhua_) - these are averaged across all observations.
+
+```{r ensemble averaging, eval = FALSE}
+traits_complete <- read_csv(post_impute_f) %>%
+  mutate(wcol = factor(wcol, levels = wcol_levels),
+         adult_mob = factor(adult_mob, levels = mob_levels, ordered = TRUE))
+
+traits_cat_ensemble <- traits_complete %>%
+  group_by(species, adult_mob) %>%
+  mutate(n_mob = n()) %>%
+  group_by(species, wcol) %>%
+  mutate(n_wcol = n()) %>%
+  group_by(species) %>%
+  summarize(n_vals = n(),
+            mob_mean = mean(as.numeric(adult_mob)),
+            wcol_mean = mean(as.numeric(wcol)),
+            mob_sd = sd(as.numeric(adult_mob)),
+            wcol_sd = sd(as.numeric(wcol)),
+            mode_mob = first(adult_mob[n_mob == max(n_mob)]),
+            pct_mob = max(n_mob) / n_vals,
+            mode_wcol = first(wcol[n_wcol == max(n_wcol)]),
+            pct_wcol = max(n_wcol) / n_vals)
+
+traits_num_ensemble <- traits_complete %>%
+  group_by(species) %>%
+  summarize(across(c(log_l, log_f, age_mat, troph), .fns = list(mean = mean, sd = sd)),
+            n_vals = n())
+  
+traits_ensemble <- traits_cat_ensemble %>%
+  select(species, mode_mob, mode_wcol, mob_mean, mob_sd, wcol_mean, wcol_sd) %>%
+  full_join(traits_num_ensemble, by = 'species')
+```
+
+
+
+## Performing MICE to fill gaps - chunked by class
+
+With an improved dataset, we can use MICE to impute missing values.
+
+* MICE on datasets only from FishBase, vs MICE on datasets enhanced with values from Vuln trait bins
+* Continuous variables: log(length), log(fecundity), age to maturity, trophic level
+* Categorical variables: water column position; also order, family (based on Boyce et al. 2021)
+
+Here, chunk out the dataset by order, or if fewer than 30 obs, by class then phylum.  Keeping categorical variables for taxonomic ranks can perhaps affect outcomes as a fixed effect, but what if the relationship among variables is fundamentally different between, say, echinoderms and mammals?
+
+This may also have the effect of speeding processing time since smaller subsets are being analyzed, which may be helpful for eventual cross validation testing.
+
+For classes where few observations exist, aggregate up to phylum level?
+
+    
+### set up dataset for imputation
+
+```{r, eval = FALSE}
+wcol_levels <- c('rf', 'pel', 'ben', 'bp')
+mob_levels  <- c('ses', 'sed', 'mob', 'mig')
+
+traits_premice_cls <- traits2_all %>%
+  mutate(log_l = log(length), log_f = log(fecund)) %>%
+  select(species, phylum, class, order, family, 
+         log_l, log_f, troph, age_mat, wcol, adult_mob) %>%
+  filter(rowSums(is.na(.)) <= 4) %>%
+    ### dropping 6-NA rows, we're left with 103k obs of 80730 spp...
+    ### but 40k of those obs are water col position only...
+    ### dropping 5- and 6-NA rows, we're left with 61k obs of 38900 spp...
+  mutate(wcol      = factor(wcol, levels = wcol_levels, ordered = FALSE),
+         adult_mob = str_extract(adult_mob, '^...'),
+         adult_mob = factor(adult_mob, levels = mob_levels, ordered = TRUE)) %>%
+  mutate(phylum = factor(phylum, ordered = FALSE),
+         class  = factor(class, ordered = FALSE),
+         order  = factor(order, ordered = FALSE),
+         family = factor(family, ordered = FALSE))
+
+am_spp <- get_am_spp_info()
+# n_samples <- 1000
+# set.seed(42)
+### taxonomic ranks to keep
+keep_ranks <- c('order', 'family')
+
+traits_premice <- traits_premice_cls %>%
+  # filter(species %in% am_spp$sciname) %>%
+  # sample_n(n_samples) %>%
+  select(species, phylum, class, all_of(keep_ranks),  
+         log_l, log_f, troph, age_mat, wcol, adult_mob)
+
+traits_premice_chunk_order <- traits_premice %>%
+  group_by(order) %>%
+  filter(n_distinct(species) >= 30) %>%
+  mutate(chunk = 'order',
+         chunk_name = order,
+         n_chunk = n_distinct(species)) %>%
+  ungroup()
+traits_premice_chunk_class <- traits_premice %>%
+  group_by(class) %>%
+  filter(!species %in% traits_premice_chunk_order$species) %>%
+  filter(n_distinct(species) >= 30) %>%
+  mutate(chunk = 'class',
+         chunk_name = class,
+         n_chunk = n_distinct(species)) %>%
+  ungroup()
+traits_premice_chunk_phylum <- traits_premice %>%
+  group_by(phylum) %>%
+  filter(!species %in% traits_premice_chunk_order$species) %>%
+  filter(!species %in% traits_premice_chunk_class$species) %>%
+  mutate(chunk = 'phylum',
+         chunk_name = phylum,
+         n_chunk = n_distinct(species)) %>%
+  ungroup()
+
+traits_premice_chunk <- bind_rows(traits_premice_chunk_order, 
+                                  traits_premice_chunk_class, 
+                                  traits_premice_chunk_phylum)
+
+n_chunks <- n_distinct(traits_premice_chunk$chunk_name)
+### 177 different chunks of highly variable size
+
+```
+
+### Set up predictor matrix and method vector
+
+Create a blank run (no iterations) to generate a prediction matrix and a methods vector, then update these for imputation by order, class, and phylum chunks...
+
+* Order chunks: impute by variables and family
+* Class chunks: impute by variables and family, order
+* Phylum chunks: impute by variables and family, order, class
+
+``` {r, eval = FALSE}
+traits_blank <- traits_premice_chunk %>%
+  select(-contains('chunk'), -phylum)
+blank_run <- mice(traits_blank, maxit = 0)
+
+### set up predictor matrix
+pred_mtx_phy <- blank_run$pred
+
+pred_mtx_phy[ , 'species'] <- 0
+  ### species column is all zeros - ignored for imputation
+
+pred_mtx_phy[c('species'), ] <- 0
+pred_mtx_phy[c('class', 'order', 'family'), ] <- 0
+  ### don't impute values for these... (should not be an issue since no NAs)
+pred_mtx_cls <- pred_mtx_phy[-which(rownames(pred_mtx_phy) == 'class'), ]
+pred_mtx_cls <- pred_mtx_cls[, -which(colnames(pred_mtx_cls) == 'class')]
+
+pred_mtx_ord <- pred_mtx_cls[-which(rownames(pred_mtx_cls) == 'order'), ]
+pred_mtx_ord <- pred_mtx_ord[, -which(colnames(pred_mtx_ord) == 'order')]
+
+meth_vec_phy <- blank_run$meth
+meth_vec_phy[c('class', 'order', 'family')] <- 'polyreg'
+#   ### set method for non-ordered categoricals
+meth_vec_cls <- meth_vec_phy[-which(names(meth_vec_phy) == 'class')]
+meth_vec_ord <- meth_vec_cls[-which(names(meth_vec_cls) == 'order')]
+```
+
+### perform the imputation!
+
+``` {r, eval = FALSE}
+### write out traits pre-imputation for reference
+write_csv(traits_premice,  here_anx('mice/gp_traits_mice_preimputation.csv'))
+
+### set up file for imputed traits
+post_impute_f <- here_anx('mice/gp_traits_mice.csv')
+
+### .Rdata path for saving the imputation `mids` object
+impute_object_f <- here_anx('mice/gp_traits_mice_results.RData')
+
+if(!file.exists(post_impute_f)) {
+  ### unlink(post_impute_f)
+  system.time({
+    imp <- mice(traits_premice,
+                m = 5, maxit = 10, 
+                method = meth_vec, 
+                predictorMatrix = pred_mtx,
+                seed = 42)
+  })
+  
+  ### complete the trait set and write out the traits post-imputation. For
+  ### file size, convert wcol and adult_mob to integers instead of character
+  traits_complete <- complete(imp, 'long') %>%
+    select(-all_of(keep_ranks)) %>% ### can reattach higher ranks easily
+    mutate(log_l = round(log_l, 5),
+           log_f = round(log_f, 5),
+           age_mat = round(age_mat, 5))
+  ### from above:
+  ### wcol_levels <- c('rf',  'pel', 'ben', 'bp')
+  ### mob_levels  <- c('ses', 'sed', 'mob', 'mig')
+
+  write_csv(traits_complete, post_impute_f)
+  ### write out results to .RData
+  save(imp, file = impute_object_f)
+}
+```
+
+``` {r examine mice results, eval = FALSE}
+load(impute_object_f) ### stored as 'imp'
+summary(imp)
+
+plot(imp) ### do troph, log_f, and age_mat have convergence issues?
+
+densityplot(imp) ### doesn't show categoricals?
+```
+
+```{r plot hists of categoricals2, eval = FALSE}
+traits_complete <- read_csv(post_impute_f) %>%
+  mutate(wcol = factor(wcol, levels = wcol_levels),
+         adult_mob = factor(adult_mob, levels = mob_levels, ordered = TRUE))
+
+ggplot(traits_complete, aes(x = wcol)) +
+  geom_histogram(stat = 'count') +
+  labs(title = 'water col pos post-imputation')
+ggplot(traits_premice %>% filter(!is.na(wcol)), aes(x = wcol)) +
+  geom_histogram(stat = 'count') +
+  labs(title = 'water col pos pre-imputation')
+
+ggplot(traits_complete, aes(x = adult_mob)) +
+  geom_histogram(stat = 'count') +
+  labs(title = 'adult mobility post-imputation')
+ggplot(traits_premice %>% filter(!is.na(adult_mob)), aes(x = adult_mob)) +
+  geom_histogram(stat = 'count') +
+  labs(title = 'adult mobility pre-imputation')
+```
+
+## Ensemble averaging
+
+Take mean for each species across all imputation models.  For categorical variables, examine the mode.  Note in many cases, multiple observations of a variable for a particular species resulted in multiple imputations (e.g., _Gadus morhua_) - these are averaged across all observations.
+
+```{r ensemble averaging2, eval = FALSE}
+traits_complete <- read_csv(post_impute_f) %>%
+  mutate(wcol = factor(wcol, levels = wcol_levels),
+         adult_mob = factor(adult_mob, levels = mob_levels, ordered = TRUE))
+
+traits_cat_ensemble <- traits_complete %>%
+  group_by(species, adult_mob) %>%
+  mutate(n_mob = n()) %>%
+  group_by(species, wcol) %>%
+  mutate(n_wcol = n()) %>%
+  group_by(species) %>%
+  summarize(n_vals = n(),
+            mob_mean = mean(as.numeric(adult_mob)),
+            wcol_mean = mean(as.numeric(wcol)),
+            mob_sd = sd(as.numeric(adult_mob)),
+            wcol_sd = sd(as.numeric(wcol)),
+            mode_mob = first(adult_mob[n_mob == max(n_mob)]),
+            pct_mob = max(n_mob) / n_vals,
+            mode_wcol = first(wcol[n_wcol == max(n_wcol)]),
+            pct_wcol = max(n_wcol) / n_vals)
+
+traits_num_ensemble <- traits_complete %>%
+  group_by(species) %>%
+  summarize(across(c(log_l, log_f, age_mat, troph), .fns = list(mean = mean, sd = sd)),
+            n_vals = n())
+  
+traits_ensemble <- traits_cat_ensemble %>%
+  select(species, mode_mob, mode_wcol, mob_mean, mob_sd, wcol_mean, wcol_sd) %>%
+  full_join(traits_num_ensemble, by = 'species')
+```
+

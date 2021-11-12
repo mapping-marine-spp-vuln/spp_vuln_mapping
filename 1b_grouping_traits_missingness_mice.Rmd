@@ -1,5 +1,5 @@
 ---
-title: "Assemble grouping traits and gapfill using MICE"
+title: "Examine missingness of grouping traits for MICE"
 author: "*Compiled on `r date()` by `r Sys.info()['user']`*"
 output: 
   html_document:
@@ -30,7 +30,7 @@ library(mice)
 
 # Summary
 
-Gather processed traits data, dropping prior gapfills and keeping only data from FishBase/SeaLifeBase (vulnerability traits will be analyzed separately). Assemble into a dataframe.  Identify missing rate, then apply Multiple Imputation by Chained Equations (MICE) approach.
+Read in processed traits data as a dataframe.  Identify missingness, overall and by taxonomic grouping, to identify challenges in using MICE for imputation of missing values.
 
 # Data
 
@@ -149,13 +149,32 @@ worms_am_premice %>%
   .$class %>% table()
 ```
 
+#### Worms/AquaMaps/traits species counts: by class for Mollusca
+
+Because only ~half the molluscs with grouping traits are represented in AquaMaps (and only conidae in IUCN), drop any orders with fewer than five species in AquaMaps.  This should reduce the computational load.
+
+``` {r}
+n_molluscs_all <- worms_premice %>%
+  filter(phylum == 'mollusca') ### 10232 mollusc spp represented
+
+worms_am_premice %>% 
+  filter(phylum == 'mollusca') %>% ### 4907 represented in AquaMaps; only conus in IUCN
+  select(class, order, species) %>%
+  group_by(class, order) %>%
+  summarize(n_spp = n_distinct(species)) %>%
+  arrange(desc(n_spp))
+```
+
 ## Examining missingness by taxonomic group
 
 Consider: 
 
 * Dropping phyla whose traits data and AquaMaps intersection results in fewer than 75 species.  
     * Most of these are planktonic invertebrates that will not be present in the vulnerability traits data anyway.
-    * Of the remaining, perhaps include class or order or family as additional gapfilling variables, rather than further subdividing the phylum.
+    * Of the remaining, include class or order or family as additional gapfilling variables, rather than further subdividing the phylum.
+    * For Molluscs, which fail in `mice` due to too many possible categorical values at phylum level:
+        * Identify and filter the full trait set to just those orders comprising at least five species.
+  
 * Breaking phylum Chordata down and keeping classes:
     * actinopterygii (group with coelacanthi)
         * while there are many many many of these, perhaps include order or family as an additional gapfilling variable, rather than further subdividing the class.
@@ -182,11 +201,33 @@ vert_keep   <- c(actinopterygii = 'actinopterygii',
                  myxini         = 'myxini',
                  petromyzonti   = 'myxini')
 invert_keep <- worms_am_premice %>%
-  filter(phylum != 'chordata') %>%
+  filter(phylum != 'chordata' & phylum != 'mollusca') %>%
   group_by(phylum) %>%
   summarize(n_spp = n_distinct(species)) %>%
   filter(n_spp >= 75) %>%
   pull(phylum)
+
+mollusc_keep <- worms_am_premice %>%
+  filter(phylum == 'mollusca') %>%
+  group_by(class, order) %>%
+  summarize(n_spp = n_distinct(species),
+            n_fam = n_distinct(family)) %>%
+  filter(n_spp > 10) %>%
+  pull(order)
+
+keep_df <- am_spp %>%
+  mutate(keep = case_when(class %in% names(vert_keep) ~ TRUE,
+                          phylum %in% invert_keep ~ TRUE,
+                          phylum == 'mollusca' & order %in% mollusc_keep ~ TRUE,
+                          TRUE ~ FALSE)) %>%
+  filter(keep) %>%
+  select(phylum, class, order) %>%
+  distinct() %>%
+  mutate(gp = case_when(phylum == 'chordata' ~ vert_keep[class],
+                        phylum == 'mollusca' ~ order,
+                        TRUE ~ phylum))
+
+write_csv(keep_df, here('int/mice_grouping_taxa_to_keep.csv'))
 ```
 
 #### Worms/traits species counts: by phylum, after dropping small phyla
@@ -194,8 +235,10 @@ invert_keep <- worms_am_premice %>%
 ``` {r}
 
 premice_keep <- worms_premice %>%
-  mutate(gp = ifelse(phylum == 'chordata', vert_keep[class], phylum)) %>%
-  filter(gp %in% c(vert_keep, invert_keep))
+  mutate(gp = case_when(phylum == 'chordata' ~ vert_keep[class], 
+                        phylum == 'mollusca' ~ order,
+                        TRUE ~ phylum)) %>%
+  filter(gp %in% keep_df$gp)
 
 premice_keep %>%
   select(species, phylum) %>%
@@ -214,12 +257,23 @@ premice_keep %>%
 
 ```
 
+#### Worms/traits species counts: by class for Mollusca, after dropping
+
+``` {r}
+premice_keep %>%
+  filter(phylum == 'mollusca') %>%
+  select(species, class) %>%
+  distinct() %>%
+  .$class %>% table()
+
+```
+
 ### Missingness by taxon
 
-#### Invertebrate phyla
+#### Invertebrate phyla (sans molluscs)
 
 ```{r, results = 'asis'}
-invert_traits <- worms_premice %>%
+invert_traits <- premice_keep %>%
   filter(phylum %in% invert_keep)
 
 for(p in invert_keep) {
@@ -241,11 +295,39 @@ for(p in invert_keep) {
 }
 ```
 
-
-#### Vertebrate phyla
+#### Mollusc classes
 
 ```{r, results = 'asis'}
-vert_traits <- worms_premice %>%
+mollusc_traits <- premice_keep %>%
+  filter(phylum == 'mollusca') %>%
+  mutate(order %in% mollusc_keep) %>%
+  mutate(gp = class)
+
+for(c in unique(mollusc_traits$gp)) {
+  ### c <- mollusc_keep[1]
+  class_traits <- mollusc_traits %>%
+    filter(gp == c) %>%
+    select(log_l, log_f, troph, age_mat, wcol, adult_mob) 
+  class_traits_sum <- class_traits %>%
+    mutate(n_nas = rowSums(is.na(.))) %>%
+    group_by(n_nas) %>%
+    summarize(count = n()) %>%
+    mutate(group = c)
+
+  cat('\n\n#####', c, '\n\n')
+  print(knitr::kable(class_traits_sum))
+  cat('\n\n')
+  md.pattern(class_traits)
+
+}
+```
+
+
+
+#### Vertebrate classes
+
+```{r, results = 'asis'}
+vert_traits <- premice_keep %>%
   mutate(gp = vert_keep[class]) %>%
   filter(gp %in% vert_keep)
 
