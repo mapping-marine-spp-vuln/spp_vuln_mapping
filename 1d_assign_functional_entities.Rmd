@@ -1,5 +1,5 @@
 ---
-title: "Assemble grouping traits and gapfill using MICE"
+title: "Assign functional entities from gapfilled traits"
 author: "*Compiled on `r date()` by `r Sys.info()['user']`*"
 output: 
   html_document:
@@ -23,773 +23,186 @@ knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
 library(oharac)
 oharac::setup()
 source(here('common_fxns.R'))
-library(mice)
-
 
 ```
 
 # Summary
 
-Read in processed grouping traits, then perform MICE separately on various taxonomic groupings.
-
-* Phyla for inclusion:
-    * annelida
-    * arthropoda
-    * chordata (broken down into classes)
-    * cnidaria
-    * echinodermata
-    * mollusca
-        * further subdivided to class based on those orders that show up in AquaMaps (including family Conidae in IUCN data)
-    * porifera 
-* Classes from phylum Chordata:
-    * actinopterygii (grouped with coelacanthi, as bony fishes)
-        * while there are many many many of these, perhaps include order or family as an additional gapfilling variable, rather than further subdividing the class.
-    * elasmobranchii (grouped with holocephali, as cartilaginous fishes)
-    * mammalia
-    * aves (only 13 in the intersection of traits + AquaMaps, but 341 in traits, so MICE should work; others may be in IUCN data as well)
-    * reptilia
-    * myxini (grouped with petromyzonti, as jawless fishes)
-    * the rest are mostly tunicates or tunicate-adjacent, and won't have vulnerability trait data anyway.
+Gather processed and gapfilled traits data.  Assign bins for trait values.  Use trait bins to identify functional entities (FE) per Villeger and others.
 
 # Data
 
-See individual trait scripts.
+Traits from Fishbase/Sealifebase and species vulnerability framework - gapfilled using MICE - from script 1c.
 
 # Methods
 
-## set up dataset for imputation
+## Gather traits
 
-Read in the processed grouping traits data; bind WoRMS classifications; then filter to just the included taxonomic groups.
+Here we will read in the gapfilled traits set and assign the values into specific bins as appropriate.  Inspired by Sebastien Villeger's code, I will create text codes for each trait/value combo, but with a few more letters so they are a little more comprehensible.
+
+### Set up categories
+
+Adult mobility and water column position are already categorical variables.
+
+* __Adult mobility__: sessile (`ses`), sedentary (`sed`), mobile resident (`mob`), and migratory/nomadic (`mig`)
+* __Water column position__: benthic (`ben`), benthopelagic (`bp`), pelagic (`pel`), reef-associated (`rf`)
+
+__Max body length__ (cm):
+
+* Very small: (0, 1.5]
+* Small: (1.5, 5]
+* Medium: (5, 15]
+* Large: (15, 100]
+* Very large: (100, ...)
+
+__Fecundity__:
+
+* Low: (0, 10]
+* Medium: (10, 100]
+* High: (100, 1000]
+* Very high: (1000, ...)
+
+__Age to maturity/generation time__ (years):
+
+* Very short: (0, 1]
+* Short: (1, 3]
+* Medium: (3, 10]
+* Long: (10, ...)
+
+__Trophic level__:
+
+* Primary consumer: (1, 2]
+* Secondary consumer: (2, 3]
+* Tertiary consumer: (3, 4]
+* Apex consumer: (4, ...)
+
 
 ```{r}
-wcol_levels <- c('rf', 'pel', 'ben', 'bp') ### not ordered
-mob_levels  <- c('ses', 'sed', 'mob', 'mig') ### in order from least to most mobile
+fe_traits <- read_csv(here('_data/grouping_traits_post_imputation.csv')) %>%
+  mutate(len = exp(log_l), fec = exp(log_f),
+         len = case_when(len <= 1.5 ~ 'vsm',
+                         len <= 5   ~ 'sm',
+                         len <= 15  ~ 'med',
+                         len <= 100 ~ 'lg',
+                         len > 100  ~ 'vlg',
+                         TRUE ~ NA_character_),
+         len = factor(len, levels = c('vsm', 'sm', 'med', 'lg', 'vlg'))) %>%
+  mutate(fec = case_when(fec <= 10 ~ 'lo',
+                         fec <= 100 ~ 'med',
+                         fec <= 1000 ~ 'hi',
+                         fec > 1000 ~ 'vhi',
+                         TRUE ~ NA_character_),
+         fec = factor(fec, levels = c('lo', 'med', 'hi', 'vhi'))) %>%
+  mutate(gen = case_when(age_mat <= 1 ~ 'vsh',
+                         age_mat <= 3 ~ 'sh',
+                         age_mat <= 10 ~ 'med',
+                         age_mat > 10 ~ 'lg',
+                         TRUE ~ NA_character_),
+         gen = factor(gen, levels = c('vsh', 'sh', 'med', 'lg'))) %>%
+  mutate(trp = case_when(troph <= 2 ~ 'pri',
+                         troph <= 3 ~ 'sec',
+                         troph <= 4 ~ 'ter',
+                         troph > 4  ~ 'apex',
+                         TRUE ~ NA_character_),
+         trp = factor(trp, levels = c('pri', 'sec', 'ter', 'apex'))) %>%
+  select(species, wcol, mob = adult_mob, len, fec, gen, trp) %>%
+  drop_na()
 
+table(fe_traits$len)
+table(fe_traits$fec)
+table(fe_traits$gen)
+table(fe_traits$trp)
+table(fe_traits$mob)
+table(fe_traits$col)
+
+```
+
+## Assign to functional entities
+
+Here we will full-join all trait dataframes by species, eliminate any with NA values for any traits, and then collapse the trait values together into a specific functional entity character code (which will also be assigned a numeric FE code).
+
+```{r}
+n_fe_possible <- n_distinct(fe_traits$mob) *
+                 n_distinct(fe_traits$fec) *
+                 n_distinct(fe_traits$gen) *
+                 n_distinct(fe_traits$trp) *
+                 n_distinct(fe_traits$len) *
+                 n_distinct(fe_traits$wcol)
+```
+
+Based on the given trait categories, we could see up to `r n_fe_possible` functional entities, though most will not be populated (e.g., not so likely to find a very large apex predator species with a high fecundity and short generation time).
+
+`r knitr::include_graphics(here('figs/alien-main_2.jpeg'))`
+
+### Number of spp included, by phylum/class
+
+``` {r check inclusion}
 worms_spp <- assemble_worms()
 
-### file created in script 1b:
-keep_df <- read_csv(here('int/mice_grouping_taxa_to_keep.csv'))
-
-vert_keep_df <- keep_df %>%
-  filter(phylum == 'chordata') %>%
-  select(class, gp) %>%
-  distinct()
-vert_keep <- vert_keep_df$gp %>% setNames(vert_keep_df$class)
-
-traits_premice_all <- read_csv(here_anx('mice/gp_traits_mice_preimputation.csv')) %>%
-  mutate(wcol      = factor(wcol,      levels = wcol_levels, ordered = FALSE),
-         adult_mob = factor(adult_mob, levels = mob_levels,  ordered = TRUE)) %>%
-  inner_join(worms_spp, by = 'species') %>%
-  mutate(gp = case_when(phylum == 'chordata' ~ vert_keep[class],
-                        phylum == 'mollusca' & order %in% keep_df$order ~ class,
-                        !phylum %in% c('chordata', 'mollusca') & phylum %in% keep_df$phylum ~ phylum)) %>%
-  filter(!is.na(gp))
-
-### 124,462 across all spp; 122,906 for kept taxa
-```
-
-## Process gapfilling
-
-For all groups, include all traits, as well as order and family as additional predictors.  With family, imputation is much slower, but with order only, RMSE differences seem high (quick analysis looking at some invertebrates):
-
-| gp            | log_l_mean | log_f_mean | troph_mean | age_mat_mean |
-|:--------------|:----------:|:----------:|:----------:|:------------:|
-| annelida      |     0.720  |    0.772   |   0.244    |     0.108    |
-| arthropoda    |     1.17   |    2.87    |   0.279    |     0.914    |
-| cnidaria      |     0.572  |    NaN     |   0.256    |     1.58     |
-| echinodermata |     0.852  |    0.788   |   0.482    |     0.149    |
-
-
-```{r}
-keep_ranks <- c('order', 'family')
-
-traits_prepped <- traits_premice_all %>%
-  select(log_l, log_f, troph, age_mat, wcol, adult_mob,
-         all_of(keep_ranks), species, gp, phylum) %>%
-  mutate(order   = factor(order, ordered = FALSE),
-         family  = factor(family, ordered = FALSE),
-         species = factor(species, ordered = FALSE)) %>%
-  distinct()
-
-invert_traits <- traits_prepped %>%
-  filter(!phylum %in% c('chordata', 'mollusca')) %>%
-  select(-phylum)
-```
-
-
-### Set up predictor matrix and method vector
-
-Create a blank run (no iterations) to generate a prediction matrix and a methods vector, then update these as needed.
-
-``` {r}
-
-blank_run <- mice(invert_traits %>% select(-gp), maxit = 0)
-
-### set up predictor matrix
-pred_mtx <- blank_run$pred
-
-pred_mtx[ , 'species'] <- 0
-  ### species column is all zeros - ignored for imputation
-
-pred_mtx[c('species'), ] <- 0
-pred_mtx[keep_ranks, ] <- 0
-  ### don't impute values for these... (should not be an issue since no NAs)
-```
-
-#### Predictor matrix
-
-Row names are variables to be imputed; column names are variables used to impute.  An all-zero column indicates: _do not use this variable to impute_; an all-zero row indicates: _do not impute this variable._
-
-```{r}
-pred_mtx
-```
-
-#### Method vector
-
-Values of `""` indicate no method to impute (complete variable, no imputation needed).  From `?mice`:
-
-> By default, the method uses `pmm`, predictive mean matching (numeric data); `logreg`, logistic regression imputation (binary data, factor with 2 levels); `polyreg`, polytomous regression imputation for unordered categorical data (factor > 2 levels); `polr`, proportional odds model for (ordered, > 2 levels).
-
-```{r}
-method_vec <- blank_run$meth
-method_vec
-```
-
-### iterate over invertebrate phyla to perform imputation
-
-Note that `mice` fails on molluscs at the phylum level - presumably too many orders/families.  Identify classes of molluscs in AquaMaps, limit to just those (including family Conidae, from IUCN) and run those separately.
-
-From Stack Overflow: 
-> This functions adds a star to variable names in the `mice` iteration history to signal that a ridge penalty was added. In that case, it also adds an entry to loggedEvents.  
-This happens when it was unable to invert the QR or SVD decomposition of the covariate matrix.  
-So, I think what's happening is that when you include this nominal variable as a predictor for some of those pmm variables the resulting predictor matrix for that variable is either collinear or nearly collinear. `mice` will drop any variables that are exactly collinear, but if they aren't quite collinear it might still lead to a matrix that is nearly linearly dependent and can't be inverted. In that case `mice` adds a small term to the diagonal elements which allows an inverse to be taken and the computation to continue.
-
-
-``` {r, results = 'asis'}
-
-for(p in unique(invert_traits$gp)) {
-  ### p <- unique(invert_traits$gp)[1]
-  message('Processing phylum ', p, '...')
-  
-  ### set up file for imputed traits (all small enough for Git?)
-  post_impute_f <- sprintf(here('_data/mice_out/gp_traits_%s_mice.csv'), p)
-  ### .Rdata path for saving the imputation `mids` object
-  impute_object_f <- sprintf(here_anx('mice/gp_traits_%s_mice_results.RData'), p)
-  
-  if(!file.exists(post_impute_f)) {
-    ### unlink(post_impute_f)
-    
-    ### filter to just this phylum and drop the group column
-    p_traits <- invert_traits %>%
-      filter(gp == p) %>%
-      select(-gp)
-    
-    ### impute!
-    ptm <- proc.time()
-    imp <- mice(p_traits,
-                m = 5, maxit = 10, 
-                method = method_vec, 
-                predictorMatrix = pred_mtx,
-                seed = 42)
-    message('Phylum ', p, ' took ', (proc.time() - ptm)[3], ' seconds to process')
-
-    ### complete the trait set and write out the traits post-imputation. For
-    ### file size, convert wcol and adult_mob to integers instead of character
-    traits_complete <- complete(imp, 'long') %>%
-      select(-all_of(keep_ranks)) %>% ### can reattach higher ranks easily
-      mutate(log_l   = round(log_l, 5),
-             log_f   = round(log_f, 5),
-             age_mat = round(age_mat, 5))
-    ### from above:
-    ### wcol_levels <- c('rf',  'pel', 'ben', 'bp')
-    ### mob_levels  <- c('ses', 'sed', 'mob', 'mig')
-  
-    write_csv(traits_complete, post_impute_f)
-    ### write out results to .RData?
-    save(imp, file = impute_object_f)
-    
-  } ### end analysis for imputation
-  
-  ### plot results for inspection
-  load(impute_object_f) ### stored as imp
-  
-  cat('\n\n####', p, '\n\n') ### put in a header line
-  
-  # print(summary(imp))
-  
-  print(plot(imp)) ### do troph, log_f, and age_mat have convergence issues?
-  
-  # print(densityplot(imp)) ### doesn't show categoricals?
-
-}
-```
-
-```{r compare outputs with and without family as predictor, eval = FALSE, include = FALSE}
-gps <- c('annelida', 'arthropoda', 'cnidaria', 'echinodermata')
-fs <- list.files(here('_data/mice_out'), pattern = paste0(gps, collapse = '|'), full.names = TRUE)
-df <- lapply(fs, read.csv) %>% 
-  setNames(basename(fs)) %>%
-  bind_rows(.id = 'f') %>%
-  mutate(gp = str_extract(f, paste0(gps, collapse = '|')),
-         type = case_when(str_detect(f, '_o_f.csv') ~ 'order_fam',
-                          TRUE ~ 'order')) 
-
-df_sum <- df %>%
-  select(-.id, -.imp, -wcol, -adult_mob) %>%
-  group_by(species, type, gp, f) %>%
-  summarize(across(where(is.numeric), .fns = list(mean = mean, sd = sd), na.rm = TRUE))
-
-df_sum_rmse <- df_sum %>%
-  select(-ends_with('sd')) %>%
-  group_by(species, gp) %>%
-  summarize(across(where(is.numeric), .fns = ~(first(.x) - last(.x)))) %>%
-  group_by(gp) %>%
-  summarize(across(where(is.numeric), .fns = ~(sqrt(sum(.x^2)/n()))))
-
-```
-
-### Iterate over mollusc classes
-
-Earlier, iterating over molluscs was problematic, so splitting into classes here.  Will also try running all molluscs, just to see if filtering down the mollusc orders helped avoid the problem from before.
-
-``` {r molluscs by class, results = 'asis'}
-mollusc_traits <- traits_prepped %>%
-  filter(phylum == 'mollusca') %>%
-  select(-phylum)
-
-for(cls in unique(mollusc_traits$gp)) {
-  ### cls <- unique(mollusc_traits$gp)[1]
-  message('Processing class ', cls, '...')
-  
-  ### set up file for imputed traits (all small enough for Git?)
-  post_impute_f <- sprintf(here('_data/mice_out/gp_traits_mollusca_%s_mice.csv'), cls)
-  ### .Rdata path for saving the imputation `mids` object
-  impute_object_f <- sprintf(here_anx('mice/gp_traits_mollusca_%s_mice_results.RData'), cls)
-  
-  if(!file.exists(post_impute_f)) {
-    ### unlink(post_impute_f)
-    
-    ### filter to just this phylum and drop the group column
-    cls_traits <- mollusc_traits %>%
-      filter(gp == cls) %>%
-      select(-gp)
-    
-    ### impute!
-    ptm <- proc.time()
-    imp <- mice(cls_traits,
-                m = 5, maxit = 10, 
-                method = method_vec, 
-                predictorMatrix = pred_mtx,
-                seed = 42)
-    message('Mollusca class ', cls, ' took ', (proc.time() - ptm)[3], ' seconds to process')
-
-    ### complete the trait set and write out the traits post-imputation. For
-    ### file size, convert wcol and adult_mob to integers instead of character
-    traits_complete <- complete(imp, 'long') %>%
-      select(-all_of(keep_ranks)) %>% ### can reattach higher ranks easily
-      mutate(log_l   = round(log_l, 5),
-             log_f   = round(log_f, 5),
-             age_mat = round(age_mat, 5))
-    ### from above:
-    ### wcol_levels <- c('rf',  'pel', 'ben', 'bp')
-    ### mob_levels  <- c('ses', 'sed', 'mob', 'mig')
-  
-    write_csv(traits_complete, post_impute_f)
-    ### write out results to .RData?
-    save(imp, file = impute_object_f)
-    
-  } ### end analysis for imputation
-  
-  ### plot results for inspection
-  load(impute_object_f) ### stored as imp
-  
-  cat('\n\n#### Mollusca: ', cls, '\n\n') ### put in a header line
-  
-  # print(summary(imp))
-  
-  print(plot(imp)) ### do troph, log_f, and age_mat have convergence issues?
-  
-  # print(densityplot(imp)) ### doesn't show categoricals?
-
-}
-```
-
-``` {r molluscs all, results = 'asis'}
-message('Processing phylum mollusca as a whole... ')
-
-### set up file for imputed traits (all small enough for Git?)
-post_impute_f <- sprintf(here('_data/mice_out/gp_traits_mollusca_combined_mice.csv'), cls)
-### .Rdata path for saving the imputation `mids` object
-impute_object_f <- sprintf(here_anx('mice/gp_traits_mollusca_combined_mice_results.RData'), cls)
-
-if(!file.exists(post_impute_f)) {
-  ### unlink(post_impute_f)
-  
-  ### filter to just this phylum and drop the group column
-  p_traits <- mollusc_traits %>%
-    select(-gp)
-  
-  ### impute!
-  ptm <- proc.time()
-  imp <- mice(p_traits,
-              m = 5, maxit = 10, 
-              method = method_vec, 
-              predictorMatrix = pred_mtx,
-              seed = 42)
-  message('Mollusca combined took ', (proc.time() - ptm)[3], ' seconds to process')
-
-  ### complete the trait set and write out the traits post-imputation. For
-  ### file size, convert wcol and adult_mob to integers instead of character
-  traits_complete <- complete(imp, 'long') %>%
-    select(-all_of(keep_ranks)) %>% ### can reattach higher ranks easily
-    mutate(log_l   = round(log_l, 5),
-           log_f   = round(log_f, 5),
-           age_mat = round(age_mat, 5))
-  ### from above:
-  ### wcol_levels <- c('rf',  'pel', 'ben', 'bp')
-  ### mob_levels  <- c('ses', 'sed', 'mob', 'mig')
-
-  write_csv(traits_complete, post_impute_f)
-  ### write out results to .RData?
-  save(imp, file = impute_object_f)
-  
-} ### end analysis for imputation
-
-### plot results for inspection
-load(impute_object_f) ### stored as imp
-
-cat('\n\n#### Mollusca combined\n\n') ### put in a header line
-
-# print(summary(imp))
-
-print(plot(imp)) ### do troph, log_f, and age_mat have convergence issues?
-
-# print(densityplot(imp)) ### doesn't show categoricals?
-```
-
-
-### Iterate over chordata classes
-
-``` {r, results = 'asis'}
-
-chordata_traits <- traits_prepped %>%
-  filter(phylum == 'chordata') %>%
-  select(-phylum)
-
-chordates <- unique(chordata_traits$gp)
-for(cls in chordates) {
-  ### cls <- chordates[1]
-  message('Processing chordata class ', cls, '...')
-  
-  ### set up file for imputed traits (all small enough for Git?)
-  post_impute_f <- sprintf(here('_data/mice_out/gp_traits_chordata_%s_mice.csv'), cls)
-  ### .Rdata path for saving the imputation `mids` object
-  impute_object_f <- sprintf(here_anx('mice/gp_traits_chordata_%s_mice_results.RData'), cls)
-  
-  if(!file.exists(post_impute_f)) {
-    ### unlink(post_impute_f)
-    
-    ### filter to just this phylum and drop the group column
-    cls_traits <- chordata_traits %>%
-      filter(gp == cls) %>%
-      select(-gp) %>%
-      distinct()
-    
-    if(cls == 'aves') {
-      ### this one row is causing an error for some reason... 
-      ### Error in apply(draws, 2, sum) : dim(X) must have a positive length
-      ### it's the only observation of a Brown Noddy, which is not in AquaMaps
-      cls_traits <- cls_traits %>%
-        filter(species != 'anous stolidus')
-    }
-    
-    ### impute!
-    ptm <- proc.time()
-    imp <- mice(cls_traits,
-                m = 5, maxit = 10, 
-                method = method_vec, 
-                predictorMatrix = pred_mtx,
-                seed = 42)
-    message('Chordata class ', cls, ' took ', (proc.time() - ptm)[3], ' seconds to process')
-
-    ### complete the trait set and write out the traits post-imputation. For
-    ### file size, convert wcol and adult_mob to integers instead of character
-    traits_complete <- complete(imp, 'long') %>%
-      select(-all_of(keep_ranks)) %>% ### can reattach higher ranks easily
-      mutate(log_l   = round(log_l, 5),
-             log_f   = round(log_f, 5),
-             age_mat = round(age_mat, 5))
-    ### from above:
-    ### wcol_levels <- c('rf',  'pel', 'ben', 'bp')
-    ### mob_levels  <- c('ses', 'sed', 'mob', 'mig')
-  
-    write_csv(traits_complete, post_impute_f)
-    ### write out results to .RData?
-    save(imp, file = impute_object_f)
-    
-  } ### end analysis for imputation
-  
-  ### plot results for inspection
-  load(impute_object_f) ### stored as imp
-  
-  cat('\n\n#### Mollusca: ', cls, '\n\n') ### put in a header line
-  
-  # print(summary(imp))
-  
-  print(plot(imp)) ### do troph, log_f, and age_mat have convergence issues?
-  
-  # print(densityplot(imp)) ### doesn't show categoricals?
-
-}
-```
-
-<!-- ### Rerun some phyla without family as predictor - to aid in gapfilling -->
-
-<!-- This analysis doesn't help with gapfilling... -->
-
-``` {r rerun some phyla, results = 'asis', eval = FALSE}
-phyla_to_rerun <- c('cnidaria', 'mollusca')
-
-### Drop family from prediction matrix
-pred_mtx2 <- pred_mtx
-pred_mtx2[ ,'family'] <- 0
-
-for(p in phyla_to_rerun) {
-  ### p <- phyla_to_rerun[2]
-  
-  ### set up file for imputed traits (all small enough for Git?)
-  post_impute_f <- sprintf(here('_data/mice_out/order_only/gp_traits_%s_no_fam_mice.csv'), p)
-  ### .Rdata path for saving the imputation `mids` object
-  impute_object_f <- sprintf(here_anx('mice/gp_traits_%s_no_fam_mice_results.RData'), p)
-
-  if(!file.exists(post_impute_f)) {
-    ### unlink(post_impute_f)
-    
-    ### filter to just this phylum and drop the group column
-    p_traits <- traits_prepped %>%
-      filter(phylum == p) %>%
-      select(-gp, -phylum)
-    
-    ### impute!
-    ptm <- proc.time()
-    imp <- mice(p_traits,
-                m = 5, maxit = 10, 
-                method = method_vec, 
-                predictorMatrix = pred_mtx2,
-                seed = 42)
-    message(p, ' took ', (proc.time() - ptm)[3], ' seconds to process')
-  
-    ### complete the trait set and write out the traits post-imputation. For
-    ### file size, convert wcol and adult_mob to integers instead of character
-    traits_complete <- complete(imp, 'long') %>%
-      select(-all_of(keep_ranks)) %>% ### can reattach higher ranks easily
-      mutate(log_l   = round(log_l, 5),
-             log_f   = round(log_f, 5),
-             age_mat = round(age_mat, 5))
-    ### from above:
-    ### wcol_levels <- c('rf',  'pel', 'ben', 'bp')
-    ### mob_levels  <- c('ses', 'sed', 'mob', 'mig')
-  
-    write_csv(traits_complete, post_impute_f)
-    ### write out results to .RData?
-    save(imp, file = impute_object_f)
-    
-  } ### end analysis for imputation
-  
-  ### plot results for inspection
-  load(impute_object_f) ### stored as imp
-  
-  cat('\n\n####', p, '\n\n') ### put in a header line
-  
-
-  print(plot(imp)) ### do troph, log_f, and age_mat have convergence issues?
-  
-}
-```
-
-## Check for gaps
-
-Read in all the MICE-gapfilled results, check for any remaining gaps (i.e., where data for one trait was simply not present in an entire class or phylum under analysis).  Since we are mostly concerned about species with maps, focus on those species listed in AquaMaps (i.e., gaps in non-mapped species and taxa are not important).
-
-```{r}
-am_spp <- get_am_spp_info()
-
-fs <- list.files(here('_data/mice_out'), pattern = 'gp_traits', full.names = TRUE)
-traits <- c('log_l', 'log_f', 'troph', 'age_mat', 'wcol', 'adult_mob')
-
-
-post_mice_df <- lapply(fs, read_csv, show_col_types = FALSE) %>%
-  setNames(basename(fs)) %>%
-  bind_rows(.id = 'file') %>%
-  mutate(gp = str_remove_all(file, 'gp_traits_|_mice.csv'))
-
-post_mice_spp_counts <- post_mice_df %>%
-  filter(species %in% am_spp$sciname) %>%
-  select(gp, species) %>%
-  distinct() %>%
+incl_spp <- fe_traits %>%
+  left_join(worms_spp) %>%
+  mutate(gp = ifelse(phylum == 'chordata', paste0('chordata:', class), phylum)) %>%
   group_by(gp) %>%
   summarize(n_spp = n_distinct(species))
 
-na_present <- post_mice_df %>%
-  filter(species %in% am_spp$sciname) %>%
-  filter(rowSums(is.na(.)) > 0) %>%
-  gather(var, val, all_of(traits)) %>%
-  filter(is.na(val)) %>%
-  select(-.imp) %>%
-  distinct() %>%
-  group_by(species, gp, var) %>%
-  summarize(n_instances = n()) %>%
-  distinct() %>%
-  group_by(species, gp) %>%
-  summarize(vars = paste(var, collapse = ';'))
-  
-na_summary <- na_present %>%
-  group_by(gp, vars) %>%
-  summarize(n_spp_na = n_distinct(species)) %>%
-  summarize(vars = paste(sprintf('{%s} (%s)', vars, n_spp_na), collapse = ', '),
-            n_spp_na = sum(n_spp_na)) %>%
-  full_join(post_mice_spp_counts, by = 'gp') %>%
-  arrange(desc(n_spp_na))
-
-knitr::kable(na_summary)
-  
+knitr::kable(incl_spp)
 ```
 
-From this analysis, some clear problems to be addressed:
 
-* Phylum porifera (sponges):
-    * all missing trophic level.  Hand fix this with a single estimate - detritivores (level 2)
-* Phylum cnidaria:
-    * most are missing fecundity. Can this be estimated across the phylum? 
-    * for corals - hand fix mobility to sessile; others (e.g., are there any jellies in the dataset?) to sedentary?
-    * check to see if removing family as predictor helps this - then gapfill the missing ones here with those values.
-        * nope, the same NAs are still present
-* Phylum mollusca:
-    * Bivalvia class many NAs for adult mobility - hand-fix to sedentary/sessile? (few mobile bivalves)
-    * Polyplacophora (chitons) and scaphopoda (tusk shells) - hand-fix mobility to sedentary
-    * Several mollusc classes are poorly filled - use phylum-level analysis to gapfill these?
-* Few NAs - examine particular species and hand fill:
-    * Cephalopods: hand-fill adult mobility
-    * Examine the specific fish and birds with NAs remaining... not that many - hand fill.
-
-#### Fill molluscs using phylum-level MICE
-
-For adult mobility, identify Bivalvia orders that tend to be sessile vs sedentary (are any mobile residents? scallops?)
-
-Orders:
-
-* clams (assume sedentary): cardiida, arcida, solemyida, nuculida, pectinida, nuculanida, lucinida, venerida, carditida, myida, gastrochaenida, pholadomyoida, veneroida
-* mussels (assume sessile): mytilida, adapedonta, mytiloida
-* oysters (assume sessile): ostreida
-* file shells (Wikipedia: The majority of species are capable of irregular swimming by waving their long mantle tentacles): limida
-* galeommatida (?): assign sedentary (it's probably a clam?)
-
-```{r mollusc fill}
-mollusc_class_df <- post_mice_df %>%
-  filter(str_detect(gp, 'mollusc') & !str_detect(gp, 'combined')) %>%
-  arrange(species, .id, .imp) %>%
-  mutate(id = 1:n()) %>%
-  gather(trait, val, all_of(traits)) %>%
-  select(-file, -gp, -.id, -.imp)
-
-mollusc_phylum_df <- post_mice_df %>%
-  filter(str_detect(gp, 'mollusc') & str_detect(gp, 'combined')) %>%
-  arrange(species, .id, .imp) %>%
-  mutate(id = 1:n()) %>%
-  gather(trait, val_p, all_of(traits)) %>%
-  select(-file, -gp, -.id, -.imp)
-
-sed <- worms_spp %>%
-  filter(class %in% c('polyplacophora', 'scaphopoda', 'bivalvia'))
-ses <- worms_spp %>%
-  filter(order %in% c('mytilida', 'adapedonta', 'mytiloida', 'ostreida'))
-
-mollusc_new_df <- full_join(mollusc_class_df, mollusc_phylum_df) %>%
-  mutate(val = ifelse(is.na(val), val_p, val)) %>%
-  select(-val_p) %>%
-  spread(trait, val) %>%
-  mutate(across(c(age_mat, log_f, log_l, troph), .fns = as.numeric),
-         adult_mob = case_when(species %in% sed$species ~ 'sed',
-                               species %in% ses$species ~ 'ses',
-                               TRUE ~ adult_mob),
-         gp = 'mollusca')
-
-```
-
-#### Fix cnidaria
-
-Of five classes of phylum Cnidaria, only Anthozoa has any data on fecundity and adult mobility.  Cnidaria are broadcast spawners, so fill fecundity with a high value (mean across anthozoa seems reasonable).  Adult mobility is more complicated - estimate by class, and for hydrozoa, by order.
-
-* hydrozoa: 
-    * from Wikipedia: "Hydrozoa are a taxonomic class of individually very small, predatory animals, some solitary and some colonial, most living in salt water. The colonies of the colonial species can be large, and in some cases the specialized individual animals cannot survive outside the colony. A few genera within this class live in fresh water. Hydrozoans are related to jellyfish and corals and belong to the phylum Cnidaria.  Some examples of hydrozoans are the freshwater jelly (Craspedacusta sowerbyi), freshwater polyps (Hydra), Obelia, Portuguese man o' war (Physalia physalis), chondrophores (Porpitidae), "air fern" (Sertularia argentea), and pink-hearted hydroids (Tubularia).
-    * order anthoathecata - lots of species, maybe sedentary on average?
-    * order leptothecata - lots of species, maybe sedentary on average?
-    * order actinulida - sedentary?
-    * order limnomedusae - looks like jellyfish? mobile resident?
-    * order trachymedusae - looks like jellyfish? mobile resident?
-    * order narcomedusae - looks like jellyfish? mobile resident?
-    * order siphonophorae - mobile resident
-* anthozoa: assign adult mobility = sessile
-    * "Anthozoa is a class of marine invertebrates which includes the sea anemones, stony corals and soft corals. Adult anthozoans are almost all attached to the seabed, while their larvae can disperse as part of the plankton."
-* scyphozoa: assign adult mobility = mobile resident
-    * "The Scyphozoa are an exclusively marine class of the phylum Cnidaria,[2] referred to as the true jellyfish (or "true jellies")."
-* cubozoa: assign adult mobility = mobile resident
-    * "Box jellyfish (class Cubozoa) are cnidarian invertebrates distinguished by their box-like (i.e. cube-shaped) body."
-* staurozoa: assign adult mobility = sessile
-    * "Staurozoans are small animals (1–4 cm or 0.4–1.6 in) that live in marine environments, usually attached to seaweeds, rocks, or gravel."
-
-
-```{r cnidaria fill}
-# cnidaria_fam_df <- post_mice_df %>%
-#   filter(gp == 'cnidaria') %>%
-#   arrange(species, .id, .imp) %>%
-#   mutate(id = 1:n()) %>%
-#   gather(trait, val, all_of(traits)) %>%
-#   select(-file, -gp, -.id, -.imp)
-
-### order-only MICE doesn't result in any fewer NAs
-# cnidaria_order_df <- read_csv(here('_data/mice_out/order_only/gp_traits_cnidaria_no_fam_mice.csv')) %>%
-#   arrange(species, .id, .imp) %>%
-#   mutate(id = 1:n()) %>%
-#   gather(trait, val_no_fam, all_of(traits)) %>%
-#   select(-.id, -.imp)
-ses <- worms_spp %>%
-  filter(class %in% c('anthozoa', 'staurozoa'))
-sed <- worms_spp %>%
-  filter(order %in% c('anthoathecata', 'leptothecata', 'actinulida'))
-mob <- worms_spp %>%
-  filter(order %in% c('limnomedusae', 'trachymedusae', 'narcomedusae', 'siphonophorae') |
-           class %in% c('cubozoa', 'scyphozoa'))
-
-cnidaria_new_df <- post_mice_df %>%
-  filter(gp == 'cnidaria') %>%
-  mutate(adult_mob = case_when(species %in% ses$species ~ 'ses',
-                               species %in% sed$species ~ 'sed',
-                               species %in% mob$species ~ 'mob',
-                               TRUE ~ adult_mob),
-         log_f = ifelse(is.na(log_f), mean(log_f, na.rm = TRUE), log_f))
-
-```
-
-#### check NAs again:
+### assign FE codes
 
 ```{r}
-post_mice_fixed_df <- post_mice_df %>%
-  filter(!str_detect(gp, 'mollusca|cnidaria')) %>%
-  bind_rows(mollusc_new_df, cnidaria_new_df) %>%
-  mutate(troph = ifelse(gp == 'porifera', 2, troph))
-
-post_mice_spp_counts <- post_mice_fixed_df %>%
-  filter(species %in% am_spp$sciname) %>%
-  select(gp, species) %>%
-  distinct() %>%
-  group_by(gp) %>%
-  summarize(n_spp = n_distinct(species))
-
-na_present <- post_mice_fixed_df %>%
-  filter(species %in% am_spp$sciname) %>%
-  filter(rowSums(is.na(.)) > 0) %>%
-  gather(var, val, all_of(traits)) %>%
-  filter(is.na(val)) %>%
-  select(-.imp) %>%
-  distinct() %>%
-  group_by(species, gp, var) %>%
-  summarize(n_instances = n()) %>%
-  distinct() %>%
-  group_by(species, gp) %>%
-  summarize(vars = paste(var, collapse = ';'))
-  
-na_summary <- na_present %>%
-  group_by(gp, vars) %>%
-  summarize(n_spp_na = n_distinct(species)) %>%
-  summarize(vars = paste(sprintf('{%s} (%s)', vars, n_spp_na), collapse = ', '),
-            n_spp_na = sum(n_spp_na)) %>%
-  full_join(post_mice_spp_counts, by = 'gp') %>%
-  arrange(desc(n_spp_na))
-
-knitr::kable(na_summary)
+fe_df <- fe_traits %>%
+  mutate(fe_code = sprintf('MOB%s_FEC%s_GEN%s_TRP%s_LEN%s_WCOL%s', mob, fec, gen, trp, len, wcol)) %>%
+  group_by(fe_code) %>%
+  mutate(n = n()) %>%
+  ungroup() %>%
+  arrange(desc(n)) %>%
+  mutate(fe_code = fct_inorder(fe_code))
 ```
 
+``` {r examine distributions of species across functional entities}
 
-## Ensemble averaging
+fe_df_summary <- fe_df %>%
+  group_by(fe_code) %>%
+  summarize(n_spp = n_distinct(species)) 
 
-Take mean for each species across all imputation models.  For unordered categorical variables, examine the mode.  For ordered categoricals, find the mean of the observed factor levels, then round to nearest level.  Note in many cases, multiple observations of a variable for a particular species resulted in multiple imputations (e.g., _Gadus morhua_) - these are averaged across all observations.
-
-### Adult mobility
-
-As an ordered categorical (sessile < sedentary < mobile resident < migratory), compare mode value to value calculated as rounded mean of imputed levels.
-
-```{r ensemble averaging}
-mob_levels = c('ses', 'sed', 'mob', 'mig')
-trait_mob_ensemble <- post_mice_fixed_df %>%
-  mutate(adult_mob = factor(adult_mob, levels = mob_levels)) %>%
-  group_by(species, adult_mob) %>%
-  mutate(n_mob = n()) %>%
-  group_by(species) %>%
-  summarize(n_vals = n(),
-            mob_mean = mean(as.numeric(adult_mob)),
-            mob_sd   = sd(as.numeric(adult_mob)),
-            mob_mode = first(adult_mob[n_mob == max(n_mob)]),
-            pct_mob  = max(n_mob) / n_vals) %>%
-  mutate(mob_mean = mob_levels[round(mob_mean)],
-         match = mob_mean == mob_mode)
-
-trait_mob_ensemble %>%
-  select(mob_mean, mob_mode) %>%
-  table()
+hist(log10(fe_df_summary$n_spp))
+DT::datatable(fe_df_summary)
 ```
 
-### Water column position
-
-Water column position can be considered an unordered variable: while benthic < benthopelagic < pelagic, reef does not neatly fall into that order.  Select mode from imputed values.
+## Write out functional entities
 
 ```{r}
-trait_wcol_ensemble <- post_mice_fixed_df %>%
-  group_by(species, wcol) %>%
-  mutate(n_wcol = n()) %>%
-  group_by(species) %>%
-  summarize(n_vals = n(),
-            wcol_mode = paste(unique(wcol[n_wcol == max(n_wcol)]), collapse = ';'),
-            pct_wcol  = max(n_wcol) / n_vals)
+fe_out_df <- fe_df %>%
+  select(species, fe_code, n_spp = n) %>%
+  mutate(fe_id = as.integer(fe_code))
 
-trait_wcol_ensemble$wcol_mode %>% table()
-```
+write_csv(fe_out_df, here('_output/func_entities/species_fe.csv'))
 
-### Numeric traits
+fe_traits_df <- fe_df %>%
+  select(fe_code, n_spp = n, mob, fec, gen, trp, len, wcol) %>%
+  distinct()
 
-Trophic level, log(length), log(fecundity), and age to maturity - find mean and sd.
-
-``` {r}
-
-traits_num_ensemble <- post_mice_fixed_df %>%
-  group_by(species) %>%
-  summarize(across(c(log_l, log_f, age_mat, troph), .fns = list(mean = mean, sd = sd)),
-            n_vals = n())
-
-plot_df <- traits_num_ensemble %>%
-  gather(trait, val, -species, -n_vals)
-
-ggplot(plot_df, aes(x = val)) +
-  theme_minimal() +
-  geom_histogram(bins = 15) +
-  facet_wrap(~ trait, ncol = 2, scales = 'free')
+write_csv(fe_traits_df, here('_output/func_entities/fe_traits.csv'))
 
 ```
 
-### Combine all and save out
+## Examine inclusion across Functional Entities, AquaMaps, and Species Vulnerability
 
-Select mean mobility, mode water column position, mean log(length), mean log(fecundity), mean trophic level, mean age to maturity.
+```{r}
+library(ggvenn)
+am_spp <- get_am_spp_info() %>%
+  filter(!is.na(sciname)) %>%
+  .$sciname %>% unique()
+vuln_spp <- get_spp_vuln() %>%
+  .$species %>% unique()
+fe_spp <- fe_out_df$species %>% 
+  unique()
 
-``` {r}
-traits_ensemble <- trait_mob_ensemble %>%
-  select(species, adult_mob = mob_mean) %>%
-  full_join(trait_wcol_ensemble %>%
-              select(species, wcol = wcol_mode), by = 'species') %>%
-  full_join(traits_num_ensemble %>%
-              select(species, log_l = log_l_mean, log_f = log_f_mean, 
-                     age_mat = age_mat_mean, troph = troph_mean),
-            by = 'species')
+x = list(AM   = am_spp, 
+         Vuln = vuln_spp,
+         FE   = fe_spp)
+ggvenn(x)
 
-write_csv(traits_ensemble, here('_data/grouping_traits_post_imputation.csv'))
 ```
-
