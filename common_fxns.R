@@ -160,7 +160,8 @@ get_spp_vuln <- function(gapfill = c('family', 'all')[2]) {
     oharac::dt_join(vuln_sd,    by = c('vuln_gf_id', 'stressor'), type = 'full') %>%
     dplyr::select(-vuln_gf_id) %>%
     clean_scinames('species') %>%
-    clean_scinames('genus')
+    clean_scinames('genus') %>%
+    filter(!is.na(score))
   return(vuln_df)
 }
 
