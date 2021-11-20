@@ -1,0 +1,276 @@
+---
+title: "Calculate cumulative impacts per species"
+author: "*Compiled on `r date()` by `r Sys.info()['user']`*"
+output: 
+  html_document:
+    code_folding: hide
+    toc: true
+    toc_depth: 3
+    toc_float: yes
+    number_sections: true
+    theme: cerulean
+    highlight: haddock
+    includes: 
+      in_header: '~/github/src/templates/ohara_hdr.html'
+  pdf_document:
+    toc: true
+---
+
+``` {r setup, echo = TRUE, message = FALSE, warning = FALSE}
+
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE, fig.height = 3, fig.width = 12)
+
+library(raster)
+library(oharac)
+oharac::setup()
+source(here('common_fxns.R'))
+
+```
+
+# Summary
+
+On a per-species basis, we can calculate the total intensity of impacts across the species range.  We can do this per stressor, then sum.  We calculate this for the species entire range, as well as for just the coastal range, defined as those cells less than 200 meters OR including any part of the 3 nautical mile coastal buffer.
+
+# Data
+
+* Vulnerability scores from the trait-based vulnerability framework: Butt et al. 2021, Ecosphere.
+* Species ranges from AquaMaps and IUCN Red List.
+* Stressors (currently) from Halpern et al. 2019.
+
+# Methods
+
+## Determine stressor and vulnerability matchups
+
+| stressor       | vulnerability                     |
+|:-------------- |:-------------                     |
+| sst            | water_temp                        |
+| oa             | oa                                |
+| slr            | slr                               |
+| uv             | uv                                |
+| dem_dest       | habitat_loss_degradation          |
+| benthic_str    | habitat_loss_degradation          |
+| direct_human   | habitat_loss_degradation          |
+| shipping       | wildlife_strike                   |
+| shipping       | noise_pollution                   |
+| direct_human   | noise_pollution                   |
+| direct_human   | light_pollution                   |
+| benthic_str    | light_pollution                   |
+| dem_nondest_hb | bycatch                           |
+| pel_hb         | bycatch                           |
+| organic        | organic_pollution                 |
+| nutrient       | eutrophication_nutrient_pollution |
+
+```{r}
+str_vuln_lookup <- tribble(
+  ~stressor,        ~vulnerability,
+   'sst',            'water_temp',
+   'oa',             'oa',
+   'slr',            'slr',
+   'uv',             'uv',
+   'dem_dest',       'habitat_loss_degradation',
+   'benthic_str',    'habitat_loss_degradation',
+   'direct_human',   'habitat_loss_degradation',
+   'shipping',       'wildlife_strike',
+   'shipping',       'noise_pollution',
+   'direct_human',   'noise_pollution',
+   'direct_human',   'light_pollution',
+   'benthic_str',    'light_pollution',
+   'dem_nondest_hb', 'bycatch',
+   'pel_hb',         'bycatch',
+   'organic',        'organic_pollution',
+   'nutrient',       'eutrophication_nutrient_pollution')
+```
+
+## Create species x vulnerability data.frame
+
+This will list vulnerability scores for each species that also has range information.
+
+```{r set up am-vuln dataframe}
+spp_vuln_all <- get_spp_vuln() %>%
+  select(vuln = stressor, species, score) %>%
+  distinct()
+
+am_spp_all <- get_am_spp_info() %>%
+  select(species = sciname, am_sid)
+
+spp_am_vuln_all <- inner_join(spp_vuln_all, am_spp_all, by = 'species') %>%
+  filter(!is.na(score)) %>%
+  left_join(str_vuln_lookup, by = c('vuln' = 'vulnerability')) %>%
+  filter(!is.na(stressor)) %>%
+  distinct()
+```
+
+At this point, we have vulnerability information for `r n_distinct(spp_am_vuln_all$species)` species across `r n_distinct(spp_am_vuln_all$stressor)` stressors.
+
+## Read in stressor layers
+
+Currently these are pulled from the 2019 cumulative human impact paper; the most recent year is kept.
+
+```{r gather stressor rasters}
+str_fs <- list.files(here('_data/stressors_hcaf'), pattern = 'hcaf.tif', full.names = TRUE)
+str_fs <- str_fs[str_detect(str_fs, paste(str_vuln_lookup$stressor, collapse = '|'))]
+
+str_stack <- stack(str_fs) %>%
+  setNames(basename(str_fs) %>% str_remove('_[0-9]{4}_hcaf.tif'))
+```
+
+## Loop over each species and calculate
+
+Looping across each species:
+
+* Collect the species range; also identify its coastal-only range.
+    * calculate total range in square km.
+    * For now, use any presence (prob > 0) and include species with few occur_cells.
+* Looping over each vulnerablity score:
+    * multiply the stressor intensity by the species vulnerability
+    * mask to the species range
+    * sum the intensity $\times$ vulnerability $\times$ cell ocean area across the entire species range
+    * sum the intensity $\times$ vulnerability $\times$ cell ocean area across only the coastal portion of species range
+* Assemble the values into a data.frame.
+* Save out to the server - the files will be small but there will be tens of thousands, so don't keep them in GitHub.
+
+```{r set up species-cell-area dataframe}
+hcaf_info <- get_hcaf_info() %>%
+  select(loiczid, ocean_area, depth_min) %>%
+  mutate(coastal = depth_min <= 200)
+
+am_spp_cells <- get_am_spp_cells() %>%
+  select(am_sid, loiczid) %>%
+  dt_join(hcaf_info, by = 'loiczid', type = 'left')
+```
+
+Set up a function to process the species impacts for any given species, to be used in a loop or `parallel::mclapply()`.  This will return a dataframe of:
+
+* stressor-vulnerability combination (character)
+* total impact per stressor/vulnerability combo over entire range, in units of km^2^ * vulnerability * stressor intensity
+* total impact per stressor/vulnerability combo over coastal range, in same units
+
+Species range information (entire range and coastal range, in km^2^) will be appended to these results outside the `mclapply`.  No species information is included here; that will be included in the file name used to save the results.
+
+```{r define function}
+
+process_spp_impact <- function(j, spp_am_vuln, spp_cells, str_stack) {
+  s <- str_vuln_lookup[j, ]$stressor
+  v <- str_vuln_lookup[j, ]$vulnerability
+  spp_v <- spp_am_vuln %>%
+    filter(vuln == v) %>%
+    pull(score)
+  s_rast <- str_stack[[s]]
+  impact_df <- data.frame(str     = values(s_rast),
+                          loiczid = 1:ncell(s_rast)) %>%
+    filter(!is.na(str)) %>%
+    oharac::dt_join(spp_cells, by = 'loiczid', type = 'inner') %>%
+    summarize(str_vuln = paste(s, v, sep = '-'),
+              impact_tot     = sum(str * spp_v * ocean_area),
+              impact_coastal = sum(str * spp_v * ocean_area * coastal))
+  
+  return(impact_df)
+}
+```
+
+```{r}
+
+am_sid_vec <- spp_am_vuln_all$am_sid %>%
+  unique()
+chunk_size <- 100
+n_chunks <- ceiling(length(am_sid_vec) / chunk_size)
+outf_stem <- here_anx('impacts_by_species/impacts_%s.csv')
+
+for(k in 1:n_chunks) {
+  ### k <- 20
+  ptm_k <- proc.time()
+  ### Chunk out large species-cell dataframe into smaller bits for
+  ### quicker filtering in the 
+  i_min <- (k-1) * chunk_size + 1
+  i_max <- min(k * chunk_size, length(am_sid_vec))
+  
+  chunk_sid_vec <- am_sid_vec[i_min:i_max]
+  
+  spp_name_vec <- am_spp_all %>%
+    filter(am_sid %in% chunk_sid_vec) %>%
+    pull(species) %>%
+    str_replace_all('[^a-z]+', '_')
+  chunk_spp_files <- sprintf(outf_stem, spp_name_vec)
+  
+  ### check that some of these spp still need to be processed, otherwise
+  ### skip to the next chunk:
+  if(all(file.exists(chunk_spp_files))) {
+    message('All spp in chunk ', k, ' already have impact files... skipping!')
+    next()
+  }
+  
+  ptm <- proc.time()
+    am_spp_cells_chunk <- am_spp_cells %>%
+      filter(am_sid %in% chunk_sid_vec)
+  ptm <- proc.time() - ptm
+  message('Filtering ', length(chunk_sid_vec), ' species in chunk ', k, ' of ', 
+          n_chunks, ': ', round(ptm[3], 3), 's elapsed time')
+  ### 5 seconds for filtering 100 spp; 7.5 for filtering 1000
+
+  tmp <- parallel::mclapply(seq_along(chunk_sid_vec),
+                            mc.cores = 34,
+                            FUN = function(i) {
+  # for(i in seq_along(chunk_sid_vec)) {
+    ### i <- 2
+    ptm2 <- proc.time()
+    id <- chunk_sid_vec[i]
+    ### id <- 'its-mam-180530'
+    spp_am_vuln <- spp_am_vuln_all %>%
+      filter(am_sid == id)
+    
+    spp_fname <- spp_am_vuln$species %>%
+      unique() %>%
+      str_replace_all('[^a-z]', '_')
+    
+    outfile <- sprintf(outf_stem, spp_fname)
+    
+    if(file.exists(outfile)) {
+      # message('File ', outfile, ' exists... skipping!')
+      next()
+    }
+    
+    message(i, ' of ', length(chunk_sid_vec), ', chunk ', k, ' of ', n_chunks, 
+            ': processing impacts on ', spp_am_vuln$species %>% unique(), '...')
+    
+    ### this adds a couple of seconds to each iteration; chunk spp list for speed?
+    # system.time({
+    #   for(w in 1:10) {
+    #     spp_cells <- am_spp_cells %>%
+    #       filter(am_sid == id)
+    #   }
+    # }) ### 10 iterations over 100-member chunk or 1000-member chunk: 25 seconds
+    
+    # system.time({
+    #   for(w in 1:10) {
+    #     spp_cells2 <- am_spp_cells_chunk %>%
+    #       filter(am_sid == id)
+    #   }
+    # }) ### 10 iterations over 100 member chunk: 0.134 seconds; .475 for 1000 member chunk
+    
+    spp_cells <- am_spp_cells_chunk %>%
+      filter(am_sid == id)
+  
+    spp_range <- spp_cells %>%
+      summarize(range_tot_km2 = sum(ocean_area),
+                range_coastal_km2 = sum(ocean_area * coastal))
+    # system.time({
+    spp_impacts_list <- lapply(1:nrow(str_vuln_lookup), 
+                               FUN = process_spp_impact,
+                               spp_am_vuln, spp_cells, str_stack) 
+    # })
+    spp_impacts_df <- spp_impacts_list %>%
+      bind_rows() %>%
+      mutate(range_tot_km2     = spp_range$range_tot_km2,
+             range_coastal_km2 = spp_range$range_coastal_km2)
+    
+    write_csv(spp_impacts_df, outfile)
+    message(i, ' of ', length(chunk_sid_vec), ', chunk ', k, ' of ', n_chunks, 
+            ': processed impacts on ', spp_am_vuln$species %>% unique(), 
+            '... elapsed time: ', round(proc.time() - ptm2, 3)[3], 's.')
+  })
+  message('Chunk time to process: ', round(proc.time() - ptm_k, 3)[3], 's.')
+}
+```
+
+
+

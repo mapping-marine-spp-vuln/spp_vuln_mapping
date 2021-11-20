@@ -1,0 +1,328 @@
+---
+title: "Map cumulative impacts"
+author: "*Compiled on `r date()` by `r Sys.info()['user']`*"
+output: 
+  html_document:
+    code_folding: hide
+    toc: true
+    toc_depth: 3
+    toc_float: yes
+    number_sections: true
+    theme: cerulean
+    highlight: haddock
+    includes: 
+      in_header: '~/github/src/templates/ohara_hdr.html'
+  pdf_document:
+    toc: true
+---
+
+``` {r setup, echo = TRUE, message = FALSE, warning = FALSE}
+
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE, fig.height = 3, fig.width = 12)
+
+library(raster)
+library(oharac)
+oharac::setup()
+
+```
+
+# Summary
+
+With vulnerability maps by species, FE, and FV-weighted FE, we can calculate impacts simply by multiplying vulnerability and stressor intensity.  This approach will not work for fisheries (since exposure is not simply to activity, but *targeted* activity) or thermal variation (since impact will be related to tolerance, determined at the species level).
+
+# Data
+
+See script 3 for vulnerability mapping scripts.
+
+# Methods
+
+## Determine stressor and vulnerability matchups
+
+| stressor       | vulnerability                     |
+|:-------------- |:-------------                     |
+| sst            | water_temp                        |
+| oa             | oa                                |
+| slr            | slr                               |
+| uv             | uv                                |
+| dem_dest       | habitat_loss_degradation          |
+| benthic_str    | habitat_loss_degradation          |
+| direct_human   | habitat_loss_degradation          |
+| shipping       | wildlife_strike                   |
+| shipping       | noise_pollution                   |
+| direct_human   | noise_pollution                   |
+| direct_human   | light_pollution                   |
+| benthic_str    | light_pollution                   |
+| dem_nondest_hb | bycatch                           |
+| pel_hb         | bycatch                           |
+| organic        | organic_pollution                 |
+| nutrient       | eutrophication_nutrient_pollution |
+
+```{r}
+str_vuln_lookup <- tribble(
+  ~stressor,        ~vulnerability,
+   'sst',            'water_temp',
+   'oa',             'oa',
+   'slr',            'slr',
+   'uv',             'uv',
+   'dem_dest',       'habitat_loss_degradation',
+   'benthic_str',    'habitat_loss_degradation',
+   'direct_human',   'habitat_loss_degradation',
+   'shipping',       'wildlife_strike',
+   'shipping',       'noise_pollution',
+   'direct_human',   'noise_pollution',
+   'direct_human',   'light_pollution',
+   'benthic_str',    'light_pollution',
+   'dem_nondest_hb', 'bycatch',
+   'pel_hb',         'bycatch',
+   'organic',        'organic_pollution',
+   'nutrient',       'eutrophication_nutrient_pollution')
+```
+
+## Read in stressor layers
+
+Currently these are pulled from the 2019 cumulative human impact paper; the most recent year is kept.
+
+```{r}
+str_fs <- list.files(here('_data/stressors_hcaf'), pattern = 'hcaf.tif', full.names = TRUE)
+str_fs <- str_fs[str_detect(str_fs, paste(str_vuln_lookup$stressor, collapse = '|'))]
+
+str_stack <- stack(str_fs) %>%
+  setNames(basename(str_fs) %>% str_remove('_[0-9]{4}_hcaf.tif'))
+```
+
+## Impacts by species average
+
+Using the average vulnerability value across all species, calculate impacts by stressor and overall.
+
+### Loop over stressors
+
+For each line in the above listing, determine the impact of that stressor on the suite of species in each cell, based on that vulnerability.
+
+```{r}
+s_v_i_plot <- function(s_rast, v_rast, i_rast, flag) {
+  s_df <- as.data.frame(s_rast, xy = TRUE) %>%
+    setNames(c('x', 'y', 'v')) %>%
+    mutate(type = 'stressor')
+  v_df <- as.data.frame(v_rast, xy = TRUE) %>%
+    setNames(c('x', 'y', 'v')) %>%
+    mutate(type = 'vulnerability')
+  i_df <- as.data.frame(i_rast, xy = TRUE) %>%
+    setNames(c('x', 'y', 'v')) %>%
+    mutate(type = 'impact')
+  
+  df <- bind_rows(s_df, v_df, i_df) %>%
+    mutate(type = fct_inorder(type))
+  
+  combo_name <- paste0(names(s_rast), ' x ', names(v_rast), ' (', flag, ')')
+
+  lbls <- c(0, .1, .25, .5, 1)
+  
+  p <- ggplot() +
+    geom_raster(data = df, aes(x, y, fill = sqrt(v))) +
+    scale_fill_viridis_c(limits = c(0, 1), labels = lbls, breaks = sqrt(lbls)) +
+    theme_void() +
+    coord_sf() +
+    labs(title = combo_name, fill = element_blank()) + 
+    facet_wrap( ~ type, nrow = 1)
+  
+  return(p)
+}
+```
+
+```{r}
+vuln1_fs <- list.files(here('_output/vuln_by_spp'), pattern = 'mean.tif', full.names = TRUE)
+vuln1_fs <- vuln1_fs[str_detect(vuln1_fs, paste(str_vuln_lookup$vulnerability, collapse = '|'))]
+
+vuln1_stack <- stack(vuln1_fs) %>%
+  setNames(basename(vuln1_fs) %>% str_remove_all('vuln_by_spp_|_mean.tif'))
+```
+
+```{r loop impact by species}
+for(i in 1:nrow(str_vuln_lookup)) {
+  ### i <- 1
+  s <- str_vuln_lookup$stressor[i]
+  v <- str_vuln_lookup$vulnerability[i]
+  
+  f_stem <- here('_output/imp_by_spp/impact_by_spp_%s_x_%s_hcaf.tif')
+  f_out  <- sprintf(f_stem, s, v)
+  
+  s_rast <- str_stack[[s]]
+  v_rast <- vuln1_stack[[v]]
+  i_rast <- s_rast * v_rast
+  
+  writeRaster(i_rast, f_out, overwrite = TRUE)
+  
+  p <- s_v_i_plot(s_rast, v_rast, i_rast, flag = 'by species')
+
+  print(p)
+}
+```
+
+### calculate total: species average
+
+Sum impacts across all stressor/vulnerability combos.
+
+```{r calc chi by species, fig.height = 3, fig.width = 6}
+imp1_fs <- list.files(here('_output/imp_by_spp'), full.names = TRUE)
+
+imp1_stack <- stack(imp1_fs)
+
+chi_by_spp <- calc(imp1_stack, fun = sum, na.rm = TRUE)
+
+chi_by_spp_df <- chi_by_spp %>%
+  as.data.frame(xy = TRUE)
+
+fill_lbls <- c(0, .1, .25, .5, 1, 2)
+
+p <- ggplot(chi_by_spp_df, aes(x, y, fill = sqrt(layer))) +
+  geom_raster() +
+  scale_fill_viridis_c(labels = fill_lbls, breaks = sqrt(fill_lbls)) +
+  coord_sf() +
+  theme_void() +
+  labs(title = 'CHI by species',
+       fill = 'CHI')
+
+ggsave(here('figs/chi_by_spp.png'), height = 4, width = 8, dpi = 300)
+
+knitr::include_graphics(here('figs/chi_by_spp.png'))
+```
+
+
+## Impacts by functional entity average
+
+Using the average vulnerability value across all functional entities, calculate impacts by stressor and overall.
+
+### Loop over stressors
+
+For each line in the above listing, determine the impact of that stressor on the suite of species in each cell, based on that vulnerability.
+
+```{r}
+vuln2_fs <- list.files(here('_output/vuln_by_fe'), pattern = 'mean.tif', full.names = TRUE)
+vuln2_fs <- vuln2_fs[str_detect(vuln2_fs, paste(str_vuln_lookup$vulnerability, collapse = '|'))]
+
+vuln2_stack <- stack(vuln2_fs) %>%
+  setNames(basename(vuln2_fs) %>% str_remove_all('vuln_by_fe_|_mean.tif'))
+```
+
+```{r loop impact by fe}
+for(i in 1:nrow(str_vuln_lookup)) {
+  ### i <- 1
+  s <- str_vuln_lookup$stressor[i]
+  v <- str_vuln_lookup$vulnerability[i]
+  
+  f_stem <- here('_output/imp_by_fe/impact_by_fe_%s_x_%s_hcaf.tif')
+  f_out  <- sprintf(f_stem, s, v)
+  
+  s_rast <- str_stack[[s]]
+  v_rast <- vuln2_stack[[v]]
+  i_rast <- s_rast * v_rast
+  
+  writeRaster(i_rast, f_out, overwrite = TRUE)
+  
+  p <- s_v_i_plot(s_rast, v_rast, i_rast, flag = 'by fe')
+
+  print(p)
+}
+```
+
+
+### calculate total: FE average
+
+Sum impacts across all stressor/vulnerability combos.
+
+```{r calc chi by fe, fig.height = 3, fig.width = 6}
+imp2_fs <- list.files(here('_output/imp_by_fe'), full.names = TRUE)
+
+imp2_stack <- stack(imp2_fs)
+
+chi_by_fe <- calc(imp2_stack, fun = sum, na.rm = TRUE)
+
+chi_by_fe_df <- chi_by_fe %>%
+  as.data.frame(xy = TRUE)
+
+p <- ggplot(chi_by_fe_df, aes(x, y, fill = sqrt(layer))) +
+  geom_raster() +
+  scale_fill_viridis_c(labels = fill_lbls, breaks = sqrt(fill_lbls)) +
+  coord_sf() +
+  theme_void() +
+  labs(title = 'CHI by functional entity',
+       fill = 'CHI')
+
+ggsave(here('figs/chi_by_fe.png'), height = 4, width = 8, dpi = 300)
+
+knitr::include_graphics(here('figs/chi_by_fe.png'))
+
+```
+
+## Impacts by functional entity, weighted by functional vulnerability
+
+Using the FV-weighted average vulnerability value across all functional entities, calculate impacts by stressor and overall.
+
+### Loop over stressors
+
+For each line in the above listing, determine the impact of that stressor on the suite of species in each cell, based on that vulnerability.
+
+```{r}
+vuln3_fs <- list.files(here('_output/vuln_by_fe_weighted'), pattern = 'mean.tif', full.names = TRUE)
+vuln3_fs <- vuln3_fs[str_detect(vuln3_fs, paste(str_vuln_lookup$vulnerability, collapse = '|'))]
+
+vuln3_stack <- stack(vuln3_fs) %>%
+  setNames(basename(vuln3_fs) %>% str_remove_all('vuln_wt_by_fe_|_mean.tif'))
+```
+
+```{r loop impact by weighted fe}
+for(i in 1:nrow(str_vuln_lookup)) {
+  ### i <- 1
+  s <- str_vuln_lookup$stressor[i]
+  v <- str_vuln_lookup$vulnerability[i]
+  
+  f_stem <- here('_output/imp_by_fe_weighted/impact_by_wt_fe_%s_x_%s_hcaf.tif')
+  f_out  <- sprintf(f_stem, s, v)
+  
+  s_rast <- str_stack[[s]]
+  v_rast <- vuln3_stack[[v]]
+  i_rast <- s_rast * v_rast
+  
+  writeRaster(i_rast, f_out, overwrite = TRUE)
+  
+  p <- s_v_i_plot(s_rast, v_rast, i_rast, flag = 'by fe, fv weighted')
+
+  plot(p)
+}
+```
+
+
+### calculate total: FE average
+
+Sum impacts across all stressor/vulnerability combos.
+
+```{r calc chi by weighted fe, fig.height = 3, fig.width = 6}
+imp3_fs <- list.files(here('_output/imp_by_fe_weighted'), full.names = TRUE)
+
+imp3_stack <- stack(imp3_fs)
+
+chi_by_wt_fe <- calc(imp3_stack, fun = sum, na.rm = TRUE)
+
+chi_by_wt_fe_df <- chi_by_wt_fe %>%
+  as.data.frame(xy = TRUE)
+
+p <- ggplot(chi_by_wt_fe_df, aes(x, y, fill = sqrt(layer))) +
+  geom_raster() +
+  scale_fill_viridis_c(labels = fill_lbls, breaks = sqrt(fill_lbls)) +
+  coord_sf() +
+  theme_void() +
+  labs(title = 'CHI by FV-weighted functional entity',
+       fill = 'CHI')
+
+ggsave(here('figs/chi_by_wt_fe.png'), height = 4, width = 8, dpi = 300)
+
+knitr::include_graphics(here('figs/chi_by_wt_fe.png'))
+
+```
+
+```{r, fig.height = 4, fig.width = 6}
+plot(chi_by_wt_fe - chi_by_spp, main = 'wt_fe - spp')
+plot(chi_by_wt_fe - chi_by_fe,  main = 'wt_fe - fe')
+plot(chi_by_fe - chi_by_spp,    main = 'fe - spp')
+```
+
