@@ -97,7 +97,8 @@ spp_am_vuln_all <- inner_join(spp_vuln_all, am_spp_all, by = 'species') %>%
   filter(!is.na(score)) %>%
   left_join(str_vuln_lookup, by = c('vuln' = 'vulnerability')) %>%
   filter(!is.na(stressor)) %>%
-  distinct()
+  distinct() %>%
+  mutate(spp_fname = str_replace_all(species, '[^a-z]+', '_'))
 ```
 
 At this point, we have vulnerability information for `r n_distinct(spp_am_vuln_all$species)` species across `r n_distinct(spp_am_vuln_all$stressor)` stressors.
@@ -172,103 +173,91 @@ process_spp_impact <- function(j, spp_am_vuln, spp_cells, str_stack) {
 
 am_sid_vec <- spp_am_vuln_all$am_sid %>%
   unique()
+
 chunk_size <- 100
 n_chunks <- ceiling(length(am_sid_vec) / chunk_size)
 outf_stem <- here_anx('impacts_by_species/impacts_%s.csv')
 
 for(k in 1:n_chunks) {
-  ### k <- 20
+  ### k <- 13
   ptm_k <- proc.time()
+  
   ### Chunk out large species-cell dataframe into smaller bits for
-  ### quicker filtering in the 
+  ### quicker filtering at the species level.
   i_min <- (k-1) * chunk_size + 1
   i_max <- min(k * chunk_size, length(am_sid_vec))
   
   chunk_sid_vec <- am_sid_vec[i_min:i_max]
   
-  spp_name_vec <- am_spp_all %>%
-    filter(am_sid %in% chunk_sid_vec) %>%
-    pull(species) %>%
-    str_replace_all('[^a-z]+', '_')
-  chunk_spp_files <- sprintf(outf_stem, spp_name_vec)
-  
   ### check that some of these spp still need to be processed, otherwise
   ### skip to the next chunk:
+  spp_name_vec <- spp_am_vuln_all %>%
+    filter(am_sid %in% chunk_sid_vec) %>%
+    pull(spp_fname) %>% unique()
+  chunk_spp_files <- sprintf(outf_stem, spp_name_vec)
   if(all(file.exists(chunk_spp_files))) {
     message('All spp in chunk ', k, ' already have impact files... skipping!')
     next()
   }
   
-  ptm <- proc.time()
-    am_spp_cells_chunk <- am_spp_cells %>%
-      filter(am_sid %in% chunk_sid_vec)
-  ptm <- proc.time() - ptm
-  message('Filtering ', length(chunk_sid_vec), ' species in chunk ', k, ' of ', 
-          n_chunks, ': ', round(ptm[3], 3), 's elapsed time')
-  ### 5 seconds for filtering 100 spp; 7.5 for filtering 1000
+  ### Filter complete am_spp_cells dataframe to just those spp in the
+  ### current chunk; this will speed later filtering immensely (factor of ~20)
+  am_spp_cells_chunk <- am_spp_cells %>%
+    filter(am_sid %in% chunk_sid_vec)
 
   tmp <- parallel::mclapply(seq_along(chunk_sid_vec),
                             mc.cores = 34,
                             FUN = function(i) {
-  # for(i in seq_along(chunk_sid_vec)) {
-    ### i <- 2
-    ptm2 <- proc.time()
-    id <- chunk_sid_vec[i]
-    ### id <- 'its-mam-180530'
-    spp_am_vuln <- spp_am_vuln_all %>%
-      filter(am_sid == id)
-    
-    spp_fname <- spp_am_vuln$species %>%
-      unique() %>%
-      str_replace_all('[^a-z]', '_')
-    
-    outfile <- sprintf(outf_stem, spp_fname)
-    
-    if(file.exists(outfile)) {
-      # message('File ', outfile, ' exists... skipping!')
-      next()
-    }
-    
-    message(i, ' of ', length(chunk_sid_vec), ', chunk ', k, ' of ', n_chunks, 
-            ': processing impacts on ', spp_am_vuln$species %>% unique(), '...')
-    
-    ### this adds a couple of seconds to each iteration; chunk spp list for speed?
-    # system.time({
-    #   for(w in 1:10) {
-    #     spp_cells <- am_spp_cells %>%
-    #       filter(am_sid == id)
-    #   }
-    # }) ### 10 iterations over 100-member chunk or 1000-member chunk: 25 seconds
-    
-    # system.time({
-    #   for(w in 1:10) {
-    #     spp_cells2 <- am_spp_cells_chunk %>%
-    #       filter(am_sid == id)
-    #   }
-    # }) ### 10 iterations over 100 member chunk: 0.134 seconds; .475 for 1000 member chunk
-    
-    spp_cells <- am_spp_cells_chunk %>%
-      filter(am_sid == id)
+    # for(i in seq_along(chunk_sid_vec)) {
+      ### i <- 89
+      ptm_i <- proc.time()
+      id <- chunk_sid_vec[i]
   
-    spp_range <- spp_cells %>%
-      summarize(range_tot_km2 = sum(ocean_area),
-                range_coastal_km2 = sum(ocean_area * coastal))
-    # system.time({
-    spp_impacts_list <- lapply(1:nrow(str_vuln_lookup), 
-                               FUN = process_spp_impact,
-                               spp_am_vuln, spp_cells, str_stack) 
-    # })
-    spp_impacts_df <- spp_impacts_list %>%
-      bind_rows() %>%
-      mutate(range_tot_km2     = spp_range$range_tot_km2,
-             range_coastal_km2 = spp_range$range_coastal_km2)
+      spp_am_vuln <- spp_am_vuln_all %>%
+        filter(am_sid == id)
+      
+      spp_fname <- spp_am_vuln$spp_fname %>%
+        unique()
+      outfile <- sprintf(outf_stem, spp_fname)
+      
+      if(file.exists(outfile)) {
+        # message('File ', outfile, ' exists... skipping!')
+        return()
+      }
+      
+      message(i, ' of ', length(chunk_sid_vec), ', chunk ', k, ' of ', n_chunks, 
+              ': processing impacts on ', spp_am_vuln$species %>% unique(), '...')
+      
+      ### filtering a small chunk is WAY faster than filtering the entire
+      ### am_spp_cells dataframe.
+      spp_cells <- am_spp_cells_chunk %>%
+        filter(am_sid == id)
     
-    write_csv(spp_impacts_df, outfile)
-    message(i, ' of ', length(chunk_sid_vec), ', chunk ', k, ' of ', n_chunks, 
-            ': processed impacts on ', spp_am_vuln$species %>% unique(), 
-            '... elapsed time: ', round(proc.time() - ptm2, 3)[3], 's.')
-  })
+      ### Calculate species total range and coastal range
+      spp_range <- spp_cells %>%
+        summarize(range_tot_km2 = sum(ocean_area),
+                  range_coastal_km2 = sum(ocean_area * coastal))
+  
+      ### Process species impacts
+      spp_impacts_list <- lapply(1:nrow(str_vuln_lookup), 
+                                 FUN = process_spp_impact,
+                                 spp_am_vuln, spp_cells, str_stack) 
+  
+      ### bind rows, add total and coastal ranges, and write out
+      spp_impacts_df <- spp_impacts_list %>%
+        bind_rows() %>%
+        mutate(range_tot_km2     = spp_range$range_tot_km2,
+               range_coastal_km2 = spp_range$range_coastal_km2)
+
+      write_csv(spp_impacts_df, outfile)
+      
+      message(i, ' of ', length(chunk_sid_vec), ', chunk ', k, ' of ', n_chunks, 
+              ': processed impacts on ', spp_am_vuln$species %>% unique(), 
+              '... elapsed time: ', round(proc.time() - ptm_i, 3)[3], 's.')
+    })
+  
   message('Chunk time to process: ', round(proc.time() - ptm_k, 3)[3], 's.')
+  
 }
 ```
 
