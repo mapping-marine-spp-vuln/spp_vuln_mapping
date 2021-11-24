@@ -218,7 +218,7 @@ for(i in 1:nrow(str_vuln_lookup)) {
   i_rast <- s_rast * v_rast
   
   writeRaster(i_rast, f_out, overwrite = TRUE)
-  
+
   p <- s_v_i_plot(s_rast, v_rast, i_rast, flag = 'by fe')
 
   print(p)
@@ -287,7 +287,7 @@ for(i in 1:nrow(str_vuln_lookup)) {
   
   p <- s_v_i_plot(s_rast, v_rast, i_rast, flag = 'by fe, fv weighted')
 
-  plot(p)
+  print(p)
 }
 ```
 
@@ -320,9 +320,18 @@ knitr::include_graphics(here('figs/chi_by_wt_fe.png'))
 
 ```
 
-```{r, fig.height = 4, fig.width = 6}
+## Plot differences
+
+```{r wt_fe - spp, fig.height = 4, fig.width = 6}
 plot(chi_by_wt_fe - chi_by_spp, main = 'wt_fe - spp')
 plot(chi_by_wt_fe - chi_by_fe,  main = 'wt_fe - fe')
 plot(chi_by_fe - chi_by_spp,    main = 'fe - spp')
 ```
 
+## Plot ratios
+
+```{r, fig.height = 4, fig.width = 6}
+plot(chi_by_wt_fe / chi_by_spp, main = 'wt_fe / spp')
+plot(chi_by_wt_fe / chi_by_fe,  main = 'wt_fe / fe')
+plot(chi_by_fe / chi_by_spp,    main = 'fe / spp')
+```

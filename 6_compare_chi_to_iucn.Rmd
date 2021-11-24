@@ -1,0 +1,787 @@
+---
+title: "Compare cumulative impacts per species to IUCN status"
+author: "*Compiled on `r date()` by `r Sys.info()['user']`*"
+output: 
+  html_document:
+    code_folding: hide
+    toc: true
+    toc_depth: 3
+    toc_float: yes
+    number_sections: true
+    theme: cerulean
+    highlight: haddock
+    includes: 
+      in_header: '~/github/src/templates/ohara_hdr.html'
+  pdf_document:
+    toc: true
+---
+
+``` {r setup, echo = TRUE, message = FALSE, warning = FALSE}
+
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
+
+library(raster)
+library(oharac)
+oharac::setup()
+source(here('common_fxns.R'))
+
+```
+
+# Summary
+
+Calculate the cumulative impact across each species range (total and coastal-only).  Relative CHI will be the total CHI (summed across all cells and all stressors) normalized by the total range (total and coastal-only).  The relative CHI is effectively the average CHI per km^2^ across the species' range.
+
+Perform a regression of IUCN extinction risk classification as a function of relative overall CHI and overall range, and then do the same for coastal.
+
+# Data
+
+* Species impact scores from script 5
+* IUCN extinction risk scores from IUCN
+
+# Methods
+
+## Read in all species impacts; summarize to CHI
+
+Summarize to cumulative impacts by entire range and by coastal range.
+
+Each file has a row for each stressor-vulnerability match; columns are:
+
+* `str_vuln` (chr): name of stressor/vuln combo, as <str>-<vuln>
+* `impact_tot` (dbl): sum across all cells of stressor intensity $\times$ vulnerability $\times$ ocean area
+* `impact_coastal` (dbl): sum across all coastal cells (≤200m) of stressor intensity $\times$ vulnerability $\times$ ocean area
+* `range_tot_km2` (dbl): sum of ocean area of all cells across entire range
+* `range_coastal_km2` (dbl): sum of ocean area of all cells across coastal range
+
+```{r}
+spp_chi_file <- here('int/spp_chi_summary.csv')
+
+if(!file.exists(spp_chi_file)) {
+  spp_imp_fs <- list.files(here_anx('impacts_by_species'), 
+                           pattern = '^impacts_.+.csv', full.names = TRUE)
+  
+  spp_imp_df <- parallel::mclapply(spp_imp_fs, mc.cores = 40,
+                                   read_csv, show_col_types = FALSE) %>%
+    setNames(basename(spp_imp_fs)) %>%
+    bind_rows(.id = 'f')
+  
+  spp_chi_df <- spp_imp_df %>%
+    filter(range_tot_km2 > 0) %>%
+    group_by(f) %>%
+    summarize(chi_tot = sum(impact_tot),
+              chi_cst = sum(impact_coastal),
+              range_tot_km2 = first(range_tot_km2),
+              range_cst_km2 = first(range_coastal_km2)) %>%
+    mutate(species = str_remove_all(f, 'impacts_|.csv'),
+           species = str_replace_all(species, '_', ' '),
+           chi_tot_rel = chi_tot / range_tot_km2,
+           chi_cst_rel = chi_cst / range_cst_km2) %>%
+    select(-f)
+  
+  write_csv(spp_chi_df, spp_chi_file)
+}
+
+spp_chi_df <- read_csv(spp_chi_file)
+```
+
+## Pull IUCN extinction risk from AquaMaps (for prototype)
+
+```{r}
+valid_codes <- c('LC', 'NT', 'VU', 'EN', 'CR', 'EX', 'DD')
+spp_iucn_code <- get_am_spp_info() %>%
+  select(species = sciname, am_sciname, iucn_code) %>%
+  mutate(iucn_code = toupper(iucn_code),
+         iucn_code = case_when(iucn_code %in% valid_codes ~ iucn_code,
+                               iucn_code == 'LR/LC' ~ 'LC',
+                               iucn_code %in% c('LR/NT', 'LR/CD') ~ 'NT',
+                               TRUE ~ NA_character_),
+         iucn_fct  = factor(iucn_code, levels = valid_codes, ordered = TRUE)) %>%
+  distinct()
+
+spp_chi_iucn <- spp_chi_df %>%
+  left_join(spp_iucn_code, by = 'species')
+
+dupe_spp <- show_dupes(spp_chi_iucn, 'species') %>%
+  pull(species) %>% unique()
+
+spp_chi_iucn_clean <- spp_chi_iucn %>%
+  filter(!species %in% dupe_spp | species == am_sciname)
+
+```
+
+## Try some simple tests
+
+### Examine average CHI across different categories of extinction risk
+
+```{r}
+chi_by_cat <- spp_chi_iucn_clean %>%
+  group_by(iucn_fct) %>%
+  summarize(mean_tot_chi = mean(chi_tot_rel), sd_tot_chi = sd(chi_tot_rel),
+            mean_cst_chi = mean(chi_cst_rel), sd_cst_chi = sd(chi_cst_rel),
+            n_spp = n_distinct(species))
+
+knitr::kable(chi_by_cat, digits = 4)
+
+ggplot(spp_chi_iucn_clean) +
+  geom_density(aes(x = chi_tot_rel, color = iucn_fct, fill = iucn_fct, ..scaled..),
+               alpha = .3) +
+  geom_vline(data = chi_by_cat, aes(xintercept = mean_tot_chi, color = iucn_fct)) +
+  theme_minimal()
+
+ggplot(spp_chi_iucn_clean) +
+  geom_density(aes(x = chi_cst_rel, color = iucn_fct, fill = iucn_fct, ..scaled..),
+               alpha = .3) +
+  geom_vline(data = chi_by_cat, aes(xintercept = mean_cst_chi, color = iucn_fct)) +
+  theme_minimal()
+  
+```
+
+The means seem very clustered together and not in any particular order...
+
+### examine CHI by range
+
+```{r}
+ggplot(spp_chi_iucn_clean, aes(x = range_tot_km2, y = chi_tot)) +
+  geom_point(aes(color = iucn_fct)) +
+  geom_abline(slope = 1, intercept = 0, color = 'red', size = .5) +
+  theme_minimal()
+```
+
+Interesting that there appear to be two different sets of species clustered around two different slopes, presumably related to vulnerability.  Look into this!
+
+## Binomial logistic regression
+
+Perform a binomial logistic regression of threatened status (threatened/not threatened) as a function of mean cumulative impact and range.  Set up data frame to include a `threatened` column, where LC and NT are `FALSE` and VU, EN, and CR are `TRUE`.  Include range as linear rescale (0-1) and square root of range, for both overall range and coastal-only range.
+
+### Prob of threatened = TRUE as function of CHI and linear rescaled range
+
+```{r}
+chi_threatened_valid <- spp_chi_iucn_clean %>%
+  mutate(threatened = case_when(iucn_code %in% c('VU', 'EN', 'CR') ~ TRUE,
+                                iucn_code %in% c('LC', 'NT')       ~ FALSE,
+                                TRUE ~ NA)) %>%
+  filter(!is.na(threatened)) %>%
+  mutate(r_tot_norm = range_tot_km2 / max(range_tot_km2),
+         r_cst_norm = range_cst_km2 / max(range_cst_km2))
+
+blr_mdl1_tot <- glm(threatened ~ chi_tot_rel + r_tot_norm, 
+                    data = chi_threatened_valid,
+                    family = 'binomial')
+summary(blr_mdl1_tot)
+# Call:
+# glm(formula = threatened ~ chi_tot_rel + r_tot_norm, family = "binomial", 
+#     data = chi_threatened_valid)
+# 
+# Deviance Residuals: 
+#     Min       1Q   Median       3Q      Max  
+# -0.5599  -0.3940  -0.3779  -0.3687   2.4327  
+# 
+# Coefficients:
+#             Estimate Std. Error z value Pr(>|z|)    
+# (Intercept)  -2.9124     0.1400 -20.800  < 2e-16 ***
+# chi_tot_rel   1.2543     0.5212   2.407   0.0161 *  
+# r_tot_norm    0.8949     0.1854   4.828 1.38e-06 ***
+# ---
+# Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+# 
+# (Dispersion parameter for binomial family taken to be 1)
+# 
+#     Null deviance: 3894.0  on 7379  degrees of freedom
+# Residual deviance: 3871.8  on 7377  degrees of freedom
+# AIC: 3877.8
+
+blr_mdl1_cst <- glm(threatened ~ chi_cst_rel + r_cst_norm, 
+                    data = chi_threatened_valid,
+                    family = 'binomial')
+summary(blr_mdl1_cst)
+# Call:
+# glm(formula = threatened ~ chi_cst_rel + r_cst_norm, family = "binomial", 
+#     data = chi_threatened_valid)
+# 
+# Deviance Residuals: 
+#     Min       1Q   Median       3Q      Max  
+# -0.5970  -0.3957  -0.3795  -0.3689   2.4469  
+# 
+# Coefficients:
+#             Estimate Std. Error z value Pr(>|z|)    
+# (Intercept)  -2.9493     0.1385 -21.302  < 2e-16 ***
+# chi_cst_rel   1.4700     0.5091   2.887  0.00388 ** 
+# r_cst_norm    0.9645     0.2009   4.801 1.58e-06 ***
+# ---
+# Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+# 
+# (Dispersion parameter for binomial family taken to be 1)
+# 
+#     Null deviance: 3894.0  on 7379  degrees of freedom
+# Residual deviance: 3872.4  on 7377  degrees of freedom
+# AIC: 3878.4
+```
+
+### Prob of threatened = TRUE as function of CHI and square root range
+
+```{r}
+
+blr_mdl2_tot <- glm(threatened ~ chi_tot_rel + sqrt(range_tot_km2), 
+                    data = chi_threatened_valid,
+                    family = 'binomial')
+summary(blr_mdl2_tot)
+# Call:
+# glm(formula = threatened ~ chi_tot_rel + sqrt(range_tot_km2), 
+#     family = "binomial", data = chi_threatened_valid)
+# 
+# Deviance Residuals: 
+#     Min       1Q   Median       3Q      Max  
+# -0.5186  -0.3941  -0.3817  -0.3719   2.4017  
+# 
+# Coefficients:
+#                       Estimate Std. Error z value Pr(>|z|)    
+# (Intercept)         -2.876e+00  1.499e-01 -19.181  < 2e-16 ***
+# chi_tot_rel          8.844e-01  5.141e-01   1.720 0.085365 .  
+# sqrt(range_tot_km2)  3.821e-05  1.009e-05   3.786 0.000153 ***
+# ---
+# Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+# 
+# (Dispersion parameter for binomial family taken to be 1)
+# 
+#     Null deviance: 3894.0  on 7379  degrees of freedom
+# Residual deviance: 3880.1  on 7377  degrees of freedom
+# AIC: 3886.1
+
+
+blr_mdl2_cst <- glm(threatened ~ chi_cst_rel + sqrt(range_cst_km2), 
+                    data = chi_threatened_valid,
+                    family = 'binomial')
+summary(blr_mdl2_cst)
+# Call:
+# glm(formula = threatened ~ chi_cst_rel + sqrt(range_cst_km2), 
+#     family = "binomial", data = chi_threatened_valid)
+# 
+# Deviance Residuals: 
+#     Min       1Q   Median       3Q      Max  
+# -0.5988  -0.3977  -0.3804  -0.3671   2.4525  
+# 
+# Coefficients:
+#                       Estimate Std. Error z value Pr(>|z|)    
+# (Intercept)         -3.035e+00  1.516e-01 -20.016  < 2e-16 ***
+# chi_cst_rel          1.436e+00  5.058e-01   2.839  0.00453 ** 
+# sqrt(range_cst_km2)  5.429e-05  1.129e-05   4.808 1.53e-06 ***
+# ---
+# Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+# 
+# (Dispersion parameter for binomial family taken to be 1)
+# 
+#     Null deviance: 3894.0  on 7379  degrees of freedom
+# Residual deviance: 3872.1  on 7377  degrees of freedom
+# AIC: 3878.1
+```
+
+In the linear-rescaled range regression, the total CHI model has a very slightly lower AIC, not supported strongly over the coastal range model.  In the square-root-transformed range regression, the coastal CHI and range is a better supported model by AIC and by significance of coefficients.
+
+### Dropping zero-CHI observations as being likely false
+
+Try again dropping all observations with zero impact: they may result from just not including stressors for those species (including fishing mortality!)... this is ~500 species out of ~7400, about 8%.  Rerun the two models on this dataset.
+
+```{r}
+chi_thr_no_zeros <- chi_threatened_valid %>%
+  filter(chi_tot > 0)
+
+blr_mdl3_tot <- glm(threatened ~ chi_tot_rel + r_tot_norm, 
+                    data = chi_thr_no_zeros,
+                    family = 'binomial')
+summary(blr_mdl3_tot)
+# Call:
+# glm(formula = threatened ~ chi_tot_rel + r_tot_norm, family = "binomial", 
+#     data = chi_thr_no_zeros)
+# 
+# Deviance Residuals: 
+#     Min       1Q   Median       3Q      Max  
+# -0.5410  -0.3897  -0.3801  -0.3736   2.3866  
+# 
+# Coefficients:
+#             Estimate Std. Error z value Pr(>|z|)    
+# (Intercept)  -2.8230     0.1503 -18.783   <2e-16 ***
+# chi_tot_rel   0.9436     0.5693   1.658   0.0974 .  
+# r_tot_norm    0.7989     0.3308   2.415   0.0157 *  
+# ---
+# Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+# 
+# (Dispersion parameter for binomial family taken to be 1)
+# 
+#     Null deviance: 3522.4  on 6805  degrees of freedom
+# Residual deviance: 3515.4  on 6803  degrees of freedom
+# AIC: 3521.4
+
+blr_mdl3_cst <- glm(threatened ~ chi_cst_rel + r_cst_norm, 
+                    data = chi_thr_no_zeros,
+                    family = 'binomial')
+summary(blr_mdl3_cst)
+# Call:
+# glm(formula = threatened ~ chi_cst_rel + r_cst_norm, family = "binomial", 
+#     data = chi_thr_no_zeros)
+# 
+# Deviance Residuals: 
+#     Min       1Q   Median       3Q      Max  
+# -0.6246  -0.3988  -0.3774  -0.3620   2.4394  
+# 
+# Coefficients:
+#             Estimate Std. Error z value Pr(>|z|)    
+# (Intercept)  -2.9724     0.1524 -19.508   <2e-16 ***
+# chi_cst_rel   1.1041     0.5460   2.022   0.0431 *  
+# r_cst_norm    9.1578     2.8264   3.240   0.0012 ** 
+# ---
+# Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+# 
+# (Dispersion parameter for binomial family taken to be 1)
+# 
+#     Null deviance: 3522.4  on 6805  degrees of freedom
+# Residual deviance: 3508.4  on 6803  degrees of freedom
+# AIC: 3514.4
+```
+
+```{r}
+
+blr_mdl4_tot <- glm(threatened ~ chi_tot_rel + sqrt(range_tot_km2), 
+                    data = chi_thr_no_zeros,
+                    family = 'binomial')
+summary(blr_mdl4_tot)
+# Call:
+# glm(formula = threatened ~ chi_tot_rel + sqrt(range_tot_km2), 
+#     family = "binomial", data = chi_thr_no_zeros)
+# 
+# Deviance Residuals: 
+#     Min       1Q   Median       3Q      Max  
+# -0.4559  -0.3918  -0.3830  -0.3775   2.3754  
+# 
+# Coefficients:
+#                       Estimate Std. Error z value Pr(>|z|)    
+# (Intercept)         -2.800e+00  1.605e-01 -17.453   <2e-16 ***
+# chi_tot_rel          8.412e-01  5.714e-01   1.472    0.141    
+# sqrt(range_tot_km2)  1.464e-05  1.589e-05   0.921    0.357    
+# ---
+# Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+# 
+# (Dispersion parameter for binomial family taken to be 1)
+# 
+#     Null deviance: 3522.4  on 6805  degrees of freedom
+# Residual deviance: 3519.8  on 6803  degrees of freedom
+# AIC: 3525.8
+
+
+blr_mdl4_cst <- glm(threatened ~ chi_cst_rel + sqrt(range_cst_km2), 
+                    data = chi_thr_no_zeros,
+                    family = 'binomial')
+summary(blr_mdl4_cst)
+# Call:
+# glm(formula = threatened ~ chi_cst_rel + sqrt(range_cst_km2), 
+#     family = "binomial", data = chi_thr_no_zeros)
+# 
+# Deviance Residuals: 
+#     Min       1Q   Median       3Q      Max  
+# -0.5496  -0.3956  -0.3830  -0.3708   2.4263  
+# 
+# Coefficients:
+#                       Estimate Std. Error z value Pr(>|z|)    
+# (Intercept)         -2.955e+00  1.689e-01 -17.501   <2e-16 ***
+# chi_cst_rel          1.122e+00  5.429e-01   2.066   0.0388 *  
+# sqrt(range_cst_km2)  5.884e-05  4.077e-05   1.443   0.1490    
+# ---
+# Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+# 
+# (Dispersion parameter for binomial family taken to be 1)
+# 
+#     Null deviance: 3522.4  on 6805  degrees of freedom
+# Residual deviance: 3516.2  on 6803  degrees of freedom
+# AIC: 3522.2
+
+```
+
+Dropping zero-CHI observations seems to perform worse in terms of coefficients than leaving them in.  Perhaps they are legit?
+
+### Tidy outputs for coastal CHI, sqrt(coastal range) BLR model
+
+Here are outputs for the coastal CHI/sqrt(coastal range) BLR model with all valid observations kept (including zero CHI observations).
+
+```{r}
+broom::tidy(blr_mdl2_cst) %>% knitr::kable(digits = 5)
+```
+We can interpret this model as saying an increase in average coastal CHI on a species increases the log-odds of a species being counted as threatened.  There is also a small increase in likelihood of being threatened as coastal range increases, against the hypothetical that smaller-ranged species should be more likely to be threatened.
+
+### Compare threatened status to predicted threatened status
+
+```{r}
+blr_mdl2_cst_fitted <- blr_mdl2_cst %>%
+  broom::augment(type.predict = 'response') %>%
+  mutate(pred_thr = .fitted >= .50)
+
+blr_mdl2_cst_fitted_summary <- blr_mdl2_cst_fitted %>%
+  summarize(pct_thr_correct = sum(pred_thr & threatened) / n(),
+            pct_nonthr_correct = sum(!pred_thr & !threatened) / n())
+
+knitr::kable(blr_mdl2_cst_fitted_summary)
+
+ggplot(data = blr_mdl2_cst_fitted, 
+       aes(x = chi_cst_rel, y = .fitted)) +
+  geom_point(aes(color = threatened)) +
+  geom_smooth(aes(color = threatened), se = FALSE) +
+  labs(x = "Average coastal CHI",
+       y = "Probability of outcome Threatened")
+
+```
+
+Unfortunately, this fails to predict *any* species as threatened (prob > 50%).
+
+## Ordinal logistic regression
+
+From https://stats.idre.ucla.edu/r/dae/ordinal-logistic-regression/:
+
+> Let $Y$ be an ordinal outcome with $J$ categories.  Then $P(Y \leq j)$ is the cumulative probability of $Y$ less than or equal to a specific category $j = 1, ..., J-1$.  The odds of being less than or equal to a particular category can be defined as
+
+$$\frac{P(Y \leq j)}{P(Y > j)}$$
+> for $j = 1, ..., J-1$ since $P(Y > J) = 0$ and dividing by zero is undefined.  The **log odds** is also known as the **logit** so that
+
+$$\log \frac{P(Y \leq j)}{P(Y > j)} = logit(P(Y \leq j)).$$
+
+> In R's `MASS::polr` the ordinal logistic regression model is parameterized as
+
+$$logit(P(Y \leq j)) = \beta_{j0} - \eta_1 x_1 - ... - \eta_p x_p.$$
+
+### IUCN category probability ~ CHI + linear rescaled range
+
+Let's try a first model of the log odds of Y being less than or equal to each IUCN Red List Category based on the cumulative impact and species range (total and coastal done separately, especially because many species are entirely coastal and so these would be exactly collinear).  First, filter to non-DD, non-extinct, and non-NA species.  Then, rescale the range to avoid large eigenvalues - try a linear rescaled range, normalized by max range, from 0-1.  Then try against square root of range as a increasing but concave function.
+
+```{r}
+chi_iucn_valid <- spp_chi_iucn_clean %>%
+  filter(iucn_fct %in% valid_codes[1:5]) %>%
+  mutate(iucn_fct = fct_drop(iucn_fct),
+         r_tot_norm = range_tot_km2 / max(range_tot_km2),
+         r_cst_norm = range_cst_km2 / max(range_cst_km2))
+
+### model 1 using linear normalized range
+olr_mdl1_tot <- MASS::polr(iucn_fct ~ chi_tot_rel + r_tot_norm, 
+                       data = chi_iucn_valid, Hess = TRUE)
+summary(olr_mdl1_tot)
+# Call:
+# MASS::polr(formula = iucn_fct ~ chi_tot_rel + r_tot_norm, data = chi_iucn_valid, 
+#     Hess = TRUE)
+# 
+# Coefficients:
+#              Value Std. Error t value
+# chi_tot_rel 1.2515     0.4251   2.944
+# r_tot_norm  0.6793     0.1580   4.298
+# 
+# Intercepts:
+#       Value   Std. Error t value
+# LC|NT  2.3730  0.1136    20.8830
+# NT|VU  2.8822  0.1168    24.6671
+# VU|EN  4.1108  0.1335    30.7893
+# EN|CR  5.1619  0.1691    30.5271
+# 
+# Residual Deviance: 7349.386 
+# AIC: 7361.386 
+
+olr_mdl1_cst <- MASS::polr(iucn_fct ~ chi_cst_rel + r_cst_norm, 
+                       data = chi_iucn_valid, Hess = TRUE)
+summary(olr_mdl1_cst)
+# Call:
+# MASS::polr(formula = iucn_fct ~ chi_cst_rel + r_cst_norm, data = chi_iucn_valid, 
+#     Hess = TRUE)
+# 
+# Coefficients:
+#              Value Std. Error t value
+# chi_cst_rel 1.4159     0.4170   3.396
+# r_cst_norm  0.7786     0.1712   4.548
+# 
+# Intercepts:
+#       Value   Std. Error t value
+# LC|NT  2.4080  0.1126    21.3788
+# NT|VU  2.9173  0.1159    25.1742
+# VU|EN  4.1460  0.1327    31.2410
+# EN|CR  5.1972  0.1685    30.8468
+# 
+# Residual Deviance: 7346.948 
+# AIC: 7358.948 
+
+```
+
+### IUCN category probability ~ CHI + square root range
+
+```{r}
+### model 2 using sqrt range
+olr_mdl2_tot <- MASS::polr(iucn_fct ~ chi_tot_rel + sqrt(range_tot_km2), 
+                       data = chi_iucn_valid, Hess = TRUE)
+summary(olr_mdl2_tot)
+# Call:
+# MASS::polr(formula = iucn_fct ~ chi_tot_rel + sqrt(range_tot_km2), 
+#     data = chi_iucn_valid, Hess = TRUE)
+# 
+# Coefficients:
+#                         Value Std. Error t value
+# chi_tot_rel         1.012e+00  2.133e-02  47.429
+# sqrt(range_tot_km2) 2.947e-05  1.612e-05   1.827
+# 
+# Intercepts:
+#       Value   Std. Error t value
+# LC|NT  2.3583  0.0598    39.4574
+# NT|VU  2.8671  0.0658    43.5801
+# VU|EN  4.0949  0.0932    43.9262
+# EN|CR  5.1457  0.0930    55.3570
+# 
+# Residual Deviance: 7355.475 
+# AIC: 7367.475 
+
+olr_mdl2_cst <- MASS::polr(iucn_fct ~ chi_cst_rel + sqrt(range_cst_km2),
+                       data = chi_iucn_valid, Hess = TRUE)
+summary(olr_mdl2_cst)
+# Call:
+# MASS::polr(formula = iucn_fct ~ chi_cst_rel + sqrt(range_cst_km2), 
+#     data = chi_iucn_valid, Hess = TRUE)
+# 
+# Coefficients:
+#                         Value Std. Error t value
+# chi_cst_rel         1.505e+00  2.327e-02  64.681
+# sqrt(range_cst_km2) 4.832e-05  1.853e-05   2.607
+# 
+# Intercepts:
+#       Value   Std. Error t value
+# LC|NT  2.5196  0.0593    42.4791
+# NT|VU  3.0294  0.0655    46.2339
+# VU|EN  4.2584  0.0931    45.7540
+# EN|CR  5.3096  0.0929    57.1562
+# 
+# Residual Deviance: 7341.845 
+# AIC: 7353.845 
+```
+
+### Dropping zero-CHI observations as being likely false
+
+Try again dropping all observations with zero impact.
+
+```{r}
+chi_iucn_no_zeros <- chi_iucn_valid %>%
+  filter(chi_tot > 0)
+
+### model 3 using linear normalized range
+olr_mdl3_tot <- MASS::polr(iucn_fct ~ chi_tot_rel + r_tot_norm, 
+                       data = chi_iucn_no_zeros, Hess = TRUE)
+summary(olr_mdl3_tot)
+# Call:
+# MASS::polr(formula = iucn_fct ~ chi_tot_rel + r_tot_norm, data = chi_iucn_no_zeros, 
+#     Hess = TRUE)
+# 
+# Coefficients:
+#              Value Std. Error t value
+# chi_tot_rel 0.8835     0.4631   1.908
+# r_tot_norm  0.4852     0.2930   1.656
+# 
+# Intercepts:
+#       Value   Std. Error t value
+# LC|NT  2.2627  0.1218    18.5785
+# NT|VU  2.7924  0.1252    22.3066
+# VU|EN  4.0362  0.1429    28.2514
+# EN|CR  5.0655  0.1795    28.2197
+# 
+# Residual Deviance: 6739.788 
+# AIC: 6751.788 
+
+olr_mdl3_cst <- MASS::polr(iucn_fct ~ chi_cst_rel + r_cst_norm,
+                       data = chi_iucn_no_zeros, Hess = TRUE)
+summary(olr_mdl3_cst)
+# Call:
+# MASS::polr(formula = iucn_fct ~ chi_cst_rel + r_cst_norm, data = chi_iucn_no_zeros, 
+#     Hess = TRUE)
+# 
+# Coefficients:
+#               Value Std. Error t value
+# chi_cst_rel  0.9044     0.4503   2.008
+# r_cst_norm  11.6557     2.2836   5.104
+# 
+# Intercepts:
+#       Value   Std. Error t value
+# LC|NT  2.4332  0.1242    19.5859
+# NT|VU  2.9649  0.1277    23.2172
+# VU|EN  4.2107  0.1453    28.9887
+# EN|CR  5.2402  0.1815    28.8797
+# 
+# Residual Deviance: 6716.461 
+# AIC: 6728.461 
+
+```
+
+```{r}
+### model 4 using sqrt range
+olr_mdl4_tot <- MASS::polr(iucn_fct ~ chi_tot_rel + sqrt(range_tot_km2), 
+                       data = chi_iucn_no_zeros, Hess = TRUE)
+summary(olr_mdl4_tot)
+# Call:
+# MASS::polr(formula = iucn_fct ~ chi_tot_rel + sqrt(range_tot_km2), 
+#     data = chi_iucn_no_zeros, Hess = TRUE)
+# 
+# Coefficients:
+#                         Value Std. Error t value
+# chi_tot_rel         8.261e-01  1.713e-02  48.238
+# sqrt(range_tot_km2) 8.292e-06  2.083e-05   0.398
+# 
+# Intercepts:
+#       Value   Std. Error t value
+# LC|NT  2.2498  0.0627    35.8618
+# NT|VU  2.7794  0.0691    40.2082
+# VU|EN  4.0228  0.0983    40.9316
+# EN|CR  5.0519  0.0983    51.4003
+# 
+# Residual Deviance: 6741.97 
+# AIC: 6753.97 
+
+olr_mdl4_cst <- MASS::polr(iucn_fct ~ chi_cst_rel + sqrt(range_cst_km2),
+                       data = chi_iucn_no_zeros, Hess = TRUE)
+summary(olr_mdl4_cst)
+# Call:
+# MASS::polr(formula = iucn_fct ~ chi_cst_rel + sqrt(range_cst_km2), 
+#     data = chi_iucn_no_zeros, Hess = TRUE)
+# 
+# Coefficients:
+#                         Value Std. Error t value
+# chi_cst_rel         0.9416775  2.029e-02  46.419
+# sqrt(range_cst_km2) 0.0001176  3.269e-05   3.596
+# 
+# Intercepts:
+#       Value   Std. Error t value
+# LC|NT  2.5035  0.0767    32.6225
+# NT|VU  3.0344  0.0826    36.7427
+# VU|EN  4.2786  0.1089    39.3069
+# EN|CR  5.3076  0.1543    34.3977
+# 
+# Residual Deviance: 6728.072 
+# AIC: 6740.072  
+```
+
+### Other transformations of range: cube root, fourth root
+
+It appears for both the zero-inclusive and zero-exclusive datasets, the best model by AIC is using the CHI and the square-root range rather than linear rescaled range.  Try also a cube and fourth-root transformation.
+
+```{r}
+more_xfms <- chi_iucn_no_zeros %>%
+  mutate(r_3_tot = range_tot_km2^(1/3),
+         r_4_tot = range_tot_km2^.25,
+         r_3_cst = range_cst_km2^(1/3),
+         r_4_cst = range_cst_km2^.25)
+
+
+
+### model 5 using cube root range
+olr_mdl5_tot <- MASS::polr(iucn_fct ~ chi_tot_rel + r_3_tot, 
+                       data = more_xfms, Hess = TRUE)
+summary(olr_mdl5_tot)
+# Call:
+# MASS::polr(formula = iucn_fct ~ chi_tot_rel + r_3_tot, data = more_xfms, 
+#     Hess = TRUE)
+# 
+# Coefficients:
+#                 Value Std. Error t value
+# chi_tot_rel 7.905e-01  0.4639780  1.7038
+# r_3_tot     4.453e-05  0.0003438  0.1295
+# 
+# Intercepts:
+#       Value   Std. Error t value
+# LC|NT  2.2266  0.1423    15.6443
+# NT|VU  2.7561  0.1452    18.9764
+# VU|EN  3.9995  0.1607    24.8876
+# EN|CR  5.0285  0.1940    25.9238
+# 
+# Residual Deviance: 6742.338 
+# AIC: 6754.338 
+
+olr_mdl5_cst <- MASS::polr(iucn_fct ~ chi_cst_rel + r_3_cst,
+                       data = more_xfms, Hess = TRUE)
+summary(olr_mdl5_cst)
+# Call:
+# MASS::polr(formula = iucn_fct ~ chi_cst_rel + r_3_cst, data = more_xfms, 
+#     Hess = TRUE)
+# 
+# Coefficients:
+#                Value Std. Error t value
+# chi_cst_rel 0.941631  0.4482543   2.101
+# r_3_cst     0.001745  0.0006217   2.808
+# 
+# Intercepts:
+#       Value   Std. Error t value
+# LC|NT  2.5324  0.1544    16.3990
+# NT|VU  3.0629  0.1573    19.4673
+# VU|EN  4.3068  0.1719    25.0603
+# EN|CR  5.3356  0.2033    26.2433
+# 
+# Residual Deviance: 6733.003 
+# AIC: 6745.003 
+
+### model 7 using sqrt range
+olr_mdl6_tot <- MASS::polr(iucn_fct ~ chi_tot_rel + r_4_tot, 
+                       data = more_xfms, Hess = TRUE)
+summary(olr_mdl6_tot)
+# Call:
+# MASS::polr(formula = iucn_fct ~ chi_tot_rel + r_4_tot, data = more_xfms, 
+#     Hess = TRUE)
+# 
+# Coefficients:
+#                  Value Std. Error t value
+# chi_tot_rel  0.7683384   0.463302  1.6584
+# r_4_tot     -0.0003518   0.001854 -0.1897
+# 
+# Intercepts:
+#       Value   Std. Error t value
+# LC|NT  2.1964  0.1579    13.9086
+# NT|VU  2.7259  0.1605    16.9795
+# VU|EN  3.9693  0.1746    22.7313
+# EN|CR  4.9983  0.2056    24.3076
+# 
+# Residual Deviance: 6742.319 
+# AIC: 6754.319 
+
+olr_mdl6_cst <- MASS::polr(iucn_fct ~ chi_cst_rel + r_4_cst,
+                       data = more_xfms, Hess = TRUE)
+summary(olr_mdl6_cst)
+# Call:
+# MASS::polr(formula = iucn_fct ~ chi_cst_rel + r_4_cst, data = more_xfms, 
+#     Hess = TRUE)
+# 
+# Coefficients:
+#                Value Std. Error t value
+# chi_cst_rel 0.939843   0.447441   2.100
+# r_4_cst     0.006769   0.002908   2.328
+# 
+# Intercepts:
+#       Value   Std. Error t value
+# LC|NT  2.5536  0.1741    14.6660
+# NT|VU  3.0838  0.1767    17.4497
+# VU|EN  4.3276  0.1898    22.8067
+# EN|CR  5.3565  0.2186    24.5006
+# 
+# Residual Deviance: 6735.404 
+# AIC: 6747.404  
+
+```
+
+### Tidy outputs of coastal CHI and sqrt(coastal range) model
+
+```{r}
+broom::tidy(olr_mdl4_cst) %>% knitr::kable(digits = 5)
+```
+
+Using the coefficients from the regression using coastal range impacts and square root of coastal range.  Using coastal regression because better AIC and better t-value on range (now significant) at the cost of loss of t-value on CHI (though still insanely high).  Using data with zero impacts stripped out (since those are probably wrong).
+
+$$logit(P(Y \leq \text{LC})) = 2.50 - 0.94 \times CHI_{rel} - 0.00012 \times range^{0.5}$$
+Interpreting this as, a higher $CHI_{rel}$ (average impact per area) decreases the odds of falling into the least concern category.  The higher the range, also the less likely, though very small difference - this is opposite the hypothesis that larger ranges should increase odds of falling into early category.
+
+### Compare IUCN classification to predicted threatened status
+
+```{r}
+olr_mdl4_cst_fitted <- olr_mdl4_cst %>%
+  broom::augment(data = chi_iucn_no_zeros,
+                 type.predict = 'class')
+
+olr_mdl4_cst_fitted %>%
+  select(iucn_fct, .fitted) %>%
+  table()
+
+```
+
+Unfortunately, this fails to predict *any* species as anything other than Least Concern.
+
+

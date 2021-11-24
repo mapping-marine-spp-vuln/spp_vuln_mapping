@@ -178,6 +178,11 @@ chunk_size <- 100
 n_chunks <- ceiling(length(am_sid_vec) / chunk_size)
 outf_stem <- here_anx('impacts_by_species/impacts_%s.csv')
 
+### for vector attempt:
+ocean_area_vec  <- get_hcaf_info() %>%
+  arrange(loiczid) %>%
+  pull(ocean_area)
+
 for(k in 1:n_chunks) {
   ### k <- 13
   ptm_k <- proc.time()
@@ -232,12 +237,16 @@ for(k in 1:n_chunks) {
       ### am_spp_cells dataframe.
       spp_cells <- am_spp_cells_chunk %>%
         filter(am_sid == id)
+      
+      ### create a vector of species presence by cell area
+      spp_ocean_vec <- spp_coastal_vec <- ocean_area_vec
+      spp_ocean_vec[-spp_cells$loiczid] <- NA
+      spp_coastal_vec[-(spp_cells %>% filter(coastal) %>% pull(loiczid))] <- NA
     
       ### Calculate species total range and coastal range
-      spp_range <- spp_cells %>%
-        summarize(range_tot_km2 = sum(ocean_area),
-                  range_coastal_km2 = sum(ocean_area * coastal))
-  
+      range_tot_km2 <- sum(spp_ocean_vec, na.rm = TRUE)
+      range_coastal_km2 <- sum(spp_coastal_vec, na.rm = TRUE)
+
       ### Process species impacts
       spp_impacts_list <- lapply(1:nrow(str_vuln_lookup), 
                                  FUN = process_spp_impact,
@@ -246,8 +255,8 @@ for(k in 1:n_chunks) {
       ### bind rows, add total and coastal ranges, and write out
       spp_impacts_df <- spp_impacts_list %>%
         bind_rows() %>%
-        mutate(range_tot_km2     = spp_range$range_tot_km2,
-               range_coastal_km2 = spp_range$range_coastal_km2)
+        mutate(range_tot_km2     = range_tot_km2,
+               range_coastal_km2 = range_coastal_km2)
 
       write_csv(spp_impacts_df, outfile)
       
