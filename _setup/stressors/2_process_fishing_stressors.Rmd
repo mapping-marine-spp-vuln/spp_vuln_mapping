@@ -1,0 +1,41 @@
+---
+title: "Gather stressors and process to analysis CRS"
+author: "*Compiled on `r date()` by `r Sys.info()['user']`*"
+output: 
+  html_document:
+    code_folding: hide
+    toc: true
+    toc_depth: 3
+    toc_float: yes
+    number_sections: true
+    theme: cerulean
+    highlight: haddock
+    includes: 
+      in_header: '~/github/src/templates/ohara_hdr.html'
+  pdf_document:
+    toc: true
+---
+
+``` {r setup, echo = TRUE, message = FALSE, warning = FALSE}
+
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
+
+library(raster)
+library(oharac)
+oharac::setup()
+source(here('common_fxns.R'))
+
+```
+
+# Summary
+
+Pull Watson data and process to use in calculating biomass removal stressor per species.
+
+# Data
+
+* See Gage's scripts for OHI: https://github.com/OHI-Science/ohiprep_v2021/tree/gh-pages/globalprep/prs_fish/v2020
+
+
+
+# Methods
+

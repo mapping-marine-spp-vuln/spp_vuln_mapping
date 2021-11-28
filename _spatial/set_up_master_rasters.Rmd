@@ -196,6 +196,39 @@ plot(coastal_moll_10km, main = '3nmi coastal area')
 
 ```
 
+## LOICZID raster
+
+for projecting AquaMaps to Mollweide CRS
+
+``` {r set up LOICZID raster}
+
+loiczid_rast_file <- here('_spatial', 'loiczid_mol.tif')
+
+if(!file.exists(loiczid_rast_file)) {
+  
+  loiczid_rast <- raster(ext = extent(c(xmin = -180, xmax = 180, ymin = -90, ymax = 90)), 
+                         res = 0.5,
+                         crs = '+init=epsg:4326') %>%
+    setValues(1:ncell(.))
+  
+  ocean_moll_10km <- raster(ocean_10km_file)
+  
+  loiczid_moll <- projectRaster(loiczid_rast, ocean_moll_10km, method = 'ngb')
+  
+  writeRaster(loiczid_moll, loiczid_rast_file, overwrite = TRUE)
+  ### this drops some polar cells
+  # x <- 1:ncell(loiczid_rast)
+  # y <- x[!x %in% values(loiczid_moll)]
+  # hist(y)
+}
+
+loiczid_moll <- raster(loiczid_rast_file)
+plot(mask(loiczid_moll, ocean_moll_10km), 
+     main = 'LOICZID raster 10 km^2 Mollweide projection')
+
+```
+
+
 ## EEZ raster
 
 ``` {r set up EEZ raster}
@@ -308,8 +341,8 @@ if(!file.exists(bathy_rast_file)) {
   ### compress cells above zero to sea level;
   ### compress cells below 200 m to rough depth clips
   bathy_rast <- bathy_rast_raw
-  values(bathy_rast)[values(bathy_rast_raw) < 0] <- 0
-  values(bathy_rast)[values(bathy_rast_raw) > 200] <- 1000
+  values(bathy_rast)[values(bathy_rast_raw) <    0] <-    0
+  values(bathy_rast)[values(bathy_rast_raw) >  200] <- 1000
   values(bathy_rast)[values(bathy_rast_raw) > 1000] <- 2000
   values(bathy_rast)[values(bathy_rast_raw) > 2000] <- 3000
   values(bathy_rast)[values(bathy_rast_raw) > 3000] <- 4000

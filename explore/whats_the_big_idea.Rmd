@@ -29,7 +29,7 @@ library(rfishbase)
 
 # Summary
 
-Identify traits that can be pulled from FishBase and SeaLifeBase to identify functional groups for analysis.
+Identify traits that can be pulled from FishBase and SeaLifeBase to identify functional groups for analysis.  Examining impacts through the lens of ecosystem function can provide insights beyond just looking at species averages.
 
 # Data
 

@@ -1,0 +1,146 @@
+---
+title: "Process shipping stressors"
+author: "*Compiled on `r date()` by `r Sys.info()['user']`*"
+output: 
+  html_document:
+    code_folding: hide
+    toc: true
+    toc_depth: 3
+    toc_float: yes
+    number_sections: true
+    theme: cerulean
+    highlight: haddock
+    includes: 
+      in_header: '~/github/src/templates/ohara_hdr.html'
+  pdf_document:
+    toc: true
+---
+
+``` {r setup, echo = TRUE, message = FALSE, warning = FALSE}
+
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
+
+library(raster)
+library(sf)
+library(oharac)
+oharac::setup()
+source(here('common_fxns.R'))
+
+```
+
+# Summary
+
+Process shipping stressors, including a layer for ship strikes and for noise pollution, to 10 km Mollweide CRS.  Also process benthic structures, including oil, gas, and wind farms.
+
+# Data
+
+## Shipping
+
+* Data from: https://datacatalog.worldbank.org/search/dataset/0037580
+    * Cite as: Cerdeiro, D. A., Komaromi, A., Liu, Y., & Saeed, M. (2020). World Seaborne Trade in Real Time: A Proof of Concept for Building AIS-based Nowcasts from Scratch (IMF Working Paper WP/20/57). International Monetary Fund.
+* Commercial/passenger ship combined layer for large ships that contribute to whale strikes and noise pollution
+* Fishing/leisure craft combined layer for smaller ships that contribute to noise pollution?
+
+## Benthic structures
+
+* Oil and gas structures: Data from: https://datacatalog.worldbank.org/search/dataset/0037580 (oil and gas layer)
+    * Cite as: Cerdeiro, D. A., Komaromi, A., Liu, Y., & Saeed, M. (2020). World Seaborne Trade in Real Time: A Proof of Concept for Building AIS-based Nowcasts from Scratch (IMF Working Paper WP/20/57). International Monetary Fund.
+* Offshore wind farms: Data from: https://www.4coffshore.com? 
+
+# Methods
+
+## Examine shipping density data
+
+Files downloaded from https://datacatalog.worldbank.org/search/dataset/0037580 and unzipped to /home/shares/ohi/spp_vuln/spp_vuln_mapping/ship_density.  The data are in GeoTIFF raster format; each raster is about 10 GB.  Also included are .tif.ovr files, which are pyramids; these are 3 GB but can probably be safely discarded.
+
+```{r}
+ship_raw_dir <- '/home/shares/ohi/spp_vuln/spp_vuln_mapping/stressors/ship_density/raw'
+raw_tifs <- list.files(ship_raw_dir, pattern = '.tif$', full.names = TRUE)
+comm_shipping_r <- raster(raw_tifs[1])
+# class      : RasterLayer 
+# dimensions : 33998, 72006, 2448059988  (nrow, ncol, ncell)
+# resolution : 0.005, 0.005  (x, y)
+# extent     : -180.0153, 180.0147, -84.98735, 85.00265  (xmin, xmax, ymin, ymax)
+# crs        : +proj=longlat +datum=WGS84 +no_defs 
+# source     : ShipDensity_Commercial1.tif 
+# names      : ShipDensity_Commercial1 
+# values     : 0, 62652999  (min, max)
+
+# plot(log10(comm_shipping_r), main = 'Log_10(comm shipping)', axes = FALSE)
+```
+
+## Mask shipping rasters to ocean only
+
+Because land cells are filled with zero, mask with ocean to convert these to NA.  This will ensure that aggregation up to 0.1° cells (~ 10 km at equator for better projection to 10 km Mollweide) will not include land in averaging.
+
+
+Loop over each raw layer, save out masked layer.
+```{r}
+ship_masked_dir <- '/home/shares/ohi/spp_vuln/spp_vuln_mapping/stressors/ship_density/masked'
+
+new_fs <- basename(raw_tifs) %>%
+  tolower() %>%
+  str_remove_all('[0-9]') %>%
+  str_replace('.tif', '_masked.tif')
+tifs_masked <- file.path(ship_masked_dir, new_fs)
+
+### if files to be processed, create ocean mask
+if(any(!file.exists(tifs_masked))) {
+  ocean_mask_sf <- read_sf(here('_spatial/ne_10m_ocean/ne_10m_ocean.shp'))
+  ocean_mask_r <- fasterize::fasterize(ocean_mask_sf, comm_shipping_r)
+
+  # plot(ocean_mask_r, axes = FALSE, legend = FALSE)
+}
+
+
+for(i in seq_along(raw_tifs)) {
+  ### i <- 1
+  tif_raw <- raw_tifs[i]
+  tif_masked <- tifs_masked[i]
+  if(!file.exists(tif_masked)) {
+    message('Masking ', basename(tif_raw))
+    r <- raster(tif_raw)
+    r_masked <- mask(r, ocean_mask_r, progress = 'text')
+    message('Writing ', basename(tif_masked))
+    writeRaster(r_masked, tif_masked, 
+                progress = 'text',
+                overwrite = TRUE)
+  } else {
+    message('File ', basename(tif_masked), ' exists... skipping!')
+  }
+}
+```
+
+## Aggregate to 0.1° in prep for projection
+
+Loop over each masked layer, save out aggregated layer.
+
+```{r}
+ship_agg_dir <- '/home/shares/ohi/spp_vuln/spp_vuln_mapping/stressors/ship_density/aggregated'
+
+new_fs <- basename(tifs_masked) %>%
+    str_replace('.tif', '_agg.tif')
+tifs_agg <- file.path(ship_agg_dir, new_fs)
+
+for(i in seq_along(tifs_masked)) {
+  ### i <- 1
+  tif_masked <- tifs_masked[i]
+  tif_agg <- tifs_agg[i]
+  
+  if(!file.exists(tif_agg)) {
+    message('Aggregating ', basename(tif_masked))
+    r <- raster(tif_masked)
+    r_agg <- aggregate(r, fact = 20, fun = mean, progress = 'text')
+    message('Writing ', basename(tif_agg))
+    writeRaster(r_agg, tif_agg, 
+                progress = 'text',
+                overwrite = TRUE)
+  } else {
+    message('File ', basename(tif_agg), ' exists... skipping!')
+  }
+}
+for(t in tifs_agg) {
+  plot(t, axes = F, main = basename(t))
+}
+```
+
