@@ -140,7 +140,10 @@ for(i in seq_along(tifs_masked)) {
   }
 }
 for(t in tifs_agg) {
-  plot(t, axes = F, main = basename(t))
+  ### t <- tifs_agg[1]
+  r_name <- basename(t) %>% str_remove_all('shipdensity_|_masked_agg.tif')
+  r <- raster(t)
+  plot(log10(r), axes = F, main = sprintf('log_10(%s)', r_name))
 }
 ```
 
