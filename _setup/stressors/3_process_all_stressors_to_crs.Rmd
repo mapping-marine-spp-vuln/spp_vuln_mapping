@@ -41,6 +41,7 @@ All files are located on Mazu, starting from `/home/shares/ohi/` unless otherwis
 * GFW data to estimate benthic disturbance from food systems project:   
     * dir: `stressors_2021/_dataprep/fishing_benthic_destructive`
         * file: `FishingWatch_annual_effort_destructive_hours_2017.tif`
+        * log-transform
     * cite food systems project where GFW data was processed to this layer?
     * or cite GFW and include methods/code to generate this layer within this project.
     * Information from the food systems project: https://github.com/OHI-Science/food_systems/tree/master/fisheries/marine/disturbance
@@ -55,11 +56,13 @@ All files are located on Mazu, starting from `/home/shares/ohi/` unless otherwis
 * Nutrient pollution from OHI 2021 plume model
     * dir: `git-annex/globalprep/prs_land-based_nutrient/v2021/output/N_plume`
         * file: `pourpoints_crop_manure_leached_volt_N_2019_joined.tif`
+        * log-transform
     * See OHI processing scripts for details: https://github.com/OHI-Science/ohiprep_v2021/tree/gh-pages/globalprep/prs_land-based_nutrient/v2021
 * Direct human impact/habitat destruction using population as proxy
     * dir: `git-annex/globalprep/mar_prs_population/v2020/int/`
         * file: `human_density_2020_mol_tmp.tif`
         * also files for `human_count...` and `yearly_change...`
+        * Log-transform
 * Organic chemical pollution?
 * Wastewater?
         
@@ -88,6 +91,7 @@ All files are located on Mazu, starting from `/home/shares/ohi/` unless otherwis
     * Data from: https://datacatalog.worldbank.org/search/dataset/0037580
         * Cite as: Cerdeiro, D. A., Komaromi, A., Liu, Y., & Saeed, M. (2020). World Seaborne Trade in Real Time: A Proof of Concept for Building AIS-based Nowcasts from Scratch (IMF Working Paper WP/20/57). International Monetary Fund.
     * Commercial/passenger ship combined layer for large ships that contribute to whale strikes and noise pollution
+        * log-transform.
     * Fishing/leisure craft combined layer for smaller ships that contribute to noise pollution?
 * Benthic structures - see shipping pre-processing script
     * Oil and gas structures: Data from: https://datacatalog.worldbank.org/search/dataset/0037580 (oil and gas layer)
@@ -96,7 +100,10 @@ All files are located on Mazu, starting from `/home/shares/ohi/` unless otherwis
 
 ## Sensory pollution
 
-* Light pollution?
+* Light pollution from [Li et al. (2020) A harmonized global nighttime light dataset 1992–2018](https://www.nature.com/articles/s41597-020-0510-y#Sec8)
+    * Night time light averaged over year, at 30 arc-second resolution.
+    * Downloaded data from FigShare 11/30/21: https://figshare.com/articles/dataset/Harmonization_of_DMSP_and_VIIRS_nighttime_light_data_from_1992-2018_at_the_global_scale/9828827/2?file=17626049
+
 * Noise pollution?
 
 # Methods
@@ -143,6 +150,7 @@ ihs <- function(x, add = NULL) {
 log_plus <- function(x, add = NULL) {
   if(is.null(add)) {
     add <- max(x, na.rm = TRUE)/1000
+    if(add > 1) add <- 1
   }
   y <- log(x + add)
 }
@@ -369,10 +377,12 @@ if(!file.exists(nutr_f)) {
   ocean_mask_r <- fasterize::fasterize(ocean_mask_sf, orig_r)
   masked_r <- mask(orig_r, ocean_mask_r, progress = 'text')
   
-  ### Aggregate up to ~ 10 km, 0.1°, then reproject
-  agg_r <- aggregate(masked_r, fact = 12, fun = 'mean', progress = 'text')
+  ### Log-transform, then aggregate up to ~ 10 km, 0.1°, then reproject
+  log_r <- log_plus(masked_r)
+  agg_r <- aggregate(log_r, fact = 12, fun = 'mean', progress = 'text')
   nutr_r <- projectRaster(agg_r, ocean_rast, progress = 'text')
   
+  ### rescale to 99.9%ile
   values(nutr_r) <- rescale(values(nutr_r), qtile = .999)
   values(nutr_r)[is.na(values(nutr_r))] <- 0
   nutr_r_ocean <- mask(nutr_r, ocean_rast, progress = 'text')
@@ -386,7 +396,7 @@ if(!file.exists(nutr_f)) {
 r <- raster(nutr_f)
   
 plot(r, axes = FALSE, 
-     main = 'Nutrient pollution rescaled to 99.9%ile')
+     main = 'Nutrient pollution: log(x+1), rescaled to 99.9%ile')
 
 hist(r[r > 0], main = 'distribution of non-zero values')
 
@@ -446,8 +456,10 @@ if(!file.exists(pop_f)) {
   
   focal_pop_r <- raster(focal_pop_f)
   
-  ### Already in Mollweide, but wrong resolution... aggregate up to ~ 10 km
-  agg_focal_pop_r <- aggregate(focal_pop_r, fact = 10, fun = 'mean', progress = 'text')
+  ### Already in Mollweide, but wrong resolution... log transform, aggregate 
+  ### up to ~ 10 km, then reproject
+  log_focal_pop_r <- log_plus(focal_pop_r)
+  agg_focal_pop_r <- aggregate(log_focal_pop_r, fact = 10, fun = 'mean', progress = 'text')
   agg_focal_pop_r_10km <- projectRaster(agg_focal_pop_r, ocean_rast, progress = 'text')
   
   ### Masking to coastal cells rather than whole ocean, then
@@ -466,7 +478,7 @@ if(!file.exists(pop_f)) {
 r <- raster(pop_f)
   
 plot(r, axes = FALSE,
-     main = 'Human population density rescaled to 99.9%ile')
+     main = 'Human population density: log(x+1), rescaled to 99.9%ile')
 
 hist(r[r > 0], main = 'distribution of non-zero values')
 
@@ -824,3 +836,67 @@ See shipping pre-processing script?
 
 ```
 
+## Sensory stressors
+
+### Light pollution
+
+Per the suggestion by the authors, we will clip out any values below a threshold (7? 20?) as being prone to fluctuation and therefore potentially not stable.  
+
+> The VIIRS-derived results are more fluctuated during the period from 2015 to 2018 for pixels with DN values greater than 7 (Fig. 5a,b), and this fluctuation was notably mitigated for pixels with relatively high DNs. This suggests the converted DN values from VIIRS data are more reliable for pixels with DN values larger than 20 (Fig. 5c,d), and the derived temporal patterns of SNTL and lit pixels are more reliable for pixels with DN values above 30 (Fig. 5e,f). There are two possible reasons for the fluctuation of derived NTL time series data from VIIRS. First, the original observations of VIIRS NTL data fluctuate over years24. For example, the drop of SNTL and lit pixels from 2015 to 2016 in our result was also observed in the annual result of VIIRS data from the Payne Institute for Public Policy under the Colorado School of Mines24. Second, the simulated DMSP-like NTL data from VIIRS have a larger extent than the DMSP data with the improved sensitivity of sensors in VIIRS and the aggregation procedure using the kernel density method and point-spread function, especially in low luminance regions (Fig. S3). After excluding those low luminance regions using the threshold of 7, the derived NTL result from VIIRS is closer with the DMSP data. When the threshold increases to 20 and 30, most blooming effects around the city and villages are eliminated, resulting in a more continuous time series data of the SNTL and the number of lit pixels (Fig. 5)
+
+Note that with a threshold of 7 there appear to be artifacts in the 2018 data in the arctic and in the waters south of Australia.  Could this be legit light pollution, or auroras?  Try using the minimum value for each cell between the 2017 and 2018 rasters, then dropping values below 7.
+
+Also, examine the ocean-based sources of stable light as potential benthic structures?
+
+* dir: `/home/shares/ohi/spp_vuln/spp_vuln_mapping/stressors/light`
+    * file: `Harmonized_DN_NTL_2018_simVIIRS.tif`
+    
+```{r light pollution}
+light_f <- here('_data/stressors_mol/light_2018.tif')
+### unlink(light_f)
+
+if(!file.exists(light_f)) {
+  light_fs <- list.files(here_ohi('spp_vuln/spp_vuln_mapping/stressors/light'),
+                         full.names = TRUE)
+  light_stack <- stack(light_fs)
+  # class      : RasterLayer 
+  # dimensions : 16801, 43201, 725820001  (nrow, ncol, ncell)
+  # resolution : 0.008333333, 0.008333333  (x, y)
+  # extent     : -180.0042, 180.0042, -65.00417, 75.00417  (xmin, xmax, ymin, ymax)
+  # crs        : +proj=longlat +datum=WGS84 +no_defs 
+  # source     : Harmonized_DN_NTL_2018_simVIIRS.tif 
+  # names      : Harmonized_DN_NTL_2018_simVIIRS 
+  # values     : 0, 63  (min, max)
+  
+  ### take min of 2017 and 2018 to help drop artifacts
+  min_light_r <- calc(light_stack, fun = min, progress = 'text')
+  
+  ### crop north/south slightly to remove artifacts
+  bbox <- c(-180, 180, -64.5, 74.5)
+  crop_light_r <- crop(min_light_r, extent(bbox), progress = 'text')
+  
+  thresh <- 7
+  values(crop_light_r)[values(crop_light_r) < thresh] <- 0
+  
+  light_agg_r <- aggregate(crop_light_r, fact = 12, progress = 'text')
+  
+  light_r_mol <- projectRaster(light_agg_r, ocean_rast, progress = 'text')
+  ### fill NA cells with zero
+  values(light_r_mol)[is.na(values(light_r_mol))] <- 0
+  ### convert negative cells (result of projection artifacts?) to zero
+  values(light_r_mol)[values(light_r_mol) < 0] <- 0
+  light_r_mol <- mask(light_r_mol, ocean_rast)
+  values(light_r_mol) <- rescale(values(light_r_mol))
+  
+  ### round to drop ludicrous precision then save out
+  values(light_r_mol) <- round(values(light_r_mol), 5)
+  writeRaster(light_r_mol, light_f, overwrite = TRUE)
+}
+
+r <- raster(light_f)
+  
+plot(r, axes = FALSE,
+     main = 'Light pollution (nighttime lights)')
+
+hist(r[r > 0], main = 'distribution of non-zero values')
+```
