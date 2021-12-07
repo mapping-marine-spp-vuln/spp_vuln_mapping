@@ -1,0 +1,14 @@
+fleet_gear_name,discards,catch,d_c_ratio,water_col
+trawl,35412576,56947074,0.622,benth
+longline_tuna,1357786,4764162,0.285,pel
+dredge,1215013,4293331,0.283,benth
+trap,1906771,8218842,0.232,benth
+purse_seine_tuna,233687,4582124,0.051,pel
+trawl_midwater,1385705,40756019,0.034,pel
+lines_non_tuna,371045,23439585,0.016,pel
+longline_non_tuna,4342,310111,0.014,pel
+purse_seine_non_tuna,462287,39756393,0.012,pel
+seine,132084,12398992,0.011,pel
+gillnet,145405,29080357,0.005,pel
+pole_and_line_tuna,8658,2165234,0.004,pel
+other,2889,2889583,0.001,pel

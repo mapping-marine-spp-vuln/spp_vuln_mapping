@@ -1,9 +1,12 @@
 ###################################
 ### Helper functions in general ###
 ###################################
-here_anx <- function(f = '') { 
+here_anx <- function(f = '', ...) { 
   ### create file path to git-annex dir for project
+  f <- paste(f, ..., sep = '/')
+  f <- stringr::str_replace_all(f, '\\/+', '/')
   f_anx <- sprintf('/home/shares/ohi/spp_vuln/spp_vuln_mapping/%s', f)
+  return(f_anx)
 }
 
 #####################################

@@ -1,0 +1,274 @@
+---
+title: "Watson Data: discards/bycatch"
+author: "*Compiled on `r date()` by `r Sys.info()['user']`*"
+output: 
+  html_document:
+    code_folding: show
+    toc: true
+    toc_depth: 1
+    toc_float: yes
+    number_sections: false
+    theme: cerulean
+    highlight: haddock
+    includes: 
+      in_header: '~/github/src/templates/ohara_hdr.html'
+  pdf_document:
+    toc: true
+---
+
+``` {r setup, echo = TRUE, message = FALSE, warning = FALSE}
+
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
+
+library(raster)
+library(sf)
+library(tidyverse)
+library(here)
+library(RColorBrewer)
+library(xlsx)
+
+source(here('common_fxns.R'))
+```
+
+# Summary
+
+Read in data from Watson (2018).
+
+# Data
+
+Data from
+
+* Watson, R.A. and Tidd, A.N. (2018) Mapping nearly a century and a half of global marine fishing: 1869 to 2015. Marine Policy 93, 171-177
+* Watson, R. (2017) A database of global marine commercial, small-scale, illegal and unreported fisheries catch 1950-2014. Nature Scientific Data 4 (170039).
+
+Included in data:
+
+* Industrial Catch (1950 - 2017) - reported, iuu, and discard catch data for each cell location and unique identifier
+* Non-Industrial Catch (1950 - 2017) - reported, iuu, and discard catch data for each cell location and unique identifier
+* DATA CODE DEFINITIONS (gear/taxa/country codes and cell lat/lon references)
+
+## How to download the data code definitions. 
+
+For this, it is saved as an .xlsx file (Codes.xlsx). This file has 4 sheets in it which contain meta data that explain columns in the Index files, and one sheet with is "Spatial Cells Reference - contains geospatial information associated wtih the Industrial Catch data". 
+To download this data, go to the IMAS website: http://data.imas.utas.edu.au/portal/search?uuid=ff1274e1-c0ab-411b-a8a2-5a12eb27f2c0 and dowload it manually.
+
+This .xlsx file contains these sheets:
+
+* Spatial Cells Reference (Cells) - contains geospatial information associated wtih the Industrial Catch data
+* Gear Reference (Gear) - contains information regarding how different fishing gear is classified in the index datasets.
+* Taxa Reference (Taxa) - contains information regarding how different taxa is classified in the index datasets.
+* Country Reference (Country) - contains informations regarding how different countries are labeled in the index datasets. 
+
+# Methods
+
+## Access Watson data stored for OHI 2021
+
+For our purposes we will only be using the most recent set of data.  These are stored on Mazu courtesy of Gage for OHI 2021.
+
+* dir: `git-annex/globalprep/_raw_data/IMAS_GlobalFisheriesLandings/d2020`
+    * file: `Catch2015_2019.rds`
+
+```{r}
+watson_dir <- here_anx('../../git-annex/globalprep/_raw_data', 
+                       'IMAS_GlobalFisheriesLandings/d2020')
+watson_df <- readRDS(file.path(watson_dir, 'Catch2015_2019.rds')) %>%
+  janitor::clean_names()
+
+codes_xlsx <- file.path(watson_dir, 'Codes_raw.xlsx')
+# codes_sheets <- readxl::excel_sheets(codes_xlsx)
+cell_df <- readxl::read_excel(codes_xlsx, sheet = 'Cell') %>%
+  janitor::clean_names() %>%
+  select(-c(x5:x7))
+taxa_df <- readxl::read_excel(codes_xlsx, sheet = 'Taxa') %>%
+  janitor::clean_names() %>%
+  select(-c(x8:taxonkey_11), taxonkey = taxonkey_1)
+ctry_df <- readxl::read_excel(codes_xlsx, sheet = 'Country') %>%
+  janitor::clean_names() %>%
+  select(cnumber = cnumber_1, fao_name)
+gear_df <- readxl::read_excel(codes_xlsx, sheet = 'Gear') %>%
+  janitor::clean_names() %>%
+  select(-x9, -x10)
+
+```
+
+## Process bycatch from discards
+
+Watson data includes discard estimates - "Discard catch rates that were estimated were not expected to be the same taxon as the reported landed taxon for each record, but rather would be comprised of a variety of taxa, targeted and non-targeted, many of which would not be represented in the original landings source data."  Through this, discards in any cell can be summed up across all targeted species, countries, and gear type.
+
+However, we wish to include estimates for bycatch of demersal/pelagic species separately from pelagic, since we can account for water column position of all the species potentially impacted.  To do this, we can examine total bycatch across all targeted species and country, but separate gear type into benthic/demersal and pelagic/midwater types.
+
+### Gears with high bycatch - from data
+
+From the data, examine which gear types have a high ratio of discards to catch, across all cells as a rough first pass.  Drop the duplicate gear codes due to FAO coding and naming system...
+
+```{r, results = 'asis'}
+gear_clean_df <- gear_df %>%
+  select('gear', 'f_gear_code', 'f_gear_label', 'fleet_gear_name') %>%
+  distinct() %>%
+  mutate(f_gear_label = tolower(f_gear_label),
+         fleet_gear_name = tolower(fleet_gear_name),
+         fleet_gear_name = str_replace(fleet_gear_name, 'tuna', ' tuna'),
+         fleet_gear_name = str_replace_all(fleet_gear_name, '[^a-z]+', '_'))
+catch_gear_df <- watson_df %>%
+  oharac::dt_join(gear_clean_df, by = c('gear', 'f_gear_code'), type = 'left')
+
+discard_catch_ratio <- catch_gear_df %>%
+  group_by(fleet_gear_name) %>%
+  summarize(discards  = sum(discards_ind, na.rm = TRUE),
+            catch     = sum(reported_ind, na.rm = TRUE),
+            d_c_ratio = round(discards / catch, 3),
+            .groups = 'drop') %>%
+  mutate(discards = round(discards),
+         catch = round(catch)) %>%
+  arrange(desc(d_c_ratio))
+
+knitr::kable(discard_catch_ratio)
+
+benthic_gears <- c('trawl', 'dredge', 'trap')
+
+gear_d_c_ratio <- discard_catch_ratio %>%
+  mutate(water_col = ifelse(fleet_gear_name %in% benthic_gears, 'benth', 'pel'))
+
+write_csv(gear_d_c_ratio, here('int/watson_discard_catch_ratio.csv'))
+```
+
+We do not necessarily need to divide into high bycatch and low bycatch gears, since we have the actual discards reported.  If we can get effort information (via GFW) for all these gears, then we can adjust bycatch by CPUE and gear selectivity as a proxy for biomass of bycaught species.  If not, focus on those we can identify with effort, and those with the highest impacts.
+
+The data are already presented in 0.5° cells so no aggregation necessary prior to reprojecting to Mollweide.
+
+For each gear type, summarize total discards and total catch per cell; rasterize and save out to Mazu.
+
+### Summarize bycatch (discards) per cell by gear type
+
+```{r}
+
+gear_short_df <- gear_clean_df %>%
+  select(code = f_gear_code, name = fleet_gear_name) %>%
+  distinct() %>%
+  arrange(code)
+
+### set up a base raster
+xyz_df <- cell_df %>%
+  select(x = lon_centre, y = lat_centre, z = cell)
+
+cell_id_rast <- rasterFromXYZ(xyz_df, crs = '+init=epsg:4326') %>%
+  extend(extent(c(-180, 180, -90, 90)), value = NA)
+
+### Set up a filename stem
+bycatch_fstem <- here_anx('stressors', 'fishing', 
+                          'bycatch_by_gear', 'bycatch_%s_%s_sum.tif')
+benthic_gears <- c('trawl', 'dredge', 'trap')
+
+for(i in 1:nrow(gear_short_df)) {
+  # i <- 1
+  g_code <- gear_short_df$code[i]
+  g_name <- gear_short_df$name[i]
+  g_water_col <- ifelse(g_name %in% benthic_gears, 'benth', 'pel')
+  
+  bycatch_rast_f <- sprintf(bycatch_fstem, g_name, g_water_col)
+  if(!file.exists(bycatch_rast_f)) {
+    message('Processing ', bycatch_rast_f, '...')
+    tmp_bycatch_df <- catch_gear_df %>%
+      filter(f_gear_code == g_code) %>%
+      group_by(cell) %>%
+      summarize(discard_sum = sum(discards_ind, na.rm = TRUE))
+    tmp_bycatch_rast <- raster::subs(cell_id_rast, tmp_bycatch_df,
+                                     by = 'cell', which = 'discard_sum')
+    writeRaster(tmp_bycatch_rast, bycatch_rast_f, overwrite = TRUE)
+  } else {
+    message('File ', bycatch_rast_f, ' exists... skipping!')
+  }
+}
+```
+
+### Plot discards by gear type
+
+```{r}
+rast_fs <- list.files(here_anx('stressors', 'fishing', 'bycatch_by_gear'), 
+                               full.names = TRUE)
+for(f in rast_fs) {
+
+  g_name <- str_remove_all(basename(f), '_sum.tif')
+  
+  r <- raster(f)
+  
+  plot(r, axes = FALSE, main = g_name, col = hcl.colors(20))
+}
+```
+
+## Process total reported catch by gear
+
+### Summarize reported catch per cell by gear type
+
+This is identical to the discards code, swapping reported catch with discards.
+
+```{r}
+
+gear_short_df <- gear_clean_df %>%
+  select(code = f_gear_code, name = fleet_gear_name) %>%
+  distinct() %>%
+  arrange(code)
+
+### set up a base raster
+xyz_df <- cell_df %>%
+  select(x = lon_centre, y = lat_centre, z = cell)
+
+cell_id_rast <- rasterFromXYZ(xyz_df, crs = '+init=epsg:4326') %>%
+  extend(extent(c(-180, 180, -90, 90)), value = NA)
+
+### Set up a filename stem
+rep_catch_fstem <- here_anx('stressors', 'fishing', 
+                          'reported_catch_by_gear', 'catch_%s_%s_sum.tif')
+benthic_gears <- c('trawl', 'dredge', 'trap')
+
+for(i in 1:nrow(gear_short_df)) {
+  # i <- 1
+  g_code <- gear_short_df$code[i]
+  g_name <- gear_short_df$name[i]
+  g_water_col <- ifelse(g_name %in% benthic_gears, 'benth', 'pel')
+  
+  rep_catch_f <- sprintf(rep_catch_fstem, g_name, g_water_col)
+  if(!file.exists(rep_catch_f)) {
+    message('Processing ', rep_catch_f, '...')
+    tmp_catch_df <- catch_gear_df %>%
+      filter(f_gear_code == g_code) %>%
+      group_by(cell) %>%
+      summarize(reported_sum = sum(reported_ind, na.rm = TRUE))
+    tmp_catch_rast <- raster::subs(cell_id_rast, tmp_catch_df,
+                                   by = 'cell', which = 'reported_sum')
+    writeRaster(tmp_catch_rast, rep_catch_f, overwrite = TRUE)
+  } else {
+    message('File ', rep_catch_f, ' exists... skipping!')
+  }
+}
+```
+
+### Examine bycatch ratio by gear type
+
+Here, read in each bycatch raster and reported catch raster, and plot the map of this ratio globally to identify heterogeneity in spatial patterns of bycatch intensity.  Also plot a histogram of the resulting values to visualize the distribution.
+
+```{r}
+for(i in 1:nrow(gear_short_df)) {
+  ### i <- 1
+  g_name <- gear_short_df$name[i]
+  g_water_col <- ifelse(g_name %in% benthic_gears, 'benth', 'pel')
+
+  catch_f <- sprintf(rep_catch_fstem, g_name, g_water_col)
+  bycatch_f <- sprintf(bycatch_fstem, g_name, g_water_col)
+  
+  b_r <- raster(bycatch_f)
+  
+  c_r <- raster(catch_f)
+  
+  ratio_r <- b_r / c_r
+  
+  plot(ratio_r, axes = FALSE, main = paste('Bycatch ratio: ', g_name), col = hcl.colors(20))
+  hist(ratio_r, main = paste('Bycatch ratio: ', g_name))
+}
+```
+
+
+
+
+
+

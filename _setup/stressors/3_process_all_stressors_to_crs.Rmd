@@ -22,8 +22,9 @@ knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
 
 library(raster)
 library(sf)
-library(oharac)
-oharac::setup()
+library(tidyverse)
+library(here)
+library(RColorBrewer)
 source(here('common_fxns.R'))
 
 ```
@@ -116,7 +117,9 @@ From `?projectRaster`:
 > If the resolution of the output is much larger than that of the input, you should first aggregate the input such that the resolution of the input becomes more similar (perhaps a little smaller) to the output.
 
 ```{r define stuff}
-here_ohi <- function(f = '') {
+here_ohi <- function(...) {
+  f <- paste(..., sep = '/')
+  f <- stringr::str_replace_all(f, '\\/+', '/')
   sprintf('/home/shares/ohi/%s', f)
 }
 
@@ -210,7 +213,7 @@ log(mean(lognorm_var)) # [1] 11.65589
 ```
 
 
-```{r GFW data for benthic disturbance}
+```{r GFW data for benthic disturbance, eval = FALSE}
 benth_dist_f <- here('_data/stressors_mol/fishing_benthic_dest_2017.tif')
 ### unlink(benth_dist_f)
 
@@ -265,7 +268,7 @@ hist(r[r > 0.0001], main = 'distribution of non-zero values')
         * in subdirs: `art_high_bycatch/ahb_fish_pressure_2013_2017.tif` and `comm_high_bycatch/hb_fish_pressure_2013_2017.tif`
     * From Watson data, 0.5° rasters.
 
-```{r Watson data for artisanal high bycatch}
+```{r Watson data for artisanal high bycatch, eval = FALSE}
 abh_f <- here('_data/stressors_mol/art_high_bycatch_2017.tif')
 ### unlink(abh_f)
 
@@ -307,7 +310,7 @@ hist(r[r > 0], main = 'distribution of non-zero values')
 
 ```
 
-```{r Watson data for commercial high bycatch}
+```{r Watson data for commercial high bycatch, eval = FALSE}
 chb_f <- here('_data/stressors_mol/comm_high_bycatch_2017.tif')
 ### unlink(chb_f)
 
@@ -355,7 +358,7 @@ hist(r[r > 0], main = 'distribution of non-zero values')
 
 ### Nutrient pollution from OHI 2021 plume model
 
-```{r Nutrient plume data}
+```{r Nutrient plume data, eval = FALSE}
 nutr_f <- here('_data/stressors_mol/nutrient_plume_2019.tif')
 ### unlink(nutr_f)
 
@@ -413,7 +416,7 @@ The data for this is population density or count (on land).  We want an indicati
 
 Rescale based on 99.9%ile, without transformation.  Seems like a linear relationship between number of people and their impact makes sense.
 
-```{r Population data}
+```{r Population data, eval = FALSE}
 pop_f <- here('_data/stressors_mol/direct_human_2020.tif')
 ### unlink(pop_f)
 
@@ -494,7 +497,7 @@ hist(r[r > 0], main = 'distribution of non-zero values')
         * These are pre-transform and mask.  Transformed and masked are also available, but let's use these so we can make sure the transform and mask are accurate to our particular CRS.
     * See OHI processing script for details: `https://github.com/OHI-Science/ohiprep_v2021/blob/gh-pages/globalprep/prs_slr/v2021/slr_layer_prep_v2.Rmd`
 
-```{r Sea level rise data}
+```{r Sea level rise data, eval = FALSE}
 slr_f <- here('_data/stressors_mol/slr_2019.tif')
 ### unlink(slr_f)
 
@@ -575,7 +578,7 @@ hist(r[r > 0], main = 'distribution of non-zero values')
 * These are in Mollweide but at 934 meter resolution... reproject to 10 km
 * Or, use OHI or CHI processing script to process from raw data?
 
-```{r Ocean acidification data}
+```{r Ocean acidification data, eval = FALSE}
 oa_f <- here('_data/stressors_mol/oa_2017.tif')
 ### unlink(oa_f)
 
@@ -617,7 +620,7 @@ hist(r[r > 0], main = 'distribution of non-zero values')
 * dir: `git-annex/globalprep/prs_uv/v2021/int/rescaled/`
     * file: `annual_diff_2016_2020_rescaled.tif`
 
-```{r Ultraviolet radiation data}
+```{r Ultraviolet radiation data, eval = FALSE}
 uv_f <- here('_data/stressors_mol/uv_2020.tif')
 ### unlink(uv_f)
 
@@ -682,7 +685,7 @@ ship_raw_fs_large <- ship_raw_fs[str_detect(basename(ship_raw_fs), 'commercial|o
 ship_raw_fs_small <- ship_raw_fs[!ship_raw_fs %in% ship_raw_fs_large]
 ```
 
-```{r create large ship layer}
+```{r create large ship layer, eval = FALSE}
 ship_large_f <- here('_data/stressors_mol/shipping_large_2021.tif')
 ### unlink(ship_large_f)
 
@@ -719,7 +722,7 @@ plot(r, axes = FALSE,
 hist(r[r > 0], main = 'distribution of non-zero values')
 ```
 
-```{r create small ship layer}
+```{r create small ship layer, eval = FALSE}
 ship_small_f <- here('_data/stressors_mol/shipping_small_2021.tif')
 ### unlink(ship_small_f)
 
@@ -756,84 +759,156 @@ plot(r, axes = FALSE,
 hist(r[r > 0], main = 'distribution of non-zero values')
 ```
 
-```{r create combined unweighted ship layer}
-ship_all_unweighted_f <- here('_data/stressors_mol/shipping_all_unweighted_2021.tif')
-### unlink(ship_all_unweighted_f)
-
-if(!file.exists(ship_all_unweighted_f)) {
-
-  orig_stack <- stack(ship_raw_fs)
-
-  ### Already masked and aggregated in prep script
-  ship_all_stack <- projectRaster(orig_stack, ocean_rast, progress = 'text')
-  ### projectRaster with ngb introduces some weird negative values; drop'em
-  values(ship_all_stack)[values(ship_all_stack) < 0] <- 0
-  
-  ship_all_r <- calc(ship_all_stack, fun = sum)
-  
-  values(ship_all_r) <- rescale(values(ship_all_r), qtile = .999)
-
-  ### round to drop ludicrous precision then save out
-  values(ship_all_r) <- round(values(ship_all_r), 5)
-  writeRaster(ship_all_r, ship_all_unweighted_f, overwrite = TRUE)
-}
-
-r <- raster(ship_all_unweighted_f)
-  
-plot(r, axes = FALSE,
-     main = 'All vessels, unweighted, rescaled')
-
-hist(r[r > 0], main = 'distribution of non-zero values')
+```{r create combined unweighted ship layer, eval = FALSE}
+# ship_all_unweighted_f <- here('_data/stressors_mol/shipping_all_unweighted_2021.tif')
+# ### unlink(ship_all_unweighted_f)
+# 
+# if(!file.exists(ship_all_unweighted_f)) {
+# 
+#   orig_stack <- stack(ship_raw_fs)
+# 
+#   ### Already masked and aggregated in prep script
+#   ship_all_stack <- projectRaster(orig_stack, ocean_rast, progress = 'text')
+#   ### projectRaster with ngb introduces some weird negative values; drop'em
+#   values(ship_all_stack)[values(ship_all_stack) < 0] <- 0
+#   
+#   ship_all_r <- calc(ship_all_stack, fun = sum)
+#   
+#   values(ship_all_r) <- rescale(values(ship_all_r), qtile = .999)
+# 
+#   ### round to drop ludicrous precision then save out
+#   values(ship_all_r) <- round(values(ship_all_r), 5)
+#   writeRaster(ship_all_r, ship_all_unweighted_f, overwrite = TRUE)
+# }
+# 
+# r <- raster(ship_all_unweighted_f)
+#   
+# plot(r, axes = FALSE,
+#      main = 'All vessels, unweighted, rescaled')
+# 
+# hist(r[r > 0], main = 'distribution of non-zero values')
 ```
 
-```{r create combined size-weighted ship layer}
-ship_all_weighted_f <- here('_data/stressors_mol/shipping_all_weighted_2021.tif')
-### unlink(ship_all_weighted_f)
-
-if(!file.exists(ship_all_weighted_f)) {
-
-  ship_lg_stack <- stack(ship_raw_fs_large)
-  ship_lg_reproj <- projectRaster(ship_lg_stack, ocean_rast)
-  ship_sm_stack <- stack(ship_raw_fs_small)
-  ship_sm_reproj <- projectRaster(ship_sm_stack, ocean_rast)
-
-  ### projectRaster with ngb introduces some weird negative values; drop'em
-  values(ship_lg_reproj)[values(ship_lg_reproj) < 0] <- 0
-  values(ship_sm_reproj)[values(ship_sm_reproj) < 0] <- 0
-
-  ### weight large ship layers relative to small ship layers to represent
-  ### higher intensity of impact (e.g., noise pollution)
-  large_wt <- 100
-  ship_lg_reproj_wt <- large_wt * ship_lg_reproj
-  
-  ship_all_stack <- stack(ship_lg_reproj_wt, ship_sm_reproj)
-  ship_all_r <- calc(ship_all_stack, fun = sum)
-  
-  values(ship_all_r) <- rescale(values(ship_all_r), qtile = .999)
-
-  ### round to drop ludicrous precision then save out
-  values(ship_all_r) <- round(values(ship_all_r), 5)
-  writeRaster(ship_all_r, ship_all_weighted_f, overwrite = TRUE)
-}
-
-r <- raster(ship_all_weighted_f)
-  
-plot(r, axes = FALSE,
-     main = 'All vessels, size-weighted, rescaled')
-
-hist(r[r > 0], main = 'distribution of non-zero values')
+```{r create combined size-weighted ship layer, eval = FALSE}
+# ship_all_weighted_f <- here('_data/stressors_mol/shipping_all_weighted_2021.tif')
+# ### unlink(ship_all_weighted_f)
+# 
+# if(!file.exists(ship_all_weighted_f)) {
+# 
+#   ship_lg_stack <- stack(ship_raw_fs_large)
+#   ship_lg_reproj <- projectRaster(ship_lg_stack, ocean_rast)
+#   ship_sm_stack <- stack(ship_raw_fs_small)
+#   ship_sm_reproj <- projectRaster(ship_sm_stack, ocean_rast)
+# 
+#   ### projectRaster with ngb introduces some weird negative values; drop'em
+#   values(ship_lg_reproj)[values(ship_lg_reproj) < 0] <- 0
+#   values(ship_sm_reproj)[values(ship_sm_reproj) < 0] <- 0
+# 
+#   ### weight large ship layers relative to small ship layers to represent
+#   ### higher intensity of impact (e.g., noise pollution)
+#   large_wt <- 100
+#   ship_lg_reproj_wt <- large_wt * ship_lg_reproj
+#   
+#   ship_all_stack <- stack(ship_lg_reproj_wt, ship_sm_reproj)
+#   ship_all_r <- calc(ship_all_stack, fun = sum)
+#   
+#   values(ship_all_r) <- rescale(values(ship_all_r), qtile = .999)
+# 
+#   ### round to drop ludicrous precision then save out
+#   values(ship_all_r) <- round(values(ship_all_r), 5)
+#   writeRaster(ship_all_r, ship_all_weighted_f, overwrite = TRUE)
+# }
+# 
+# r <- raster(ship_all_weighted_f)
+#   
+# plot(r, axes = FALSE,
+#      main = 'All vessels, size-weighted, rescaled')
+# 
+# hist(r[r > 0], main = 'distribution of non-zero values')
 ```
 
 
 ### Benthic structures
 
-See shipping pre-processing script?
+See benthic structures pre-processing script.  Result is a .csv of structures by type and location to 0.005° lat-long.  Aggregate up to 0.1, then rasterize, then reproject to Mollweide 10 km.
 
-* dir: `/home/shares/ohi/spp_vuln/spp_vuln_mapping/stressors/ship_density/aggregated`
-    * file: `shipdensity_oilgas_masked_agg.tif`
+* dir: `/home/shares/ohi/spp_vuln/spp_vuln_mapping/stressors/benthic_structures`
+    * file: `benth_str_from_ais_2020.csv`
 
-```{r}
+```{r create benthic structures layer}
+benth_f <- here_ohi('_data/stressors_mol/benth_str_2020.tif')
+### unlink(benth_f)
 
+if(!file.exists(benth_f)) {
+
+  benth_raw_f <- here_ohi('spp_vuln/spp_vuln_mapping',
+                          'stressors/benthic_structures',
+                          'benth_str_from_ais_2020.csv')
+  
+  benth_raw_df <- read_csv(benth_raw_f)
+  
+  benth_agg_df <- benth_raw_df %>%
+    rename(x = round_lon, y = round_lat) %>%
+    mutate(x = round(x, 1),
+           y = round(y, 1)) %>%
+    group_by(x, y) %>%
+    summarize(n_str = n())
+  
+  benth_r <- rasterFromXYZ(benth_agg_df, 
+                           res = 0.1, digits = 1,
+                           crs = '+init=epsg:4326')
+  # class      : RasterLayer 
+  # dimensions : 1116, 2718, 3033288  (nrow, ncol, ncell)
+  # resolution : 0.1, 0.1  (x, y)
+  # extent     : -97.75, 174.05, -39.05, 72.55  (xmin, xmax, ymin, ymax)
+  # crs        : +proj=longlat +datum=WGS84 +no_defs 
+  # source     : memory
+  # names      : n_str 
+  # values     : 1, 48  (min, max)
+  
+  ### those extents look a little fishy - doesn't reach the CA coast!
+  
+  ### set NA cells to 0, then mask with ocean rast
+  ocean_mask_sf <- read_sf(here('_spatial/ne_10m_ocean/ne_10m_ocean.shp'))
+  benth_r <- raster::extend(benth_r, ocean_mask_sf)
+  values(benth_r)[is.na(values(benth_r))] <- 0
+
+  ocean_mask_r <- fasterize::fasterize(ocean_mask_sf, benth_r)
+  masked_r <- mask(benth_r, ocean_mask_r, progress = 'text')
+  ### aggregate to 0.5 and compare to prior data
+  x <- aggregate(masked_r, fact = 5)
+  y <- raster(here('_data/stressors_hcaf/benthic_str_2016_hcaf.tif'))
+
+  values(x)[values(x) > 0] <- 2
+  values(y)[values(y) > 0] <- 1
+  xx <- projectRaster(x, y, method = 'ngb')
+  plot(xx + y)
+  
+  r_df <- as.data.frame(xx + y, xy = TRUE)
+  ggplot(r_df, aes(x, y, fill = layer)) +
+    geom_raster() +
+    ggtheme_map()
+
+
+  ### Already masked and aggregated in prep script
+  ship_small_stack <- projectRaster(orig_stack, ocean_rast, progress = 'text')
+  ### projectRaster with ngb introduces some weird negative values; drop'em
+  values(ship_small_stack)[values(ship_small_stack) < 0] <- 0
+  ship_small_r <- calc(ship_small_stack, fun = sum)
+  
+  values(ship_small_r) <- rescale(values(ship_small_r), qtile = .999)
+
+  ### round to drop ludicrous precision then save out
+  values(ship_small_r) <- round(values(ship_small_r), 5)
+  writeRaster(ship_small_r, benth_f, overwrite = TRUE)
+}
+
+r <- raster(benth_f)
+  
+plot(r, axes = FALSE,
+     main = 'Benthic structures, rescaled')
+
+hist(r[r > 0], main = 'distribution of non-zero values')
 ```
 
 ## Sensory stressors
