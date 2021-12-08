@@ -22,8 +22,11 @@ knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
 
 library(raster)
 library(sf)
-library(oharac)
-oharac::setup()
+library(oharac) ### remotes::install_github('oharac/oharac')
+  ### includes some helper functions, e.g., dt_join
+library(tidyverse)
+library(here)
+
 source(here('common_fxns.R'))
 
 ```

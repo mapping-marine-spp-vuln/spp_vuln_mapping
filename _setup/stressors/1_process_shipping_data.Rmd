@@ -22,15 +22,22 @@ knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
 
 library(raster)
 library(sf)
-library(oharac)
-oharac::setup()
+library(oharac) ### remotes::install_github('oharac/oharac')
+  ### includes some helper functions, e.g., dt_join
+library(tidyverse)
+library(here)
+
 source(here('common_fxns.R'))
 
 ```
 
 # Summary
 
-Process shipping stressors, including a layer for ship strikes and for noise pollution, to 10 km Mollweide CRS.  Also process benthic structures, including oil, gas, and wind farms.  Ship density is log-transformed per typical CHI methods - e.g., Halpern et al. 2019.
+Process shipping stressors, including a layer for ship strikes and for noise pollution, to 10 km Mollweide CRS.  Also process benthic structures, including oil, gas, and wind farms.  
+
+Note: Ship density is NOT log-transformed, in a departure from typical CHI methods - e.g., Halpern et al. 2019.  Since passage of a ship does not likely leave persistent impacts (e.g., once a ship has passed, it can't still inflict wildlife strikes), leaving it in its raw density seems appropriate.  
+
+We may wish to revisit this with respect to ship-based chemical pollutants etc.
 
 # Data
 
@@ -46,7 +53,7 @@ Process shipping stressors, including a layer for ship strikes and for noise pol
 Files downloaded from https://datacatalog.worldbank.org/search/dataset/0037580 and unzipped to /home/shares/ohi/spp_vuln/spp_vuln_mapping/ship_density.  The data are in GeoTIFF raster format; each raster is about 10 GB.  Also included are .tif.ovr files, which are pyramids; these are 3 GB but can probably be safely discarded.
 
 ```{r}
-ship_raw_dir <- '/home/shares/ohi/spp_vuln/spp_vuln_mapping/stressors/ship_density/raw'
+ship_raw_dir <- here_anx('/stressors/ship_density/raw')
 raw_tifs <- list.files(ship_raw_dir, pattern = '.tif$', full.names = TRUE)
 comm_shipping_r <- raster(raw_tifs[1])
 # class      : RasterLayer 
@@ -67,7 +74,7 @@ Because land cells are filled with zero, mask with ocean to convert these to NA.
 
 Loop over each raw layer, save out masked layer.
 ```{r}
-ship_masked_dir <- '/home/shares/ohi/spp_vuln/spp_vuln_mapping/stressors/ship_density/masked'
+ship_masked_dir <- here_anx('stressors/ship_density/masked')
 
 new_fs <- basename(raw_tifs) %>%
   tolower() %>%
@@ -104,10 +111,10 @@ for(i in seq_along(raw_tifs)) {
 
 ## Aggregate to 0.1° in prep for projection
 
-Log-transform ($\log(x+1)$)then aggregate.  Loop over each masked layer, save out aggregated layer.
+Convert shipping to tracks per km^2^ then aggregate.  Loop over each masked layer, save out aggregated layer.
 
 ```{r}
-ship_agg_dir <- '/home/shares/ohi/spp_vuln/spp_vuln_mapping/stressors/ship_density/aggregated'
+ship_agg_dir <- here_anx('stressors/ship_density/aggregated')
 
 new_fs <- basename(tifs_masked) %>%
     str_replace('.tif', '_agg.tif')
@@ -119,10 +126,15 @@ for(i in seq_along(tifs_masked)) {
   tif_agg <- tifs_agg[i]
   
   if(!file.exists(tif_agg)) {
-    message('Log-transforming and aggregating ', basename(tif_masked))
+    message('Converting to km^2: ', basename(tif_masked))
     r <- raster(tif_masked)
-    r_log <- log(r + 1)
-    r_agg <- aggregate(r_log, fact = 20, fun = mean, progress = 'text')
+    if(!exists('area_r')) {
+      ### area in km^2
+      area_r <- raster::area(r)
+    }
+    r_intensity <- r / area_r
+    message('Aggregating to 0.1°: ', basename(tif_masked))
+    r_agg <- aggregate(r_intensity, fact = 20, fun = mean, progress = 'text')
     message('Writing ', basename(tif_agg))
     writeRaster(r_agg, tif_agg, 
                 progress = 'text',
@@ -135,7 +147,186 @@ for(t in tifs_agg) {
   ### t <- tifs_agg[1]
   r_name <- basename(t) %>% str_remove_all('shipdensity_|_masked_agg.tif')
   r <- raster(t)
-  plot(r, axes = F, main = sprintf('log(%s + 1)', r_name))
+  plot(r, axes = F, main = sprintf('%s tracks per km^2', r_name))
 }
 ```
 
+## Reproject to 10km x 10km Mollweide
+
+Aggregated files are here:
+
+* dir: `/home/shares/ohi/spp_vuln/spp_vuln_mapping/stressors/ship_density/aggregated`
+    * files: 
+        * `shipdensity_commercial_masked_agg.tif`
+        * `shipdensity_fishing_masked_agg.tif`
+        * `shipdensity_leisure_masked_agg.tif`
+        * `shipdensity_oilgas_masked_agg.tif`
+        * `shipdensity_passenger_masked_agg.tif`
+        
+Create several layers: 
+
+* a commercial and passenger ship layer, for ship strikes
+    * ship strikes are primarily caused by huge ships, while smaller craft can avoid mammals more readily.
+    * what about FPSOs in oil and gas layer? Include oil and gas layer as well.  It includes stationary rigs, but those should be a small contribution.
+* a fishing and leisure craft layer, in case we want to separately analyze impacts of small(er) craft (even the largest fishing boats and yachts are barely half the size of an average cruise or container ship)
+<!-- * a noise pollution layer, a weighted average of large and small ships, where large ships are weighted 100x higher than small, based on an intensity estimate of 200 dB for large ships and a conservative estimate of 180 dB for smaller ships.  From [Erbe et al (2019)](https://www.frontiersin.org/articles/10.3389/fmars.2019.00606/full): -->
+<!--     * > Source levels1 of 130–160 dB re 1 μPa m have been reported for small watercraft such as jetskis and rigid-hulled inflatable boats (Erbe, 2013; Erbe et al., 2016b). Large and powerful watercraft such as ferries, container ships, and icebreakers have source levels of 200 dB re 1 μPa m and more (e.g., Erbe and Farmer, 2000; Simard et al., 2016; Gassmann et al., 2017). Source levels may vary by 20–40 dB within a ship class due to variability in design, maintenance, and operational parameters such as speed (Simard et al., 2016; Joy et al., 2019). -->
+    
+```{r}
+dir_shipping <- here_anx('stressors/ship_density/aggregated')
+ship_raw_fs <- list.files(dir_shipping, pattern = '.tif$', full.names = TRUE)
+
+ship_raw_fs_large <- ship_raw_fs[str_detect(basename(ship_raw_fs), 'commercial|oilgas|passenger')]
+ship_raw_fs_small <- ship_raw_fs[!ship_raw_fs %in% ship_raw_fs_large]
+```
+
+```{r create large ship layer}
+ship_large_f <- here('_data/stressors_mol/shipping_large_2021.tif')
+### unlink(ship_large_f)
+
+if(!file.exists(ship_large_f)) {
+
+  orig_stack <- stack(ship_raw_fs_large)
+  # class      : RasterStack 
+  # dimensions : 1700, 3601, 6121700, 3  (nrow, ncol, ncell, nlayers)
+  # resolution : 0.1, 0.1  (x, y)
+  # extent     : -180.0153, 180.0847, -84.99735, 85.00265  (xmin, xmax, ymin, ymax)
+  # crs        : +proj=longlat +datum=WGS84 +no_defs 
+  # names      : shipdensity_commercial_masked_agg, shipdensity_oilgas_masked_agg, shipdensity_passenger_masked_agg 
+  # min values :                                 0,                             0,                                0 
+  # max values :                        53158596.0,                      863617.5,                           7743.0   
+  
+  ### Already masked and aggregated in prep script; convert to
+  ### shipping intensity (ship tracks per km^2) then reproject
+  intens_stack <- orig_stack / ocean_area_0.1deg
+  ship_large_stack <- projectRaster(intens_stack, ocean_rast, progress = 'text')
+  
+  ### projectRaster with ngb introduces some weird negative values; drop'em
+  values(ship_large_stack)[values(ship_large_stack) < 0] <- 0
+  ship_large_r <- calc(ship_large_stack, fun = sum)
+  
+  values(ship_large_r) <- rescale(values(ship_large_r), qtile = .999)
+
+  ### round to drop ludicrous precision then save out
+  values(ship_large_r) <- round(values(ship_large_r), 5)
+  writeRaster(ship_large_r, ship_large_f, overwrite = TRUE)
+}
+
+r <- raster(ship_large_f)
+  
+plot(r, axes = FALSE,
+     main = 'Commercial, passenger, and oil/gas shipping, rescaled')
+
+hist(r[r > 0], main = 'distribution of non-zero values')
+```
+
+```{r create small ship layer}
+ship_small_f <- here('_data/stressors_mol/shipping_small_2021.tif')
+### unlink(ship_small_f)
+
+if(!file.exists(ship_small_f)) {
+
+  orig_stack <- stack(ship_raw_fs_small)
+  # class      : RasterStack 
+  # dimensions : 1700, 3601, 6121700, 2  (nrow, ncol, ncell, nlayers)
+  # resolution : 0.1, 0.1  (x, y)
+  # extent     : -180.0153, 180.0847, -84.99735, 85.00265  (xmin, xmax, ymin, ymax)
+  # crs        : +proj=longlat +datum=WGS84 +no_defs 
+  # names      : shipdensity_fishing_masked_agg, shipdensity_leisure_masked_agg 
+  # min values :                              0,                              0 
+  # max values :                       847594.4,                      2801699.0 
+
+  ### Already masked and aggregated in prep script; convert to
+  ### shipping intensity (ship tracks per km^2) then reproject
+  intens_stack <- orig_stack / ocean_area_0.1deg
+  ship_small_stack <- projectRaster(intens_stack, ocean_rast, progress = 'text')
+  
+  ### projectRaster with ngb introduces some weird negative values; drop'em
+  values(ship_small_stack)[values(ship_small_stack) < 0] <- 0
+  ship_small_r <- calc(ship_small_stack, fun = sum)
+  
+  values(ship_small_r) <- rescale(values(ship_small_r), qtile = .999)
+
+  ### round to drop ludicrous precision then save out
+  values(ship_small_r) <- round(values(ship_small_r), 5)
+  writeRaster(ship_small_r, ship_small_f, overwrite = TRUE)
+}
+
+r <- raster(ship_small_f)
+  
+plot(r, axes = FALSE,
+     main = 'Fishing and leisure vessels, rescaled')
+
+hist(r[r > 0], main = 'distribution of non-zero values')
+```
+
+```{r create combined unweighted ship layer}
+ship_all_unweighted_f <- here('_data/stressors_mol/shipping_all_unweighted_2021.tif')
+### unlink(ship_all_unweighted_f)
+
+if(!file.exists(ship_all_unweighted_f)) {
+
+  orig_stack <- stack(ship_raw_fs)
+
+  ### Already masked and aggregated in prep script; convert to
+  ### shipping intensity (ship tracks per km^2) then reproject
+  intens_stack <- orig_stack / ocean_area_0.1deg
+  ship_all_stack <- projectRaster(intens_stack, ocean_rast, progress = 'text')
+  
+  ### projectRaster with ngb introduces some weird negative values; drop'em
+  values(ship_all_stack)[values(ship_all_stack) < 0] <- 0
+
+  ship_all_r <- calc(ship_all_stack, fun = sum)
+
+  values(ship_all_r) <- rescale(values(ship_all_r), qtile = .999)
+
+  ### round to drop ludicrous precision then save out
+  values(ship_all_r) <- round(values(ship_all_r), 5)
+  writeRaster(ship_all_r, ship_all_unweighted_f, overwrite = TRUE)
+}
+
+r <- raster(ship_all_unweighted_f)
+
+plot(r, axes = FALSE,
+     main = 'All vessels, unweighted, rescaled')
+
+hist(r[r > 0], main = 'distribution of non-zero values')
+```
+
+```{r create combined size-weighted ship layer, eval = FALSE}
+# ship_all_weighted_f <- here('_data/stressors_mol/shipping_all_weighted_2021.tif')
+# ### unlink(ship_all_weighted_f)
+# 
+# if(!file.exists(ship_all_weighted_f)) {
+# 
+#   ship_lg_stack <- stack(ship_raw_fs_large)
+#   ship_lg_reproj <- projectRaster(ship_lg_stack, ocean_rast)
+#   ship_sm_stack <- stack(ship_raw_fs_small)
+#   ship_sm_reproj <- projectRaster(ship_sm_stack, ocean_rast)
+# 
+#   ### projectRaster with ngb introduces some weird negative values; drop'em
+#   values(ship_lg_reproj)[values(ship_lg_reproj) < 0] <- 0
+#   values(ship_sm_reproj)[values(ship_sm_reproj) < 0] <- 0
+# 
+#   ### weight large ship layers relative to small ship layers to represent
+#   ### higher intensity of impact (e.g., noise pollution)
+#   large_wt <- 100
+#   ship_lg_reproj_wt <- large_wt * ship_lg_reproj
+#   
+#   ship_all_stack <- stack(ship_lg_reproj_wt, ship_sm_reproj)
+#   ship_all_r <- calc(ship_all_stack, fun = sum)
+#   
+#   values(ship_all_r) <- rescale(values(ship_all_r), qtile = .999)
+# 
+#   ### round to drop ludicrous precision then save out
+#   values(ship_all_r) <- round(values(ship_all_r), 5)
+#   writeRaster(ship_all_r, ship_all_weighted_f, overwrite = TRUE)
+# }
+# 
+# r <- raster(ship_all_weighted_f)
+#   
+# plot(r, axes = FALSE,
+#      main = 'All vessels, size-weighted, rescaled')
+# 
+# hist(r[r > 0], main = 'distribution of non-zero values')
+```

@@ -1,0 +1,204 @@
+---
+title: "Collect water column position trait"
+author: "*Compiled on `r date()` by `r Sys.info()['user']`*"
+output: 
+  html_document:
+    code_folding: hide
+    toc: true
+    toc_depth: 3
+    toc_float: yes
+    number_sections: true
+    theme: cerulean
+    highlight: haddock
+    includes: 
+      in_header: '~/github/src/templates/ohara_hdr.html'
+  pdf_document:
+    toc: true
+---
+
+``` {r setup, echo = TRUE, message = FALSE, warning = FALSE}
+
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
+
+library(oharac)
+oharac::setup()
+library(rfishbase)
+source(here('common_fxns.R'))
+
+```
+
+# Summary
+
+Gather data on water column position from FishBase and the species vulnerability project.  Gapfill using downfill methodology.
+
+# Data
+
+This script will use processed valid species traits from the species vulnerability project, plus FishBase and SeaLifeBase.
+
+FishBase is a scientific database, and this has the implication - among others - that its use and the use of its contents are free as long as due credit is given.
+
+This may be done at different levels, for which we suggest different forms of citations:
+
+* when referring to FishBase concepts and design, cite its architects (Froese and Pauly 2000);
+* when referring to a set of values extracted from a FishBase table, cite the author(s) of the original data, e.g., "Houde and Zastrow (1993)", or "Welcomme (1988)". To help us track the use of FishBase in the literature, we would appreciate your also citing Froese and Pauly (2000) in an appropriate part of your text, as the source of the information;
+* when discussing the features of a FishBase table, cite the section documenting that table, e.g., "Sa-a et al. (2000)."
+
+## References
+
+* Froese, R. and D. Pauly, Editors. 2000. FishBase 2000: concepts, design and data sources. ICLARM, Los Baños, Laguna, Philippines. 344 p.
+* Houde, E.D. and C.E. Zastrow. 1993. Ecosystem- and taxon-specific dynamic energetics properties of fish larvae assemblages. Bull. Mar. Sci. 53(2):290-335.
+* Sa-a, P., M.L. Palomares and D. Pauly. 2000. The FOOD ITEMS table, p. 182-188. In R. Froese and D. Pauly (eds.) FishBase 2000: concepts, design and data sources. ICLARM, Los Baños, Laguna, Philippines. 344 p.
+* Welcomme, R.L. 1988. International introductions of inland aquatic species. FAO Fish. Tech. Pap. 294, 318 p.
+* Butt, N. et al. 2021. 
+
+# Methods
+
+## Read in vulnerability traits data
+
+Read in data from vulnerability project.  For vulnerability traits, identify ones that can classify a species as bottom (benthic/demersal), midwater, surface.  Additionally, examine whether it makes sense to include a variable relating terrestrial/marine life stages, and vertical migration as that relates to changes in position in water column.
+
+```{r get values from vulnerability framework}
+zone_vuln <- get_vuln_traits() %>%
+  filter(trait %in% c('zone', 'terrestrial_and_marine_life_stages', 
+                      'within_stage_dependent_habitats_condition', 
+                      'across_stage_dependent_habitats_condition', 
+                      'air_sea_interface'))
+
+# zone_vuln$trait_value %>% unique()
+
+btm_terms <- c('bottom', 'slope', 'shelf', 'mud', 
+               'benth', 'rubble', 'intertid', 'demersal') %>%
+  paste0(collapse = '|')
+
+reef_terms <- c('reef') %>%
+  paste0(collapse = '|')
+
+mid_terms <- c('pelagic', 'mid', 'ocean') %>%
+  paste0(collapse = '|')
+
+depth_vuln_downfill <- zone_vuln %>%
+  group_by(taxon, spp_gp) %>%
+  summarize(trait_value = paste0(trait_value, collapse = ';'), .groups = 'drop') %>%
+  downfill()
+
+depth_vuln_score <- depth_vuln_downfill %>%
+  rowwise() %>%
+  mutate(pelagic = any(str_detect(trait_value, mid_terms)),
+         benthic = any(str_detect(trait_value, btm_terms)),
+         reef    = any(str_detect(trait_value, reef_terms)),
+         .groups = 'drop') %>%
+  ungroup() %>%
+  mutate(reef = ifelse(taxon == 'sponges', TRUE, reef)) %>%
+  select(taxon, species, benthic, pelagic, reef) %>%
+  distinct()
+```
+
+
+## Now look in FishBase
+
+``` {r get values from fishbase}
+keep_cols <- c('demers_pelag')
+dem_pel_fb_raw <- get_fb_slb(fxn = species, 
+                            keep_cols = keep_cols, keep_fxn = contains,
+                            drop_cols = '_ref',    drop_fxn = ends_with) %>%
+  mutate(demers_pelag = tolower(demers_pelag)) %>%
+  filter(!is.na(demers_pelag))
+
+table(dem_pel_fb_raw$demers_pelag)
+
+record_df <- collect_records(dem_pel_fb_raw, field = 'demers_pelag', file_tag = 'resolve_names_fb_depth') %>%
+  filter(aphia_id != -9999)
+
+depth_fb <- dem_pel_fb_raw %>%
+  left_join(record_df, by = c('species' = 'orig_sciname')) %>%
+  mutate(species = ifelse(!is.na(valid_name), valid_name, species)) %>%
+  mutate(species = str_extract(species, '^[a-z]+ [a-z]+')) %>%
+    ### this drops subspp and var. names
+  mutate(benthic = str_detect(demers_pelag, 'benth|sessile|demersal'),
+         pelagic = str_detect(demers_pelag, 'pelagic'),
+         reef    = str_detect(demers_pelag, 'reef')) %>%
+  select(-demers_pelag) %>%
+  filter(benthic | pelagic | reef) ### drop any that aren't counted here
+  
+table(depth_fb %>% select(benthic, pelagic, reef))
+### note the benthic/pelagic etc in the ecology table don't match up as well
+  
+```
+
+## compare datasets
+
+```{r}
+check <- depth_vuln_score %>%
+  rename(v_ben = benthic, v_pel = pelagic, v_rf = reef) %>%
+  inner_join(depth_fb, by = c('species')) %>%
+  mutate(match = (v_ben == benthic) + (v_pel == pelagic) + (v_rf == reef))
+
+table(check %>% select(match, taxon))
+```
+
+"match" of 3 indicates all of (pelagic, benthic, reef) match between FishBase/SealifeBase and the vulnerability traits.  In general, matching at least one set of habitats.  Heuristic: use FishBase where available (as these are all at species level and should be peer reviewed), then fill in with other spp based on vulnerability scores.
+
+```{r}
+DT::datatable(check %>% filter(match == 0) %>% select(-spec_code, -db))
+```
+
+
+## Finalize and save results
+
+Only two species have traits of both "pelagic" and "reef" - and these are both benthopelagic.  For processing, consider trait categories (in order of preference, but not an ordered category) of benthopelagic, pelagic, reef, benthic.  Few reef species are pelagic; this order will assign those to benthopelagic (along with all others that are both benthic and pelagic).  Remaining pelagic species will not be benthic or reef-associated.  Many reef spp are also benthic, but reef association seems more likely to be important as a trait.
+
+Because many species from FishBase appear to have non-matched names from WoRMS (e.g., unaccepted synonyms), while many WoRMS species in the same genus are unscored, use genus-level gapfill to assign traits from unmatched species to WoRMS-matched species.  Identify genera with more than one scored spp; select those traits that appear in the majority of the genus.
+
+```{r finalize results}
+depth_df <- depth_vuln_score %>%
+  filter(!species %in% depth_fb$species) %>%
+  mutate(source = 'vuln_traits') %>%
+  bind_rows(depth_fb %>%
+              mutate(source = 'fishbase')) %>%
+  gather(value, bool, benthic, pelagic, reef) %>%
+  filter(bool == TRUE) %>%
+  select(species, value, source) %>%
+  mutate(genus = str_extract(species, '[a-z]+(?= ?)')) %>%
+  distinct()
+  
+depth_genus <- depth_df %>%
+  group_by(genus) %>%
+  mutate(nspp = n_distinct(species)) %>%
+  group_by(genus, value, nspp) %>%
+  summarize(nspp_val = n_distinct(species), .groups = 'drop') %>%
+  mutate(pct_spp = nspp_val / nspp) %>%
+  filter(pct_spp >= .50) %>%
+  filter(nspp > 1) %>%
+  select(genus, value) %>%
+  distinct()
+
+worms_spp <- assemble_worms()
+
+depth_gaps <- worms_spp %>%
+  filter(!species %in% depth_df$species) %>%
+  inner_join(depth_genus, by = 'genus') %>%
+  select(genus, species, value) %>%
+  mutate(source = 'gapfill')
+  
+results_df <- depth_df %>%
+  bind_rows(depth_gaps) %>%
+  mutate(x = TRUE) %>%
+  spread(value, x) %>%
+  mutate(value = case_when(benthic & pelagic ~ 'benthopelagic',
+                           pelagic ~ 'pelagic',
+                           reef ~ 'reef',
+                           benthic ~ 'benthic',
+                           TRUE ~ 'oops'),
+         trait = 'water_col_pos') %>%
+  select(species, trait, value, source) %>%
+  distinct()
+
+table(results_df$source)
+```
+
+``` {r}
+
+write_csv(results_df, here('_data/traits_grouping/trait_water_col_position.csv'))
+
+```
+

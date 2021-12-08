@@ -136,7 +136,7 @@ We do not necessarily need to divide into high bycatch and low bycatch gears, si
 
 The data are already presented in 0.5° cells so no aggregation necessary prior to reprojecting to Mollweide.
 
-For each gear type, summarize total discards and total catch per cell; rasterize and save out to Mazu.
+For each gear type, summarize total discards and total catch per cell; rasterize and save out to Mazu.  Note data span 2015-2017; taking all catch over these years may help smooth annual variation.
 
 ### Summarize bycatch (discards) per cell by gear type
 
