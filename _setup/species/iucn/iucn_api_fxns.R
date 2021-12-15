@@ -14,6 +14,7 @@ api_key <- Sys.getenv('IUCN_KEY')
 
 api_version <- jsonlite::fromJSON('http://apiv3.iucnredlist.org/api/v3/version') %>%
   .$version
+message('IUCN API version: ', api_version)
 # api_version <- '2020-1'
 
 

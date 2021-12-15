@@ -1,0 +1,336 @@
+---
+title: "Process nutrient pollution"
+author: "*Compiled on `r date()` by `r Sys.info()['user']`*"
+output: 
+  html_document:
+    code_folding: hide
+    toc: true
+    toc_depth: 3
+    toc_float: yes
+    number_sections: true
+    theme: cerulean
+    highlight: haddock
+    includes: 
+      in_header: '~/github/src/templates/ohara_hdr.html'
+  pdf_document:
+    toc: true
+---
+
+``` {r setup, echo = TRUE, message = FALSE, warning = FALSE}
+
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
+
+library(raster)
+library(sf)
+library(tidyverse)
+library(here)
+library(RColorBrewer)
+
+source(here('common_fxns.R'))
+source('stressor_fxns.R') ### in same dir as this Rmd
+
+```
+
+# Summary
+
+Gather nutrient-related stressor layers and process to the CRS for this analysis: Mollweide, 10 km x 10 km.  Identify gapfill needs if necessary.  
+
+# Data
+
+All files are located on Mazu, starting from `/home/shares/ohi/` unless otherwise noted.
+
+## Agricultural-based nutrient pollution
+
+Nutrient pollution from OHI 2021 plume model
+
+* This appears to be absolute amounts (tonnes) per cell, so can be normalized to an intensity (tonnes per km^2^ e.g.) to be combined with wastewater data.
+* dir: `git-annex/globalprep/prs_land-based_nutrient/v2021/output/N_plume`
+    * file: `pourpoints_crop_manure_leached_volt_N_2019_joined.tif`
+* See OHI processing scripts for details: https://github.com/OHI-Science/ohiprep_v2021/tree/gh-pages/globalprep/prs_land-based_nutrient/v2021
+
+## Wastewater
+
+From the Wastewater project
+
+* Get dataset from KNB: https://knb.ecoinformatics.org/view/doi%3A10.5063%2FF76B09.  It has been downloaded to Mazu (see below). According to metadata:
+    * > Each pixel is grams N.
+    * Use this note from Mel to make sure the numbers are in the same ballpark between ag and wastewater:
+        * > Our model indicates that wastewater adds 6.2Tg nitrogen into coastal waters, which is approximately 40% of total nitrogen from agriculture.
+        * A quick check shows that this layer results in about 4.5Tg of N, about 33% of that from agriculture-based N, so ballpark.
+* dir: spp vuln mapping directory, `/stressors/nutrient/wastewater`
+    * file: `global_effluent_2015_tot_N.tif`
+
+## Aquaculture pollution
+
+From the Food Systems project
+
+* see https://github.com/OHI-Science/food_systems/tree/master/aquaculture/marine/
+    * > These values, in the scheme of these kinds of things, should be fairly accurate (the models are pretty simple and N flows directly into the marine system). I would check the units to make sure they are the same as other datasources (I think they are tonnes/cell here).
+    * Looks like the nutrient pollution from aquaculture layers are on Aurora: 
+        * `/home/shares/food-systems/Food_footprint/all_food_systems/datalayers`
+
+# Methods
+
+For each stressor layer, reproject to 10 km Mollweide CRS and mask to ocean cells.  Layers that are in tonnes of N per cell must be converted to t/km^2^ prior to reprojecting.  Sum across all sources (verifying units carefully) then rescale based on a quantile e.g., 99.9%.
+
+```{r define stuff}
+here_ohi <- function(f = '', ...) {
+  f <- paste(f, ..., sep = '/')
+  f <- stringr::str_replace_all(f, '\\/+', '/')
+  sprintf('/home/shares/ohi/%s', f)
+}
+
+### Load ocean proportion in Mollweide 10 km x 10 km (analysis CRS and res)
+ocean_rast <- raster(here('_spatial/ocean_area_mol.tif'))
+
+### ocean area (in km^2) in 10 km x 10 km Mollweide
+ocean_area_mol <- ocean_rast * 100
+
+### load ocean area (in km^2) in 0.1 deg WGS84 (for converting values to 
+### intensities prior to reprojecting)
+ocean_area_0.1deg <- raster(here('_spatial/ocean_area_wgs84_0.1deg.tif'))
+
+### Code to create ocean area raster at 0.1 degree:                            
+# base_rast_0.01deg <- raster(ext = extent(c(-180, 180, -90, 90)), 
+#                            res = 0.01, crs = '+init=epsg:4326')
+# ocean_mask_sf <- read_sf(here('_spatial/ne_10m_ocean/ne_10m_ocean.shp'))
+# ocean_rast_0.01deg <- fasterize::fasterize(ocean_mask_sf, base_rast_0.01deg)
+# ocean_rast_0.1deg <- aggregate(ocean_rast_0.01deg, 
+#                                progress = 'text',
+#                                fact = 10, fun = sum)
+# ocean_rast_0.1deg <- ocean_rast_0.1deg / 100
+# ocean_area_0.1deg <- ocean_rast_0.1deg * raster::area(ocean_rast_0.1deg)
+# writeRaster(ocean_area_0.1deg, here('_spatial/ocean_area_wgs84_0.1deg.tif'))
+```
+
+## Nutrient pollution from OHI 2021 plume model
+
+This is in tonnes per cell (0.5 arc-minute cell).  Convert to tonnes per km^2, aggregate, reproject to 10 km x 10 km Mollweide.  This will still be tonnes per km^2.
+
+```{r agriculture nutrient plume data}
+N_agr_out_f <- here_anx('stressors/nutrient/nutrient_agr_N_per_km2_mol.tif')
+### unlink(N_agr_out_f)
+
+if(!file.exists(N_agr_out_f)) {
+  N_agr_raw_f <- here_ohi('git-annex/globalprep/prs_land-based_nutrient',
+                     'v2021/output/N_plume',
+                     'pourpoints_crop_manure_leached_volt_N_2019_joined.tif')
+  N_agr_raw_r <- raster(N_agr_raw_f)
+  # class      : RasterLayer 
+  # dimensions : 16981, 43465, 738079165  (nrow, ncol, ncell)
+  # resolution : 0.008333333, 0.008333333  (x, y)
+  # extent     : -181.0083, 181.2, -57.33333, 84.175  (xmin, xmax, ymin, ymax)
+  # crs        : +proj=longlat +datum=WGS84 +no_defs 
+  # source     : pourpoints_crop_manure_leached_volt_N_2019_joined.tif 
+  # names      : pourpoints_crop_manure_leached_volt_N_2019_joined 
+  
+  ### mask to just ocean cells to avoid land-based zeros from influencing mean;
+  ### first transform to N/km^2
+  ocean_mask_sf <- read_sf(here('_spatial/ne_10m_ocean/ne_10m_ocean.shp'))
+  ocean_mask_r <- fasterize::fasterize(ocean_mask_sf, N_agr_raw_r)
+  masked_r <- mask(N_agr_raw_r, ocean_mask_r, progress = 'text')
+  area_r <- raster::area(N_agr_raw_r, progress = 'text')
+  N_per_km2_r <- masked_r / area_r
+  
+  ### Aggregate up to ~ 10 km, 0.1°, then reproject
+  agg_r <- aggregate(N_per_km2_r, fact = 12, fun = 'mean', progress = 'text')
+  agg_r_mol <- projectRaster(agg_r, ocean_rast, progress = 'text')
+    
+  ### N per km^2 times ocean area --> total N per cell
+  N_agr_mol_r <- agg_r_mol * ocean_rast * 100
+  
+  # sum(values(N_agr_mol_r), na.rm = TRUE) # 13,486,464
+  # sum(values(masked_r), na.rm = TRUE)    # 13,452,581
+  ### pretty close!
+  
+  ### write out to temp file for later combo with wastewater and aquaculture
+  writeRaster(N_agr_mol_r, N_agr_out_f, overwrite = TRUE)
+  
+}
+
+r <- raster(N_agr_out_f)
+  
+plot(r, axes = FALSE, 
+     main = 'N pollution from ag: tonnes per 100 km^2 cell')
+
+hist(log10(r)[r > 0], main = 'distribution of log_10(N) non-zero values')
+
+```
+
+## Nutrient pollution from wastewater plume
+
+These values are in grams of N per pixel.  Convert to tonnes (1e6 g = 1 t).
+```{r wastewater plume data}
+N_ww_out_f <- here_anx('stressors/nutrient/nutrient_wastewater_N_per_km2_mol.tif')
+### unlink(N_ww_out_f)
+
+if(!file.exists(N_ww_out_f)) {
+  N_ww_raw_f <- here_anx('stressors/nutrient/wastewater',
+                     'global_effluent_2015_tot_N.tif')
+  N_ww_raw_r <- raster(N_ww_raw_f)
+  # class      : RasterLayer 
+  # dimensions : 17068, 43737, 746503116  (nrow, ncol, ncell)
+  # resolution : 0.008333333, 0.008333333  (x, y)
+  # extent     : -182.225, 182.25, -57.18333, 85.05  (xmin, xmax, ymin, ymax)
+  # crs        : +proj=longlat +datum=WGS84 +no_defs 
+  # source     : global_effluent_2015_tot_N.tif 
+  # names      : global_effluent_2015_tot_N 
+  #
+  # summary(values(N_ww_raw_r))
+  # Min.    1st Qu.     Median       Mean    3rd Qu.       Max. 
+  # -618          0          0       6708          0 1812330880 
+  
+  ### Convert from grams N into tonnes N (i.e., Mg):
+  N_ww_tonnes_r <- N_ww_raw_r / 1e6
+
+  ### mask to just ocean cells to avoid land-based zeros from influencing mean;
+  ### first transform to N/km^2
+  ocean_mask_sf <- read_sf(here('_spatial/ne_10m_ocean/ne_10m_ocean.shp'))
+  ocean_mask_r <- fasterize::fasterize(ocean_mask_sf, N_ww_tonnes_r)
+  masked_r <- mask(N_ww_tonnes_r, ocean_mask_r, progress = 'text')
+  area_r <- raster::area(N_ww_tonnes_r, progress = 'text')
+  N_per_km2_r <- masked_r / area_r
+  
+  ### Aggregate up to ~ 10 km, 0.1°, then reproject
+  agg_r <- aggregate(N_per_km2_r, fact = 12, fun = 'mean', progress = 'text')
+  agg_r_mol <- projectRaster(agg_r, ocean_rast, progress = 'text')
+    
+  ### N per km^2 times ocean area --> total N per cell
+  N_ww_mol_r <- agg_r_mol * ocean_rast * 100
+  
+  # sum(values(N_ww_mol_r), na.rm = TRUE) # 4,583,082
+  # sum(values(masked_r), na.rm = TRUE)   # 4,586,456
+  ### pretty close!
+  
+  ### write out to temp file for later combo with wastewater and aquaculture
+  writeRaster(N_ww_mol_r, N_ww_out_f)
+  
+}
+
+r <- raster(N_ww_out_f)
+  
+plot(r, axes = FALSE, 
+     main = 'N pollution from wastewater: tonnes per 100 km^2 cell')
+
+hist(log10(r)[r > 0], main = 'distribution of log_10(N) non-zero values')
+
+```
+
+## Nutrient pollution from aquaculture
+
+These values are in tonnes of N per pixel.
+
+```{r aquaculture nitrogen data}
+N_aq_out_f <- here_anx('stressors/nutrient/nutrient_aquaculture_N_per_km2_mol.tif')
+### unlink(N_aq_out_f)
+
+if(!file.exists(N_aq_out_f)) {
+  N_aq_raw_fs <- list.files(here_anx('stressors/nutrient/aquaculture'),
+                            full.names = TRUE)
+  N_aq_raw_stack <- raster::stack(N_aq_raw_fs)
+  # class      : RasterStack 
+  # dimensions : 2160, 4320, 9331200, 6  (nrow, ncol, ncell, nlayers)
+  # resolution : 0.08333333, 0.08333333  (x, y)
+  # extent     : -180, 180, -90, 90  (xmin, xmax, ymin, ymax)
+  # crs        : +proj=longlat +datum=WGS84 +no_defs 
+  # names      : marine_bi//_nutrientN, marine_cr//_nutrientN, marine_ma//_nutrientN, marine_sa//_nutrientN, marine_sh//_nutrientN, marine_tu//_nutrientN 
+  # min values :                     0,                     0,                     0,                     0,                     0,                     0 
+  # max values :              505.5862,              255.1060,             4346.8144,              404.0540,             1511.8945,             1019.5875 
+
+  ### mask to just ocean cells to avoid land-based zeros from influencing mean;
+  ### first transform to N/km^2
+  ocean_mask_sf <- read_sf(here('_spatial/ne_10m_ocean/ne_10m_ocean.shp'))
+  ocean_mask_r <- fasterize::fasterize(ocean_mask_sf, N_aq_raw_stack[[1]])
+  masked_stack <- mask(N_aq_raw_stack, ocean_mask_r, progress = 'text')
+  area_r <- raster::area(N_aq_raw_stack[[1]], progress = 'text')
+  N_per_km2_stack <- masked_stack / area_r
+  
+  ### cells are already nearly 0.1 degree - don't aggregate, just reproject
+  N_per_km2_mol_stack <- projectRaster(N_per_km2_stack, ocean_rast, progress = 'text')
+    
+  ### N per km^2 times ocean area --> total N per cell
+  N_per_cell_mol_r <- N_per_km2_mol_stack * ocean_rast * 100
+  
+  ### check by layer:
+  # sum(values(masked_stack[[1]]), na.rm = TRUE)       #  39504.6
+  # sum(values(N_per_cell_mol_r[[1]]), na.rm = TRUE)   #  34561.4
+  # sum(values(masked_stack[[2]]), na.rm = TRUE)       #  18933.4
+  # sum(values(N_per_cell_mol_r[[2]]), na.rm = TRUE)   #  16883.5
+  # sum(values(masked_stack[[3]]), na.rm = TRUE)       # 372307.6
+  # sum(values(N_per_cell_mol_r[[3]]), na.rm = TRUE)   # 324416.7
+  # sum(values(masked_stack[[4]]), na.rm = TRUE)       #  77999.2
+  # sum(values(N_per_cell_mol_r[[4]]), na.rm = TRUE)   #  66989.3
+  # sum(values(masked_stack[[5]]), na.rm = TRUE)       # 228890.6
+  # sum(values(N_per_cell_mol_r[[5]]), na.rm = TRUE)   # 200364.9
+  # sum(values(masked_stack[[6]]), na.rm = TRUE)       #   4234.6
+  # sum(values(N_per_cell_mol_r[[6]]), na.rm = TRUE)   #   3842.5
+  ### full stack:
+  # sum(values(masked_stack), na.rm = TRUE)            # 741870.3
+  # sum(values(N_per_cell_mol_r), na.rm = TRUE)        # 647058.5
+  ### not as close as I'd like
+  
+  ### summarize all
+  N_aq_mol_r <- calc(N_per_cell_mol_r, sum)
+
+  ### write out to temp file for later combo with wastewater and aquaculture
+  writeRaster(N_aq_mol_r, N_aq_out_f)
+  
+}
+
+r <- raster(N_aq_out_f)
+  
+plot(r, axes = FALSE, 
+     main = 'N pollution from aquaculture: tonnes per 100 km^2 cell')
+
+hist(log10(r)[r > 0], main = 'distribution of log_10(N) non-zero values')
+
+```
+
+## Combine N pollution and rescale
+
+Combine nitrogen (tonnes per 10 km x 10 km cell) across agriculture, wastewater, and aquaculture sources; then rescale based on a quantile to reduce the effects of extreme outliers.  This is currently NOT log-transformed.
+
+```{r combine all layers}
+N_layers <- list.files(here_anx('stressors/nutrient'),
+                       pattern = 'N_per_km2_mol.tif',
+                       full.names = TRUE)
+N_stack <- stack(N_layers)
+N_rast <- calc(N_stack, sum)
+
+### fill southern NAs from ag rast with 0, then re-mask
+values(N_rast)[is.na(values(N_rast))] <- 0
+values(N_rast)[values(N_rast) < 0] <- 0 ### drop neg values
+N_rast <- mask(N_rast, ocean_rast)
+
+plot(N_rast, axes = FALSE, 
+     main = 'N pollution total: tonnes per 100 km^2 cell')
+
+log_N <- log10(N_rast)[N_rast > 0]
+hist(log_N, main = 'distribution of log_10(N) non-zero values')
+
+### Rescale
+quantile(values(N_rast), c(0.9, 0.95, 0.99, 0.999, 1.0), na.rm = TRUE) %>%
+  knitr::kable()
+#          90%          95%          99%        99.9%         100% 
+# 0.000000e+00 1.826932e-09 8.550333e+00 4.923464e+02 4.948126e+05 
+
+N_rast_rescale <- rescale_stressor(N_rast, qtile = .999)
+plot(N_rast_rescale, axes = FALSE, 
+     main = 'N pollution rescaled')
+
+x <- values(N_rast_rescale)[values(N_rast_rescale) > 0]
+hist(x, main = 'distribution of rescaled non-zero values (raw)')
+
+### explore effect of log transforming then rescaling:
+# log_N_rescale <- rescale_stressor(log_plus(N_rast), qtile = .999)
+# y <- values(log_N_rescale)[values(log_N_rescale) > 0]
+# hist(y, main = 'distribution of logged then rescaled non-zero values')
+
+
+hist(log10(x), main = 'distribution of rescaled non-zero values (log10 transformed)')
+
+writeRaster(N_rast_rescale, here('_data/stressors_mol/nutrient_2020.tif'), 
+            overwrite = TRUE)
+
+```
+

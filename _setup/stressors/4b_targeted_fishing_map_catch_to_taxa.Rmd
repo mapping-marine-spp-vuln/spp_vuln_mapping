@@ -1,0 +1,355 @@
+---
+title: "Stressors: targeted fishing by taxon and cell - align Watson and WoRMS taxa"
+author: "*Compiled on `r date()` by `r Sys.info()['user']`*"
+output: 
+  html_document:
+    code_folding: show
+    toc: true
+    toc_depth: 1
+    toc_float: yes
+    number_sections: false
+    theme: cerulean
+    highlight: haddock
+    includes: 
+      in_header: '~/github/src/templates/ohara_hdr.html'
+  pdf_document:
+    toc: true
+---
+
+``` {r setup, echo = TRUE, message = FALSE, warning = FALSE}
+
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
+
+library(oharac) ### remotes::install_github('oharac/oharac')
+  ### includes some helper functions, e.g., dt_join
+library(tidyverse)
+library(here)
+
+source(here('common_fxns.R'))
+```
+
+# Summary
+
+Read in data from Watson (2018) and collapse down to targeted catch by taxon and cell.  Save out as rasters (or csvs) per species.
+
+# Data
+
+Data from
+
+* Watson, R.A. and Tidd, A.N. (2018) Mapping nearly a century and a half of global marine fishing: 1869 to 2015. Marine Policy 93, 171-177
+* Watson, R. (2017) A database of global marine commercial, small-scale, illegal and unreported fisheries catch 1950-2014. Nature Scientific Data 4 (170039).
+
+Included in data:
+
+* Industrial Catch (1950 - 2017) - reported, iuu, and discard catch data for each cell location and unique identifier
+* Non-Industrial Catch (1950 - 2017) - reported, iuu, and discard catch data for each cell location and unique identifier
+* DATA CODE DEFINITIONS (gear/taxa/country codes and cell lat/lon references)
+
+# Methods
+
+## Read in Watson/WoRMS lookup and generate master list of taxa
+
+The Watson/WoRMS lookup contains many species, but also higher-order taxa. Expand out to the species level.
+
+```{r}
+am_spp_ids <- get_am_spp_info() %>%
+  select(am_sid, sciname) %>%
+  distinct()
+worms_long <- assemble_worms(aspect = 'long')
+
+watson_worms_tx_df <- read_csv(here('_raw/worms_to_watson_lookup.csv')) 
+
+watson_worms_spp_df <- watson_worms_tx_df %>%
+  left_join(worms_long, by = c('worms_name' = 'name')) %>%
+  left_join(am_spp_ids, by = c('spp' = 'sciname'))
+
+watson_am_spp_df <- watson_worms_spp_df %>%
+  filter(!is.na(am_sid))
+# watson_worms_spp_df$spp %>% n_distinct() 
+    # 96053 total species
+# watson_am_spp_df$am_sid %>% n_distinct() 
+    # 25099 spp ids in AquaMaps
+```
+
+For reference read in the original Watson taxonomic info.
+```{r}
+watson_dir <- here_anx('../../git-annex/globalprep/_raw_data', 
+                       'IMAS_GlobalFisheriesLandings/d2020')
+
+codes_xlsx <- file.path(watson_dir, 'Codes_raw.xlsx')
+# codes_sheets <- readxl::excel_sheets(codes_xlsx)
+w_taxa_raw_df <- readxl::read_excel(codes_xlsx, sheet = 'Taxa') %>%
+  janitor::clean_names() %>%
+  select(-c(x8:taxonkey_11), taxonkey = taxonkey_1)
+
+```
+
+## Higher-order taxonomic catch data
+
+For higher-order taxonomic fishing data (i.e., not at species level):
+
+* Identify all spp in that taxon with species distributions in AquaMaps (later, incl IUCN).
+* Generate a map of spp richness for the taxon (unique spp in each cell).
+* Map out total catch across all gear types for this taxon.
+* Save out as a dataframe of cell ID, total catch, number of species.  Alternately: raster of catch, raster of species.  Use Watson `taxonkey` in filename.
+    * It is quite convenient that Watson's cell ID is identical to LOICZID.
+    * should it be an `inner_join` to reduce resulting files and duplicated info? the taxon-level map is unimportant beyond this step (for now) so yes.
+    * Number of species can be used to portion out catch uniformly among members of the taxon present in the cell.
+
+Note that there are many duplicates at higher orders - e.g., there are three separate `taxonkey` values for general marine fishes (Actinopterygii).  But since catch values are assigned to each of these, it is possible that in a single cell, some catch is associated with each of the taxon keys... so the catch is additive across all.
+
+```{r read in watson catch data}
+w_dir <- here_anx('../../git-annex/globalprep/_raw_data', 
+                  'IMAS_GlobalFisheriesLandings/d2020')
+w_catch_df <- readRDS(file.path(w_dir, 'Catch2015_2019.rds')) %>%
+  janitor::clean_names()
+
+w_codes_xlsx <- file.path(w_dir, 'Codes_raw.xlsx')
+# codes_sheets <- readxl::excel_sheets(codes_xlsx)
+w_cell_df <- readxl::read_excel(w_codes_xlsx, sheet = 'Cell') %>%
+  janitor::clean_names() %>%
+  select(-c(x5:x7))
+
+am_spp_cells <- get_am_spp_cells()
+
+```
+
+### Check catch levels across various taxonomic levels
+
+Check 2016 catch to get an idea of how much catch is aggregated into higher-order taxa.
+
+```{r}
+summary_catch_by_tx <- w_catch_df %>%
+  filter(i_year == 2016) %>%
+  group_by(taxonkey) %>%
+  summarize(tot_ind = sum(reported_ind + iuuind),
+            tot_nind = sum(reported_nind + iuunind),
+            tot_catch = tot_ind + tot_nind) %>%
+  mutate(level = floor(taxonkey / 1e5))
+
+tx_missing <- w_taxa_raw_df %>%
+  filter(!taxonkey %in% summary_catch_by_tx$taxonkey)
+
+ggplot(summary_catch_by_tx, aes(x = level, y = tot_catch)) +
+  geom_jitter(width = .2, height = 0)
+
+```
+
+The large outlier is taxon 100039 (Marine fishes not identified, demersal <30 cm, Misc Finfishes) 
+
+``` {r}
+misc_finfish <- w_catch_df %>%
+  filter(taxonkey == 100039) %>%
+  filter(i_year == 2016) %>%
+  summarize(tot_ind_catch = sum(reported_ind + iuuind),
+            tot_nind_catch = sum(reported_nind + iuunind),
+            tot_catch = tot_ind_catch + tot_nind_catch)
+tot_2016 <- w_catch_df %>%
+  filter(i_year == 2016) %>%
+  summarize(tot_ind_catch = sum(reported_ind + iuuind),
+            tot_nind_catch = sum(reported_nind + iuunind),
+            tot_catch = tot_ind_catch + tot_nind_catch)
+
+```
+
+__NOTE:__  taxon 100039 (Marine fishes not identified, demersal <30 cm, Misc Finfishes) is a huge catch, nearly 1/10th total catch (reported and iuu).  Most is industrial.  This could skew results when assigning aggregated higher-level catch to species, unless we filter out the big fish (> 30 cm).  We can get length estimates from our functional entities post-imputation dataset.  Assume non-listed species are smaller than 30 cm; large spp are easier to identify.
+
+```{r}
+big_spp <- read_csv(here('_data/grouping_traits_post_imputation.csv')) %>%
+  mutate(len = exp(log_l)) %>%
+  filter(len > 30) %>%
+  .$species
+
+### if 100039, drop large species
+watson_am_spp_df <- watson_am_spp_df %>%
+  filter(!(taxonkey == 100039 & spp %in% big_spp))
+
+```
+
+
+### Process catch totals for higher level taxa
+
+Functions to map the taxon species richness and total catch per cell for the taxon:
+
+* `map_tx_spp_richness(am_sids, am_spp_cells, thresh = 0)`
+* `map_tx_catch(tx_id, catch_df)`
+
+```{r helper functions}
+
+map_tx_spp_rich <- function(am_sids, am_spp_cells, thresh = 0) {
+  ### 
+  if(thresh > 0) {
+    tx_cells <- am_spp_cells %>%
+      filter(prob > thresh) %>%
+      filter(am_sid %in% am_sids)
+  } else {
+    tx_cells <- am_spp_cells %>%
+      filter(am_sid %in% am_sids)
+  }
+  
+  tx_cell_sum <- tx_cells %>%
+    group_by(loiczid) %>%
+    summarize(n_spp = n_distinct(am_sid))
+  
+  if(nrow(tx_cell_sum) == 0) {
+    message('... no species range found for ', paste(am_sids, collapse = ';'), '!')
+  }
+  
+  return(tx_cell_sum)
+}
+
+map_tx_catch <- function(tx_id, catch_df) {
+  tx_catch_sum <- catch_df %>%
+    filter(taxonkey %in% tx_id) %>%
+    group_by(cell) %>%
+    summarize(tot_ind_catch  = sum(reported_ind  + iuuind),
+              tot_nind_catch = sum(reported_nind + iuunind),
+              tot_catch      = tot_ind_catch + tot_nind_catch)
+  if(nrow(tx_catch_sum) == 0) {
+    message('... no observed catch for taxon ', tx_id, '!')
+  }
+  return(tx_catch_sum)
+}
+```
+
+Loop over higher-order taxa and generate taxon catch summary files.  For 100039, filter out big species specifically for a more accurate species richness value.  Write out to `stressors/fishing/total_catch_by_taxon_and_cell` in the Mazu annex directory.
+
+```{r}
+
+tx_high <- watson_worms_tx_df %>%
+  filter(tax_level < 6)
+
+tx_map_fstem <- here_anx('stressors/fishing', 
+                         'total_catch_by_tx_cell/tx_catch_%s_%s.csv')
+
+for(i in 1:nrow(tx_high)) {
+  ### i <- which(tx_high$taxonkey == 100039)
+  
+  tx_id <- tx_high$taxonkey[i]
+  tx_nm <- tx_high$worms_name[i]
+  
+  tx_map_f <- sprintf(tx_map_fstem, tx_id, tx_nm)
+  
+  if(!file.exists(tx_map_f)) {
+    message('Processing ', basename(tx_map_f), '...')
+    spp_in_taxon <- watson_am_spp_df %>%
+      filter(taxonkey == tx_id) %>%
+      .$am_sid %>% unique()
+    
+    tx_spp_rich <- map_tx_spp_rich(spp_in_taxon, 
+                                   am_spp_cells = am_spp_cells, thresh = 0)
+  
+    tx_catch <- map_tx_catch(tx_id = tx_id, catch_df = w_catch_df)
+    
+    tx_map_out <- inner_join(tx_spp_rich, tx_catch, by = c('loiczid' = 'cell'))
+    
+    if(nrow(tx_map_out) == 0) {
+      if(nrow(tx_spp_rich > 0) & nrow(tx_catch)) {
+        message('... no observed overlap of catch and species range for ', tx_id, ': ', tx_nm)
+      }
+      tx_map_out <- data.frame(loiczid = -1)
+    }
+    
+    write_csv(tx_map_out, tx_map_f)
+  } else {
+    message('File ', basename(tx_map_f), ' already exists... skipping!')
+  }
+}
+
+```
+
+
+## Species-level catch maps
+
+Here, for each species in AquaMaps, total up the catch associated with that species at the species level and at higher taxonomic levels, per LOICZID cell.  Write out as .csv.
+
+Note, due to name mismatches and synonyms between AquaMaps and WoRMS, some species are listed across multiple AquaMaps species IDs.
+
+Helper functions:
+
+* `build_spp_catch_map()`: generate catch map across potentially multiple `taxonkey` values.
+    * First collect higher-taxon-level catch per cell, dividing that by the number of similar species per cell, and assigning that value to the species
+    * Then collect the species-specific catch
+    * All catch values are summed and assigned to each cell
+    * Result is saved out to Mazu for each species.  
+        * Note, saved just by species name, not ID because multiple `am_sid` values map to a single species (e.g., for subspecies or synonyms)
+
+```{r}
+
+build_spp_catch_map <- function(tx_ids, tx_nms) {
+  hi_taxa_ids <- tx_ids[tx_ids < 600000]
+  hi_taxa_nms <- tx_nms[tx_ids < 600000]
+  fs <- here_anx('stressors/fishing/total_catch_by_tx_cell/tx_catch_%s_%s.csv') %>%
+    sprintf(hi_taxa_ids, hi_taxa_nms)
+  
+  taxa_catch <- lapply(fs, read_csv, show_col_types = FALSE) %>%
+    setNames(hi_taxa_ids) %>%
+    bind_rows(.id = 'taxonkey') %>%
+    mutate(assigned_catch = tot_catch / n_spp) %>%
+    group_by(loiczid) %>%
+    summarize(tot_catch = sum(assigned_catch))
+  
+  spp_ids <- tx_ids[tx_ids >= 600000]
+  if(length(spp_ids) == 0) {
+    message('  No species-level taxonkey found... returning catch from higher taxa')
+    return(taxa_catch)
+  } 
+  
+  spp_catch <- map_tx_catch(tx_id = spp_ids, catch_df = w_catch_df) %>%
+    rename(loiczid = cell)
+  
+  tot_catch_df <- bind_rows(taxa_catch, spp_catch) %>%
+    select(loiczid, tot_catch) %>%
+    group_by(loiczid) %>%
+    summarize(tot_catch = sum(tot_catch))
+  
+  return(tot_catch_df)
+}
+```
+
+
+```{r}
+
+spp_vec <- watson_am_spp_df$spp %>% unique() %>% sort()
+    ### 24701 spp across 25099 species IDs
+
+spp_map_fstem <- here_anx('stressors/fishing/total_catch_by_spp_cell',
+                          'spp_catch_%s.csv')
+
+for(i in seq_along(spp_vec)) { ### i <- 1
+  s <- spp_vec[i]
+  # s <- 'gadus macrocephalus' ### multiple taxonkey at spp level
+  # s <- 'platybelone argalus' ### multiple am_sid
+  spp_map_f <- sprintf(spp_map_fstem, s)
+  
+  if(!file.exists(spp_map_f)) {
+    
+    message('Processing species-total catch map for ', s, '...')
+  
+    s_df <- watson_am_spp_df %>%
+      filter(spp == s) 
+    
+    am_sid_vec <- s_df$am_sid %>% unique()
+    spp_map <- map_tx_spp_rich(am_sid_vec, am_spp_cells = am_spp_cells)
+    
+    tx_keys_df <- s_df %>%
+      select(taxonkey, worms_name) %>%
+      distinct()
+    tx_ids <- tx_keys_df$taxonkey %>% unique()
+    tx_nms <- tx_keys_df$worms_name
+    catch_map <- build_spp_catch_map(tx_ids, tx_nms)
+    
+    spp_catch_map <- spp_map %>%
+      inner_join(catch_map, by = 'loiczid')
+    
+    # raster::plot(map_to_hcaf(spp_catch_map, which = 'tot_catch'))
+    
+    message('  Found ', nrow(spp_catch_map), ' catch/presence cells for ', s, '...')
+    
+    write_csv(spp_catch_map, spp_map_f)
+  } else {
+    message('File ', basename(spp_map_f), ' exists... skipping!')
+  }
+}
+```
+

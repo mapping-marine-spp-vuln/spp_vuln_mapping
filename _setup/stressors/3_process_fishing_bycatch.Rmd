@@ -1,0 +1,545 @@
+---
+title: "Watson Data: discards/bycatch"
+author: "*Compiled on `r date()` by `r Sys.info()['user']`*"
+output: 
+  html_document:
+    code_folding: show
+    toc: true
+    toc_depth: 1
+    toc_float: yes
+    number_sections: false
+    theme: cerulean
+    highlight: haddock
+    includes: 
+      in_header: '~/github/src/templates/ohara_hdr.html'
+  pdf_document:
+    toc: true
+---
+
+``` {r setup, echo = TRUE, message = FALSE, warning = FALSE}
+
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
+
+library(raster)
+library(sf)
+library(tidyverse)
+library(here)
+library(RColorBrewer)
+library(xlsx)
+
+source(here('common_fxns.R'))
+source('stressor_fxns.R') ### in same dir as this Rmd
+```
+
+# Summary
+
+Read in data from Watson (2018).
+
+# Data
+
+Data from
+
+* Watson, R.A. and Tidd, A.N. (2018) Mapping nearly a century and a half of global marine fishing: 1869 to 2015. Marine Policy 93, 171-177
+* Watson, R. (2017) A database of global marine commercial, small-scale, illegal and unreported fisheries catch 1950-2014. Nature Scientific Data 4 (170039).
+
+Included in data:
+
+* Industrial Catch (1950 - 2017) - reported, iuu, and discard catch data for each cell location and unique identifier
+* Non-Industrial Catch (1950 - 2017) - reported, iuu, and discard catch data for each cell location and unique identifier
+* DATA CODE DEFINITIONS (gear/taxa/country codes and cell lat/lon references)
+
+## How to download the data code definitions. 
+
+For this, it is saved as an .xlsx file (Codes.xlsx). This file has 4 sheets in it which contain meta data that explain columns in the Index files, and one sheet with is "Spatial Cells Reference - contains geospatial information associated wtih the Industrial Catch data". 
+To download this data, go to the IMAS website: http://data.imas.utas.edu.au/portal/search?uuid=ff1274e1-c0ab-411b-a8a2-5a12eb27f2c0 and dowload it manually.
+
+This .xlsx file contains these sheets:
+
+* Spatial Cells Reference (Cells) - contains geospatial information associated wtih the Industrial Catch data
+* Gear Reference (Gear) - contains information regarding how different fishing gear is classified in the index datasets.
+* Taxa Reference (Taxa) - contains information regarding how different taxa is classified in the index datasets.
+* Country Reference (Country) - contains informations regarding how different countries are labeled in the index datasets. 
+
+# Methods
+
+## Access Watson data stored for OHI 2021
+
+For our purposes we will only be using the most recent set of data.  These are stored on Mazu courtesy of Gage for OHI 2021.
+
+* dir: `git-annex/globalprep/_raw_data/IMAS_GlobalFisheriesLandings/d2020`
+    * file: `Catch2015_2019.rds`
+
+```{r}
+watson_dir <- here_anx('../../git-annex/globalprep/_raw_data', 
+                       'IMAS_GlobalFisheriesLandings/d2020')
+watson_df <- readRDS(file.path(watson_dir, 'Catch2015_2019.rds')) %>%
+  janitor::clean_names()
+
+codes_xlsx <- file.path(watson_dir, 'Codes_raw.xlsx')
+# codes_sheets <- readxl::excel_sheets(codes_xlsx)
+cell_df <- readxl::read_excel(codes_xlsx, sheet = 'Cell') %>%
+  janitor::clean_names() %>%
+  select(-c(x5:x7))
+taxa_df <- readxl::read_excel(codes_xlsx, sheet = 'Taxa') %>%
+  janitor::clean_names() %>%
+  select(-c(x8:taxonkey_11), taxonkey = taxonkey_1)
+ctry_df <- readxl::read_excel(codes_xlsx, sheet = 'Country') %>%
+  janitor::clean_names() %>%
+  select(cnumber = cnumber_1, fao_name)
+gear_df <- readxl::read_excel(codes_xlsx, sheet = 'Gear') %>%
+  janitor::clean_names() %>%
+  select(-x9, -x10)
+
+```
+
+## Process bycatch from discards
+
+Watson data includes discard estimates - "Discard catch rates that were estimated were not expected to be the same taxon as the reported landed taxon for each record, but rather would be comprised of a variety of taxa, targeted and non-targeted, many of which would not be represented in the original landings source data."  Through this, discards in any cell can be summed up across all targeted species, countries, and gear type.
+
+However, we wish to include estimates for bycatch of demersal/pelagic species separately from pelagic, since we can account for water column position of all the species potentially impacted.  To do this, we can examine total bycatch across all targeted species and country, but separate gear type into benthic/demersal and pelagic/midwater types.
+
+### Gears with high bycatch - from data
+
+From the data, examine which gear types have a high ratio of discards to catch, across all cells as a rough first pass.  Drop the duplicate gear codes due to FAO coding and naming system...
+
+```{r, results = 'asis'}
+gear_clean_df <- gear_df %>%
+  select('gear', 'f_gear_code', 'f_gear_label', 'fleet_gear_name') %>%
+  distinct() %>%
+  mutate(f_gear_label = tolower(f_gear_label),
+         fleet_gear_name = tolower(fleet_gear_name),
+         fleet_gear_name = str_replace(fleet_gear_name, 'tuna', ' tuna'),
+         fleet_gear_name = str_replace_all(fleet_gear_name, '[^a-z]+', '_'))
+catch_gear_df <- watson_df %>%
+  oharac::dt_join(gear_clean_df, by = c('gear', 'f_gear_code'), type = 'left')
+
+discard_catch_ratio <- catch_gear_df %>%
+  group_by(fleet_gear_name) %>%
+  summarize(discards  = sum(discards_ind, na.rm = TRUE),
+            catch     = sum(reported_ind, na.rm = TRUE),
+            d_c_ratio = round(discards / catch, 3),
+            .groups = 'drop') %>%
+  mutate(discards = round(discards),
+         catch = round(catch)) %>%
+  arrange(desc(d_c_ratio))
+
+knitr::kable(discard_catch_ratio)
+
+benthic_gears <- c('trawl', 'dredge', 'trap')
+
+gear_d_c_ratio <- discard_catch_ratio %>%
+  mutate(water_col = ifelse(fleet_gear_name %in% benthic_gears, 'benth', 'pel'))
+
+write_csv(gear_d_c_ratio, here('int/watson_discard_catch_ratio.csv'))
+```
+
+We do not necessarily need to divide into high bycatch and low bycatch gears, since we have the actual discards reported.  If we can get effort information (via GFW) for all these gears, then we can adjust bycatch by CPUE and gear selectivity as a proxy for biomass of bycaught species.  If not, focus on those we can identify with effort, and those with the highest impacts.
+
+The data are already presented in 0.5° cells so no aggregation necessary prior to reprojecting to Mollweide.
+
+For each gear type, summarize total discards and total catch per cell; rasterize and save out to Mazu.  Note data span 2015-2017; taking all catch over these years may help smooth annual variation.
+
+### Summarize bycatch (discards) per cell by gear type
+
+```{r}
+
+gear_short_df <- gear_clean_df %>%
+  select(code = f_gear_code, name = fleet_gear_name) %>%
+  distinct() %>%
+  arrange(code)
+
+### set up a base raster
+xyz_df <- cell_df %>%
+  select(x = lon_centre, y = lat_centre, z = cell)
+
+cell_id_rast <- rasterFromXYZ(xyz_df, crs = '+init=epsg:4326') %>%
+  extend(extent(c(-180, 180, -90, 90)), value = NA)
+
+### Set up a filename stem
+bycatch_fstem <- here_anx('stressors', 'fishing', 
+                          'bycatch_by_gear', 'bycatch_%s_%s_sum.tif')
+# unlink(list.files(dirname(bycatch_fstem), full.names = TRUE))
+benthic_gears <- c('trawl', 'dredge', 'trap')
+
+for(i in 1:nrow(gear_short_df)) {
+  # i <- 1
+  g_code <- gear_short_df$code[i]
+  g_name <- gear_short_df$name[i]
+  g_water_col <- ifelse(g_name %in% benthic_gears, 'benth', 'pel')
+  
+  bycatch_rast_f <- sprintf(bycatch_fstem, g_name, g_water_col)
+  if(!file.exists(bycatch_rast_f)) {
+    message('Processing ', bycatch_rast_f, '...')
+    tmp_bycatch_df <- catch_gear_df %>%
+      filter(f_gear_code == g_code) %>%
+      group_by(cell) %>%
+      summarize(discard_ind_sum  = sum(discards_ind, na.rm = TRUE),
+                discard_nind_sum = sum(discards_nind)) %>%
+      mutate(discard_sum = discard_ind_sum + discard_nind_sum)
+    
+    tmp_bycatch_rast <- raster::subs(cell_id_rast, tmp_bycatch_df,
+                                     by = 'cell', which = 'discard_sum')
+    writeRaster(tmp_bycatch_rast, bycatch_rast_f, overwrite = TRUE)
+  } else {
+    message('File ', bycatch_rast_f, ' exists... skipping!')
+  }
+}
+```
+
+### Plot discards by gear type
+
+```{r}
+rast_fs <- list.files(here_anx('stressors', 'fishing', 'bycatch_by_gear'), 
+                               full.names = TRUE)
+for(f in rast_fs) {
+
+  g_name <- str_remove_all(basename(f), '_sum.tif')
+  
+  r <- raster(f)
+  
+  plot(r, axes = FALSE, main = g_name, col = hcl.colors(20))
+}
+```
+
+## Process total reported catch by gear
+
+### Summarize reported catch per cell by gear type
+
+This is identical to the discards code, swapping reported catch with discards.
+
+```{r}
+
+gear_short_df <- gear_clean_df %>%
+  select(code = f_gear_code, name = fleet_gear_name) %>%
+  distinct() %>%
+  arrange(code)
+
+### set up a base raster
+xyz_df <- cell_df %>%
+  select(x = lon_centre, y = lat_centre, z = cell)
+
+cell_id_rast <- rasterFromXYZ(xyz_df, crs = '+init=epsg:4326') %>%
+  extend(extent(c(-180, 180, -90, 90)), value = NA)
+
+### Set up a filename stem
+rep_catch_fstem <- here_anx('stressors', 'fishing', 
+                          'total_catch_by_gear', 'catch_%s_%s_sum.tif')
+# unlink(list.files(dirname(rep_catch_fstem), full.names = TRUE))
+benthic_gears <- c('trawl', 'dredge', 'trap')
+
+for(i in 1:nrow(gear_short_df)) {
+  # i <- 1
+  g_code <- gear_short_df$code[i]
+  g_name <- gear_short_df$name[i]
+  g_water_col <- ifelse(g_name %in% benthic_gears, 'benth', 'pel')
+  
+  rep_catch_f <- sprintf(rep_catch_fstem, g_name, g_water_col)
+  if(!file.exists(rep_catch_f)) {
+    message('Processing ', rep_catch_f, '...')
+    tmp_catch_df <- catch_gear_df %>%
+      filter(f_gear_code == g_code) %>%
+      group_by(cell) %>%
+      summarize(rep_ind_sum  = sum(reported_ind, na.rm = TRUE),
+                rep_nind_sum = sum(reported_nind, na.rm = TRUE),
+                iuu_ind_sum  = sum(iuuind, na.rm = TRUE),
+                iuu_nind_sum = sum(iuunind, na.rm = TRUE)) %>%
+      mutate(catch_sum = rep_ind_sum + rep_nind_sum + iuu_ind_sum + iuu_nind_sum)
+    
+    tmp_catch_rast <- raster::subs(cell_id_rast, tmp_catch_df,
+                                   by = 'cell', which = 'catch_sum')
+    writeRaster(tmp_catch_rast, rep_catch_f, overwrite = TRUE)
+  } else {
+    message('File ', rep_catch_f, ' exists... skipping!')
+  }
+}
+```
+
+### Examine bycatch ratio by gear type
+
+Here, read in each bycatch raster and reported catch raster, and plot the map of this ratio globally to identify heterogeneity in spatial patterns of bycatch intensity.  Also plot a histogram of the resulting values to visualize the distribution.
+
+```{r}
+for(i in 1:nrow(gear_short_df)) {
+  ### i <- 1
+  g_name <- gear_short_df$name[i]
+  g_water_col <- ifelse(g_name %in% benthic_gears, 'benth', 'pel')
+
+  catch_f <- sprintf(rep_catch_fstem, g_name, g_water_col)
+  bycatch_f <- sprintf(bycatch_fstem, g_name, g_water_col)
+  
+  b_r <- raster(bycatch_f)
+  
+  c_r <- raster(catch_f)
+  
+  ratio_r <- b_r / c_r
+  
+  plot(ratio_r, axes = FALSE, main = paste('Bycatch ratio: ', g_name), col = hcl.colors(20))
+  # hist(ratio_r, main = paste('Bycatch ratio: ', g_name))
+}
+```
+
+## Normalize bycatch by NPP
+
+Rather than trying to use some variation on CPUE to estimate standing stock biomass, we will simply use NPP as prior CHI efforts have done.  This avoids issues of estimating non-targeted biomass based on effort on targeted stocks.  It will also be far easier and consistent than trying to use CPUE for targeted fishing effort later on.
+
+Use chlorophyll layers from Bio-ORACLE (https://www.bio-oracle.org/release-notes-2-2.php), accessed via the `sdmpredictors` package.  Potential layers:
+
+* BO2_ppmean_ss: Primary production (mean)
+    * Mean sea surface net primary productivity of carbon, g/m^3/day
+* BO2_ppmean_bdmean: Primary production (mean at mean depth)
+    * Mean net primary productivity of carbon at mean bottom depth
+* BO21_chlomean_ss: Chlorophyll concentration (mean)
+    * Mean mass concentration of chlorophyll at the sea surface, mg/m^3
+* BO21_chlomean_bdmean: Chlorophyll concentration (mean at mean depth)
+    * Mean mass concentration of chlorophyll in sea water at mean bottom depth, mg/m^3
+    
+> The data are documented in two peer reviewed articles that you should cite:
+> 
+> Tyberghein L, Verbruggen H, Pauly K, Troupin C, Mineur F, De Clerck O (2012) Bio-ORACLE: A global environmental dataset for marine species distribution modelling. Global Ecology and Biogeography, 21, 272–281.
+> 
+> Assis, J., Tyberghein, L., Bosh, S., Verbruggen, H., Serrão, E. A., & De Clerck, O. (2017). Bio-ORACLE v2.0: Extending marine data layers for bioclimatic modelling. Global Ecology and Biogeography.
+
+Idea: use sea surface NPP to normalize pelagic/surface/midwater bycatch, and bottom concentration to normalize benthic bycatch.
+
+
+```{r, eval = FALSE, include = FALSE}
+library(sdmpredictors)
+
+chl_dir <- here_anx('stressors/fishing/npp')
+l <- list_layers('Bio-ORACLE') %>%
+  filter(str_detect(tolower(name), 'primary produc'))
+chl_ss <- load_layers(c('BO21_chlomean_bdmean', 'BO21_chlomean_bdmin', 'BO21_chlomean_bdmax'),
+                      datadir = chl_dir)
+```
+
+NOTE: `sdmpredictors::load_layers()` returns error: 
+
+```
+Error in utils::download.file(layer_url, path, method = "auto", quiet = FALSE,  : 
+  cannot open URL 'https://bio-oracle.org/data/2.2/Present.Benthic.Mean.Depth.Chlorophyll.Mean.BOv2_1.tif.zip'
+```
+
+Instead, I've downloaded layers from https://www.bio-oracle.org/downloads-to-email.php
+
+```{r explore data}
+npp_dir <- here_anx('stressors/fishing/npp')
+
+npp_fs <- list.files(npp_dir, pattern = 'Mean.tif', full.names = TRUE)
+
+npp_stack <- raster::stack(npp_fs)
+
+log_npp_stack <- log_plus(npp_stack)
+# hist(log_npp_stack[[2]])
+
+npp_df <- as.data.frame(values(npp_stack))
+
+npp_sample_df <- npp_df %>%
+  sample_n(1e4) %>%
+  rename(surface_npp = Present.Surface.Primary.productivity.Mean,
+         benthic_npp = Present.Benthic.Mean.Depth.Primary.productivity.Mean)
+
+ggplot(npp_sample_df, aes(x = surface_npp,
+                          y = benthic_npp)) +
+  geom_point() +
+  geom_abline(slope = 1, intercept = 0, color = 'red') +
+  theme_minimal()
+```
+
+### Read and transform benthic and pelagic bycatch layers
+
+The rasters of bycatch by gear are at 0.5° resolution, so no aggregation needed.
+
+For each gear type:
+
+* read in appropriate bycatch layers by pelagic or benthic gear type as a raster stack
+* sum bycatch values across all gear types
+* convert result to catch per km<sup>2</sup>
+* reproject to 10 km Mollweide CRS (using nearest neighbor to avoid undue interpolation of the original data)
+* convert to catch per 10 km x 10 km cell: bycatch/km<sup>2</sup> * 100 km<sup>2</sup>. 
+    * Note that accounting for proportional ocean area of coastal cells, as is done elsewhere, in this case loses a lot of catch... likely an artifact due to total catch in large cells being attributed as uniformly distributed
+
+```{r}
+### proportional ocean area raster as raster base and mask
+ocean_r <- raster(here('_spatial/ocean_area_mol.tif'))
+
+bycatch_fs <- list.files(here_anx('stressors', 'fishing', 'bycatch_by_gear'),
+                         full.names = TRUE)
+```
+
+``` {r bycatch from pelagic gear types}
+### read in pelagic gear types and sum
+pel_sum_r <- stack(bycatch_fs[str_detect(bycatch_fs, '_pel_sum.tif')]) %>%
+  calc(fun = sum, na.rm = TRUE)
+# sum(values(pel_sum_r), na.rm = TRUE) # 4276031 total tonnes
+
+### convert to bycatch per km^2
+area_r <- area(pel_sum_r)
+pel_sum_km2_r <- pel_sum_r / area_r
+
+### reproject
+pel_sum_km2_r_moll <- pel_sum_km2_r %>%
+  projectRaster(ocean_r, method = 'ngb')
+
+### convert to total catch
+# pel_r <- pel_sum_km2_r_moll * ocean_r * 100
+# sum(values(pel_r), na.rm = TRUE) # 3640967
+pel_r <- pel_sum_km2_r_moll * 100
+# sum(values(pel_r), na.rm = TRUE) # 4298497, closer to original
+
+# get_qtiles(pel_r)
+  #        50%          90%          95%          99%        99.9%         100% 
+  # 0.01039262   0.55128371   3.24311533  19.16427983  65.65475256 753.26682481
+```
+
+``` {r bycatch from benthic gear types}
+ben_sum_r <- stack(bycatch_fs[str_detect(bycatch_fs, '_benth_sum.tif')]) %>%
+  calc(fun = sum, na.rm = TRUE) 
+# sum(values(ben_sum_r), na.rm = TRUE) # 40749287
+
+### convert to bycatch / km^2
+ben_sum_km2_r <- ben_sum_r / area_r
+
+### reproject
+ben_sum_km2_r_moll <- ben_sum_km2_r %>%
+  projectRaster(ocean_r, method = 'ngb')
+
+### convert to total catch
+# ben_r <- ben_sum_km2_r_moll * ocean_r * 100
+# sum(values(ben_r), na.rm = TRUE) # 32553021
+ben_r <- ben_sum_km2_r_moll * 100
+# sum(values(ben_r), na.rm = TRUE) # 41008278, closer to original
+
+# get_qtiles(ben_r)
+#       50%          90%          95%          99%        99.9%         100% 
+# 0.0000000    0.1199553   21.1216807  195.4432071  894.6216718 5035.5973327 
+```
+
+### Set up NPP layers for surface and benthic
+
+For surface and midwater bycatch, estimate biomass based on surface productivity (log-transformed).  For benthic bycatch, estimate biomass based on a mean of surface and benthic productivity (again, log-transformed).  Since deepwater environments have no productivity at depth, these ecosystems are dependent on productivity on the surface trickling down as marine snow.
+
+Because these are at a resolution comparable to 10 km cells (0.0833°), no need for aggregation prior to reprojecting.
+
+The NPP layers contain some areas where no data is present, mostly in Arctic and Antarctic areas.  Use an iterative `focal()` process to fill out these layers (see `focal_gapfill()` function in `stressor_fxns.R` script)
+
+```{r surface NPP}
+surface_npp_raw <- raster(here_anx('stressors/fishing/npp',
+                                   'Present.Surface.Primary.productivity.Mean.tif'))
+# class      : RasterLayer 
+# dimensions : 2160, 4320, 9331200  (nrow, ncol, ncell)
+# resolution : 0.08333333, 0.08333333  (x, y)
+# extent     : -180, 180, -90, 90  (xmin, xmax, ymin, ymax)
+# crs        : +proj=longlat +datum=WGS84 +no_defs 
+# source     : Present.Surface.Primary.productivity.Mean.tif 
+# names      : Present.Surface.Primary.productivity.Mean 
+# values     : 6e-05, 0.257881  (min, max)
+surface_npp_mol <- projectRaster(surface_npp_raw, ocean_r)
+
+log_surf_npp_mol <- log_plus(surface_npp_mol)
+
+log_surf_npp_gapfill <- focal_gapfill(log_surf_npp_mol, iters = 50)
+# x <- check_missing_cells(log_surf_npp_gapfill)
+# sum(!is.na(values(x)))
+# a few antarctic cells still NA - ice sheets etc?
+# y <- mask(pel_r, x); sum(values(y), na.rm = TRUE)
+# z <- mask(ben_r, x); sum(values(z), na.rm = TRUE)
+
+# get_qtiles(log_surf_npp_gapfill)
+#       50%       90%       95%       99%     99.9%      100% 
+# 0.7790794 1.5680076 1.8177607 2.4418932 3.3707904 4.6151205 
+```
+
+
+``` {r mean of surface and benthic}
+benthic_npp_raw <- raster(here_anx('stressors/fishing/npp',
+                                   'Present.Benthic.Mean.Depth.Primary.productivity.Mean.tif'))
+# class      : RasterLayer 
+# dimensions : 2160, 4320, 9331200  (nrow, ncol, ncell)
+# resolution : 0.08333333, 0.08333333  (x, y)
+# extent     : -180, 180, -90, 90  (xmin, xmax, ymin, ymax)
+# crs        : +proj=longlat +datum=WGS84 +no_defs 
+# source     : Present.Benthic.Mean.Depth.Primary.productivity.Mean.tif 
+# names      : Present.Benthic.Mean.Depth.Primary.productivity.Mean 
+# values     : 0, 0.376071  (min, max)
+benthic_npp_mol <- projectRaster(benthic_npp_raw, ocean_r)
+
+benth_surf_npp_mol <- (benthic_npp_mol + surface_npp_mol) / 2
+
+log_ben_surf_npp_mol <- log_plus(benth_surf_npp_mol)
+
+log_ben_surf_npp_gapfill <- focal_gapfill(log_ben_surf_npp_mol, iters = 50)
+# x <- check_missing_cells(log_ben_surf_npp_gapfill)
+
+# get_qtiles(log_ben_surf_npp_gapfill)
+#      50%      90%      95%      99%    99.9%     100% 
+# 0.420190 1.021973 1.227471 1.947043 2.844674 4.615121 
+```
+
+### Normalize bycatch and write out
+
+Normalize the pelagic and benthic bycatch values (untransformed) by the appropriate NPP layer (log-transformed) then rescale, using a 99.9%ile as reference point.  These new layers seem substantially less right-skewed (though still very very skewed) than the ones from CHI Recent Pace of Change project - perhaps due to the 99.9%ile?
+
+```{r finalize pelagic bycatch}
+pel_normalized_r <- pel_r / log_surf_npp_gapfill
+# get_qtiles(pel_normalized_r)
+#          50%          90%          95%          99%        99.9%         100% 
+# 8.274063e-02 2.293933e+00 5.516654e+00 2.221340e+01 1.166759e+02 2.230295e+03 
+
+pel_rescaled_r <- rescale_stressor(pel_normalized_r, qtile = .999)
+# get_qtiles(pel_rescaled_r)
+#          50%          90%          95%          99%        99.9%         100% 
+# 0.0007091492 0.0196607291 0.0472818617 0.1903854709 0.9999991161 1.0000000000 
+
+### compare to old pelagic high bycatch stressor (~1 km Mollweide)
+# dir <- '/home/shares/ohi/git-annex/impact_acceleration/stressors/comm_fish/final'
+# r <- raster(file.path(dir, 'pel_hb', 'pel_hb_2014_rescaled_mol.tif'))
+# get_qtiles(r)
+#          50%          90%          95%          99%        99.9%         100% 
+# 9.386958e-08 3.750110e-04 7.535241e-03 5.118972e-02 1.776541e-01 1.000000e+00
+
+plot(pel_rescaled_r, axes = FALSE, main = 'Pelagic bycatch stressor',
+     col = hcl.colors(20))
+plot(log10(pel_rescaled_r), axes = FALSE, main = 'Pelagic bycatch log10(stressor)',
+     col = hcl.colors(20))
+
+hist(pel_rescaled_r, main = 'Pelagic bycatch stressor')
+hist(log10(pel_rescaled_r), main = 'Pelagic bycatch log10(stressor)')
+
+writeRaster(pel_rescaled_r, 
+            here('_data/stressors_mol/bycatch_pelagic_2017.tif'),
+            overwrite = TRUE)
+```
+
+``` {r finalize benthic bycatch}
+ben_normalized_r <- ben_r / log_ben_surf_npp_gapfill
+# get_qtiles(ben_normalized_r)
+#      50%          90%          95%          99%        99.9%         100% 
+# 0.000000     1.443894    40.268696   276.279933  1312.343122 16885.477998 
+
+ben_rescaled_r <- rescale_stressor(ben_normalized_r, qtile = .999)
+# get_qtiles(ben_rescaled_r)
+#         50%         90%         95%         99%       99.9%        100% 
+# 0.000000000 0.001100241 0.030684579 0.210524160 0.999999671 1.000000000 
+
+### compare to old pelagic high bycatch stressor
+# r1 <- raster(file.path(dir, 'dem_nondest_hb', 'dem_nondest_hb_2014_rescaled_mol.tif'))
+# r2 <- raster(file.path(dir, 'dem_dest', 'dem_dest_2014_rescaled_mol.tif'))
+# get_qtiles(r1)
+#          50%          90%          95%          99%        99.9%         100% 
+# 0.000000e+00 9.992018e-06 9.858453e-04 2.784128e-02 2.191673e-01 1.000000e+00
+# get_qtiles(r2)
+
+
+plot(ben_rescaled_r, axes = FALSE, main = 'Benthic bycatch stressor',
+     col = hcl.colors(20))
+plot(log10(ben_rescaled_r), axes = FALSE, main = 'Benthic bycatch log10(stressor)',
+     col = hcl.colors(20))
+hist(ben_rescaled_r, main = 'Benthic bycatch stressor')
+hist(log10(ben_rescaled_r), main = 'Benthic bycatch log10(stressor)')
+
+writeRaster(ben_rescaled_r, 
+            here('_data/stressors_mol/bycatch_benthic_2017.tif'),
+            overwrite = TRUE)
+
+```
+

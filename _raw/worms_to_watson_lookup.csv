@@ -1,0 +1,1362 @@
+taxonkey,taxon_name,common_name,descript,tax_level,worms_name
+100025,Miscellaneous diadromous fishes,Diadromous fishes,demersal >=90 cm,1,actinopterygii
+100035,Clupeoids,Herrings sardines anchovies,pelagic <30 cm,1,clupeidae
+100036,Scombroids,Tunas bonitos billfishes,pelagic >=90 cm,1,scombridae
+100038,Sharks rays chimaeras,Sharks rays skates etc,rays <90 cm,1,elasmobranchii
+100039,Marine fishes not identified,Marine fishes,demersal <30 cm,1,actinopterygii
+100043,Homaridae/Palinuridae,Lobsters spiny-rock lobsters,lobsters crab,1,palinuridae
+100044,King crabs squat-lobsters,Craylets squat lobsters,lobsters crab,1,decapoda
+100047,Miscellaneous marine crustaceans,Marine crustaceans,lobsters crab,1,decapoda
+100056,Clams cockles arkshells,Clams cockles arkshells,demersal mollusc,1,bivalvia
+100058,Miscellaneous marine molluscs,Marine molluscs,demersal mollusc,1,mollusca
+100139,Marine fishes not identified,Finfishes,demersal <30 cm,1,actinopterygii
+100176,Starfish and other echinoderms,Starfishes,demersal mollusc,1,asteroidea
+100276,Sea-urchins and other echinoderms,Sea urchins,demersal mollusc,1,echinoidea
+100338,Sharks rays chimaeras,Cartilaginous fishes,rays <90 cm,1,elasmobranchii
+100339,Marine fishes not identified,Pelagic fishes,demersal <30 cm,1,actinopterygii
+100345,Shrimps prawns,Natantian decapods,shrimp,1,decapoda
+100538,Sharks rays chimaeras,Various sharks,rays <90 cm,1,elasmobranchii
+200003,Holocephali,Chimaeras ratfish rabbitfish,rays >=90 cm,2,holocephali
+200004,Elasmobranchii,Sharks and rays,rays <90 cm,2,elasmobranchii
+290002,Cephalopoda,Cephalopods,cephalopods,2,cephalopoda
+290004,Bivalvia,Clams,demersal mollusc,2,bivalvia
+290005,Ascidiacea,Sea squirts,demersal mollusc,2,ascidiacea
+290006,Gastropoda,Gastropods,demersal mollusc,2,gastropoda
+290010,Asteroidea,Sea stars,demersal mollusc,2,asteroidea
+290011,Echinoidea,Sea urchins,demersal mollusc,2,echinoidea
+290012,Holothuroidea,Sea cucumbers,demersal mollusc,2,holothuroidea
+290022,Crustacea,Crustaceans,lobsters crab,2,decapoda
+300003,Chimaeriformes,Chimaeras,rays >=90 cm,3,chimaeriformes
+300007,Lamniformes,Mackerel sharks,shark >=90 cm,3,lamniformes
+300008,Carcharhiniformes,Ground sharks,shark <90 cm,3,carcharhiniformes
+300009,Squaliformes,Bramble sleeper dogfish sharks,shark <90 cm,3,squaliformes
+300014,Rajiformes,Skates and rays,rays <90 cm,3,rajiformes
+300026,Anguilliformes,Eels and morays,demersal 30 - 90 cm,3,anguilliformes
+300028,Clupeiformes,Herrings,pelagic <30 cm,3,clupeiformes
+300044,Gadiformes,Cods,benthopelagic 30 - 90 cm,3,gadiformes
+300059,Scorpaeniformes,Scorpionfishes and flatheads,demersal <30 cm,3,scorpaeniformes
+300060,Perciformes,Perch-likes,demersal <30 cm,3,perciformes
+300061,Pleuronectiformes,Flatfishes,flatfish <90 cm,3,pleuronectiformes
+390002,Teuthida,Squids,cephalopods,3,myopsida
+390002,Teuthida,Squids,cephalopods,3,oegopsida
+390006,Sepiida,Cuttlefishes,cephalopods,3,sepiida
+390007,Octopoda,Octopuses,cephalopods,3,octopoda
+390017,Stomatopoda,Mantis shrimps,shrimp,3,stomatopoda
+400002,Myxinidae,Hagfishes,bathydemersal 30 - 90 cm,4,myxinidae
+400009,Lamnidae,Mackerel sharks white sharks,shark >=90 cm,4,lamnidae
+400010,Scyliorhinidae,Cat sharks,shark <90 cm,4,scyliorhinidae
+400011,Carcharhinidae,Requiem sharks,shark >=90 cm,4,carcharhinidae
+400012,Sphyrnidae,Hammerhead bonnethead scoophead shark,shark >=90 cm,4,sphyrnidae
+400013,Squalidae,Dogfish sharks,shark >=90 cm,4,squalidae
+400015,Squatinidae,Angel sharks,shark >=90 cm,4,squatinidae
+400016,Pristidae,Sawfishes,shark >=90 cm,4,pristidae
+400017,Rhinobatidae,Guitarfishes,rays >=90 cm,4,rhinobatidae
+400019,Rajidae,Skates,rays <90 cm,4,rajidae
+400020,Dasyatidae,Stingrays,rays >=90 cm,4,dasyatidae
+400022,Myliobatidae,Eagle and manta rays,rays >=90 cm,4,myliobatidae
+400043,Clupeidae,Herrings shads sardines menhadens,pelagic <30 cm,4,clupeidae
+400056,Muraenidae,Moray eels,reef-associated 30 - 90 cm,4,muraenidae
+400062,Congridae,Conger and garden eels,demersal 30 - 90 cm,4,congridae
+400066,Ophichthidae,Snake eels,demersal 30 - 90 cm,4,ophichthidae
+400076,Salmonidae,Salmonids,benthopelagic >=90 cm,4,salmonidae
+400080,Osmeridae,Smelts,pelagic <30 cm,4,osmeridae
+400084,Bathylagidae,Deep-sea smelts,bathypelagic <30 cm,4,bathylagidae
+400145,Ariidae,Sea catfishes,demersal 30 - 90 cm,4,ariidae
+400160,Synodontidae,Lizardfishes,demersal 30 - 90 cm,4,synodontidae
+400163,Chlorophthalmidae,Greeneyes,demersal <30 cm,4,chlorophthalmidae
+400167,Myctophidae,Lanternfishes,bathypelagic <30 cm,4,myctophidae
+400180,Moridae,Codlings,benthopelagic <30 cm,4,moridae
+400183,Gadidae,Cods and haddocks,demersal 30 - 90 cm,4,gadidae
+400185,Macrouridae,Grenadiers or rattails,benthopelagic 30 - 90 cm,4,macrouridae
+400186,Ophidiidae,Cusk-eels,benthopelagic 30 - 90 cm,4,ophidiidae
+400189,Batrachoididae,Toadfishes,demersal <30 cm,4,batrachoididae
+400190,Lophiidae,Goosefishes,demersal 30 - 90 cm,4,lophiidae
+400206,Exocoetidae,Flyingfishes,pelagic <30 cm,4,exocoetidae
+400207,Belonidae,Needlefishes,pelagic 30 - 90 cm,4,belonidae
+400208,Scomberesocidae,Sauries,pelagic 30 - 90 cm,4,scomberesocidae
+400218,Atherinidae,Silversides,pelagic <30 cm,4,atherinidae
+400236,Trachichthyidae,Slimeheads,bathypelagic 30 - 90 cm,4,trachichthyidae
+400240,Berycidae,Alfonsinos,demersal 30 - 90 cm,4,berycidae
+400243,Holocentridae,Squirrelfishes soldierfishes,reef-associated <30 cm,4,holocentridae
+400249,Zeidae,Dories,bathydemersal 30 - 90 cm,4,zeidae
+400250,Oreosomatidae,Oreos,bathypelagic <30 cm,4,oreosomatidae
+400252,Caproidae,Boarfishes,bathydemersal <30 cm,4,caproidae
+400264,Scorpaenidae,Scorpionfishes or rockfishes,demersal 30 - 90 cm,4,scorpaenidae
+400266,Triglidae,Searobins,demersal <30 cm,4,triglidae
+400273,Platycephalidae,Flatheads,demersal 30 - 90 cm,4,platycephalidae
+400277,Cottidae,Sculpins,demersal <30 cm,4,cottidae
+400289,Serranidae,Sea basses groupers fairy basslets,reef-associated <30 cm,4,serranidae
+400304,Apogonidae,Cardinalfishes,reef-associated <30 cm,4,apogonidae
+400307,Sillaginidae,Smelt-whitings,demersal 30 - 90 cm,4,sillaginidae
+400308,Malacanthidae,Tilefishes,demersal 30 - 90 cm,4,malacanthidae
+400313,Echeneidae,Remoras,pelagic 30 - 90 cm,4,echeneidae
+400314,Carangidae,Jacks and pompanos,pelagic 30 - 90 cm,4,carangidae
+400318,Leiognathidae,Slimys slipmouths or ponyfishes,demersal <30 cm,4,leiognathidae
+400319,Bramidae,Pomfrets,pelagic 30 - 90 cm,4,bramidae
+400323,Lutjanidae,Snappers,reef-associated 30 - 90 cm,4,lutjanidae
+400324,Nemipteridae,Threadfin breams Whiptail breams,demersal <30 cm,4,nemipteridae
+400326,Gerreidae,Mojarras,demersal <30 cm,4,gerreidae
+400327,Haemulidae,Grunts,reef-associated 30 - 90 cm,4,haemulidae
+400328,Lethrinidae,Emperors or scavengers,reef-associated 30 - 90 cm,4,lethrinidae
+400330,Sparidae,Porgies,demersal 30 - 90 cm,4,sparidae
+400331,Sciaenidae,Drums or croakers,demersal 30 - 90 cm,4,sciaenidae
+400332,Mullidae,Goatfishes,reef-associated 30 - 90 cm,4,mullidae
+400340,Ephippidae,Spadefishes batfishes and scats,reef-associated 30 - 90 cm,4,ephippidae
+400356,Latridae,Trumpeters,demersal 30 - 90 cm,4,latridae
+400359,Mugilidae,Mullets,demersal 30 - 90 cm,4,mugilidae
+400361,Polynemidae,Threadfins,demersal 30 - 90 cm,4,polynemidae
+400362,Labridae,Wrasses,reef-associated <30 cm,4,labridae
+400364,Scaridae,Parrotfishes,reef-associated 30 - 90 cm,4,scaridae
+400377,Trachinidae,Weeverfishes,demersal <30 cm,4,trachinidae
+400382,Nototheniidae,Cod icefishes,demersal 30 - 90 cm,4,nototheniidae
+400383,Bathydraconidae,Antarctic dragonfishes,bathydemersal <30 cm,4,bathydraconidae
+400384,Channichthyidae,Crocodile icefishes,demersal 30 - 90 cm,4,channichthyidae
+400402,Ammodytidae,Sand lances,demersal <30 cm,4,ammodytidae
+400405,Gobiidae,Gobies,demersal <30 cm,4,gobiidae
+400412,Acanthuridae,Surgeonfishes tangs unicornfishes,reef-associated 30 - 90 cm,4,acanthuridae
+400414,Gempylidae,Snake mackerels,benthopelagic 30 - 90 cm,4,gempylidae
+400415,Trichiuridae,Cutlassfishes,benthopelagic >=90 cm,4,trichiuridae
+400416,Scombridae,Mackerels tunas bonitos,pelagic >=90 cm,4,scombridae
+400419,Istiophoridae,Billfishes,pelagic >=90 cm,4,istiophoridae
+400421,Centrolophidae,Medusafishes,pelagic 30 - 90 cm,4,centrolophidae
+400425,Stromateidae,Butterfishes,benthopelagic 30 - 90 cm,4,stromateidae
+400439,Bothidae,Lefteye flounders,flatfish <90 cm,4,bothidae
+400440,Pleuronectidae,Righteye flounders,flatfish <90 cm,4,pleuronectidae
+400441,Soleidae,Soles,flatfish <90 cm,4,soleidae
+400442,Cynoglossidae,Tonguefishes,flatfish <90 cm,4,cynoglossidae
+400445,Balistidae,Triggerfishes,reef-associated 30 - 90 cm,4,balistidae
+400446,Ostraciidae,Boxfishes (cowfish and trunkfish),reef-associated 30 - 90 cm,4,ostraciidae
+400448,Tetraodontidae,Puffers,demersal 30 - 90 cm,4,tetraodontidae
+400454,Engraulidae,Anchovies,pelagic <30 cm,4,engraulidae
+400459,Caesionidae,Fusiliers,reef-associated 30 - 90 cm,4,caesionidae
+400460,Pomacanthidae,Angelfishes,reef-associated <30 cm,4,pomacanthidae
+400475,Hemiramphidae,Halfbeaks,pelagic <30 cm,4,hemiramphidae
+400479,Inermiidae,Bonnetmouths,pelagic <30 cm,4,haemulidae
+400488,Triakidae,Houndsharks,shark >=90 cm,4,triakidae
+400509,Ambassidae,Asiatic glassfishes,demersal <30 cm,4,ambassidae
+400515,Scophthalmidae,Turbots,flatfish <90 cm,4,scophthalmidae
+400517,Monacanthidae,Filefishes,reef-associated <30 cm,4,monacanthidae
+400581,Peristediidae,Armored searobins or armored gurnards,bathydemersal <30 cm,4,peristediidae
+400591,Artedidraconidae,Barbled plunderfishes,demersal <30 cm,4,artedidraconidae
+400595,Macroramphosidae,Snipefishes,benthopelagic <30 cm,4,centriscidae
+490004,Ommastrephidae,Arrow squids,cephalopods,4,ommastrephidae
+490011,Sepiidae,Cuttlefishes,cephalopods,4,sepiidae
+490012,Octopodidae,Octopuses,cephalopods,4,octopodidae
+490021,Buccinidae,Buccinidae,demersal mollusc,4,buccinidae
+490030,Palaemonidae,Palaemonid shrimps,lobsters crab,4,palaemonidae
+490031,Portunidae,Swimming crabs,lobsters crab,4,portunidae
+490036,Lithodidae,King crabs,lobsters crab,4,lithodidae
+490039,Palinuridae,Spiny lobsters,lobsters crab,4,palinuridae
+490040,Scyllaridae,Slipper lobsters,lobsters crab,4,scyllaridae
+490041,Sergestidae,Sergestid shrimp,shrimp,4,sergestidae
+490042,Aristeidae,Aristeid shrimps,shrimp,4,aristeidae
+490043,Penaeidae,Penaeid shrimps,shrimp,4,penaeidae
+490044,Crangonidae,Crongonid shrimp,shrimp,4,crangonidae
+490046,Pandalidae,Norther shrimps,shrimp,4,pandalidae
+490052,Squillidae,Mantis shrimps,shrimp,4,squillidae
+490054,Mytilidae,Sea mussels,demersal mollusc,4,mytilidae
+490055,Pectinidae,Scallops,demersal mollusc,4,pectinidae
+490058,Cardiidae,Cockles,demersal mollusc,4,cardiidae
+490060,Veneridae,Venus clams,demersal mollusc,4,veneridae
+490061,Solenidae,Razor clams knife clams,demersal mollusc,4,solenidae
+490063,Mactridae,Mactra surf clams,demersal mollusc,4,mactridae
+490097,Brachyura,Marine crabs,lobsters crab,4,decapoda
+490124,Galatheidae,Squat lobsters,lobsters crab,4,galatheidae
+500048,Paralichthys,American flounders,flatfish <90 cm,5,paralichthys
+500107,Squalus,Dogfishes,shark >=90 cm,5,squalus
+500108,Raja,Skates,rays <90 cm,5,raja
+500112,Lophius,Monkfishes,bathydemersal >=90 cm,5,lophius
+500116,Coryphaena,Coryphaena,pelagic >=90 cm,5,coryphaena
+500122,Trachinus,Weevers,demersal <30 cm,5,trachinus
+500124,Ammodytes,Sandlances,demersal <30 cm,5,ammodytes
+500134,Scorpaena,Scorpionfish,demersal 30 - 90 cm,5,scorpaena
+500136,Salmo,Salmon and trout,pelagic 30 - 90 cm,5,salmo
+500142,Scomber,Mackerels,pelagic 30 - 90 cm,5,scomber
+500143,Mullus,Western goatfishes,demersal 30 - 90 cm,5,mullus
+500144,Trigla,Gurnards,bathydemersal 30 - 90 cm,5,trigla
+500147,Argentina,Argentines,pelagic <30 cm,5,argentina
+500152,Mugil,Grey mullets,demersal 30 - 90 cm,5,mugil
+500211,Trachipterus,Deaf fishes,benthopelagic >=90 cm,5,trachipterus
+500240,Siganus,Rabbitfishes,reef-associated 30 - 90 cm,5,siganus
+500327,Macrourus,Grenadiers,benthopelagic >=90 cm,5,macrourus
+500348,Mustelus,Smooth-hounds,shark >=90 cm,5,mustelus
+500351,Rhinobatos,Guitarfish,rays >=90 cm,5,rhinobatos
+500352,Alosa,Shads,pelagic 30 - 90 cm,5,alosa
+500357,Lutjanus,Snappers,reef-associated 30 - 90 cm,5,lutjanus
+500366,Epinephelus,Groupers,reef-associated 30 - 90 cm,5,epinephelus
+500372,Sphyraena,Barracudas,pelagic 30 - 90 cm,5,sphyraena
+500384,Gymnothorax,Gymnothorax,demersal 30 - 90 cm,5,gymnothorax
+500467,Caranx,Jacks,reef-associated 30 - 90 cm,5,caranx
+500468,Scomberoides,Queenfishes,pelagic 30 - 90 cm,5,scomberoides
+500477,Kyphosus,Sea chubs,reef-associated 30 - 90 cm,5,kyphosus
+500487,Scomberomorus,Seerfishes,pelagic >=90 cm,5,scomberomorus
+500495,Prionotus,Sea robins,demersal <30 cm,5,prionotus
+500504,Centropomus,Snooks,demersal 30 - 90 cm,5,centropomus
+500515,Leiognathus,Slipmouths,demersal <30 cm,5,leiognathus
+500551,Plotosus,Eel catfishes,demersal 30 - 90 cm,5,plotosus
+500598,Trachinotus,Pompanos,pelagic 30 - 90 cm,5,trachinotus
+500618,Solea,Soles,flatfish <90 cm,5,solea
+500638,Isurus,Mako sharks,shark >=90 cm,5,isurus
+500639,Alopias,Thresher sharks,shark >=90 cm,5,alopias
+500640,Galeus,Catsharks,shark <90 cm,5,galeus
+500642,Etmopterus,Lanternsharks,shark <90 cm,5,etmopterus
+500646,Dasyatis,Stingrays,rays >=90 cm,5,dasyatis
+500654,Merluccius,Hakes,benthopelagic >=90 cm,5,merluccius
+500661,Trachurus,Jack and horse mackerels,pelagic 30 - 90 cm,5,trachurus
+500679,Spicara,Picarels,demersal <30 cm,5,spicara
+500686,Gaidropsarus,Rocklings,demersal 30 - 90 cm,5,gaidropsarus
+500693,Sphyrna,Hammerhead sharks,shark >=90 cm,5,sphyrna
+500705,Diplodus,Seabreams and porgies,benthopelagic 30 - 90 cm,5,diplodus
+500716,Epigonus,Cardinalfishes,bathydemersal <30 cm,5,epigonus
+500717,Myoxocephalus,Sculpins,demersal <30 cm,5,myoxocephalus
+500808,Scolopsis,Monocle breams,reef-associated <30 cm,5,scolopsis
+500809,Dentex,Seabreams (Dentex spp),demersal 30 - 90 cm,5,dentex
+500814,Scyliorhinus,Lesser catsharks,shark <90 cm,5,scyliorhinus
+500856,Chirocentrus,Wolf herring,benthopelagic >=90 cm,5,chirocentrus
+500871,Belone,Needlefishes,pelagic <30 cm,5,belone
+500901,Serranus,Groupers,demersal <30 cm,5,serranus
+500903,Pagrus,Seabreams (Pagrus spp),demersal >=90 cm,5,pagrus
+500912,Priacanthus,Bigeyes,demersal 30 - 90 cm,5,priacanthus
+500928,Seriola,Amberjacks,benthopelagic 30 - 90 cm,5,seriola
+500934,Platax,Batfishes,reef-associated 30 - 90 cm,5,platax
+501055,Gerres,Silver biddies,demersal <30 cm,5,gerres
+501096,Molva,Lings,demersal >=90 cm,5,molva
+501129,Beryx,Alfonsinos,bathydemersal >=90 cm,5,beryx
+501132,Upeneus,Tropical goatfishes,demersal <30 cm,5,upeneus
+501135,Sebastes,Redfishes,demersal 30 - 90 cm,5,sebastes
+501145,Pagellus,Pandoras,demersal 30 - 90 cm,5,pagellus
+501163,Auxis,Frigate tuna,pelagic 30 - 90 cm,5,auxis
+501164,Peprilus,Harvestfishes,benthopelagic <30 cm,5,peprilus
+501242,Scatophagus,Scats,benthopelagic 30 - 90 cm,5,scatophagus
+501327,Micropogonias,Western croakers,demersal 30 - 90 cm,5,micropogonias
+501345,Tylosurus,Needlefishes,benthopelagic >=90 cm,5,tylosurus
+501410,Salvelinus,Char,benthopelagic <30 cm,5,salvelinus
+501418,Microchirus,Iberian soles,flatfish <90 cm,5,microchirus
+501464,Pristiophorus,Sawsharks,shark >=90 cm,5,pristiophorus
+501486,Lycodes,Eelpouts,demersal <30 cm,5,lycodes
+501523,Nemadactylus,Porae,demersal 30 - 90 cm,5,nemadactylus
+501548,Chrysoblephus,Seabreams,demersal 30 - 90 cm,5,chrysoblephus
+501550,Lithognathus,Steenbras,benthopelagic >=90 cm,5,lithognathus
+501551,Calamus,Porgies,reef-associated 30 - 90 cm,5,calamus
+501552,Nemipterus,Threadfin breams,demersal <30 cm,5,nemipterus
+501677,Cantherhines,Filefishes,reef-associated <30 cm,5,cantherhines
+501826,Muraenesox,Conger eels,demersal >=90 cm,5,muraenesox
+501905,Thunnus,Tuna,pelagic >=90 cm,5,thunnus
+501940,Sardinella,Sardinella,pelagic 30 - 90 cm,5,sardinella
+501941,Harengula,Herring,pelagic <30 cm,5,harengula
+502004,Seriolella,Barrelfishes,pelagic >=90 cm,5,seriolella
+502102,Decapterus,Scads,pelagic 30 - 90 cm,5,decapterus
+502417,Genypterus,Cusk eels,bathydemersal >=90 cm,5,genypterus
+502682,Dicentrarchus,European/spotted seabass,pelagic 30 - 90 cm,5,dicentrarchus
+502724,Oncorhynchus,Pacific salmon,benthopelagic >=90 cm,5,oncorhynchus
+502790,Menticirrhus,Kingcroakers,demersal 30 - 90 cm,5,menticirrhus
+502794,Cynoscion,Weakfishes,demersal >=90 cm,5,cynoscion
+503028,Mycteroperca,Cat groupers,reef-associated >=90 cm,5,mycteroperca
+503078,Hydrolagus,Chimaeras,rays <90 cm,5,hydrolagus
+503124,Lepidorhombus,Megrims,flatfish <90 cm,5,lepidorhombus
+503152,Pseudotolithus,Croakers,demersal 30 - 90 cm,5,pseudotolithus
+503328,Notoscopelus,Lampfish,pelagic <30 cm,5,notoscopelus
+503580,Gymnocranius,Large-eye breams,reef-associated 30 - 90 cm,5,gymnocranius
+503685,Gymnoscopelus,lanternfish,bathypelagic <30 cm,5,gymnoscopelus
+503990,Bathylagus,Bathylagus,bathypelagic <30 cm,5,bathylagus
+504054,Muraenolepis,Moray cods,benthopelagic 30 - 90 cm,5,muraenolepis
+504140,Benthodesmus,Frostfishes,benthopelagic 30 - 90 cm,5,benthodesmus
+504872,Dissostichus,Toothfishes,benthopelagic >=90 cm,5,dissostichus
+504943,Pterygotrigla,Pterygotrigla,demersal <30 cm,5,pterygotrigla
+504993,Rhinochimaera,Longnose chimaeras,rays >=90 cm,5,rhinochimaera
+505469,Rastrelliger,Indo-Pacific mackerels,pelagic 30 - 90 cm,5,rastrelliger
+505799,Austroglossus,Southern soles,flatfish <90 cm,5,austroglossus
+505897,Anarhichas,Wolffish,demersal >=90 cm,5,anarhichas
+506253,Coregonus,Whitefishes,demersal 30 - 90 cm,5,coregonus
+507720,Stolephorus,Indo-Pacific anchovies,pelagic <30 cm,5,stolephorus
+508611,Bathyraja,Skates,rays <90 cm,5,bathyraja
+508895,Pogonophryne,Blunderfish,demersal <30 cm,5,pogonophryne
+509125,Sphoeroides,Puffers,demersal <30 cm,5,sphoeroides
+509289,Hemiramphus,Halfbeaks,pelagic 30 - 90 cm,5,hemiramphus
+509303,Phycis,Gunnels forkbeards,benthopelagic 30 - 90 cm,5,phycis
+509366,Trematomus,Antarctic rockcods,demersal 30 - 90 cm,5,trematomus
+520007,Pampus,Silver pomfrets,benthopelagic 30 - 90 cm,5,pampus
+590010,Loligo,Common squids,cephalopods,5,loligo
+590013,Octopus,Octopuses,cephalopods,5,octopus
+590014,Crassostrea,Cupped oysters,demersal mollusc,5,crassostrea
+590024,Eledone,Horned and musky octopuses,cephalopods,5,eledone
+590046,Haliotis,Abalones,demersal mollusc,5,haliotis
+590049,Littorina,Periwinkles,demersal mollusc,5,littorina
+590050,Murex,Murex shells,demersal mollusc,5,murex
+590051,Strombus,Stromboid conchs,demersal mollusc,5,strombus
+590053,Turbo,Turbo snails,demersal mollusc,5,turbo
+590062,Callinectes,Blue crabs,lobsters crab,5,callinectes
+590065,Chionoecetes,Pacific snow crabs,lobsters crab,5,chionoecetes
+590067,Geryon,Deepsea crabs,lobsters crab,5,geryon
+590070,Lithodes,Lithodes,lobsters crab,5,lithodes
+590073,Paralithodes,King crabs,lobsters crab,5,paralithodes
+590074,Paralomis,Paralomis,lobsters crab,5,paralomis
+590075,Portunus,Swims crabs,lobsters crab,5,portunus
+590079,Metanephrops,Lobsterette,lobsters crab,5,metanephrops
+590082,Palinurus,Spiny lobsters,lobsters crab,5,palinurus
+590083,Panulirus,Tropical spiny lobsters,lobsters crab,5,panulirus
+590088,Crangon,Sand shrimps,shrimp,5,crangon
+590089,Haliporoides,Knife shrimps,shrimp,5,haliporoides
+590091,Metapenaeus,Metapenaeus shrimps,shrimp,5,metapenaeus
+590093,Pandalus,Pandalus shrimps,shrimp,5,pandalus
+590094,Parapenaeopsis,Shrimps,shrimp,5,parapenaeopsis
+590096,Penaeus,Penaeus shrimps,shrimp,5,penaeus
+590103,Euphausia,Euphausia,krill,5,euphausia
+590107,Lepas,Goose barnacles,demersal mollusc,5,lepas
+590110,Busycon,Whelks,demersal mollusc,5,busycon
+590111,Rapana,Sea snails,demersal mollusc,5,rapana
+590112,Ostrea,Flat oysters,demersal mollusc,5,ostrea
+590116,Modiolus,Horse mussels,demersal mollusc,5,modiolus
+590117,Mytilus,Mussels,demersal mollusc,5,mytilus
+590124,Anadara,Anadara clams,demersal mollusc,5,anadara
+590125,Arca,Ark clams,demersal mollusc,5,arca
+590128,Donax,Donax clams,demersal mollusc,5,donax
+590134,Meretrix,Hard clams,demersal mollusc,5,meretrix
+590137,Mulinia,Taquilla clams,demersal mollusc,5,mulinia
+590139,Paphia,Short neck clams,demersal mollusc,5,paphia
+590145,Solen,Razor clams,demersal mollusc,5,solen
+590146,Spisula,Surf clam,demersal mollusc,5,spisula
+590147,Tapes,Tapes clams,demersal mollusc,5,tapes
+590242,Patella,Limpets,demersal mollusc,5,patella
+590244,Scyllarides,Scyllarides,lobsters crab,5,scyllarides
+590252,Cymbium,Gondolas,demersal mollusc,5,cymbium
+590260,Sclerocrangon,Sculptured shrimps,shrimp,5,sclerocrangon
+590262,Tellina,Tellins,demersal mollusc,5,tellina
+590269,Tresus,Gaper clams,demersal mollusc,5,tresus
+590272,Charybdis,Indo-Pacific swimming crabs,lobsters crab,5,charybdis
+600004,Engraulis ringens,Anchoveta,pelagic <30 cm,6,engraulis ringens
+600005,Orthopristis chrysoptera,Pigfish,demersal 30 - 90 cm,6,orthopristis chrysoptera
+600006,Coryphaena hippurus,Common dolphinfish,pelagic >=90 cm,6,coryphaena hippurus
+600015,Epinephelus guttatus,Red hind,reef-associated 30 - 90 cm,6,epinephelus guttatus
+600017,Epinephelus morio,Red grouper,reef-associated >=90 cm,6,epinephelus morio
+600018,Epinephelus striatus,Nassau grouper,reef-associated >=90 cm,6,epinephelus striatus
+600020,Argentina sphyraena,Argentine,pelagic 30 - 90 cm,6,argentina sphyraena
+600024,Clupea harengus,Atlantic herring,pelagic 30 - 90 cm,6,clupea harengus
+600026,Glyptocephalus cynoglossus,Witch,flatfish <90 cm,6,glyptocephalus cynoglossus
+600027,Lepidorhombus boscii,Fourspotted megrim,flatfish <90 cm,6,lepidorhombus boscii
+600028,Lepidorhombus whiffiagonis,Megrim,flatfish <90 cm,6,lepidorhombus whiffiagonis
+600029,Merlangius merlangus,Whiting,benthopelagic 30 - 90 cm,6,merlangius merlangus
+600030,Merluccius merluccius,European hake,demersal >=90 cm,6,merluccius merluccius
+600031,Micromesistius poutassou,Blue whiting,benthopelagic 30 - 90 cm,6,micromesistius poutassou
+600032,Microchirus variegatus,Thickback sole,flatfish <90 cm,6,microchirus variegatus
+600033,Molva molva,Ling,demersal >=90 cm,6,molva molva
+600034,Pollachius pollachius,Pollack,benthopelagic >=90 cm,6,pollachius pollachius
+600041,Arnoglossus laterna,Scaldfish,flatfish <90 cm,6,arnoglossus laterna
+600044,Aspitrigla cuculus,East Atlantic red gurnard,demersal 30 - 90 cm,6,chelidonichthys cuculus
+600045,Atherina presbyter,Sand smelt,pelagic <30 cm,6,atherina presbyter
+600047,Belone belone,Garpike,pelagic 30 - 90 cm,6,belone belone
+600051,Brosme brosme,Tusk,demersal >=90 cm,6,brosme brosme
+600054,Capros aper,Boarfish,demersal 30 - 90 cm,6,capros aper
+600056,Cepola macrophthalma,Red bandfish,demersal 30 - 90 cm,6,cepola macrophthalma
+600058,Coris julis,Mediterranean rainbow wrasse,reef-associated 30 - 90 cm,6,coris julis
+600059,Symphodus melops,Corkwing wrasse,reef-associated <30 cm,6,symphodus melops
+600061,Ctenolabrus rupestris,Goldsinny-wrasse,reef-associated <30 cm,6,ctenolabrus rupestris
+600062,Cyclopterus lumpus,Lumpsucker,benthopelagic 30 - 90 cm,6,cyclopterus lumpus
+600063,Dicentrarchus labrax,European seabass,demersal >=90 cm,6,dicentrarchus labrax
+600066,Engraulis encrasicolus,European anchovy,pelagic <30 cm,6,engraulis encrasicolus
+600068,Eutrigla gurnardus,Grey gurnard,demersal 30 - 90 cm,6,eutrigla gurnardus
+600069,Gadus morhua,Atlantic cod,benthopelagic >=90 cm,6,gadus morhua
+600071,Caranx hippos,Crevalle jack,pelagic 30 - 90 cm,6,caranx hippos
+600072,Gobius niger,Black goby,demersal <30 cm,6,gobius niger
+600076,Helicolenus dactylopterus dactylopterus,Blackbelly rosefish,bathydemersal 30 - 90 cm,6,helicolenus dactylopterus
+600077,Istiophorus platypterus,Indo-Pacific sailfish,pelagic >=90 cm,6,istiophorus platypterus
+600078,Istiophorus albicans,Atlantic sailfish,pelagic >=90 cm,6,istiophorus albicans
+600083,Aphareus rutilans,Rusty jobfish,reef-associated >=90 cm,6,aphareus rutilans
+600084,Aprion virescens,Green jobfish,reef-associated >=90 cm,6,aprion virescens
+600088,Lamna nasus,Porbeagle,shark >=90 cm,6,lamna nasus
+600089,Acanthocybium solandri,Wahoo,pelagic >=90 cm,6,acanthocybium solandri
+600090,Cetorhinus maximus,Basking shark,shark >=90 cm,6,cetorhinus maximus
+600093,Auxis rochei rochei,Bullet tuna,pelagic 30 - 90 cm,6,auxis rochei
+600094,Auxis thazard thazard,Frigate tuna,pelagic 30 - 90 cm,6,auxis thazard
+600096,Euthynnus affinis,Kawakawa,pelagic >=90 cm,6,euthynnus affinis
+600097,Euthynnus alletteratus,Little tunny,pelagic >=90 cm,6,euthynnus alletteratus
+600098,Euthynnus lineatus,Black skipjack,pelagic 30 - 90 cm,6,euthynnus lineatus
+600101,Alosa alosa,Allis shad,pelagic 30 - 90 cm,6,alosa alosa
+600105,Alosa immaculata,Pontic shad,pelagic 30 - 90 cm,6,alosa immaculata
+600106,Gymnosarda unicolor,Dogtooth tuna,reef-associated >=90 cm,6,gymnosarda unicolor
+600107,Katsuwonus pelamis,Skipjack tuna,pelagic >=90 cm,6,katsuwonus pelamis
+600108,Orcynopsis unicolor,Plain bonito,pelagic >=90 cm,6,orcynopsis unicolor
+600109,Rastrelliger brachysoma,Short mackerel,pelagic 30 - 90 cm,6,rastrelliger brachysoma
+600111,Rastrelliger kanagurta,Indian mackerel,pelagic 30 - 90 cm,6,rastrelliger kanagurta
+600113,Sarda chiliensis chiliensis,Eastern Pacific bonito,pelagic >=90 cm,6,sarda chiliensis
+600114,Sarda orientalis,Striped bonito,pelagic >=90 cm,6,sarda orientalis
+600115,Sarda sarda,Atlantic bonito,pelagic >=90 cm,6,sarda sarda
+600116,Scomber australasicus,Blue mackerel,pelagic 30 - 90 cm,6,scomber australasicus
+600117,Scomber japonicus,Chub mackerel,pelagic 30 - 90 cm,6,scomber japonicus
+600118,Scomber scombrus,Atlantic mackerel,pelagic 30 - 90 cm,6,scomber scombrus
+600119,Scomberomorus brasiliensis,Serra Spanish mackerel,pelagic >=90 cm,6,scomberomorus brasiliensis
+600120,Scomberomorus cavalla,King mackerel,reef-associated >=90 cm,6,scomberomorus cavalla
+600121,Scomberomorus commerson,Narrow-barred Spanish mackerel,pelagic >=90 cm,6,scomberomorus commerson
+600123,Scomberomorus guttatus,Indo-Pacific king mackerel,pelagic 30 - 90 cm,6,scomberomorus guttatus
+600125,Scomberomorus lineolatus,Streaked seerfish,pelagic 30 - 90 cm,6,scomberomorus lineolatus
+600126,Scomberomorus maculatus,Spanish mackerel,pelagic 30 - 90 cm,6,scomberomorus maculatus
+600131,Scomberomorus niphonius,Japanese Spanish mackerel,pelagic >=90 cm,6,scomberomorus niphonius
+600134,Scomberomorus regalis,Cero,reef-associated >=90 cm,6,scomberomorus regalis
+600136,Scomberomorus sierra,Pacific sierra,pelagic >=90 cm,6,scomberomorus sierra
+600138,Somniosus microcephalus,Greenland shark,shark >=90 cm,6,somniosus microcephalus
+600139,Squalus acanthias,Piked dogfish,shark >=90 cm,6,squalus acanthias
+600140,Rhinobatos percellens,Chola guitarfish,rays >=90 cm,6,pseudobatos percellens
+600141,Scomberomorus tritor,West African Spanish mackerel,pelagic >=90 cm,6,scomberomorus tritor
+600142,Thunnus alalunga,Albacore,pelagic >=90 cm,6,thunnus alalunga
+600143,Thunnus albacares,Yellowfin tuna,pelagic >=90 cm,6,thunnus albacares
+600144,Thunnus atlanticus,Blackfin tuna,pelagic >=90 cm,6,thunnus atlanticus
+600145,Thunnus maccoyii,Southern bluefin tuna,pelagic >=90 cm,6,thunnus maccoyii
+600146,Thunnus obesus,Bigeye tuna,pelagic >=90 cm,6,thunnus obesus
+600147,Thunnus thynnus,Atlantic bluefin tuna,pelagic >=90 cm,6,thunnus thynnus
+600148,Thunnus tonggol,Longtail tuna,pelagic >=90 cm,6,thunnus tonggol
+600149,Rhinobatos planiceps,Pacific guitarfish,rays <90 cm,6,pseudobatos planiceps
+600152,Lutjanus guttatus,Spotted rose snapper,reef-associated 30 - 90 cm,6,lutjanus guttatus
+600156,Lutjanus kasmira,Common bluestripe snapper,reef-associated 30 - 90 cm,6,lutjanus kasmira
+600162,Lutjanus malabaricus,Malabar blood snapper,reef-associated >=90 cm,6,lutjanus malabaricus
+600167,Callorhinchus capensis,Cape elephantfish,rays >=90 cm,6,callorhinchus capensis
+600171,Lutjanus purpureus,Southern red snapper,demersal >=90 cm,6,lutjanus purpureus
+600172,Lutjanus quinquelineatus,Five-lined snapper,reef-associated 30 - 90 cm,6,lutjanus quinquelineatus
+600175,Elops saurus,Ladyfish,pelagic 30 - 90 cm,6,elops saurus
+600181,Lutjanus synagris,Lane snapper,reef-associated 30 - 90 cm,6,lutjanus synagris
+600185,Lutjanus vivanus,Silk snapper,demersal 30 - 90 cm,6,lutjanus vivanus
+600188,Ocyurus chrysurus,Yellowtail snapper,reef-associated 30 - 90 cm,6,ocyurus chrysurus
+600203,Boops boops,Bogue,demersal 30 - 90 cm,6,boops boops
+600204,Sarpa salpa,Salema,benthopelagic 30 - 90 cm,6,sarpa salpa
+600206,Pristipomoides macrophthalmus,Cardinal snapper,benthopelagic 30 - 90 cm,6,pristipomoides macrophthalmus
+600213,Rhomboplites aurorubens,Vermilion snapper,demersal 30 - 90 cm,6,rhomboplites aurorubens
+600216,Makaira nigricans,Atlantic blue marlin,pelagic >=90 cm,6,makaira nigricans
+600217,Makaira indica,Black marlin,pelagic >=90 cm,6,istiompax indica
+600218,Makaira mazara,Indo-Pacific blue marlin,pelagic >=90 cm,6,makaira mazara
+600219,Tetrapturus albidus,Atlantic white marlin,pelagic >=90 cm,6,kajikia albida
+600220,Tetrapturus pfluegeri,Longbill spearfish,pelagic >=90 cm,6,tetrapturus pfluegeri
+600223,Tetrapturus audax,Striped marlin,pelagic >=90 cm,6,kajikia audax
+600226,Xiphias gladius,Swordfish,pelagic >=90 cm,6,xiphias gladius
+600227,Megalops cyprinoides,Indo-Pacific tarpon,pelagic >=90 cm,6,megalops cyprinoides
+600228,Albula vulpes,Bonefish,reef-associated >=90 cm,6,albula vulpes
+600229,Pterothrissus belloci,Longfin bonefish,bathydemersal 30 - 90 cm,6,nemoossis belloci
+600230,Alepocephalus bairdii,Bairds smooth-head,bathydemersal >=90 cm,6,alepocephalus bairdii
+600231,Coregonus albula,Vendace,pelagic 30 - 90 cm,6,coregonus albula
+600232,Coregonus lavaretus,Common whitefish,demersal 30 - 90 cm,6,coregonus lavaretus
+600233,Coregonus oxyrinchus,Houting,demersal 30 - 90 cm,6,coregonus oxyrinchus
+600236,Salmo salar,Atlantic salmon,benthopelagic >=90 cm,6,salmo salar
+600238,Salmo trutta trutta,Sea trout,pelagic 30 - 90 cm,6,salmo trutta
+600239,Oncorhynchus mykiss,Rainbow trout,benthopelagic >=90 cm,6,oncorhynchus mykiss
+600240,Oncorhynchus gorbuscha,Pink salmon,demersal 30 - 90 cm,6,oncorhynchus gorbuscha
+600241,Oncorhynchus keta,Chum salmon,benthopelagic >=90 cm,6,oncorhynchus keta
+600242,Oncorhynchus masou masou,Cherry salmon,benthopelagic 30 - 90 cm,6,oncorhynchus masou
+600243,Oncorhynchus nerka,Sockeye salmon,pelagic 30 - 90 cm,6,oncorhynchus nerka
+600244,Oncorhynchus tshawytscha,Chinook salmon,benthopelagic >=90 cm,6,oncorhynchus tshawytscha
+600245,Oncorhynchus kisutch,Coho salmon,demersal >=90 cm,6,oncorhynchus kisutch
+600247,Salvelinus alpinus alpinus,Charr,benthopelagic >=90 cm,6,salvelinus alpinus
+600249,Centrolophus niger,Blackfish,bathypelagic >=90 cm,6,centrolophus niger
+600250,Schedophilus ovalis,Imperial blackfish,demersal >=90 cm,6,schedophilus ovalis
+600252,Mallotus villosus,Capelin,pelagic <30 cm,6,mallotus villosus
+600253,Osmerus mordax mordax,Atlantic rainbow smelt,pelagic 30 - 90 cm,6,osmerus mordax
+600255,Hypomesus pretiosus,Surf smelt,pelagic <30 cm,6,hypomesus pretiosus
+600256,Thaleichthys pacificus,Eulachon,pelagic 30 - 90 cm,6,thaleichthys pacificus
+600259,Lampanyctodes hectoris,Hectors lanternfish,pelagic <30 cm,6,lampanyctodes hectoris
+600260,Harpadon nehereus,Bombay duck,benthopelagic 30 - 90 cm,6,harpadon nehereus
+600264,Lutjanus johnii,Johns snapper,reef-associated 30 - 90 cm,6,lutjanus johnii
+600265,Lutjanus gibbus,Humpback red snapper,reef-associated 30 - 90 cm,6,lutjanus gibbus
+600266,Lutjanus griseus,Grey snapper,reef-associated 30 - 90 cm,6,lutjanus griseus
+600288,Galeichthys feliceps,White baggar,demersal 30 - 90 cm,6,galeichthys feliceps
+600298,Muraenesox cinereus,Daggertooth pike conger,demersal >=90 cm,6,muraenesox cinereus
+600299,Conger orbignianus,Argentine conger,demersal >=90 cm,6,conger orbignianus
+600300,Conger oceanicus,American conger,demersal >=90 cm,6,conger oceanicus
+600301,Conger conger,European conger,demersal >=90 cm,6,conger conger
+600302,Conger myriaster,Whitespotted conger,demersal >=90 cm,6,conger myriaster
+600303,Cololabis saira,Pacific saury,pelagic 30 - 90 cm,6,cololabis saira
+600305,Hyporhamphus sajori,Japanese halfbeak,pelagic 30 - 90 cm,6,hyporhamphus sajori
+600306,Salilota australis,Tadpole codling,demersal 30 - 90 cm,6,salilota australis
+600308,Gadus macrocephalus,Pacific cod,demersal >=90 cm,6,gadus macrocephalus
+600309,Gadus ogac,Greenland cod,demersal 30 - 90 cm,6,gadus macrocephalus
+600311,Urophycis brasiliensis,Brazilian codling,demersal 30 - 90 cm,6,urophycis brasiliensis
+600312,Urophycis chuss,Red hake,demersal 30 - 90 cm,6,urophycis chuss
+600313,Urophycis tenuis,White hake,demersal >=90 cm,6,urophycis tenuis
+600314,Eleginus nawaga,Navaga,demersal 30 - 90 cm,6,eleginus nawaga
+600315,Eleginus gracilis,Saffron cod,demersal 30 - 90 cm,6,eleginus gracilis
+600316,Microgadus tomcod,Atlantic tomcod,demersal 30 - 90 cm,6,microgadus tomcod
+600318,Theragra chalcogramma,Alaska pollack,benthopelagic >=90 cm,6,gadus chalcogrammus
+600319,Boreogadus saida,Polar cod,demersal 30 - 90 cm,6,boreogadus saida
+600320,Micromesistius australis,Southern blue whiting,benthopelagic >=90 cm,6,micromesistius australis
+600321,Merluccius senegalensis,Senegalese hake,demersal 30 - 90 cm,6,merluccius senegalensis
+600322,Merluccius australis,Southern hake,benthopelagic >=90 cm,6,merluccius australis
+600323,Merluccius bilinearis,Silver hake,demersal 30 - 90 cm,6,merluccius bilinearis
+600324,Merluccius gayi gayi,South Pacific hake,bathydemersal 30 - 90 cm,6,merluccius gayi
+600325,Merluccius hubbsi,Argentine hake,benthopelagic >=90 cm,6,merluccius hubbsi
+600326,Merluccius productus,North Pacific hake,benthopelagic >=90 cm,6,merluccius productus
+600327,Merluccius polli,Benguela hake,bathydemersal 30 - 90 cm,6,merluccius polli
+600329,Macruronus magellanicus,Patagonian grenadier,benthopelagic >=90 cm,6,macruronus magellanicus
+600331,Macrourus berglax,Onion-eye grenadier,benthopelagic >=90 cm,6,macrourus berglax
+600332,Coryphaenoides rupestris,Roundnose grenadier,bathypelagic 30 - 90 cm,6,coryphaenoides rupestris
+600333,Macroramphosus scolopax,Longspine snipefish,demersal <30 cm,6,macroramphosus scolopax
+600334,Hoplostethus atlanticus,Orange roughy,bathypelagic 30 - 90 cm,6,hoplostethus atlanticus
+600336,Zenopsis conchifer,Silvery John dory,benthopelagic 30 - 90 cm,6,zenopsis conchifer
+600338,Joturus pichardi,Bobo mullet,pelagic 30 - 90 cm,6,joturus pichardi
+600339,Menidia menidia,Atlantic silverside,pelagic <30 cm,6,menidia menidia
+600340,Eleutheronema tetradactylum,Fourfinger threadfin,demersal >=90 cm,6,eleutheronema tetradactylum
+600341,Galeoides decadactylus,Lesser African threadfin,demersal 30 - 90 cm,6,galeoides decadactylus
+600342,Pentanemus quinquarius,Royal threadfin,demersal 30 - 90 cm,6,pentanemus quinquarius
+600345,Centropomus undecimalis,Common snook,demersal >=90 cm,6,centropomus undecimalis
+600346,Lates calcarifer,Barramundi,demersal >=90 cm,6,lates calcarifer
+600348,Epinephelus analogus,Spotted grouper,reef-associated 30 - 90 cm,6,epinephelus analogus
+600349,Polyprion americanus,Wreckfish,bathydemersal >=90 cm,6,polyprion americanus
+600350,Polyprion oxygeneios,Hapuka,demersal >=90 cm,6,polyprion oxygeneios
+600351,Acanthistius brasilianus,Sea bass,benthopelagic 30 - 90 cm,6,acanthistius brasilianus
+600352,Paralabrax humeralis,Peruvian rock seabass,benthopelagic 30 - 90 cm,6,paralabrax humeralis
+600353,Morone saxatilis,Striped sea-bass,demersal >=90 cm,6,morone saxatilis
+600355,Morone americana,White perch,demersal 30 - 90 cm,6,morone americana
+600356,Priacanthus macracanthus,Red bigeye,reef-associated <30 cm,6,priacanthus macracanthus
+600357,Synagrops japonicus,Japanese splitfin,bathydemersal 30 - 90 cm,6,synagrops japonicus
+600361,Centropristis striata,Black seabass,reef-associated 30 - 90 cm,6,centropristis striata
+600362,Lopholatilus chamaeleonticeps,Great northern tilefish,demersal >=90 cm,6,lopholatilus chamaeleonticeps
+600363,Lactarius lactarius,False trevally,pelagic 30 - 90 cm,6,lactarius lactarius
+600364,Pomatomus saltatrix,Bluefish,pelagic >=90 cm,6,pomatomus saltatrix
+600366,Trachurus japonicus,Japanese jack mackerel,demersal 30 - 90 cm,6,trachurus japonicus
+600367,Trachurus murphyi,Inca scad,pelagic 30 - 90 cm,6,trachurus murphyi
+600368,Trachurus symmetricus,Pacific jack mackerel,pelagic 30 - 90 cm,6,trachurus symmetricus
+600369,Trachurus lathami,Rough scad,benthopelagic 30 - 90 cm,6,trachurus lathami
+600371,Trachurus trecae,Cunene horse mackerel,benthopelagic 30 - 90 cm,6,trachurus trecae
+600372,Trachurus declivis,Greenback horse mackerel,benthopelagic 30 - 90 cm,6,trachurus declivis
+600374,Decapterus russelli,Indian scad,pelagic 30 - 90 cm,6,decapterus russelli
+600378,Selene setapinnis,Atlantic moonfish,demersal 30 - 90 cm,6,selene setapinnis
+600379,Selene dorsalis,African moonfish,demersal 30 - 90 cm,6,selene dorsalis
+600380,Trachinotus carolinus,Florida pompano,benthopelagic 30 - 90 cm,6,trachinotus carolinus
+600382,Seriola lalandi,Yellowtail amberjack,benthopelagic >=90 cm,6,seriola lalandi
+600384,Megalaspis cordyla,Torpedo scad,pelagic 30 - 90 cm,6,megalaspis cordyla
+600385,Chloroscombrus chrysurus,Atlantic bumper,pelagic 30 - 90 cm,6,chloroscombrus chrysurus
+600386,Parona signata,Parona leatherjacket,demersal 30 - 90 cm,6,parona signata
+600387,Selar crumenophthalmus,Bigeye scad,pelagic 30 - 90 cm,6,selar crumenophthalmus
+600388,Selaroides leptolepis,Yellowstripe scad,pelagic <30 cm,6,selaroides leptolepis
+600390,Mene maculata,Moonfish,reef-associated 30 - 90 cm,6,mene maculata
+600391,Brama brama,Atlantic pomfret,bathypelagic 30 - 90 cm,6,brama brama
+600392,Arripis georgianus,Australian ruff,pelagic 30 - 90 cm,6,arripis georgianus
+600394,Dicentrarchus punctatus,Spotted seabass,pelagic 30 - 90 cm,6,dicentrarchus punctatus
+600395,Emmelichthys nitidus nitidus,Redbait,bathydemersal 30 - 90 cm,6,emmelichthys nitidus
+600396,Nemipterus virgatus,Golden threadfin bream,demersal 30 - 90 cm,6,nemipterus virgatus
+600397,Isacia conceptionis,Cabinza grunt,benthopelagic 30 - 90 cm,6,isacia conceptionis
+600398,Plectorhinchus mediterraneus,Rubberlip grunt,demersal 30 - 90 cm,6,plectorhinchus mediterraneus
+600399,Pomadasys argenteus,Silver grunt,demersal 30 - 90 cm,6,pomadasys argenteus
+600400,Brachydeuterus auritus,Bigeye grunt,demersal <30 cm,6,brachydeuterus auritus
+600401,Conodon nobilis,Barred grunt,demersal 30 - 90 cm,6,conodon nobilis
+600403,Cynoscion analis,Peruvian weakfish,demersal 30 - 90 cm,6,cynoscion analis
+600405,Cynoscion nebulosus,Spotted weakfish,demersal >=90 cm,6,cynoscion nebulosus
+600406,Cynoscion regalis,Gray weakfish,demersal >=90 cm,6,cynoscion regalis
+600407,Cynoscion striatus,South American striped weakfish,demersal 30 - 90 cm,6,cynoscion striatus
+600408,Micropogonias undulatus,Atlantic croaker,demersal 30 - 90 cm,6,micropogonias undulatus
+600410,Menticirrhus saxatilis,Northern kingcroaker,demersal 30 - 90 cm,6,menticirrhus saxatilis
+600411,Menticirrhus littoralis,Gulf kingcroaker,demersal 30 - 90 cm,6,menticirrhus littoralis
+600412,Elagatis bipinnulata,Rainbow runner,pelagic >=90 cm,6,elagatis bipinnulata
+600413,Umbrina canosai,Argentine croaker,demersal 30 - 90 cm,6,umbrina canosai
+600416,Larimichthys polyactis,Yellow croaker,benthopelagic 30 - 90 cm,6,larimichthys polyactis
+600417,Macrodon ancylodon,King weakfish,demersal 30 - 90 cm,6,macrodon ancylodon
+600418,Argyrosomus regius,Meagre,benthopelagic >=90 cm,6,argyrosomus regius
+600419,Argyrosomus hololepidotus,Southern meagre,demersal >=90 cm,6,argyrosomus hololepidotus
+600420,Atractoscion aequidens,Geelbeck croaker,benthopelagic >=90 cm,6,atractoscion aequidens
+600422,Genyonemus lineatus,White croaker,benthopelagic 30 - 90 cm,6,genyonemus lineatus
+600423,Pteroscion peli,Boe drum,benthopelagic 30 - 90 cm,6,pteroscion peli
+600424,Paralonchurus peruanus,Peruvian banded croaker,demersal 30 - 90 cm,6,paralonchurus peruanus
+600425,Pogonias cromis,Black drum,demersal >=90 cm,6,pogonias cromis
+600426,Epinephelus aeneus,White grouper,demersal >=90 cm,6,epinephelus aeneus
+600427,Nibea mitsukurii,Nibe croaker,benthopelagic 30 - 90 cm,6,nibea mitsukurii
+600428,Larimichthys crocea,Large yellow croaker,benthopelagic 30 - 90 cm,6,larimichthys crocea
+600429,Leiostomus xanthurus,Spot croaker,demersal 30 - 90 cm,6,leiostomus xanthurus
+600432,Pseudotolithus senegalensis,Cassava croaker,demersal >=90 cm,6,pseudotolithus senegalensis
+600433,Pseudotolithus elongatus,Bobo croaker,demersal 30 - 90 cm,6,pseudotolithus elongatus
+600434,Pennahia argentata,White croaker,benthopelagic <30 cm,6,pennahia argentata
+600436,Pagellus bellottii,Red pandora,demersal 30 - 90 cm,6,pagellus bellottii
+600438,Dentex macrophthalmus,Large-eye dentex,benthopelagic 30 - 90 cm,6,dentex macrophthalmus
+600439,Dentex dentex,Common dentex,benthopelagic >=90 cm,6,dentex dentex
+600440,Dentex angolensis,Angola dentex,demersal 30 - 90 cm,6,dentex angolensis
+600441,Archosargus probatocephalus,Sheepshead seabream,demersal >=90 cm,6,archosargus probatocephalus
+600442,Argyrops spinifer,King soldierbream,demersal 30 - 90 cm,6,argyrops spinifer
+600443,Argyrozona argyrozona,Carpenter seabream,benthopelagic >=90 cm,6,argyrozona argyrozona
+600444,Cheimerius nufar,Santer seabream,reef-associated 30 - 90 cm,6,cheimerius nufar
+600447,Petrus rupestris,Red steenbras,demersal >=90 cm,6,petrus rupestris
+600448,Pterogymnus laniarius,Panga seabream,benthopelagic 30 - 90 cm,6,pterogymnus laniarius
+600449,Rhabdosargus globiceps,White stumpnose,benthopelagic 30 - 90 cm,6,rhabdosargus globiceps
+600450,Lithognathus lithognathus,White steenbras,benthopelagic >=90 cm,6,lithognathus lithognathus
+600452,Stenotomus chrysops,Scup,demersal 30 - 90 cm,6,stenotomus chrysops
+600453,Pseudupeneus prayensis,West African goatfish,demersal 30 - 90 cm,6,pseudupeneus prayensis
+600458,Tautoga onitis,Tautog,reef-associated >=90 cm,6,tautoga onitis
+600460,Nemadactylus bergi,White morwong,demersal 30 - 90 cm,6,nemadactylus bergi
+600461,Cheilodactylus variegatus,Peruvian morwong,benthopelagic 30 - 90 cm,6,cheilodactylus variegatus
+600463,Arctoscopus japonicus,Sailfin sandfish,bathydemersal <30 cm,6,arctoscopus japonicus
+600464,Parapercis colias,Blue cod,demersal 30 - 90 cm,6,parapercis colias
+600465,Percophis brasiliensis,Brazilian flathead,demersal 30 - 90 cm,6,percophis brasiliensis
+600466,Eleginops maclovinus,Patagonian blennie,benthopelagic 30 - 90 cm,6,eleginops maclovinus
+600467,Dissostichus eleginoides,Patagonian toothfish,bathydemersal >=90 cm,6,dissostichus eleginoides
+600468,Notothenia rossii,Marbled rockcod,benthopelagic >=90 cm,6,notothenia rossii
+600472,Pleuragramma antarcticum,Antarctic silverfish,pelagic <30 cm,6,pleuragramma antarctica
+600473,Chaenocephalus aceratus,Blackfin icefish,demersal 30 - 90 cm,6,chaenocephalus aceratus
+600474,Champsocephalus gunnari,Mackerel icefish,pelagic 30 - 90 cm,6,champsocephalus gunnari
+600475,Pseudochaenichthys georgianus,South Georgia icefish,demersal 30 - 90 cm,6,pseudochaenichthys georgianus
+600476,Chionodraco rastrospinosus,Ocellated icefish,benthopelagic 30 - 90 cm,6,chionodraco rastrospinosus
+600477,Channichthys rhinoceratus,Unicorn icefish,demersal 30 - 90 cm,6,channichthys rhinoceratus
+600478,Chaenodraco wilsoni,Spiny icefish,benthopelagic 30 - 90 cm,6,chaenodraco wilsoni
+600479,Zoarces viviparus,Viviparous blenny,demersal 30 - 90 cm,6,zoarces viviparus
+600480,Zoarces americanus,Ocean pout,demersal >=90 cm,6,zoarces americanus
+600481,Trisopterus minutus,Poor cod,benthopelagic 30 - 90 cm,6,trisopterus minutus
+600482,Genypterus blacodes,Pink cusk-eel,bathydemersal >=90 cm,6,genypterus blacodes
+600483,Genypterus chilensis,Red cusk-eel,bathydemersal >=90 cm,6,genypterus chilensis
+600484,Genypterus maculatus,Black cusk-eel,demersal 30 - 90 cm,6,genypterus maculatus
+600485,Genypterus capensis,Kingklip,bathydemersal >=90 cm,6,genypterus capensis
+600486,Brotula barbata,Bearded brotula,benthopelagic >=90 cm,6,brotula barbata
+600487,Ammodytes personatus,Pacific sandeel,demersal <30 cm,6,ammodytes personatus
+600488,Hypoptychus dybowskii,Korean sandeel,benthopelagic <30 cm,6,hypoptychus dybowskii
+600489,Thyrsites atun,Snoek,benthopelagic >=90 cm,6,thyrsites atun
+600490,Thyrsitops lepidopoides,White snake mackerel,benthopelagic 30 - 90 cm,6,thyrsitops lepidopoides
+600491,Pampus argenteus,Silver pomfret,benthopelagic 30 - 90 cm,6,pampus argenteus
+600492,Peprilus triacanthus,American butterfish,benthopelagic <30 cm,6,peprilus triacanthus
+600493,Peprilus simillimus,Pacific pompano,benthopelagic <30 cm,6,peprilus simillimus
+600496,Hyperoglyphe antarctica,Antarctic butterfish,bathydemersal >=90 cm,6,hyperoglyphe antarctica
+600497,Psenopsis anomala,Melon seed,benthopelagic <30 cm,6,psenopsis anomala
+600501,Sebastes marinus,Ocean perch,benthopelagic >=90 cm,6,sebastes norvegicus
+600502,Sebastes entomelas,Widow rockfish,pelagic 30 - 90 cm,6,sebastes entomelas
+600503,Sebastes flavidus,Yellowtail rockfish,reef-associated 30 - 90 cm,6,sebastes flavidus
+600504,Sebastes alutus,Pacific ocean perch,demersal 30 - 90 cm,6,sebastes alutus
+600505,Sebastes mentella,Deepwater redfish,bathypelagic 30 - 90 cm,6,sebastes mentella
+600507,Chelidonichthys kumu,Bluefin gurnard,demersal 30 - 90 cm,6,chelidonichthys kumu
+600508,Pterygotrigla polyommata,Latchet,demersal 30 - 90 cm,6,pterygotrigla polyommata
+600509,Ophiodon elongatus,Lingcod,demersal >=90 cm,6,ophiodon elongatus
+600510,Pleurogrammus azonus,Okhostk atka mackerel,demersal 30 - 90 cm,6,pleurogrammus azonus
+600512,Anoplopoma fimbria,Sablefish,bathydemersal >=90 cm,6,anoplopoma fimbria
+600513,Psettodes erumei,Indian spiny turbot,flatfish <90 cm,6,psettodes erumei
+600514,Hippoglossus stenolepis,Pacific halibut,flatfish >=90 cm,6,hippoglossus stenolepis
+600516,Reinhardtius hippoglossoides,Greenland halibut,flatfish <90 cm,6,reinhardtius hippoglossoides
+600517,Atheresthes stomias,Arrowtooth flounder,flatfish <90 cm,6,atheresthes stomias
+600518,Atheresthes evermanni,Kamchatka flounder,flatfish >=90 cm,6,atheresthes evermanni
+600519,Hippoglossoides elassodon,Flathead sole,flatfish <90 cm,6,hippoglossoides elassodon
+600520,Limanda aspera,Yellowfin sole,flatfish <90 cm,6,limanda aspera
+600521,Limanda ferruginea,Yellowtail flounder,flatfish <90 cm,6,limanda ferruginea
+600524,Pseudopleuronectes americanus,Winter flounder,flatfish <90 cm,6,pseudopleuronectes americanus
+600525,Solea solea,Common sole,flatfish <90 cm,6,solea solea
+600526,Dicologlossa cuneata,Wedge sole,flatfish <90 cm,6,dicologlossa cuneata
+600527,Austroglossus microlepis,West coast sole,flatfish <90 cm,6,austroglossus microlepis
+600528,Austroglossus pectoralis,Mud sole,flatfish <90 cm,6,austroglossus pectoralis
+600529,Scophthalmus rhombus,Brill,flatfish <90 cm,6,scophthalmus rhombus
+600530,Scophthalmus aquosus,Windowpane,flatfish <90 cm,6,scophthalmus aquosus
+600531,Stephanolepis cirrhifer,Thread-sail filefish,demersal <30 cm,6,stephanolepis cirrhifer
+600532,Lophius americanus,American angler,demersal >=90 cm,6,lophius americanus
+600545,Anchoa mitchilli,Bay anchovy,pelagic <30 cm,6,anchoa mitchilli
+600547,Cetengraulis edentulus,Atlantic anchoveta,pelagic <30 cm,6,cetengraulis edentulus
+600548,Cetengraulis mysticetus,Pacific anchoveta,pelagic <30 cm,6,cetengraulis mysticetus
+600572,Labrus bergylta,Ballan wrasse,reef-associated 30 - 90 cm,6,labrus bergylta
+600636,Heptranchias perlo,Sharpnose sevengill shark,shark >=90 cm,6,heptranchias perlo
+600637,Hexanchus griseus,Bluntnose sixgill shark,shark >=90 cm,6,hexanchus griseus
+600641,Echinorhinus brucus,Bramble shark,shark >=90 cm,6,echinorhinus brucus
+600645,Lepidopus caudatus,Silver scabbardfish,bathydemersal >=90 cm,6,lepidopus caudatus
+600646,Aphanopus carbo,Black scabbardfish,benthopelagic >=90 cm,6,aphanopus carbo
+600648,Centrophorus granulosus,Gulper shark,shark >=90 cm,6,centrophorus granulosus
+600650,Centrophorus lusitanicus,Lowfin gulper shark,shark >=90 cm,6,centrophorus lusitanicus
+600653,Centrophorus squamosus,Leafscale gulper shark,shark >=90 cm,6,centrophorus squamosus
+600656,Centroscyllium fabricii,Black dogfish,shark <90 cm,6,centroscyllium fabricii
+600662,Centroscymnus coelolepis,Portuguese dogfish,shark >=90 cm,6,centroscymnus coelolepis
+600663,Centroselachus crepidater,Longnose velvet dogfish,shark >=90 cm,6,centroscymnus crepidater
+600669,Dalatias licha,Kitefin shark,shark >=90 cm,6,dalatias licha
+600670,Deania calcea,Birdbeak dogfish,shark >=90 cm,6,deania calcea
+600679,Etmopterus granulosus,Southern lanternshark,shark <90 cm,6,etmopterus granulosus
+600687,Etmopterus spinax,Velvet belly lantern shark,shark <90 cm,6,etmopterus spinax
+600692,Lichia amia,Leerfish,pelagic >=90 cm,6,lichia amia
+600695,Limanda limanda,Dab,flatfish <90 cm,6,limanda limanda
+600700,Scymnodon ringens,Knifetooth dogfish,shark >=90 cm,6,scymnodon ringens
+600704,Somniosus rostratus,Little sleeper shark,shark >=90 cm,6,somniosus rostratus
+600706,Lithognathus mormyrus,Striped seabream,benthopelagic 30 - 90 cm,6,lithognathus mormyrus
+600716,Lophius piscatorius,Angler,bathydemersal >=90 cm,6,lophius piscatorius
+600718,Oxynotus centrina,Angular roughshark,shark >=90 cm,6,oxynotus centrina
+600719,Oxynotus paradoxus,Sailfin roughshark,shark >=90 cm,6,oxynotus paradoxus
+600727,Squatina argentina,Argentine angelshark,shark >=90 cm,6,squatina argentina
+600736,Squatina squatina,Angelshark,shark >=90 cm,6,squatina squatina
+600747,Carcharias taurus,Sand tiger shark,shark >=90 cm,6,carcharias taurus
+600751,Carcharodon carcharias,Great white shark,shark >=90 cm,6,carcharodon carcharias
+600752,Isurus oxyrinchus,Shortfin mako,shark >=90 cm,6,isurus oxyrinchus
+600753,Isurus paucus,Longfin mako,shark >=90 cm,6,isurus paucus
+600754,Maurolicus muelleri,Pearlsides,bathypelagic <30 cm,6,maurolicus muelleri
+600785,Mugil cephalus,Flathead mullet,benthopelagic >=90 cm,6,mugil cephalus
+600790,Mullus barbatus barbatus,Red mullet,demersal 30 - 90 cm,6,mullus barbatus
+600807,Galeus melastomus,Blackmouth catshark,shark <90 cm,6,galeus melastomus
+600845,Scyliorhinus canicula,Smallspotted catshark,shark >=90 cm,6,scyliorhinus canicula
+600850,Oblada melanura,Saddled seabream,benthopelagic <30 cm,6,oblada melanura
+600854,Scyliorhinus stellaris,Nursehound,shark >=90 cm,6,scyliorhinus stellaris
+600864,Carcharhinus brachyurus,Copper shark,shark >=90 cm,6,carcharhinus brachyurus
+600868,Carcharhinus falciformis,Silky shark,shark >=90 cm,6,carcharhinus falciformis
+600874,Carcharhinus limbatus,Blacktip shark,shark >=90 cm,6,carcharhinus limbatus
+600875,Carcharhinus longimanus,Oceanic whitetip shark,shark >=90 cm,6,carcharhinus longimanus
+600878,Carcharhinus obscurus,Dusky shark,shark >=90 cm,6,carcharhinus obscurus
+600880,Carcharhinus plumbeus,Sandbar shark,shark >=90 cm,6,carcharhinus plumbeus
+600884,Carcharhinus sorrah,Spottail shark,shark >=90 cm,6,carcharhinus sorrah
+600886,Galeocerdo cuvier,Tiger shark,shark >=90 cm,6,galeocerdo cuvier
+600889,Pagellus acarne,Axillary seabream,benthopelagic 30 - 90 cm,6,pagellus acarne
+600890,Pagellus bogaraveo,Blackspot seabream,benthopelagic 30 - 90 cm,6,pagellus bogaraveo
+600893,Pagellus erythrinus,Common pandora,benthopelagic 30 - 90 cm,6,pagellus erythrinus
+600898,Prionace glauca,Blue shark,shark >=90 cm,6,prionace glauca
+600912,Sphyrna lewini,Scalloped hammerhead,shark >=90 cm,6,sphyrna lewini
+600917,Sphyrna zygaena,Smooth hammerhead,shark >=90 cm,6,sphyrna zygaena
+600940,Dasyatis akajei,Red stingray,rays >=90 cm,6,hemitrygon akajei
+600941,Atrobucca nibe,Longfin kob,demersal 30 - 90 cm,6,atrobucca nibe
+600950,Platycephalus indicus,Bartail flathead,demersal >=90 cm,6,platycephalus indicus
+600972,Ablennes hians,Flat needlefish,pelagic >=90 cm,6,ablennes hians
+600977,Tylosurus crocodilus crocodilus,Hound needlefish,pelagic >=90 cm,6,tylosurus crocodilus
+600983,Caulolatilus chrysops,Atlantic goldeye tilefish,demersal 30 - 90 cm,6,caulolatilus chrysops
+601002,Pseudocaranx dentex,White trevally,benthopelagic >=90 cm,6,pseudocaranx dentex
+601005,Seriola dumerili,Greater amberjack,reef-associated >=90 cm,6,seriola dumerili
+601023,Trisopterus esmarkii,Norway pout,benthopelagic 30 - 90 cm,6,trisopterus esmarkii
+601042,Lepidocybium flavobrunneum,Escolar,bathypelagic >=90 cm,6,lepidocybium flavobrunneum
+601043,Sardinella aurita,Round sardinella,pelagic 30 - 90 cm,6,sardinella aurita
+601044,Ruvettus pretiosus,Oilfish,benthopelagic >=90 cm,6,ruvettus pretiosus
+601047,Sardinella maderensis,Madeiran sardinella,pelagic 30 - 90 cm,6,sardinella maderensis
+601055,Saurida undosquamis,Brushtooth lizardfish,demersal 30 - 90 cm,6,saurida undosquamis
+601059,Hemiramphus brasiliensis,Ballyhoo,pelagic 30 - 90 cm,6,hemiramphus brasiliensis
+601072,Lampris guttatus,Opah,bathypelagic >=90 cm,6,lampris guttatus
+601077,Lobotes surinamensis,Atlantic tripletail,benthopelagic >=90 cm,6,lobotes surinamensis
+601078,Lophius gastrophysus,Blackfin goosefish,bathydemersal 30 - 90 cm,6,lophius gastrophysus
+601079,Megalops atlanticus,Tarpon,pelagic >=90 cm,6,megalops atlanticus
+601084,Scomberesox saurus saurus,Atlantic saury,pelagic 30 - 90 cm,6,scomberesox saurus
+601090,Mugil liza,Liza,demersal 30 - 90 cm,6,mugil liza
+601133,Anchoa hepsetus,Broad-striped anchovy,pelagic <30 cm,6,anchoa hepsetus
+601164,Sparus aurata,Gilthead seabream,demersal 30 - 90 cm,6,sparus aurata
+601181,Sphoeroides maculatus,Northern puffer,demersal 30 - 90 cm,6,sphoeroides maculatus
+601191,Sciaenops ocellatus,Red drum,demersal >=90 cm,6,sciaenops ocellatus
+601198,Stromateus fiatola,Blue butterfish,benthopelagic 30 - 90 cm,6,stromateus fiatola
+601203,Diplectrum formosum,Sand seabass,demersal 30 - 90 cm,6,diplectrum formosum
+601205,Epinephelus flavolimbatus,Yellowedge grouper,demersal >=90 cm,6,hyporthodus flavolimbatus
+601206,Epinephelus mystacinus,Misty grouper,bathydemersal >=90 cm,6,hyporthodus mystacinus
+601207,Epinephelus nigritus,Warsaw grouper,demersal >=90 cm,6,hyporthodus nigritus
+601208,Epinephelus niveatus,Snowy grouper,demersal >=90 cm,6,hyporthodus niveatus
+601211,Mycteroperca interstitialis,Yellowmouth grouper,reef-associated 30 - 90 cm,6,mycteroperca interstitialis
+601212,Mycteroperca microlepis,Gag,demersal >=90 cm,6,mycteroperca microlepis
+601213,Mycteroperca phenax,Scamp,reef-associated >=90 cm,6,mycteroperca phenax
+601216,Mycteroperca venenosa,Yellowfin grouper,reef-associated >=90 cm,6,mycteroperca venenosa
+601221,Calamus bajonado,Jolthead porgy,reef-associated 30 - 90 cm,6,calamus bajonado
+601235,Sphyraena barracuda,Great barracuda,pelagic >=90 cm,6,sphyraena barracuda
+601265,Naso unicornis,Bluespine unicornfish,reef-associated 30 - 90 cm,6,naso unicornis
+601278,Trachurus mediterraneus,Mediterranean horse mackerel,pelagic 30 - 90 cm,6,trachurus mediterraneus
+601279,Trachurus picturatus,Blue jack mackerel,benthopelagic 30 - 90 cm,6,trachurus picturatus
+601288,Trichiurus lepturus,Largehead hairtail,benthopelagic >=90 cm,6,trichiurus lepturus
+601300,Ariomma indica,Indian ariomma,benthopelagic <30 cm,6,ariomma indica
+601306,Umbrina cirrosa,Shi drum,demersal 30 - 90 cm,6,umbrina cirrosa
+601319,Beryx decadactylus,Alfonsino,bathydemersal 30 - 90 cm,6,beryx decadactylus
+601320,Beryx splendens,Splendid alfonsino,benthopelagic 30 - 90 cm,6,beryx splendens
+601321,Bothus pantherinus,Leopard flounder,flatfish <90 cm,6,bothus pantherinus
+601327,Mullus surmuletus,Striped red mullet,demersal 30 - 90 cm,6,mullus surmuletus
+601334,Osmerus eperlanus,European smelt,pelagic 30 - 90 cm,6,osmerus eperlanus
+601336,Pegusa lascaris,Sand sole,flatfish <90 cm,6,pegusa lascaris
+601338,Paralichthys dentatus,Summer flounder,flatfish <90 cm,6,paralichthys dentatus
+601340,Phycis blennoides,Greater forkbeard,benthopelagic >=90 cm,6,phycis blennoides
+601341,Platichthys flesus,Flounder,flatfish <90 cm,6,platichthys flesus
+601342,Pleuronectes platessa,European plaice,flatfish >=90 cm,6,pleuronectes platessa
+601343,Pollachius virens,Saithe,demersal >=90 cm,6,pollachius virens
+601348,Psetta maxima,Turbot,flatfish >=90 cm,6,scophthalmus maximus
+601350,Sardina pilchardus,European pilchard,pelagic <30 cm,6,sardina pilchardus
+601351,Paralichthys olivaceus,Bastard halibut,flatfish <90 cm,6,paralichthys olivaceus
+601352,Sebastes viviparus,Norway redfish,demersal 30 - 90 cm,6,sebastes viviparus
+601353,Serranus cabrilla,Comber,bathydemersal 30 - 90 cm,6,serranus cabrilla
+601356,Spondyliosoma cantharus,Black seabream,benthopelagic 30 - 90 cm,6,spondyliosoma cantharus
+601357,Sprattus sprattus,European sprat,pelagic <30 cm,6,sprattus sprattus
+601363,Trachinus draco,Greater weever,demersal 30 - 90 cm,6,trachinus draco
+601365,Trachurus trachurus,Atlantic horse mackerel,pelagic 30 - 90 cm,6,trachurus trachurus
+601366,Chelidonichthys lucerna,Tub gurnard,demersal 30 - 90 cm,6,chelidonichthys lucerna
+601367,Trisopterus luscus,Pouting,benthopelagic 30 - 90 cm,6,trisopterus luscus
+601370,Zeus faber,John dory,benthopelagic >=90 cm,6,zeus faber
+601371,Hippoglossus hippoglossus,Atlantic halibut,flatfish >=90 cm,6,hippoglossus hippoglossus
+601381,Melanogrammus aeglefinus,Haddock,demersal >=90 cm,6,melanogrammus aeglefinus
+601382,Microstomus kitt,Lemon sole,flatfish <90 cm,6,microstomus kitt
+601383,Molva dypterygia,Blue ling,demersal >=90 cm,6,molva dypterygia
+601391,Etelis oculatus,Queen snapper,bathydemersal >=90 cm,6,etelis oculatus
+601403,Lutjanus analis,Mutton snapper,reef-associated 30 - 90 cm,6,lutjanus analis
+601407,Lutjanus argentimaculatus,Mangrove red snapper,reef-associated >=90 cm,6,lutjanus argentimaculatus
+601408,Lutjanus argentiventris,Yellow snapper,reef-associated 30 - 90 cm,6,lutjanus argentiventris
+601417,Lutjanus bohar,Two-spot red snapper,reef-associated >=90 cm,6,lutjanus bohar
+601423,Lutjanus campechanus,Northern red snapper,reef-associated >=90 cm,6,lutjanus campechanus
+601452,Chirocentrus nudus,Whitefin wolf-herring,pelagic >=90 cm,6,chirocentrus nudus
+601453,Dussumieria acuta,Rainbow sardine,pelagic <30 cm,6,dussumieria acuta
+601454,Dussumieria elopsoides,Slender rainbow sardine,pelagic <30 cm,6,dussumieria elopsoides
+601456,Etrumeus whiteheadi,Whiteheads round herring,pelagic <30 cm,6,etrumeus whiteheadi
+601458,Spratelloides gracilis,Silverstriped round herring,pelagic <30 cm,6,spratelloides gracilis
+601466,Sprattus fuegensis,Falkland sprat,pelagic <30 cm,6,sprattus fuegensis
+601470,Clupeonella cultriventris,Black Sea sprat,pelagic <30 cm,6,clupeonella cultriventris
+601477,Sardinops sagax,South American pilchard,pelagic 30 - 90 cm,6,sardinops sagax
+601484,Opisthonema libertate,Pacific thread herring,pelagic <30 cm,6,opisthonema libertate
+601486,Opisthonema oglinum,Atlantic thread herring,pelagic 30 - 90 cm,6,opisthonema oglinum
+601494,Herklotsichthys quadrimaculatus,Bluestripe herring,pelagic <30 cm,6,herklotsichthys quadrimaculatus
+601505,Sardinella brasiliensis,Brazilian sardinella,pelagic <30 cm,6,sardinella brasiliensis
+601508,Sardinella gibbosa,Goldstripe sardinella,pelagic <30 cm,6,sardinella gibbosa
+601510,Sardinella lemuru,Bali sardinella,pelagic <30 cm,6,sardinella lemuru
+601511,Sardinella longiceps,Indian oil sardine,pelagic <30 cm,6,sardinella longiceps
+601519,Sardinella zunasi,Japanese sardinella,pelagic <30 cm,6,sardinella zunasi
+601520,Clupea pallasii pallasii,Pacific herring,pelagic 30 - 90 cm,6,clupea pallasii
+601530,Strangomera bentincki,Araucanian herring,pelagic <30 cm,6,strangomera bentincki
+601574,Alosa aestivalis,Blueback shad,pelagic 30 - 90 cm,6,alosa aestivalis
+601582,Alosa mediocris,Hickory shad,pelagic 30 - 90 cm,6,alosa mediocris
+601583,Alosa pseudoharengus,Alewife,pelagic 30 - 90 cm,6,alosa pseudoharengus
+601584,Alosa sapidissima,American shad,pelagic 30 - 90 cm,6,alosa sapidissima
+601587,Brevoortia aurea,Brazilian menhaden,pelagic <30 cm,6,brevoortia aurea
+601589,Brevoortia patronus,Gulf menhaden,pelagic <30 cm,6,brevoortia patronus
+601590,Brevoortia pectinata,Argentine menhaden,pelagic 30 - 90 cm,6,brevoortia pectinata
+601592,Brevoortia tyrannus,Atlantic menhaden,pelagic 30 - 90 cm,6,brevoortia tyrannus
+601593,Ethmidium maculatum,Pacific menhaden,pelagic <30 cm,6,ethmidium maculatum
+601594,Ethmalosa fimbriata,Bonga shad,pelagic 30 - 90 cm,6,ethmalosa fimbriata
+601596,Tenualosa ilisha,Hilsa shad,pelagic 30 - 90 cm,6,tenualosa ilisha
+601600,Tenualosa toli,Toli shad,pelagic 30 - 90 cm,6,tenualosa toli
+601604,Dorosoma cepedianum,American gizzard shad,pelagic 30 - 90 cm,6,dorosoma cepedianum
+601608,Clupanodon thrissa,Chinese gizzard shad,pelagic <30 cm,6,clupanodon thrissa
+601609,Konosirus punctatus,Konoshiro gizzard shad,pelagic 30 - 90 cm,6,konosirus punctatus
+601616,Nematalosa nasus,Blochs gizzard shad,pelagic <30 cm,6,nematalosa nasus
+601619,Anodontostoma chacunda,Chacunda gizzard shad,pelagic <30 cm,6,anodontostoma chacunda
+601625,Ilisha africana,West African ilisha,pelagic 30 - 90 cm,6,ilisha africana
+601627,Ilisha elongata,Elongate ilisha,pelagic 30 - 90 cm,6,ilisha elongata
+601641,Pellona ditchela,Indian pellona,pelagic <30 cm,6,pellona ditchela
+601659,Engraulis anchoita,Argentine anchoita,pelagic <30 cm,6,engraulis anchoita
+601661,Engraulis capensis,Cape anchovy,pelagic <30 cm,6,engraulis capensis
+601663,Engraulis japonicus,Japanese anchovy,pelagic <30 cm,6,engraulis japonicus
+601664,Engraulis mordax,Californian anchovy,pelagic <30 cm,6,engraulis mordax
+601692,Anthias anthias,Swallowtail seaperch,reef-associated <30 cm,6,anthias anthias
+601696,Atherina boyeri,Big-scale sand smelt,demersal <30 cm,6,atherina boyeri
+601706,Chromis chromis,Damselfish,reef-associated <30 cm,6,chromis chromis
+601707,Sciaena umbra,Brown meagre,demersal 30 - 90 cm,6,sciaena umbra
+601722,Lepidotrigla cavillone,Large-scaled gurnard,demersal <30 cm,6,lepidotrigla cavillone
+601729,Muraena helena,Mediterranean moray,reef-associated >=90 cm,6,muraena helena
+601732,Mola mola,Ocean sunfish,pelagic >=90 cm,6,mola mola
+601734,Mora moro,Common mora,bathypelagic 30 - 90 cm,6,mora moro
+601735,Liza aurata,Golden grey mullet,pelagic 30 - 90 cm,6,chelon auratus
+601736,Liza saliens,Leaping mullet,demersal 30 - 90 cm,6,chelon saliens
+601747,Phycis phycis,Forkbeard,benthopelagic 30 - 90 cm,6,phycis phycis
+601749,Diplodus puntazzo,Sharpsnout seabream,benthopelagic 30 - 90 cm,6,diplodus puntazzo
+601752,Diplodus annularis,Annular seabream,benthopelagic <30 cm,6,diplodus annularis
+601753,Diplodus sargus sargus,White seabream,demersal 30 - 90 cm,6,diplodus sargus
+601754,Diplodus vulgaris,Common two-banded seabream,benthopelagic 30 - 90 cm,6,diplodus vulgaris
+601756,Pagrus pagrus,Common seabream,benthopelagic >=90 cm,6,pagrus pagrus
+601758,Scorpaena porcus,Black scorpionfish,demersal 30 - 90 cm,6,scorpaena porcus
+601759,Scorpaena scrofa,Largescaled scorpionfish,demersal 30 - 90 cm,6,scorpaena scrofa
+601766,Spicara smaris,Picarel,demersal <30 cm,6,spicara smaris
+601773,Trachinotus ovatus,Derbio,pelagic 30 - 90 cm,6,trachinotus ovatus
+601825,Macruronus novaezelandiae,Blue grenadier,demersal >=90 cm,6,macruronus novaezelandiae
+601826,Merluccius paradoxus,Deep-water Cape hake,bathydemersal >=90 cm,6,merluccius paradoxus
+601827,Merluccius angustimanus,Panama hake,demersal 30 - 90 cm,6,merluccius angustimanus
+601828,Merluccius capensis,Shallow-water Cape hake,bathydemersal >=90 cm,6,merluccius capensis
+601843,Lethrinus mahsena,Sky emperor,reef-associated 30 - 90 cm,6,lethrinus mahsena
+601844,Lethrinus borbonicus,Snubnose emperor,reef-associated 30 - 90 cm,6,lethrinus borbonicus
+601845,Lethrinus microdon,Smalltooth emperor,reef-associated 30 - 90 cm,6,lethrinus microdon
+601846,Lethrinus nebulosus,Spangled emperor,demersal 30 - 90 cm,6,lethrinus nebulosus
+601847,Lethrinus obsoletus,Orange-striped emperor,demersal 30 - 90 cm,6,lethrinus obsoletus
+601851,Lethrinus harak,Thumbprint emperor,reef-associated 30 - 90 cm,6,lethrinus harak
+601852,Lethrinus xanthochilus,Yellowlip emperor,reef-associated 30 - 90 cm,6,lethrinus xanthochilus
+601863,Lethrinus lentjan,Pink ear emperor,demersal 30 - 90 cm,6,lethrinus lentjan
+601867,Lethrinus atlanticus,Atlantic emperor,reef-associated 30 - 90 cm,6,lethrinus atlanticus
+601869,Monotaxis grandoculis,Humpnose big-eye bream,reef-associated 30 - 90 cm,6,monotaxis grandoculis
+601874,Enchelyopus cimbrius,Fourbeard rockling,demersal 30 - 90 cm,6,enchelyopus cimbrius
+601879,Microgadus proximus,Pacific tomcod,demersal 30 - 90 cm,6,microgadus proximus
+601888,Alectis alexandrinus,African threadfish,pelagic 30 - 90 cm,6,alectis alexandrina
+601889,Alepes djedaba,Shrimp scad,reef-associated 30 - 90 cm,6,alepes djedaba
+601893,Atule mate,Yellowtail scad,pelagic 30 - 90 cm,6,atule mate
+601895,Caranx ignobilis,Giant trevally,reef-associated >=90 cm,6,caranx ignobilis
+601899,Caranx rhonchus,False scad,benthopelagic 30 - 90 cm,6,caranx rhonchus
+601906,Caranx melampygus,Bluefin trevally,reef-associated >=90 cm,6,caranx melampygus
+601917,Caranx sexfasciatus,Bigeye trevally,reef-associated >=90 cm,6,caranx sexfasciatus
+601923,Carangoides bajad,Orangespotted trevally,reef-associated 30 - 90 cm,6,carangoides bajad
+601926,Carangoides fulvoguttatus,Yellowspotted trevally,reef-associated >=90 cm,6,carangoides fulvoguttatus
+601933,Caranx crysos,Blue runner,pelagic 30 - 90 cm,6,caranx crysos
+601937,Chloroscombrus orqueta,Pacific bumper,demersal 30 - 90 cm,6,chloroscombrus orqueta
+601938,Decapterus macrosoma,Shortfin scad,pelagic 30 - 90 cm,6,decapterus macrosoma
+601939,Decapterus maruadsi,Japanese scad,pelagic <30 cm,6,decapterus maruadsi
+601947,Parastromateus niger,Black pomfret,benthopelagic 30 - 90 cm,6,parastromateus niger
+601950,Scomberoides commersonnianus,Talang queenfish,reef-associated >=90 cm,6,scomberoides commersonnianus
+601951,Scomberoides lysan,Doublespotted queenfish,reef-associated >=90 cm,6,scomberoides lysan
+601953,Scomberoides tol,Needlescaled queenfish,pelagic 30 - 90 cm,6,scomberoides tol
+601962,Seriolina nigrofasciata,Blackbanded trevally,reef-associated 30 - 90 cm,6,seriolina nigrofasciata
+601963,Trachinotus blochii,Snubnose pompano,reef-associated >=90 cm,6,trachinotus blochii
+601964,Trachinotus mookalee,Indian pompano,demersal 30 - 90 cm,6,trachinotus mookalee
+602005,Antimora rostrata,Blue antimora,bathypelagic 30 - 90 cm,6,antimora rostrata
+602012,Halargyreus johnsonii,Slender codling,bathypelagic 30 - 90 cm,6,halargyreus johnsonii
+602014,Laemonema longipes,Longfin codling,benthopelagic 30 - 90 cm,6,laemonema longipes
+602020,Pseudophycis bachus,Red codling,demersal >=90 cm,6,pseudophycis bachus
+602023,Tripterophycis gilchristi,Grenadier cod,benthopelagic 30 - 90 cm,6,tripterophycis gilchristi
+602058,Dipturus batis,Blue skate,rays >=90 cm,6,dipturus batis
+602059,Raja clavata,Thornback ray,rays >=90 cm,6,raja clavata
+602060,Dasyatis pastinaca,Common stingray,rays <90 cm,6,dasyatis pastinaca
+602497,Diplodus cervinus cervinus,Zebra seabream,benthopelagic 30 - 90 cm,6,diplodus cervinus
+602499,Chelon labrosus,Thicklip grey mullet,demersal 30 - 90 cm,6,chelon labrosus
+602500,Thalassoma pavo,Ornate wrasse,reef-associated <30 cm,6,thalassoma pavo
+602501,Anarhichas lupus,Wolf-fish,demersal >=90 cm,6,anarhichas lupus
+602503,Chimaera monstrosa,Rabbit fish,rays >=90 cm,6,chimaera monstrosa
+602508,Epigonus telescopus,Bulls-eye,bathydemersal 30 - 90 cm,6,epigonus telescopus
+602513,Myxine glutinosa,Hagfish,demersal 30 - 90 cm,6,myxine glutinosa
+602530,Petromyzon marinus,Sea lamprey,demersal >=90 cm,6,petromyzon marinus
+602531,Notorynchus cepedianus,Broadnose sevengill shark,shark >=90 cm,6,notorynchus cepedianus
+602534,Alopias superciliosus,Bigeye thresher,shark >=90 cm,6,alopias superciliosus
+602535,Alopias vulpinus,Thintail thresher,shark >=90 cm,6,alopias vulpinus
+602540,Mustelus henlei,Brown smooth-hound,shark >=90 cm,6,mustelus henlei
+602557,Leucoraja erinacea,Little skate,rays <90 cm,6,leucoraja erinacea
+602561,Dipturus laevis,Barndoor skate,rays >=90 cm,6,dipturus laevis
+602572,Dasyatis centroura,Roughtail stingray,rays >=90 cm,6,bathytoshia centroura
+602577,Gymnura altavela,Spiny butterfly ray,rays >=90 cm,6,gymnura altavela
+602589,Hydrolagus colliei,Spotted ratfish,rays >=90 cm,6,hydrolagus colliei
+602669,Coregonus autumnalis,Arctic cisco,pelagic 30 - 90 cm,6,coregonus autumnalis
+602674,Coregonus nasus,Broad whitefish,demersal 30 - 90 cm,6,coregonus nasus
+602678,Coregonus sardinella,Sardine cisco,pelagic 30 - 90 cm,6,coregonus sardinella
+602691,Salvelinus malma malma,Dolly varden,benthopelagic >=90 cm,6,salvelinus malma
+602692,Stenodus leucichthys,Inconnu,demersal >=90 cm,6,stenodus leucichthys
+602700,Argentina silus,Greater argentine,bathydemersal 30 - 90 cm,6,argentina silus
+603255,Zenopsis nebulosa,Mirror dory,bathydemersal 30 - 90 cm,6,zenopsis nebulosa
+603267,Regalecus glesne,King of herrings,pelagic >=90 cm,6,regalecus glesne
+603310,Stereolepis gigas,Giant sea-bass,demersal >=90 cm,6,stereolepis gigas
+603334,Mycteroperca xenarcha,Broomtail grouper,demersal >=90 cm,6,mycteroperca xenarcha
+603539,Caulolatilus princeps,Ocean whitefish,reef-associated >=90 cm,6,caulolatilus princeps
+603542,Rachycentron canadum,Cobia,pelagic >=90 cm,6,rachycentron canadum
+603561,Taractichthys steindachneri,Sickle pomfret,benthopelagic 30 - 90 cm,6,taractichthys steindachneri
+603574,Diplodus argenteus argenteus,South American silver porgy,demersal 30 - 90 cm,6,diplodus argenteus
+603578,Atractoscion nobilis,White weakfish,demersal >=90 cm,6,atractoscion nobilis
+603611,Pseudopentaceros richardsoni,Pelagic armorhead,pelagic 30 - 90 cm,6,pentaceros richardsoni
+603671,Semicossyphus pulcher,California sheephead,reef-associated >=90 cm,6,semicossyphus pulcher
+603672,Tautogolabrus adspersus,Cunner,reef-associated 30 - 90 cm,6,tautogolabrus adspersus
+603810,Anarhichas denticulatus,Northern wolffish,benthopelagic >=90 cm,6,anarhichas denticulatus
+603811,Anarhichas minor,Spotted wolffish,demersal >=90 cm,6,anarhichas minor
+603915,Tetrapturus angustirostris,Shortbill spearfish,pelagic >=90 cm,6,tetrapturus angustirostris
+603920,Hyperoglyphe bythites,Black driftfish,pelagic 30 - 90 cm,6,hyperoglyphe bythites
+603971,Sebastes goodei,Chilipepper,demersal 30 - 90 cm,6,sebastes goodei
+603979,Sebastes melanops,Black rockfish,reef-associated 30 - 90 cm,6,sebastes melanops
+603989,Sebastes pinniger,Canary rockfish,reef-associated 30 - 90 cm,6,sebastes pinniger
+604009,Sebastolobus alascanus,Shortspine thornyhead,bathydemersal 30 - 90 cm,6,sebastolobus alascanus
+604037,Pleurogrammus monopterygius,Atka mackerel,demersal 30 - 90 cm,6,pleurogrammus monopterygius
+604122,Triglopsis quadricornis,Fourhorn sculpin,demersal 30 - 90 cm,6,myoxocephalus quadricornis
+604140,Scorpaenichthys marmoratus,Cabezon,demersal >=90 cm,6,scorpaenichthys marmoratus
+604215,Citharichthys sordidus,Pacific sanddab,flatfish <90 cm,6,citharichthys sordidus
+604228,Paralichthys californicus,California flounder,flatfish >=90 cm,6,paralichthys californicus
+604237,Eopsetta jordani,Petrale sole,flatfish <90 cm,6,eopsetta jordani
+604239,Hippoglossoides platessoides,American plaice,flatfish <90 cm,6,hippoglossoides platessoides
+604247,Microstomus pacificus,Dover sole,flatfish <90 cm,6,microstomus pacificus
+604248,Parophrys vetulus,English sole,flatfish <90 cm,6,parophrys vetulus
+604249,Platichthys stellatus,Starry flounder,flatfish >=90 cm,6,platichthys stellatus
+604250,Pleuronectes quadrituberculatus,Alaska plaice,flatfish <90 cm,6,pleuronectes quadrituberculatus
+604252,Pleuronichthys decurrens,Curlfin sole,flatfish <90 cm,6,pleuronichthys decurrens
+604255,Psettichthys melanostictus,West American sand sole,flatfish <90 cm,6,psettichthys melanostictus
+604313,Normanichthys crockeri,Normans camote,demersal <30 cm,6,normanichthys crockeri
+604326,Leucoraja naevus,Cuckoo ray,rays <90 cm,6,leucoraja naevus
+604329,Raja montagui,Spotted ray,rays <90 cm,6,raja montagui
+604330,Myliobatis aquila,Common eagle ray,rays >=90 cm,6,myliobatis aquila
+604458,Terapon jarbua,Jarbua terapon,demersal 30 - 90 cm,6,terapon jarbua
+604460,Epinephelus fuscoguttatus,Brown-marbled grouper,reef-associated >=90 cm,6,epinephelus fuscoguttatus
+604461,Epinephelus tauvina,Greasy grouper,reef-associated >=90 cm,6,epinephelus tauvina
+604464,Gnathanodon speciosus,Golden trevally,reef-associated >=90 cm,6,gnathanodon speciosus
+604465,Diagramma pictum,Painted sweetlips,reef-associated >=90 cm,6,diagramma pictum
+604493,Sphyraena obtusata,Obtuse barracuda,reef-associated 30 - 90 cm,6,sphyraena obtusata
+604504,Psettodes belcheri,Spottail spiny turbot,flatfish <90 cm,6,psettodes belcheri
+604538,Dentex maroccanus,Morocco dentex,demersal 30 - 90 cm,6,dentex maroccanus
+604540,Pagrus caeruleostictus,Bluespotted seabream,benthopelagic >=90 cm,6,pagrus caeruleostictus
+604543,Acanthopagrus bifasciatus,Twobar seabream,reef-associated 30 - 90 cm,6,acanthopagrus bifasciatus
+604544,Sillago sihama,Silver sillago,demersal 30 - 90 cm,6,sillago sihama
+604548,Umbrina canariensis,Canary drum,demersal 30 - 90 cm,6,umbrina canariensis
+604552,Raja brachyura,Blonde ray,rays >=90 cm,6,raja brachyura
+604556,Trachyrincus scabrus,Roughsnout grenadier,bathypelagic 30 - 90 cm,6,trachyrincus scabrus
+604559,Nemipterus japonicus,Japanese threadfin bream,demersal 30 - 90 cm,6,nemipterus japonicus
+604569,Miichthys miiuy,Mi-iuy croaker,demersal 30 - 90 cm,6,miichthys miiuy
+604582,Labrus merula,Brown wrasse,reef-associated 30 - 90 cm,6,labrus merula
+604589,Lateolabrax japonicus,Japanese seaperch,reef-associated >=90 cm,6,lateolabrax japonicus
+604641,Dentex congoensis,Congo dentex,demersal 30 - 90 cm,6,dentex congoensis
+604642,Galeorhinus galeus,Tope shark,shark >=90 cm,6,galeorhinus galeus
+604702,Notothenia coriiceps,Yellowbelly rockcod,demersal 30 - 90 cm,6,notothenia coriiceps
+604708,Pomadasys jubelini,Sompat grunt,demersal 30 - 90 cm,6,pomadasys jubelini
+604722,Callorhinchus milii,Ghost shark,rays >=90 cm,6,callorhinchus milii
+604740,Acanthurus sohal,Sohal surgeonfish,reef-associated 30 - 90 cm,6,acanthurus sohal
+604791,Mugil soiuy,So-iuy mullet,demersal 30 - 90 cm,6,planiliza haematocheilus
+604796,Sarda chiliensis lineolata,Pacific bonito,pelagic >=90 cm,6,sarda chiliensis
+604824,Otolithes ruber,Tiger-toothed croaker,benthopelagic >=90 cm,6,otolithes ruber
+604826,Plectropomus leopardus,Leopard coralgrouper,reef-associated >=90 cm,6,plectropomus leopardus
+604827,Sphyraena jello,Pickhandle barracuda,reef-associated >=90 cm,6,sphyraena jello
+604887,Spicara maena,Blotched picarel,demersal <30 cm,6,spicara maena
+604923,Epinephelus merra,Honeycomb grouper,reef-associated 30 - 90 cm,6,epinephelus merra
+604943,Citharus linguatula,Atlantic spotted flounder,flatfish <90 cm,6,citharus linguatula
+604959,Elops lacerta,West African ladyfish,benthopelagic >=90 cm,6,elops lacerta
+604961,Epinephelus goreensis,Dungat grouper,demersal >=90 cm,6,epinephelus goreensis
+604964,Hoplostethus mediterraneus mediterraneus,Mediterranean slimehead,benthopelagic 30 - 90 cm,6,hoplostethus mediterraneus
+604988,Lophius vaillanti,Shortspine African angler,bathydemersal 30 - 90 cm,6,lophius vaillanti
+604996,Mustelus mustelus,Smooth-hound,shark >=90 cm,6,mustelus mustelus
+604997,Nezumia aequalis,Common Atlantic grenadier,benthopelagic 30 - 90 cm,6,nezumia aequalis
+605002,Polydactylus quadrifilis,Giant African threadfin,demersal >=90 cm,6,polydactylus quadrifilis
+605003,Pomadasys incisus,Bastard grunt,demersal 30 - 90 cm,6,pomadasys incisus
+605007,Pontinus kuhlii,Offshore rockfish,bathydemersal 30 - 90 cm,6,pontinus kuhlii
+605008,Promethichthys prometheus,Roudi escolar,benthopelagic >=90 cm,6,promethichthys prometheus
+605009,Pseudotolithus senegallus,Law croaker,demersal >=90 cm,6,pseudotolithus senegallus
+605038,Trigla lyra,Piper gurnard,bathydemersal 30 - 90 cm,6,trigla lyra
+605048,Arripis trutta,Eastern Australian salmon,pelagic 30 - 90 cm,6,arripis trutta
+605066,Pagrus auriga,Redbanded seabream,benthopelagic 30 - 90 cm,6,pagrus auriga
+605071,Alepocephalus rostratus,Rissos smooth-head,bathydemersal 30 - 90 cm,6,alepocephalus rostratus
+605081,Trigloporus lastoviza,Streaked gurnard,demersal 30 - 90 cm,6,chelidonichthys lastoviza
+605094,Lophius budegassa,Black-bellied angler,bathydemersal >=90 cm,6,lophius budegassa
+605098,Borostomias antarcticus,Borostomias antarcticus,bathypelagic 30 - 90 cm,6,borostomias antarcticus
+605353,Epinephelus morrhua,Comet grouper,demersal >=90 cm,6,epinephelus morrhua
+605354,Variola louti,Yellow-edged lyretail,reef-associated 30 - 90 cm,6,variola louti
+605355,Alosa fallax,Twaite shad,pelagic 30 - 90 cm,6,alosa fallax
+605367,Epinephelus areolatus,Areolate grouper,reef-associated 30 - 90 cm,6,epinephelus areolatus
+605382,Trachurus capensis,Cape horse mackerel,pelagic 30 - 90 cm,6,trachurus capensis
+605429,Halobatrachus didactylus,Lusitanian toadfish,demersal 30 - 90 cm,6,halobatrachus didactylus
+605492,Raja microocellata,Small-eyed ray,rays <90 cm,6,raja microocellata
+605503,Rhynchobatus djiddensis,Giant guitarfish,rays >=90 cm,6,rhynchobatus djiddensis
+605504,Chelidonichthys capensis,Cape gurnard,demersal 30 - 90 cm,6,chelidonichthys capensis
+605524,Epinephelus chlorostigma,Brownspotted grouper,reef-associated 30 - 90 cm,6,epinephelus chlorostigma
+605526,Acanthopagrus berda,Picnic seabream,demersal >=90 cm,6,acanthopagrus berda
+605537,Bolbometopon muricatum,Green humphead parrotfish,reef-associated >=90 cm,6,bolbometopon muricatum
+605548,Scarus ghobban,Blue-barred parrotfish,reef-associated >=90 cm,6,scarus ghobban
+605604,Cheilinus undulatus,Humphead wrasse,reef-associated >=90 cm,6,cheilinus undulatus
+605659,Valamugil seheli,Bluespot mullet,reef-associated 30 - 90 cm,6,crenimugil seheli
+605852,Nemipterus randalli,Randalls threadfin bream,demersal <30 cm,6,nemipterus randalli
+605889,Scolopsis taeniatus,Black-streaked monocle bream,reef-associated <30 cm,6,scolopsis taeniata
+605933,Mustelus lenticulatus,Spotted estuary smooth-hound,shark >=90 cm,6,mustelus lenticulatus
+605937,Mustelus schmitti,Narrownose smooth-hound,shark <90 cm,6,mustelus schmitti
+605938,Mustelus asterias,Starry smooth-hound,shark >=90 cm,6,mustelus asterias
+605983,Mulloidichthys flavolineatus,Yellowstripe goatfish,reef-associated 30 - 90 cm,6,mulloidichthys flavolineatus
+605996,Gerres oyena,Common silver-biddy,demersal 30 - 90 cm,6,gerres oyena
+606006,Pomadasys kaakan,Javelin grunter,reef-associated 30 - 90 cm,6,pomadasys kaakan
+606082,Plectropomus areolatus,Squaretail coralgrouper,reef-associated 30 - 90 cm,6,plectropomus areolatus
+606317,Totoaba macdonaldi,Totoaba,benthopelagic >=90 cm,6,totoaba macdonaldi
+606356,Acanthopagrus latus,Yellowfin seabream,demersal 30 - 90 cm,6,acanthopagrus latus
+606358,Chirocentrus dorab,Dorab wolf-herring,benthopelagic >=90 cm,6,chirocentrus dorab
+606396,Cephalopholis argus,Peacock hind,reef-associated 30 - 90 cm,6,cephalopholis argus
+606422,Dipturus linteus,Sailray,rays >=90 cm,6,rajella lintea
+606426,Pagrus auratus,Squirefish,demersal >=90 cm,6,pagrus auratus
+606441,Aethaloperca rogaa,Redmouth grouper,reef-associated 30 - 90 cm,6,aethaloperca rogaa
+606444,Cephalopholis boenak,Chocolate hind,reef-associated <30 cm,6,cephalopholis boenak
+606447,Cephalopholis hemistiktos,Yellowfin hind,reef-associated 30 - 90 cm,6,cephalopholis hemistiktos
+606450,Cephalopholis miniata,Coral hind,reef-associated 30 - 90 cm,6,cephalopholis miniata
+606457,Cromileptes altivelis,Humpback grouper,reef-associated 30 - 90 cm,6,cromileptes altivelis
+606465,Epinephelus coioides,Orange-spotted grouper,reef-associated >=90 cm,6,epinephelus coioides
+606470,Epinephelus marginatus,Dusky grouper,reef-associated >=90 cm,6,epinephelus marginatus
+606473,Epinephelus polyphekadion,Camouflage grouper,reef-associated >=90 cm,6,epinephelus polyphekadion
+606479,Saurida tumbil,Greater lizardfish,demersal 30 - 90 cm,6,saurida tumbil
+606507,Sargocentron spiniferum,Sabre squirrelfish,reef-associated 30 - 90 cm,6,sargocentron spiniferum
+606531,Acanthopagrus schlegelii schlegelii,Black porgy,demersal 30 - 90 cm,6,acanthopagrus schlegelii
+606948,Bathyraja eatonii,Eatons skate,rays >=90 cm,6,bathyraja eatonii
+606950,Bathyraja maccaini,McCains skate,rays >=90 cm,6,bathyraja maccaini
+606951,Bathyraja meridionalis,Dark-belly skate,rays >=90 cm,6,bathyraja meridionalis
+606952,Bathyraja murrayi,Murrays skate,rays <90 cm,6,bathyraja murrayi
+606953,Amblyraja georgiana,Antarctic starry skate,rays >=90 cm,6,amblyraja georgiana
+606954,Amblyraja taaf,Whiteleg skate,rays <90 cm,6,amblyraja taaf
+606957,Diastobranchus capensis,Basketwork eel,bathydemersal >=90 cm,6,diastobranchus capensis
+606960,Bathylagus antarcticus,Antarctic deepsea smelt,demersal >=90 cm,6,bathylagus antarcticus
+606974,Benthalbella elongata,Benthalbella elongata,bathypelagic 30 - 90 cm,6,benthalbella elongata
+606985,Electrona carlsbergi,Electron subantarctic,bathypelagic <30 cm,6,electrona carlsbergi
+606990,Gymnoscopelus nicholsi,Nicols lanterfish,bathypelagic <30 cm,6,gymnoscopelus nicholsi
+606998,Lampanyctus achirus,NA,pelagic >=90 cm,6,lampanyctus achirus
+607026,Lycodichthys antarcticus,NA,bathydemersal <30 cm,6,lycodichthys antarcticus
+607039,Dissostichus mawsoni,Antarctic toothfish,benthopelagic >=90 cm,6,dissostichus mawsoni
+607040,Gobionotothen acuta,Triangular notothen,demersal 30 - 90 cm,6,gobionotothen acuta
+607041,Gobionotothen gibberifrons,Humped rockcod,demersal 30 - 90 cm,6,gobionotothen gibberifrons
+607045,Lepidonotothen squamifrons,Grey rockcod,benthopelagic 30 - 90 cm,6,lepidonotothen squamifrons
+607046,Lepidonotothen mizops,Toad notothen,benthopelagic <30 cm,6,lindbergichthys mizops
+607047,Lepidonotothen nudifrons,Gaudy notothen,demersal <30 cm,6,lindbergichthys nudifrons
+607048,Lepidonotothen larseni,Lepidonotothen larseni,benthopelagic <30 cm,6,nototheniops larseni
+607052,Patagonotothen brevicauda brevicauda,Patagonian rockcod,demersal <30 cm,6,patagonotothen brevicauda
+607054,Trematomus eulepidotus,Blunt scalyhead,demersal 30 - 90 cm,6,trematomus eulepidotus
+607055,Trematomus hansoni,Striped rockcod,demersal 30 - 90 cm,6,trematomus hansoni
+607082,Pogonophryne permitini,Pogonophryne permitini,bathydemersal <30 cm,6,pogonophryne permitini
+607103,Parachaenichthys georgianus,Antarctic dragonfish,bathydemersal <30 cm,6,parachaenichthys georgianus
+607108,Chionobathyscus dewitti,Chionobathyscus dewitti,bathydemersal 30 - 90 cm,6,chionobathyscus dewitti
+607109,Chionodraco hamatus,Crocodile icefish,bathydemersal 30 - 90 cm,6,chionodraco hamatus
+607110,Chionodraco myersi,Chionodraco myersi,bathydemersal 30 - 90 cm,6,chionodraco myersi
+607111,Cryodraco antarcticus,Cryodraco antarcticus,bathydemersal 30 - 90 cm,6,cryodraco antarcticus
+607113,Neopagetopsis ionah,Bible icefish,benthopelagic 30 - 90 cm,6,neopagetopsis ionah
+607120,Mancopsetta maculata antarctica,Antarctic armless flounder,flatfish <90 cm,6,mancopsetta maculata
+607126,Muraenolepis microps,Smalleye moray cod,pelagic 30 - 90 cm,6,muraenolepis microps
+607137,Macrourus carinatus,Ridge scaled rattail,benthopelagic >=90 cm,6,macrourus carinatus
+607138,Macrourus holotrachys,Bigeye grenadier,benthopelagic 30 - 90 cm,6,macrourus holotrachys
+607139,Macrourus whitsoni,Whitsons Grenadier,benthopelagic >=90 cm,6,macrourus whitsoni
+607145,Psilodraco breviceps,Antarctic dragonfish,demersal <30 cm,6,psilodraco breviceps
+607151,Pseudocyttus maculatus,Smooth oreo,benthopelagic 30 - 90 cm,6,pseudocyttus maculatus
+607152,Zanclorhynchus spinifer,Spiny horsefish,demersal 30 - 90 cm,6,zanclorhynchus spinifer
+607327,Balistes capriscus,Grey triggerfish,benthopelagic 30 - 90 cm,6,balistes capriscus
+607354,Epinephelus multinotatus,White-blotched grouper,reef-associated >=90 cm,6,epinephelus multinotatus
+607366,Epinephelus summana,Summan grouper,reef-associated 30 - 90 cm,6,epinephelus summana
+607430,Plectropomus pessuliferus,Roving coralgrouper,reef-associated >=90 cm,6,plectropomus pessuliferus
+607614,Leucoraja circularis,Sandy ray,rays >=90 cm,6,leucoraja circularis
+607616,Dipturus oxyrinchus,Longnosed skate,rays >=90 cm,6,dipturus oxyrinchus
+607617,Raja undulata,Undulate ray,rays >=90 cm,6,raja undulata
+607618,Mobula mobular,Devil fish,rays >=90 cm,6,mobula mobular
+607619,Leucoraja fullonica,Shagreen ray,rays >=90 cm,6,leucoraja fullonica
+607620,Micropogonias furnieri,Whitemouth croaker,demersal 30 - 90 cm,6,micropogonias furnieri
+607703,Plectorhinchus gaterinus,Blackspotted rubberlips,reef-associated 30 - 90 cm,6,plectorhinchus gaterinus
+607706,Plectorhinchus schotaf,Minstrel sweetlip,reef-associated 30 - 90 cm,6,plectorhinchus schotaf
+607708,Pomadasys stridens,Striped piggy,reef-associated <30 cm,6,pomadasys stridens
+607903,Pomacanthus maculosus,Yellowbar angelfish,reef-associated 30 - 90 cm,6,pomacanthus maculosus
+607931,Crenidens crenidens,Karenteen seabream,demersal 30 - 90 cm,6,crenidens crenidens
+607945,Pelates quadrilineatus,Fourlined terapon,pelagic 30 - 90 cm,6,pelates quadrilineatus
+608092,Parapristipoma octolineatum,African striped grunt,demersal 30 - 90 cm,6,parapristipoma octolineatum
+608166,Rhabdosargus haffara,Haffara seabream,reef-associated 30 - 90 cm,6,rhabdosargus haffara
+608172,Odontesthes regia,Silverside,pelagic <30 cm,6,odontesthes regia
+608173,Girella tricuspidata,Luderick,benthopelagic 30 - 90 cm,6,girella tricuspidata
+608289,Fistularia corneta,Pacific cornetfish,pelagic 30 - 90 cm,6,fistularia corneta
+608315,Plectorhinchus pictus,Trout sweetlips,reef-associated 30 - 90 cm,6,plectorhinchus pictus
+608390,Seriolella porosa,Choicy ruff,benthopelagic 30 - 90 cm,6,seriolella porosa
+608421,Bregmaceros mcclellandi,Spotted codlet,pelagic <30 cm,6,bregmaceros mcclellandi
+608483,Lepidorhynchus denticulatus,Thorntooth grenadier,bathypelagic 30 - 90 cm,6,lepidorhynchus denticulatus
+608490,Rexea solandri,Silver gemfish,benthopelagic >=90 cm,6,rexea solandri
+608540,Aphanopus intermedius,Intermediate scabbardfish,benthopelagic >=90 cm,6,aphanopus intermedius
+608556,Pseudopleuronectes herzensteini,Littlemouth flounder,flatfish <90 cm,6,pseudopleuronectes herzensteini
+608816,Cephalopholis fulva,Coney,reef-associated 30 - 90 cm,6,cephalopholis fulva
+608852,Solea senegalensis,Senegalese sole,flatfish <90 cm,6,solea senegalensis
+608924,Raja asterias,Starry ray,rays <90 cm,6,raja asterias
+608991,Spectrunculus grandis,Pudgy cuskeel,benthopelagic >=90 cm,6,spectrunculus grandis
+609000,Hydrolagus mirabilis,Large-eyed rabbitfish,rays <90 cm,6,hydrolagus mirabilis
+609005,Rhinochimaera atlantica,Spearnose chimaera,rays >=90 cm,6,rhinochimaera atlantica
+609146,Neocyttus rhomboidalis,Spiky oreo,bathypelagic 30 - 90 cm,6,neocyttus rhomboidalis
+609256,Amblyraja hyperborea,Arctic skate,rays >=90 cm,6,amblyraja hyperborea
+609907,Gerres nigri,Guinean striped mojarra,benthopelagic <30 cm,6,gerres nigri
+609908,Plectorhinchus macrolepis,Biglip grunt,benthopelagic 30 - 90 cm,6,plectorhinchus macrolepis
+610106,Nemadactylus macropterus,Tarakihi,demersal 30 - 90 cm,6,nemadactylus macropterus
+610190,Schedophilus pemarco,Pemarco blackfish,benthopelagic 30 - 90 cm,6,schedophilus pemarco
+610220,Arius thalassinus,Giant seacatfish,demersal >=90 cm,6,netuma thalassina
+610238,Benthosema pterotum,Skinnycheek lanternfish,bathypelagic <30 cm,6,benthosema pterotum
+610256,Lophius vomerinus,Cape monk,demersal 30 - 90 cm,6,lophius vomerinus
+610307,Cheilopogon agoo,Japanese flyingfish,pelagic 30 - 90 cm,6,cheilopogon agoo
+610308,Patagonotothen ramsayi,Ramsay's icefish,benthopelagic 30 - 90 cm,6,patagonotothen ramsayi
+610676,Cyttus traversi,King dory,bathydemersal 30 - 90 cm,6,cyttus traversi
+611820,Abudefduf luridus,Canary damsel,reef-associated <30 cm,6,similiparma lurida
+612005,Paratrachichthys trailli,Sandpaper fish,bathypelagic <30 cm,6,paratrachichthys trailli
+612354,Paristiopterus labiosus,Giant boarfish,demersal >=90 cm,6,paristiopterus labiosus
+612357,Pentaceros decacanthus,Bigspined boarfish,bathydemersal <30 cm,6,pentaceros decacanthus
+612547,Coregonus muksun,Muksun,benthopelagic 30 - 90 cm,6,coregonus muksun
+612917,Prolatilus jugularis,Tilefish,demersal 30 - 90 cm,6,prolatilus jugularis
+612918,Seriolella brama,Common warehou,benthopelagic 30 - 90 cm,6,seriolella brama
+612919,Seriolella caerulea,White warehou,bathypelagic 30 - 90 cm,6,seriolella caerulea
+612920,Kathetostoma giganteum,Giant stargazer,demersal >=90 cm,6,kathetostoma giganteum
+612922,Seriolella punctata,Silver warehou,benthopelagic 30 - 90 cm,6,seriolella punctata
+612962,Allocyttus niger,Black oreo,bathypelagic 30 - 90 cm,6,allocyttus niger
+613025,Sparisoma cretense,Parrotfish,reef-associated 30 - 90 cm,6,sparisoma cretense
+613139,Meuschenia scaber,Velvet leatherjacket,demersal 30 - 90 cm,6,meuschenia scaber
+613144,Zearaja nasuta,New Zealand rough skate,rays >=90 cm,6,zearaja nasuta
+613146,Hydrolagus novaezealandiae,Dark ghost shark,rays <90 cm,6,hydrolagus novaezealandiae
+614063,Mullus argentinae,Argentine goatfish,demersal <30 cm,6,mullus argentinae
+614129,Centroberyx affinis,Redfish,benthopelagic 30 - 90 cm,6,centroberyx affinis
+614242,Centriscops humerosus,Banded yellowfish,bathydemersal <30 cm,6,centriscops humerosus
+614290,Thunnus orientalis,Pacific bluefin tuna,pelagic >=90 cm,6,thunnus orientalis
+614354,Lepidoperca pulchella,Orange perch,demersal <30 cm,6,lepidoperca pulchella
+614383,Scarus persicus,Gulf parrotfish,benthopelagic 30 - 90 cm,6,scarus persicus
+614693,Merluccius gayi peruanus,Peruvian hake,bathydemersal 30 - 90 cm,6,merluccius gayi
+615380,Rhynchobatus australiae,White-spotted shovelnose ray,rays >=90 cm,6,rhynchobatus australiae
+615483,Himantura gerrardi,Sharpnose stingray,rays >=90 cm,6,maculabatis gerrardi
+624237,Lepidopsetta bilineata,Rock sole,flatfish <90 cm,6,lepidopsetta bilineata
+628128,Grammoplites suppositus,Spotfin flathead,demersal <30 cm,6,grammoplites suppositus
+628143,Peprilus paru,American harvestfish,benthopelagic 30 - 90 cm,6,peprilus paru
+646376,Liza klunzingeri,Klunzingers mullet,demersal <30 cm,6,planiliza klunzingeri
+646941,Coregonus laurettae,Bering cisco,pelagic 30 - 90 cm,6,coregonus laurettae
+649232,Capromimus abbreviatus,Capro dory,bathydemersal <30 cm,6,capromimus abbreviatus
+650136,Pseudopercis semifasciata,Argentinian sandperch,demersal >=90 cm,6,pseudopercis semifasciata
+657505,Bathyraja irrasa,Kerguelen sandpaper skate,rays <90 cm,6,bathyraja irrasa
+657506,Chelon haematocheilus,So-iny (redlip) mullet,demersal 30 - 90 cm,6,planiliza haematocheilus
+690003,Pandalus montagui,Aesop shrimp,shrimp,6,pandalus montagui
+690005,Acetes japonicus,Akiami paste shrimp,shrimp,6,acetes japonicus
+690009,Crassostrea virginica,American cupped oyster,demersal mollusc,6,crassostrea virginica
+690010,Homarus americanus,American lobster,lobsters crab,6,homarus americanus
+690011,Placopecten magellanicus,American sea scallop,demersal mollusc,6,placopecten magellanicus
+690013,Metanephrops andamanicus,Andaman lobster,lobsters crab,6,metanephrops andamanicus
+690016,Euphausia superba,Antarctic krill,krill,6,euphausia superba
+690018,Paralomis spinosissima,Antarctic stone crab,lobsters crab,6,paralomis spinosissima
+690022,Pleoticus muelleri,Argentine red shrimp,shrimp,6,pleoticus muelleri
+690023,Illex argentinus,Argentine shortfin squid,cephalopods,6,illex argentinus
+690024,Artemesia longinaris,Argentine stiletto shrimp,shrimp,6,artemesia longinaris
+690029,Ensis directus,Atlantic razor clam,demersal mollusc,6,ensis directus
+690030,Argopecten irradians,Atlantic bay scallop,demersal mollusc,6,argopecten irradians
+690031,Cancer irroratus,Atlantic rock crab,lobsters crab,6,cancer irroratus
+690032,Xiphopenaeus kroyeri,Atlantic seabob,shrimp,6,xiphopenaeus kroyeri
+690033,Spisula solidissima,Atlantic surf clam,demersal mollusc,6,spisula solidissima
+690036,Mytilus planulatus,Australian mussel,demersal mollusc,6,mytilus planulatus
+690039,Panulirus cygnus,Australian spiny lobster,lobsters crab,6,panulirus cygnus
+690042,Fenneropenaeus merguiensis,Banana prawn,shrimp,6,penaeus merguiensis
+690043,Pollicipes pollicipes,Barnacle,demersal mollusc,6,pollicipes pollicipes
+690047,Menippe mercenaria,Black stone crab,lobsters crab,6,menippe mercenaria
+690049,Haliotis rubra,Blacklip abalone,demersal mollusc,6,haliotis rubra
+690050,Anadara granosa,Blood cockle,demersal mollusc,6,tegillarca granosa
+690051,Aristeus antennatus,Blue and red shrimp,shrimp,6,aristeus antennatus
+690052,Callinectes sapidus,Blue crab,lobsters crab,6,callinectes sapidus
+690053,Mytilus edulis,Blue mussel,demersal mollusc,6,mytilus edulis
+690054,Litopenaeus stylirostris,Blue shrimp,shrimp,6,penaeus stylirostris
+690055,Portunus pelagicus,Blue swimming crab,lobsters crab,6,portunus pelagicus
+690059,Illex coindetii,Broadtail shortfin squid,cephalopods,6,illex coindetii
+690060,Perna viridis,Brown mussel,demersal mollusc,6,perna viridis
+690064,Saxidomus gigantea,Butter clam,demersal mollusc,6,saxidomus gigantea
+690065,Argopecten gibbus,Calico scallop,demersal mollusc,6,argopecten gibbus
+690067,Loligo vulgaris,Cape Hope squid,cephalopods,6,loligo vulgaris
+690069,Jasus lalandii,Cape rock lobster,lobsters crab,6,jasus lalandii
+690070,Melicertus kerathurus,Caramote prawn,shrimp,6,penaeus kerathurus
+690071,Panulirus argus,Caribbean spiny lobster,lobsters crab,6,panulirus argus
+690075,Ostrea chilensis,Chilean flat oyster,demersal mollusc,6,ostrea chilensis
+690076,Mytilus chilensis,Chilean mussel,demersal mollusc,6,mytilus chilensis
+690077,Heterocarpus reedi,Chilean nylon shrimp,shrimp,6,heterocarpus reedi
+690078,Loxechinus albus,Chilean sea urchin,demersal mollusc,6,loxechinus albus
+690081,Aulacomya ater,Cholga mussel,demersal mollusc,6,aulacomya atra
+690082,Choromytilus chorus,Choro mussel,demersal mollusc,6,choromytilus chorus
+690085,Sepia officinalis,Common cuttlefish,cephalopods,6,sepia officinalis
+690087,Cardium edule,Common edible cockle,demersal mollusc,6,cerastoderma edule
+690088,Octopus vulgaris,Common octopus,cephalopods,6,octopus vulgaris
+690089,Littorina littorea,Common periwinkle,demersal mollusc,6,littorina littorea
+690090,Palaemon serratus,Common prawn,shrimp,6,palaemon serratus
+690091,Crangon crangon,Common shrimp,shrimp,6,crangon crangon
+690092,Palinurus elephas,Common spiny lobster,lobsters crab,6,palinurus elephas
+690100,Farfantepenaeus brevirostris,Crystal shrimp,shrimp,6,penaeus brevirostris
+690105,Callinectes danae,Dana's swimming crab,lobsters crab,6,callinectes danae
+690109,Parapenaeus longirostris,Deepwater rose shrimp,shrimp,6,parapenaeus longirostris
+690115,Cancer magister,Dungeness crab,lobsters crab,6,metacarcinus magister
+690119,Cancer pagurus,Edible crab,lobsters crab,6,cancer pagurus
+690120,Metapenaeus endeavouri,Endeavour shrimp,shrimp,6,metapenaeus endeavouri
+690122,Echinus esculentus,European edible sea urchin,demersal mollusc,6,echinus esculentus
+690123,Ostrea edulis,European flat oyster,demersal mollusc,6,ostrea edulis
+690124,Todarodes sagittatus,European flying squid,cephalopods,6,todarodes sagittatus
+690125,Homarus gammarus,European lobster,lobsters crab,6,homarus gammarus
+690126,Solen vagina,European razor clam,demersal mollusc,6,solen vagina
+690127,Concholepas concholepas,False abalone,demersal mollusc,6,concholepas concholepas
+690133,Fenneropenaeus chinensis,Fleshy prawn,shrimp,6,penaeus chinensis
+690143,Portunus trituberculatus,Gazami crab,lobsters crab,6,portunus trituberculatus
+690146,Haliotis gigantea,Giant abalone,demersal mollusc,6,haliotis gigantea
+690151,Penaeus monodon,Giant tiger prawn,shrimp,6,penaeus monodon
+690156,Pecten maximus,Great Atlantic scallop,demersal mollusc,6,pecten maximus
+690157,Pecten jacobaeus,Great Mediterranean scallop,demersal mollusc,6,pecten jacobaeus
+690158,Carcinus maenas,Green crab,lobsters crab,6,carcinus maenas
+690161,Jasus verreauxi,Green rock lobster,lobsters crab,6,sagmariasus verreauxi
+690163,Penaeus semisulcatus,Green tiger prawn,shrimp,6,penaeus semisulcatus
+690166,Ruditapes decussatus,Grooved carpet shell,demersal mollusc,6,ruditapes decussatus
+690167,Microcosmus sulcatus,Grooved sea squirt,demersal mollusc,6,microcosmus vulgaris
+690168,Parapenaeopsis atlantica,Guinea shrimp,shrimp,6,holthuispenaeopsis atlantica
+690169,Scapharca cornea,Half-crenated ark,demersal mollusc,6,anadara cornea
+690176,Mactra sachalinensis,Hen clam,demersal mollusc,6,spisula sachalinensis
+690180,Turbo cornutus,Horned turban,demersal mollusc,6,turbo cornutus
+690182,Limulus polyphemus,Horseshoe crab,demersal mollusc,6,limulus polyphemus
+690185,Chlamys islandica,Iceland scallop,demersal mollusc,6,chlamys islandica
+690189,Fenneropenaeus indicus,Indian white prawn,shrimp,6,penaeus indicus
+690190,Scylla serrata,Indo-Pacific swamp crab,lobsters crab,6,scylla serrata
+690194,Haliporoides sibogae,Jack-knife shrimp,shrimp,6,haliporoides sibogae
+690196,Ruditapes philippinarum,Japanese carpet shell,demersal mollusc,6,no match
+690198,Todarodes pacificus,Japanese flying squid,cephalopods,6,todarodes pacificus
+690199,Meretrix lusoria,Japanese hard clam,demersal mollusc,6,meretrix lusoria
+690201,Apostichopus japonicus,Japanese sea cucumber,demersal mollusc,6,apostichopus japonicus
+690203,Cancer borealis,Jonah crab,lobsters crab,6,cancer borealis
+690205,Jasus frontalis,Juan Fernandez rock lobster,lobsters crab,6,jasus frontalis
+690206,Dosidicus gigas,Jumbo flying squid,cephalopods,6,dosidicus gigas
+690215,Haliporoides triarthrus,Knife shrimp,shrimp,6,haliporoides triarthrus
+690217,Solenocera agassizii,Kolibri shrimp,shrimp,6,solenocera agassizii
+690218,Mytilus coruscus,Korean mussel,demersal mollusc,6,mytilus unguiculatus
+690219,Marsupenaeus japonicus,Kuruma prawn,shrimp,6,penaeus japonicus
+690227,Loligo pealeii,Longfin squid,cephalopods,6,doryteuthis pealeii
+690228,Panulirus longipes,Longlegged spiny lobster,lobsters crab,6,panulirus longipes
+690230,Mesodesma donacium,Macha clam,demersal mollusc,6,mesodesma donacium
+690232,Crassostrea rhizophorae,Mangrove cupped oyster,demersal mollusc,6,crassostrea rhizophorae
+690241,Mytilus galloprovincialis,Mediterranean mussel,demersal mollusc,6,mytilus galloprovincialis
+690242,Carcinus aestuarii,Mediterranean shore crab,lobsters crab,6,carcinus aestuarii
+690249,Metanephrops mozambicus,Mozambique lobster,lobsters crab,6,metanephrops mozambicus
+690253,Palinurus delagoae,Natal spiny lobster,lobsters crab,6,palinurus delagoae
+690256,Ostrea lutaria,New Zealand dredge oyster,demersal mollusc,6,ostrea chilensis
+690257,Metanephrops challengeri,New Zealand lobster,lobsters crab,6,metanephrops challengeri
+690259,Pecten novaezelandiae,New Zealand scallop,demersal mollusc,6,pecten novaezelandiae
+690265,Farfantepenaeus aztecus,Northern brown shrimp,shrimp,6,penaeus aztecus
+690268,Farfantepenaeus duorarum,Northern pink shrimp,shrimp,6,penaeus duorarum
+690269,Pandalus borealis,Northern prawn,shrimp,6,pandalus borealis
+690270,Mercenaria mercenaria,Northern quahog,demersal mollusc,6,mercenaria mercenaria
+690271,Illex illecebrosus,Northern shortfin squid,cephalopods,6,illex illecebrosus
+690272,Litopenaeus setiferus,Northern white shrimp,shrimp,6,penaeus setiferus
+690273,Nephrops norvegicus,Norway lobster,lobsters crab,6,nephrops norvegicus
+690274,Meganyctiphanes norvegica,Norwegian krill,krill,6,meganyctiphanes norvegica
+690275,Arctica islandica,Ocean quahog,demersal mollusc,6,arctica islandica
+690279,Ostrea lurida,Olympia flat oyster,demersal mollusc,6,ostrea lurida
+690282,Argopecten ventricosus,Pacific calico scallop,demersal mollusc,6,argopecten ventricosus
+690283,Crassostrea gigas,Pacific cupped oyster,demersal mollusc,6,magallana gigas
+690284,Panopea abrupta,Pacific geoduck,demersal mollusc,6,panopea abrupta
+690285,Protothaca staminea,Pacific littleneck clam,demersal mollusc,6,leukoma staminea
+690286,Siliqua patula,Pacific razor clam,demersal mollusc,6,siliqua patula
+690287,Cancer productus,Pacific rock crab,lobsters crab,6,cancer productus
+690288,Xiphopenaeus kroyeri,Atlantic seabob,shrimp,6,xiphopenaeus kroyeri
+690296,Loligo gahi,Patagonian squid,cephalopods,6,doryteuthis gahi
+690302,Haliotis midae,Perlemoen abalone,demersal mollusc,6,haliotis midae
+690303,Argopecten purpuratus,Peruvian calico scallop,demersal mollusc,6,argopecten purpuratus
+690305,Palinurus mauritanicus,Pink spiny lobster,lobsters crab,6,palinurus mauritanicus
+690309,Tapes pullastra,Pullet carpet shell,demersal mollusc,6,venerupis corrugata
+690313,Chionoecetes opilio,Queen crab,lobsters crab,6,chionoecetes opilio
+690314,Aequipecten opercularis,Queen scallop,demersal mollusc,6,aequipecten opercularis
+690318,Pyura stolonifera,Red bait,demersal mollusc,6,pyura stolonifera
+690320,Chaceon quinquedens,Red deepsea crab,lobsters crab,6,chaceon quinquedens
+690321,Jasus edwardsii,Red rock lobster,lobsters crab,6,jasus edwardsii
+690322,Pyura chilensis,Red sea squirt,demersal mollusc,6,pyura chilensis
+690325,Paralomis aculeata,Red stone crab,lobsters crab,6,paralomis aculeata
+690327,Farfantepenaeus brasiliensis,Redspotted shrimp,shrimp,6,penaeus brasiliensis
+690328,Penaeus penicillatus,Redtail prawn,shrimp,6,penaeus penicillatus
+690332,Mytilus platensis,River Plata mussel,demersal mollusc,6,mytilus platensis
+690334,Sicyonia brevirostris,Rock shrimp,shrimp,6,sicyonia brevirostris
+690335,Pleoticus robustus,Royal red shrimp,shrimp,6,pleoticus robustus
+690337,Mya arenaria,Sand gaper,demersal mollusc,6,mya arenaria
+690338,Farfantepenaeus paulensis,Sao Paulo shrimp,shrimp,6,penaeus paulensis
+690341,Panulirus homarus,Scalloped spiny lobster,lobsters crab,6,panulirus homarus
+690343,Plesiopenaeus edwardsianus,Scarlet shrimp,shrimp,6,aristaeopsis edwardsiana
+690354,Martialia hyadesi,Sevenstar flying squid,cephalopods,6,martialia hyadesi
+690356,Metapenaeus joyneri,Shiba shrimp,shrimp,6,metapenaeus joyneri
+690364,Crassostrea iredalei,Slipper cupped oyster,demersal mollusc,6,magallana bilineata
+690370,Paralomis granulosa,Softshell red crab,lobsters crab,6,paralomis granulosa
+690374,Perna perna,South American rock mussel,demersal mollusc,6,perna perna
+690377,Lithodes antarcticus,Southern king crab,lobsters crab,6,lithodes santolla
+690378,Farfantepenaeus notialis,Southern pink shrimp,shrimp,6,penaeus notialis
+690379,Trachysalambria curvirostris,Southern rough shrimp,shrimp,6,trachysalambria curvirostris
+690381,Palinurus gilchristi,Southern spiny lobster,lobsters crab,6,palinurus gilchristi
+690383,Metapenaeus monoceros,Speckled shrimp,shrimp,6,metapenaeus monoceros
+690387,Maja squinado,Spinous spider crab,lobsters crab,6,maja squinado
+690392,Squilla mantis,Spottail mantis squillid,shrimp,6,squilla mantis
+690398,Mactromeris polynyma,Stimpsons surf clam,demersal mollusc,6,mactromeris polynyma
+690399,Lithodes maia,Stone king crab,lobsters crab,6,lithodes maja
+690400,Paracentrotus lividus,Stony sea urchin,demersal mollusc,6,paracentrotus lividus
+690403,Aristeus varidens,Striped red shrimp,shrimp,6,aristeus varidens
+690404,Venus (=Chamelea) gallina,Striped venus,demersal mollusc,6,chamelea gallina
+690411,Protothaca thaca,Taca clam,demersal mollusc,6,leukoma thaca
+690420,Haliotis tuberculata,Tuberculate abalone,demersal mollusc,6,haliotis tuberculata
+690423,Chlamys varia,Variegated scallop,demersal mollusc,6,mimachlamys varia
+690425,Necora puber,Velvet swimcrab,lobsters crab,6,necora puber
+690429,Patinopecten caurinus,Weathervane scallop,demersal mollusc,6,patinopecten caurinus
+690430,Nototodarus sloanii,Wellington flying squid,cephalopods,6,nototodarus sloanii
+690432,Melicertus latisulcatus,Western king prawn,shrimp,6,penaeus latisulcatus
+690433,Litopenaeus occidentalis,Western white shrimp,shrimp,6,penaeus occidentalis
+690434,Buccinum undatum,Whelk,demersal mollusc,6,buccinum undatum
+690440,Litopenaeus vannamei,Whiteleg shrimp,shrimp,6,penaeus vannamei
+690444,Farfantepenaeus californiensis,Yellowleg shrimp,shrimp,6,penaeus californiensis
+690445,Pecten yessoensis,Yesso scallop,demersal mollusc,6,mizuhopecten yessoensis
+690455,Paralomis formosa,King crab,lobsters crab,6,paralomis formosa
+690470,Ommastrephes bartramii,Neon flying squid,cephalopods,6,ommastrephes bartramii
+690595,Loligo forbesii,Veined Squid,cephalopods,6,loligo forbesii
+690598,Scyllarides latus,Mediterranean slipper lobster,lobsters crab,6,scyllarides latus
+690606,Cervimunida johni,Carrot Squat Lobster,lobsters crab,6,cervimunida johni
+690608,Erimacrus isenbeckii,Hair Crab,lobsters crab,6,erimacrus isenbeckii
+690609,Haliporoides diomedeae,Chilean nylon shrimp,shrimp,6,haliporoides diomedeae
+690610,Heterocarpus vicarius,Northern nylon shrimp,shrimp,6,heterocarpus vicarius
+690611,Ibacus ciliatus,Sand Crayfish,lobsters crab,6,ibacus ciliatus
+690612,Lithodes aequispinus,Same-spine stone crab,lobsters crab,6,lithodes aequispinus
+690613,Megabalanus psittacus,Giant barnacle,demersal mollusc,6,austromegabalanus psittacus
+690615,Pandalopsis japonica,Sidestripe shrimp,shrimp,6,pandalus japonicus
+690616,Pandalus goniurus,Humpy shrimp,shrimp,6,pandalus goniurus
+690617,Pandalus hypsinotus,Humpback shrimp,shrimp,6,pandalus hypsinotus
+690618,Pandalus kessleri,Grass shrimp,shrimp,6,pandalus latirostris
+690619,Panulirus gracilis,Blue spiny lobster,shrimp,6,panulirus gracilis
+690620,Paralithodes brevipes,Spiny king crab,lobsters crab,6,paralithodes brevipes
+690621,Paralithodes camtschaticus,Red king crab,lobsters crab,6,paralithodes camtschaticus
+690622,Paralithodes platypus,Blue King Crab,lobsters crab,6,paralithodes platypus
+690624,Pleuroncodes monodon,Squat Lobster,lobsters crab,6,pleuroncodes monodon
+690625,Pleuroncodes planipes,Pelagic red crab,lobsters crab,6,pleuroncodes planipes
+690627,Cilus gilberti,Corvina,demersal 30 - 90 cm,6,cilus gilberti
+690628,Sicyonia ingentis,Ridgeback shrimp,shrimp,6,sicyonia ingentis
+690629,Tivela mactroides,Trigonal tivela,demersal mollusc,6,tivela mactroides
+690631,Spisula ovalis,Venus clam,demersal mollusc,6,spisula solida
+690651,Clinocardium nuttallii,Nuttall cockle,demersal mollusc,6,clinocardium nuttallii
+690658,Loligo opalescens,California market squid,cephalopods,6,doryteuthis opalescens
+690660,Pandalus jordani,Ocean shrimp,shrimp,6,pandalus jordani
+690665,Upogebia pugettensis,Blue mud shrimp,lobsters crab,6,upogebia pugettensis
+690671,Spisula solida,Surf clam,demersal mollusc,6,spisula solida
+690674,Zidona dufresnei,Angulate volute,demersal mollusc,6,zidona dufresnii
+690675,Tapes rhomboides,Banded carpet shell,demersal mollusc,6,polititapes rhomboides
+690676,Liocarcinus depurator,Blue-leg swimcrab,lobsters crab,6,liocarcinus depurator
+690677,Semele solida,Chilean semele,demersal mollusc,6,semele solida
+690678,Glycymeris glycymeris,Dog cockle,demersal mollusc,6,glycymeris glycymeris
+690679,Chlamys delicatula,Delicate scallop,demersal mollusc,6,zygochlamys delicatula
+690680,Palaemon longirostris,Delta prawn,shrimp,6,palaemon longirostris
+690681,Thenus orientalis,Flathead lobster,lobsters crab,6,thenus orientalis
+690682,Tawera gayi,Gay's little venus,demersal mollusc,6,tawera elliptica
+690683,Aristaeomorpha foliacea,Giant red shrimp,shrimp,6,aristaeomorpha foliacea
+690684,Eledone cirrhosa,Horned octopus,cephalopods,6,eledone cirrhosa
+690686,Zygochlamys patagonica,Patagonean scallop,demersal mollusc,6,zygochlamys patagonica
+690688,Paphies australis,Pipi wedge clam,demersal mollusc,6,paphies australis
+690690,Callista chione,Smooth callista,demersal mollusc,6,callista chione
+690692,Chione stutchburyi,Stutchbury's venus,demersal mollusc,6,austrovenus stutchburyi
+690693,Venus verrucosa,Warty venus,demersal mollusc,6,venus verrucosa
+690694,Nematopalaemon schmitti,Whitebelly prawn,lobsters crab,6,nematopalaemon schmitti
+690696,Jasus novaehollandiae,Southern rock lobster,lobsters crab,6,jasus edwardsii
+690750,Tonna galea,Helmet ton,demersal mollusc,6,tonna galea
+690751,Pitar rostratus,Rostrate pitar,demersal mollusc,6,pitar rostratus
+690753,Chaceon affinis,Deep-sea red crab,lobsters crab,6,chaceon affinis
+690754,Ensis ensis,Pod razor,demersal mollusc,6,ensis ensis
+690759,Pharus legumen,Bean solen,demersal mollusc,6,pharus legumen

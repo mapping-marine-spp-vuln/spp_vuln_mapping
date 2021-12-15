@@ -25,6 +25,7 @@ library(sf)
 library(tidyverse)
 library(here)
 library(RColorBrewer)
+
 source(here('common_fxns.R'))
 
 ```
@@ -104,18 +105,7 @@ Count these as intensities - no conversion to intensity required.
 
 ## Ocean-based stressors
 
-* Shipping - see separate script that pre-processes these to 0.1° resolution.
-    * Data from: https://datacatalog.worldbank.org/search/dataset/0037580
-        * Cite as: Cerdeiro, D. A., Komaromi, A., Liu, Y., & Saeed, M. (2020). World Seaborne Trade in Real Time: A Proof of Concept for Building AIS-based Nowcasts from Scratch (IMF Working Paper WP/20/57). International Monetary Fund.
-    * Commercial/passenger ship combined layer for large ships that contribute to whale strikes and noise pollution
-        * log-transform (?)
-    * Fishing/leisure craft combined layer for smaller ships that contribute to noise pollution?
-    * This is a count of ships per cell - aggregate, convert to ships per ocean area, then reproject.
-* Benthic structures - see shipping pre-processing script
-    * Oil and gas structures: Data from: https://datacatalog.worldbank.org/search/dataset/0037580 (oil and gas layer)
-        * Cite as: Cerdeiro, D. A., Komaromi, A., Liu, Y., & Saeed, M. (2020). World Seaborne Trade in Real Time: A Proof of Concept for Building AIS-based Nowcasts from Scratch (IMF Working Paper WP/20/57). International Monetary Fund.
-    * Offshore wind farms: Data from: https://www.4coffshore.com? 
-    * This is a count of structures per cell - aggregate, convert to structures per ocean area, then reproject.
+
     
 ## Sensory pollution
 
@@ -172,7 +162,7 @@ ocean_area_0.1deg <- raster(here('_spatial/ocean_area_wgs84_0.1deg.tif'))
 
 Reproject, then rescale 0-1.
 
-These data are extremely right-skewed - instead of $\log(x+1)$ transform try inverse hyperbolic sine from https://marcfbellemare.com/wordpress/12856:
+These data are extremely right-skewed - instead of $\log(x+1)$ transform consider inverse hyperbolic sine from https://marcfbellemare.com/wordpress/12856:
 $$IHS(x) = \log(x + \sqrt{x^2 + 1})$$
 The `ihs()` and `log_plus()` functions I define here allow for adding a given constant (e.g., 1), but default to a value of $\max(x)/1000$, to reduce (for `ihs()`) or eliminate (for `log_plus()`) scale dependence.
 
@@ -198,48 +188,6 @@ log_plus <- function(x, add = NULL) {
   y <- log(x + add)
 }
 
-rescale <- function(x, qtile = NULL) {
-  
-  xmin <- min(x, na.rm = TRUE)
-  if(is.null(qtile)) {
-    xmax = max(x, na.rm = TRUE)
-  } else {
-    xmax = quantile(x, qtile, na.rm = TRUE)
-  }
-  y <- (x - xmin) / (xmax - xmin)
-  ### in case of quantile, clip results to 1
-  z <- ifelse(y > 1, 1, y)
-  return(z)
-}
-
-### testing out functions
-# df <- data.frame(x = 1:1000) %>%
-#   mutate(y = 10 * x,
-#          ihs_x = ihs(x),
-#          ihs_y = ihs(y),
-#          log2_x = log_plus(x),
-#          log2_y = log_plus(y),
-#          ihs2_x = ihs(x, add = 10),
-#          ihs2_y = ihs(y, add = 10),
-#          log_x = log(x+1),
-#          log_y = log(y+1)) %>%
-#   gather(var, val, -x, -y) %>%
-#   group_by(var) %>%
-#   mutate(val = rescale(val))
-# 
-# ggplot(df %>% filter(str_detect(var, 'ihs_')), aes(x = x, y = val)) +
-#   geom_line(aes(color = var)) +
-#   scale_color_viridis_d()
-# ggplot(df %>% filter(str_detect(var, 'log2_')), aes(x = x, y = val)) +
-#   geom_line(aes(color = var)) +
-#   scale_color_viridis_d()
-# ggplot(df %>% filter(str_detect(var, 'ihs2_')), aes(x = x, y = val)) +
-#   geom_line(aes(color = var)) +
-#   scale_color_viridis_d()
-### log_plus() when rescaled returns the exact same number (log of higher
-### scale is just an additive constant relative to lower).
-### ihs() with scale-determined additive value is very very similar
-### across scales, but not exact.
 ```
 
 GFW data for OHI at 0.01 degree resolution.  Aggregate by a factor of about 10x to get closer to 10 km x 10 km target resolution (at equator...), convert to intensity (hours/km^2^) then log transform and reproject.
@@ -704,90 +652,6 @@ hist(r[r > 0], main = 'distribution of non-zero values')
 
 ## Ocean-based stressors
 
-
-
-
-### Benthic structures
-
-See benthic structures pre-processing script.  Result is a .csv of structures by type and location to 0.005° lat-long.  Aggregate up to 0.1, then rasterize, then reproject to Mollweide 10 km.
-
-* dir: `/home/shares/ohi/spp_vuln/spp_vuln_mapping/stressors/benthic_structures`
-    * file: `benth_str_from_ais_2020.csv`
-
-```{r create benthic structures layer}
-benth_f <- here('_data/stressors_mol/benth_str_2020.tif')
-### unlink(benth_f)
-
-if(!file.exists(benth_f)) {
-
-  benth_raw_f <- here_ohi('spp_vuln/spp_vuln_mapping',
-                          'stressors/benthic_structures',
-                          'benth_str_from_ais_2020.csv')
-  
-  benth_raw_df <- read_csv(benth_raw_f)
-  
-  benth_agg_df <- benth_raw_df %>%
-    rename(x = round_lon, y = round_lat) %>%
-    mutate(x = round(x, 1) + 0.05,
-           y = round(y, 1) + 0.05) %>%
-    group_by(x, y) %>%
-    summarize(n_str = n())
-  
-  benth_r <- rasterFromXYZ(benth_agg_df, 
-                           res = 0.1, digits = 1,
-                           crs = '+init=epsg:4326')
-  # class      : RasterLayer 
-  # dimensions : 1116, 2718, 3033288  (nrow, ncol, ncell)
-  # resolution : 0.1, 0.1  (x, y)
-  # extent     : -97.75, 174.05, -39.05, 72.55  (xmin, xmax, ymin, ymax)
-  # crs        : +proj=longlat +datum=WGS84 +no_defs 
-  # source     : memory
-  # names      : n_str 
-  # values     : 1, 48  (min, max)
-  
-  ### those extents look a little fishy - doesn't reach the CA coast!
-  
-  ### set NA cells to 0, then mask with ocean rast
-  benth_r <- raster::extend(benth_r, ocean_area_0.1deg)
-  values(benth_r)[is.na(values(benth_r))] <- 0
-  
-  ### convert to intensity (structures per km^2)
-  benth_intens_r <- benth_r / ocean_area_0.1deg
-  
-  # masked_r <- mask(benth_r, ocean_area_0.1deg, progress = 'text')
-  # ### aggregate to 0.5 and compare to prior data
-  # x <- aggregate(masked_r, fact = 5)
-  # y <- raster(here('_data/stressors_hcaf/benthic_str_2016_hcaf.tif'))
-  # 
-  # values(x)[values(x) > 0] <- 2
-  # values(y)[values(y) > 0] <- 1
-  # xx <- projectRaster(x, y, method = 'ngb')
-  # plot(xx + y)
-  # 
-  # r_df <- as.data.frame(xx + y, xy = TRUE)
-  # ggplot(r_df, aes(x, y, fill = layer)) +
-  #   geom_raster() +
-  #   ggtheme_map()
-
-  ### Already masked and aggregated in prep script
-  benth_reproj_r <- projectRaster(benth_intens_r, ocean_rast, progress = 'text')
-  ### projectRaster with ngb introduces some weird negative values; drop'em
-  values(benth_reproj_r)[values(benth_reproj_r) < 0] <- 0
-  
-  values(benth_reproj_r) <- rescale(values(benth_reproj_r))
-
-  ### round to drop ludicrous precision then save out
-  values(benth_reproj_r) <- round(values(benth_reproj_r), 5)
-  writeRaster(benth_reproj_r, benth_f, overwrite = TRUE)
-}
-
-r <- raster(benth_f)
-  
-plot(r, axes = FALSE,
-     main = 'Benthic structures, rescaled')
-
-hist(r[r > 0], main = 'distribution of non-zero values')
-```
 
 ## Sensory stressors
 

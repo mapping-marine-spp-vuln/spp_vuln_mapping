@@ -125,14 +125,28 @@ if(!file.exists(ocean_10km_file)) {
   # compareRaster(ocean_moll_10km, rast_base_10km)
   # [1] TRUE
   
-  ocean_moll_10km <- ocean_moll_10km / 100
+  ### drop the Caspian Sea:
+  casp_bbox <- c(xmin = 3700000, xmax = 4800000, ymin = 4300000, ymax = 5650000)
+  ocean_moll_df <- as.data.frame(ocean_moll_10km, xy = TRUE) %>%
+    setNames(c('x', 'y', 'z')) %>%
+    mutate(caspian_x = between(x, casp_bbox['xmin'], casp_bbox['xmax']),
+           caspian_y = between(y, casp_bbox['ymin'], casp_bbox['ymax']),
+           caspian   = caspian_x & caspian_y) %>%
+    mutate(z = ifelse(caspian, NA, z)) %>%
+    select(-contains('caspian'))
   
-  writeRaster(ocean_moll_10km, ocean_10km_file)
+  ocean_moll_10km_no_casp <- rasterFromXYZ(ocean_moll_df, res = 10000, crs = crs(ocean_moll_10km))
+  
+  # plot(ocean_moll_10km_no_casp)
+  ocean_moll_10km_no_casp <- ocean_moll_10km_no_casp / 100
+  
+  writeRaster(ocean_moll_10km_no_casp, ocean_10km_file, overwrite = TRUE)
 }
 
 ocean_moll_10km <- raster(ocean_10km_file)
 plot(ocean_moll_10km, main = 'ocean area')
 ```
+
 
 ## Coastal zone raster
 

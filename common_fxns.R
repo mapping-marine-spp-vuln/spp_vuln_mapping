@@ -803,3 +803,27 @@ clean_scinames <- function(df, field) {
     mutate(tmp = str_squish(tmp)) %>%
     rename(!!field := tmp)
 }
+
+####################################################=
+####          Raster support functions          ####
+####################################################=
+
+mask_ocean <- function(r) {
+  ### for a raster in 10 km Mollweide, mask it to just
+  ### ocean cells
+  ocean_r <- raster(here('_spatial/ocean_area_mol.tif'))
+  if(!compareRaster(r, ocean_r)) {
+    warning('Cannot mask raster - CRS does not match')
+    return(NULL)
+  }
+  x <- mask(r, ocean_r)
+  return(x)
+}
+
+get_qtiles <- function(x) {
+  q_vec <- c(0.5, 0.9, 0.95, 0.99, 0.999, 1.0)
+  if(str_detect(tolower(class(x)), 'raster')) {
+    x <- values(x)
+  }
+  quantile(x, q_vec, na.rm = TRUE)
+}

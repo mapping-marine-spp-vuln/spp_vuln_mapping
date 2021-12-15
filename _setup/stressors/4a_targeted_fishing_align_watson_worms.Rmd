@@ -1,0 +1,156 @@
+---
+title: "Stressors: targeted fishing by taxon and cell - align Watson and WoRMS taxa"
+author: "*Compiled on `r date()` by `r Sys.info()['user']`*"
+output: 
+  html_document:
+    code_folding: show
+    toc: true
+    toc_depth: 1
+    toc_float: yes
+    number_sections: false
+    theme: cerulean
+    highlight: haddock
+    includes: 
+      in_header: '~/github/src/templates/ohara_hdr.html'
+  pdf_document:
+    toc: true
+---
+
+``` {r setup, echo = TRUE, message = FALSE, warning = FALSE}
+
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
+
+library(oharac) ### remotes::install_github('oharac/oharac')
+  ### includes some helper functions, e.g., dt_join
+library(tidyverse)
+library(here)
+
+source(here('common_fxns.R'))
+```
+
+# Summary
+
+Read in data from Watson (2018) and match up taxa names with those in WoRMS (used to standardize across FishBase, SeaLifeBase, AquaMaps, vulnerability traits, IUCN).
+
+# Data
+
+Data from
+
+* Watson, R.A. and Tidd, A.N. (2018) Mapping nearly a century and a half of global marine fishing: 1869 to 2015. Marine Policy 93, 171-177
+* Watson, R. (2017) A database of global marine commercial, small-scale, illegal and unreported fisheries catch 1950-2014. Nature Scientific Data 4 (170039).
+
+Included in data:
+
+* Industrial Catch (1950 - 2017) - reported, iuu, and discard catch data for each cell location and unique identifier
+* Non-Industrial Catch (1950 - 2017) - reported, iuu, and discard catch data for each cell location and unique identifier
+* DATA CODE DEFINITIONS (gear/taxa/country codes and cell lat/lon references)
+
+## How to download the data code definitions. 
+
+For this, it is saved as an .xlsx file (Codes.xlsx). This file has 4 sheets in it which contain meta data that explain columns in the Index files, and one sheet with is "Spatial Cells Reference - contains geospatial information associated wtih the Industrial Catch data". 
+To download this data, go to the IMAS website: http://data.imas.utas.edu.au/portal/search?uuid=ff1274e1-c0ab-411b-a8a2-5a12eb27f2c0 and dowload it manually.
+
+This .xlsx file contains these sheets:
+
+* Spatial Cells Reference (Cells) - contains geospatial information associated wtih the Industrial Catch data
+* Gear Reference (Gear) - contains information regarding how different fishing gear is classified in the index datasets.
+* Taxa Reference (Taxa) - contains information regarding how different taxa is classified in the index datasets.
+* Country Reference (Country) - contains informations regarding how different countries are labeled in the index datasets. 
+
+# Methods
+
+## Access Watson data stored for OHI 2021
+
+For our purposes we will only be using the most recent set of data.  These are stored on Mazu courtesy of Gage for OHI 2021.
+
+* dir: `git-annex/globalprep/_raw_data/IMAS_GlobalFisheriesLandings/d2020`
+    * file: `Catch2015_2019.rds`
+
+```{r}
+watson_dir <- here_anx('../../git-annex/globalprep/_raw_data', 
+                       'IMAS_GlobalFisheriesLandings/d2020')
+
+codes_xlsx <- file.path(watson_dir, 'Codes_raw.xlsx')
+# codes_sheets <- readxl::excel_sheets(codes_xlsx)
+taxa_df <- readxl::read_excel(codes_xlsx, sheet = 'Taxa') %>%
+  janitor::clean_names() %>%
+  select(-c(x8:taxonkey_11), taxonkey = taxonkey_1)
+
+```
+
+## Clean taxa names to WoRMS taxa
+
+Read in the taxonomic info dataframe; identify which taxon_name values are already in WoRMS, and which need some cleaning.  Clean the Watson taxa names to match names in WoRMS, and save out a lookup for future reference.
+
+```{r}
+worms_long <- assemble_worms(aspect = 'long')
+
+taxa_df_clean <- taxa_df %>%
+  mutate(taxon_clean = tolower(taxon_name),
+         ### remove parentheticals...
+         taxon_clean = str_remove(taxon_clean, '\\(.+\\)'),
+         ### split and unnest "Homaridae/Palinuridae":
+         taxon_clean = str_split(taxon_clean, '/')) %>%
+  unnest(taxon_clean) %>%
+  ### extract first two terms (not-space+, space, not-space+):
+  ### this drops confounding subspecies names
+  mutate(taxon_clean = str_squish(taxon_clean),
+         taxon_clean = ifelse(str_detect(taxon_clean, '[a-z]+ [a-z]+ '),
+                              str_extract(taxon_clean, '[^ ]+ [^ ]+'),
+                              taxon_clean))
+
+### Identify taxa with direct matches to WoRMS alredy
+# taxa_in_worms_df <- taxa_df_clean %>%
+#   inner_join(worms_long, by = c('taxon_clean' = 'name'))
+# 
+# taxa_to_clean <- taxa_df_clean %>%
+#   filter(!taxon_clean %in% taxa_in_worms_df$taxon_clean) %>%
+#   distinct()
+### only 113 rows not matching! not bad
+
+### Use fuzzy_match() to identify possibilities for unmatched taxa
+# chunk_size <- 20
+# tx_vec <- taxa_to_clean$taxon_clean %>% unique()
+# n_chunks <- ceiling(length(tx_vec) / chunk_size)
+# fuzzy_match_df <- data.frame()
+# for(i in 1:n_chunks) { # i <- 1
+#   i_min <- (i - 1) * chunk_size + 1
+#   i_max <- min(length(tx_vec), chunk_size)
+#   tmp_df <- fuzzy_match(tx_vec[i_min:i_max], marine_only = FALSE)
+#   fuzzy_match_df <- bind_rows(fuzzy_match_df, tmp_df)
+# }
+# 
+# fuzzy_match_details <- fuzzy_match_df %>%
+#   inner_join(taxa_to_clean, by = c('orig_sciname' = 'taxon_clean')) %>%
+#   select(-contains('isscaap')) %>%
+#   mutate(worms_name = ifelse(!is.na(aphia_id), valid_name, NA),
+#            ### seed the default to keep matches; clean later
+#          comments = '') %>%
+#   distinct()
+# no_fuzzy_match <- taxa_to_clean %>%
+#   filter(!taxon_clean %in% fuzzy_match_details$orig_sciname) %>%
+#   select(orig_sciname = taxon_clean, taxonkey, taxon_name, common_name, descript, tax_level)
+# 
+# write_csv(bind_rows(fuzzy_match_details, no_fuzzy_match),
+#           here('_raw/watson_worms_check_match_raw.csv'))
+
+
+### manually fix the mismatches:
+fuzzy_match_clean <- read_csv(here('_raw/watson_worms_check_match_clean.csv')) %>%
+  select(taxonkey, worms_name) %>%
+  ### break up compound taxa
+  mutate(worms_name = str_split(worms_name, ';')) %>%
+  unnest(worms_name) %>%
+  distinct()
+  
+taxa_worms_match_df <- taxa_df_clean %>%
+  left_join(fuzzy_match_clean, by = 'taxonkey') %>%
+  mutate(worms_name = ifelse(taxon_clean %in% worms_long$name,
+                             taxon_clean, worms_name)) %>%
+  filter(!is.na(worms_name)) %>%
+  select(taxonkey, taxon_name, common_name, descript, tax_level, worms_name) %>%
+  distinct()
+
+write_csv(taxa_worms_match_df, here('_raw/worms_to_watson_lookup.csv'))
+```
+

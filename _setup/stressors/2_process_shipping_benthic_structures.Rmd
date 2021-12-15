@@ -1,0 +1,252 @@
+---
+title: "Process benthic structure stressors"
+author: "*Compiled on `r date()` by `r Sys.info()['user']`*"
+output: 
+  html_document:
+    code_folding: hide
+    toc: true
+    toc_depth: 3
+    toc_float: yes
+    number_sections: true
+    theme: cerulean
+    highlight: haddock
+    includes: 
+      in_header: '~/github/src/templates/ohara_hdr.html'
+  pdf_document:
+    toc: true
+---
+
+``` {r setup, echo = TRUE, message = FALSE, warning = FALSE}
+
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
+
+library(raster)
+library(sf)
+library(oharac) ### remotes::install_github('oharac/oharac')
+  ### includes some helper functions, e.g., dt_join
+library(tidyverse)
+library(here)
+
+source(here('common_fxns.R'))
+source('stressor_fxns.R') ### in same dir as this Rmd
+
+```
+
+# Summary
+
+Process benthic structures, including oil, gas, and wind farms.  These may incorporate data from World Bank ship tracks, persistent oceanic lights, and wind farm maps.
+
+# Data
+
+* Oil and gas structures: Data from: https://datacatalog.worldbank.org/search/dataset/0037580 (oil and gas layer)
+    * Cite as: Cerdeiro, D. A., Komaromi, A., Liu, Y., & Saeed, M. (2020). World Seaborne Trade in Real Time: A Proof of Concept for Building AIS-based Nowcasts from Scratch (IMF Working Paper WP/20/57). International Monetary Fund.
+    * supplement with light data?
+* Offshore wind farms: Data from: https://www.4coffshore.com? 
+* This is a count of structures per cell - aggregate, convert to structures per ocean area, then reproject and convert back to structure count; then rescale 0-1.
+
+# Methods
+
+## Identify potential vessel types
+
+From the .csvs of data over time, pull the 2020 data files, filter to just vessel types noting "rig" and the like.
+
+``` {r}
+vessel_data_dir <- "/home/shares/ohi/stressors_2021/_raw_data/Cerdeiro_2020_vessel_density/grid_message_count_annual/"
+
+vessel_2020_fs <- list.files(file.path(vessel_data_dir, 'grid_message_count_2020'), full.names = TRUE)
+
+vessel_type_df <- data.frame(f = vessel_2020_fs) %>%
+  mutate(type = str_remove_all(basename(f), 'grid_message_count_2020_|.csv'),
+         type = tolower(type))
+
+### types: platform, rig, jack_up; consider mooring_buoy
+rigs <- vessel_type_df %>%
+  filter(str_detect(type, 'platform$|rig$|jack_up$|mooring_buoy$'))
+```
+
+## Prelim examination of data
+
+Read in the data for apparent rigs.  Convert the resulting points to a raster, and check for apparent ship tracks. 
+Note we can aggregate here to 0.1 degree, approximately the resolution of our Mollweide 10 km analysis resolution, to greatly reduce processing intensity.
+
+``` {r}
+rig_data <- lapply(rigs$f, FUN = function(f) {
+    x <- read_csv(f, show_col_types = FALSE) %>%
+      janitor::clean_names() %>%
+      mutate(across(-vessel_type, as.numeric))
+    }) %>%
+  bind_rows()
+
+```
+
+``` {r}
+xyz <- rig_data %>%
+  rename(x = round_lon, y = round_lat) %>%
+  mutate(x = round(x, 1), y = round(y, 1)) %>%
+  group_by(x, y) %>%
+  summarize(z = sum(count_messages))
+
+r_big <- rasterFromXYZ(xyz, res = 1, crs = '+init=epsg:4326', digits = 0)
+
+plot(r_big, col = hcl.colors(20),
+     main = '1.0° cells with observations (for easier visibility)',
+     legend = FALSE, axes = FALSE)
+
+r <- rasterFromXYZ(xyz, res = 0.1, crs = '+init=epsg:4326', digits = 1)
+
+plot(r, col = hcl.colors(20),
+     main = '0.1 deg cells with observations',
+     legend = FALSE, axes = FALSE)
+```
+
+## Clean the data further
+
+Drop observations where `count_messages` <= 5 (arbitrary but appears to work) to reduce or eliminate moving rigs passing through a cell.  For each remaining raw site (at 0.005 resolution), round the resolution, sum up how many raw sites are contained in the aggregated cell.  Use this to estimate the density of stationary rigs in a particular cell.
+
+``` {r}
+xyz2 <- rig_data %>%
+  rename(x = round_lon, y = round_lat) %>%
+  filter(count_messages > 5) %>%
+  mutate(x = round(x, 1), y = round(y, 1)) %>%
+  group_by(x, y) %>%
+  summarize(z = n())
+
+r_big <- rasterFromXYZ(xyz2, res = 1, crs = '+init=epsg:4326', digits = 0)
+
+plot(r_big, col = hcl.colors(20), 
+     main = '1.0° cells with observations (for easier visibility)',
+     legend = FALSE, axes = FALSE)
+
+r2 <- rasterFromXYZ(xyz2, res = 0.1, crs = '+init=epsg:4326', digits = 1)
+
+plot(r2, col = hcl.colors(20), 
+     main = '0.1 deg cells with observations',
+     legend = FALSE, axes = FALSE)
+```
+
+## Finalize the data in original CRS
+
+We don't need to save the resulting data out as a raster; we can save it as a .csv that can be converted to a raster (with aggregation as needed) in a later chunk.  From the overall rigs dataframe, filter out locations with fewer than five pings, then what is left is presumed to be stationary (multiple pings from the same site). 
+
+Values in result are:
+
+`round_lat | round_lon | vessel_type`
+
+```{r}
+
+out_f <- here_anx('stressors/benthic_structures/benth_str_from_ais_2020.csv')
+xyz3 <- rig_data %>%
+  filter(count_messages > 5) %>%
+  select(-count_messages) %>%
+  distinct()
+
+knitr::kable(head(xyz3))
+
+knitr::kable(table(tolower(xyz3$vessel_type)))
+
+write_csv(xyz3, out_f)
+```
+
+Note that this could also be multiple ship tracks that happen to intersect, but based on type and lack of apparent motion, we arrive at `r nrow(xyz3)` rigs, which is pretty close to the 1470 figure noted here: https://www.weforum.org/agenda/2015/10/where-are-the-worlds-oil-rigs/.
+
+## Aggregate benthic structures to 10 km Mollweide
+
+See benthic structures pre-processing script.  Result is a .csv of structures by type and location to 0.005° lat-long.  Convert to structures per km^2, aggregate up to 0.1, then rasterize, then reproject to Mollweide 10 km.
+
+* dir: `/home/shares/ohi/spp_vuln/spp_vuln_mapping/stressors/benthic_structures`
+    * file: `benth_str_from_ais_2020.csv`
+    
+```{r}
+### Load ocean proportion in Mollweide 10 km x 10 km (analysis CRS and res)
+ocean_rast <- raster(here('_spatial/ocean_area_mol.tif'))
+
+### load ocean area (in km^2) in 0.1 deg WGS84 (for converting values to 
+### intensities prior to reprojecting)
+ocean_area_0.1deg <- raster(here('_spatial/ocean_area_wgs84_0.1deg.tif'))
+
+### Code to create ocean area raster at 0.1 degree:                            
+# base_rast_0.01deg <- raster(ext = extent(c(-180, 180, -90, 90)), 
+#                            res = 0.01, crs = '+init=epsg:4326')
+# ocean_mask_sf <- read_sf(here('_spatial/ne_10m_ocean/ne_10m_ocean.shp'))
+# ocean_rast_0.01deg <- fasterize::fasterize(ocean_mask_sf, base_rast_0.01deg)
+# ocean_rast_0.1deg <- aggregate(ocean_rast_0.01deg, 
+#                                progress = 'text',
+#                                fact = 10, fun = sum)
+# ocean_rast_0.1deg <- ocean_rast_0.1deg / 100
+# ocean_area_0.1deg <- ocean_rast_0.1deg * raster::area(ocean_rast_0.1deg)
+# writeRaster(ocean_area_0.1deg, here('_spatial/ocean_area_wgs84_0.1deg.tif'))
+```
+
+
+```{r create benthic structures layer}
+benth_f <- here('_data/stressors_mol/benth_str_2020.tif')
+### unlink(benth_f)
+
+if(!file.exists(benth_f)) {
+
+  benth_raw_f <- here_anx('stressors/benthic_structures',
+                          'benth_str_from_ais_2020.csv')
+  
+  benth_raw_df <- read_csv(benth_raw_f, show_col_types = FALSE)
+  
+  benth_agg_df <- benth_raw_df %>%
+    rename(x = round_lon, y = round_lat) %>%
+    mutate(x = round(x, 1) + 0.05,
+           y = round(y, 1) + 0.05) %>%
+    group_by(x, y) %>%
+    summarize(n_str = n())
+  
+  benth_r <- rasterFromXYZ(benth_agg_df, 
+                           res = 0.1, digits = 1,
+                           crs = '+init=epsg:4326')
+  # class      : RasterLayer 
+  # dimensions : 1116, 2718, 3033288  (nrow, ncol, ncell)
+  # resolution : 0.1, 0.1  (x, y)
+  # extent     : -97.7, 174.1, -39, 72.6  (xmin, xmax, ymin, ymax)
+  # crs        : +proj=longlat +datum=WGS84 +no_defs 
+  # source     : memory
+  # names      : n_str 
+  # values     : 1, 48  (min, max)
+  
+  ### those extents look a little fishy - doesn't reach the CA coast!
+  
+  ### set NA cells to 0, then mask with ocean rast
+  benth_r <- raster::extend(benth_r, ocean_area_0.1deg)
+  values(benth_r)[is.na(values(benth_r))] <- 0
+  
+  ### convert to intensity (structures per km^2) at 0.1°
+  benth_intens_r <- benth_r / ocean_area_0.1deg
+
+  ### Reproject to Mollweide
+  benth_reproj_r <- projectRaster(benth_intens_r, ocean_rast, progress = 'text')
+  
+  ### Convert density to count, accounting for coastal cells with lower
+  ### proportion of ocean area
+  benth_n_r <- benth_reproj_r * 100 * ocean_rast
+  
+  # sum(values(benth_r), na.rm = TRUE) # 1486
+  # sum(values(benth_reproj_r), na.rm = TRUE) # 25.72
+  # sum(values(benth_n_r), na.rm = TRUE) # 1601.539 - inflated a bit but by less than 10%
+  
+  ### projectRaster with ngb introduces some weird negative values; drop'em
+  values(benth_n_r)[values(benth_n_r) < 0] <- 0
+  
+  ### rescale based on the max value (qtile = 1.0)
+  benth_rescale_r <- rescale_stressor(benth_n_r)
+
+  ### round to drop ludicrous precision then save out
+  values(benth_rescale_r) <- round(values(benth_rescale_r), 5)
+  writeRaster(benth_rescale_r, benth_f, overwrite = TRUE)
+}
+
+r <- raster(benth_f)
+  
+plot(r, axes = FALSE,
+     main = 'Benthic structures, rescaled')
+
+hist(r[r > 0], main = 'distribution of non-zero values')
+```
+
+
+
+
