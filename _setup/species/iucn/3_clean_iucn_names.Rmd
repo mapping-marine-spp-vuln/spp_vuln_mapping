@@ -1,0 +1,142 @@
+---
+title: "Clean up IUCN species names"
+author: "*Compiled on `r date()` by `r Sys.info()['user']`*"
+output: 
+  html_document:
+    code_folding: hide
+    toc: true
+    toc_depth: 3
+    toc_float: yes
+    number_sections: true
+    theme: cerulean
+    highlight: haddock
+    includes: 
+      in_header: '~/github/src/templates/ohara_hdr.html'
+  pdf_document:
+    toc: true
+---
+
+``` {r setup, echo = TRUE, message = FALSE, warning = FALSE}
+
+knitr::opts_chunk$set(fig.width = 6, fig.height = 4, fig.path = 'figs/',
+                      echo = TRUE, message = FALSE, warning = FALSE)
+
+library(oharac) ### remotes::install_github('oharac/oharac')
+oharac::setup()
+library(taxize) ### remotes::install_github('ropensci/taxize')
+source(here('common_fxns.R'))
+source('iucn_api_fxns.R') ### in same folder as this script
+library(jsonlite)
+
+```
+
+# Summary
+
+Resolve problematic species names in IUCN Red List.
+
+# Methods
+
+## Match up IUCN names to names in WoRMS taxonomic database.
+
+Ingest the IUCN species list.  Remove species with matches already in the WoRMS list.  For the remainder, loop over each name, using the WoRMS REST API to identify the accepted version.  For those that don't match, proceed to fuzzy match.
+
+* `https://www.marinespecies.org/rest/AphiaIDByName/%s?marine_only=true` get ID from name
+* `https://www.marinespecies.org/rest/AphiaRecordsByAphiaIDs?aphiaids[]=%s&aphiaids[]=%s` get record for multiple IDs
+
+```{r identify new spp}
+iucn_marine_spp <- read_csv(here(sprintf('_data/iucn_spp/iucn_marine_spp_info_%s.csv', api_version))) %>%
+    janitor::clean_names() %>%
+  mutate(sciname = str_remove(sciname, ' ssp. [a-z]+$'))
+
+worms_spp <- assemble_worms()
+
+iucn_to_check <- iucn_marine_spp %>%
+  filter(!sciname %in% worms_spp$species) %>%
+  .$sciname %>%
+  unique() %>% sort()
+```
+
+### Use WoRMS REST API to access IDs from names
+
+Using the Name Match endpoint, resolve IUCN names to WoRMS names.  Select the valid name and valid AphiaID columns; use `marine_only = FALSE` to catch a few incorrectly coded species... `fuzzy_match` function in `common_fxns.R`
+
+```{r resolve new spp from IUCN}
+
+aphia_records_csv <- here('_data/worms_taxa/iucn_aphia_records.csv')
+
+if(!file.exists(aphia_records_csv)) {
+  
+  chunk_size <- 25
+  n_chunks <- ceiling(length(iucn_to_check) / chunk_size)
+  record_chunk_stem <- 'tmp/iucn_aphia_records_chunk_%s_%s.csv'
+  ### unlink(list.files(here('tmp'), pattern = 'iucn_aphia_records_chunk', full.names = TRUE))
+  
+  for(i in 1:n_chunks) { ### i <- 35
+    # message('Processing chunk ', i, ' of ', n_chunks)
+    i_start <- (i-1) * chunk_size + 1
+    i_end   <- min(i * chunk_size, length(iucn_to_check))
+    chunk_csv <- here(sprintf(record_chunk_stem, i_start, i_end))
+    if(file.exists(chunk_csv)) {
+      message('Chunk exists: ', basename(chunk_csv), '... skipping!')
+      next()
+    }
+    spp_vec <- iucn_to_check[i_start:i_end]
+    chunk_df <- fuzzy_match(spp_vec, marine_only = FALSE)
+    write_csv(chunk_df, chunk_csv)
+  }
+  
+  chunk_fs <- list.files(here('tmp'), pattern = 'iucn_aphia_records_chunk', full.name = TRUE)
+  record_df <- parallel::mclapply(chunk_fs, read_csv) %>%
+    bind_rows() %>%
+    distinct()
+  write_csv(record_df, aphia_records_csv)
+}
+
+```
+
+```{r}
+am_spp <- get_am_spp_info()
+am_spp_valid <- am_spp %>%
+  filter(occur_cells >= 10)
+vuln_spp <- get_spp_vuln()
+iucn_maps <- read_csv(here('_data/iucn_spp/spp_marine_maps_2021-3.csv'))
+record_df <- read_csv(aphia_records_csv)
+
+nomatch <- record_df %>%
+  filter(is.na(aphia_id))
+
+names_match_df <- iucn_marine_spp %>%
+  full_join(record_df, 
+            by = c('sciname' = 'orig_sciname')) %>%
+  select(iucn_sid, sciname, worms_name = valid_name) %>%
+  mutate(worms_name = ifelse(is.na(worms_name), sciname, worms_name),
+           ### these are direct matches
+         worms_name = str_remove(worms_name, ' \\([a-z]+\\)'),
+           ### drop parenthetical names
+         in_am = worms_name %in% am_spp$sciname,
+         in_am_valid = worms_name %in% am_spp_valid$sciname,
+         in_vuln = worms_name %in% vuln_spp$species,
+         mapped = iucn_sid %in% iucn_maps$iucn_sid) %>%
+  distinct()
+
+write_csv(names_match_df, here('_data/iucn_spp/iucn_to_worms_match.csv'))
+
+spp_picked_up <- names_match_df %>%
+  filter(mapped) %>%
+  filter(worms_name != 'no match')
+
+```
+
+Based on this, we can pick up nearly 2000 additional IUCN spp that are not represented in Aquamaps but are represented in the vulnerability data.  There are 4400 species in IUCN that are also included in AquaMaps:
+
+```{r}
+print(table(spp_picked_up %>% select(in_am, in_vuln)))
+```
+
+However, if we drop the AquaMaps species whose maps are based on sketchy info (fewer than 10 `occur_cells`) then we lose 10000 AquaMaps species, but we can pick up 700 of the lost species in IUCN:
+
+```{r}
+print(table(spp_picked_up %>% select(in_am_valid, in_vuln)))
+```
+
+This thumbnail calc should drop the IUCN plant species, as those are excluded from the vulnerability data.
