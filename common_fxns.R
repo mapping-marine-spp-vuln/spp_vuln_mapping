@@ -1,3 +1,6 @@
+### set options
+options(readr.show_types = FALSE)
+
 ###################################
 ### Helper functions in general ###
 ###################################
@@ -8,6 +11,7 @@ here_anx <- function(f = '', ...) {
   f_anx <- sprintf('/home/shares/ohi/spp_vuln/spp_vuln_mapping/%s', f)
   return(f_anx)
 }
+
 
 #####################################
 ### Helper functions for AquaMaps ###

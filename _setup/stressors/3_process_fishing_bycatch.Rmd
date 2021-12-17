@@ -423,56 +423,72 @@ Because these are at a resolution comparable to 10 km cells (0.0833°), no need 
 The NPP layers contain some areas where no data is present, mostly in Arctic and Antarctic areas.  Use an iterative `focal()` process to fill out these layers (see `focal_gapfill()` function in `stressor_fxns.R` script)
 
 ```{r surface NPP}
-surface_npp_raw <- raster(here_anx('stressors/fishing/npp',
-                                   'Present.Surface.Primary.productivity.Mean.tif'))
-# class      : RasterLayer 
-# dimensions : 2160, 4320, 9331200  (nrow, ncol, ncell)
-# resolution : 0.08333333, 0.08333333  (x, y)
-# extent     : -180, 180, -90, 90  (xmin, xmax, ymin, ymax)
-# crs        : +proj=longlat +datum=WGS84 +no_defs 
-# source     : Present.Surface.Primary.productivity.Mean.tif 
-# names      : Present.Surface.Primary.productivity.Mean 
-# values     : 6e-05, 0.257881  (min, max)
-surface_npp_mol <- projectRaster(surface_npp_raw, ocean_r)
+surf_npp_f <- here_anx('stressors/fishing/npp', 'log_npp_present_surf_gf_mol.tif')
 
-log_surf_npp_mol <- log_plus(surface_npp_mol)
+if(!file.exists(surf_npp_f)) {
+  surface_npp_raw <- raster(here_anx('stressors/fishing/npp',
+                                     'Present.Surface.Primary.productivity.Mean.tif'))
+  # class      : RasterLayer 
+  # dimensions : 2160, 4320, 9331200  (nrow, ncol, ncell)
+  # resolution : 0.08333333, 0.08333333  (x, y)
+  # extent     : -180, 180, -90, 90  (xmin, xmax, ymin, ymax)
+  # crs        : +proj=longlat +datum=WGS84 +no_defs 
+  # source     : Present.Surface.Primary.productivity.Mean.tif 
+  # names      : Present.Surface.Primary.productivity.Mean 
+  # values     : 6e-05, 0.257881  (min, max)
 
-log_surf_npp_gapfill <- focal_gapfill(log_surf_npp_mol, iters = 50)
-# x <- check_missing_cells(log_surf_npp_gapfill)
-# sum(!is.na(values(x)))
-# a few antarctic cells still NA - ice sheets etc?
-# y <- mask(pel_r, x); sum(values(y), na.rm = TRUE)
-# z <- mask(ben_r, x); sum(values(z), na.rm = TRUE)
-
-# get_qtiles(log_surf_npp_gapfill)
-#       50%       90%       95%       99%     99.9%      100% 
-# 0.7790794 1.5680076 1.8177607 2.4418932 3.3707904 4.6151205 
+  surface_npp_mol <- projectRaster(surface_npp_raw, ocean_r)
+  
+  log_surf_npp_mol <- log_plus(surface_npp_mol)
+  
+  log_surf_npp_gapfill <- focal_gapfill(log_surf_npp_mol, iters = 50)
+  # x <- check_missing_cells(log_surf_npp_gapfill)
+  # sum(!is.na(values(x)))
+  # a few antarctic cells still NA - ice sheets etc?
+  # y <- mask(pel_r, x); sum(values(y), na.rm = TRUE)
+  # z <- mask(ben_r, x); sum(values(z), na.rm = TRUE)
+  
+  # get_qtiles(log_surf_npp_gapfill)
+  #       50%       90%       95%       99%     99.9%      100% 
+  # 0.7790794 1.5680076 1.8177607 2.4418932 3.3707904 4.6151205
+  writeRaster(log_surf_npp_gapfill, surf_npp_f, overwrite = TRUE)
+} else {
+  log_surf_npp_gapfill <- raster(surf_npp_f)
+}
 ```
 
 
 ``` {r mean of surface and benthic}
-benthic_npp_raw <- raster(here_anx('stressors/fishing/npp',
-                                   'Present.Benthic.Mean.Depth.Primary.productivity.Mean.tif'))
-# class      : RasterLayer 
-# dimensions : 2160, 4320, 9331200  (nrow, ncol, ncell)
-# resolution : 0.08333333, 0.08333333  (x, y)
-# extent     : -180, 180, -90, 90  (xmin, xmax, ymin, ymax)
-# crs        : +proj=longlat +datum=WGS84 +no_defs 
-# source     : Present.Benthic.Mean.Depth.Primary.productivity.Mean.tif 
-# names      : Present.Benthic.Mean.Depth.Primary.productivity.Mean 
-# values     : 0, 0.376071  (min, max)
-benthic_npp_mol <- projectRaster(benthic_npp_raw, ocean_r)
+benth_npp_f <- here_anx('stressors/fishing/npp', 'log_npp_present_benth_gf_mol.tif')
 
-benth_surf_npp_mol <- (benthic_npp_mol + surface_npp_mol) / 2
-
-log_ben_surf_npp_mol <- log_plus(benth_surf_npp_mol)
-
-log_ben_surf_npp_gapfill <- focal_gapfill(log_ben_surf_npp_mol, iters = 50)
-# x <- check_missing_cells(log_ben_surf_npp_gapfill)
-
-# get_qtiles(log_ben_surf_npp_gapfill)
-#      50%      90%      95%      99%    99.9%     100% 
-# 0.420190 1.021973 1.227471 1.947043 2.844674 4.615121 
+if(!file.exists(benth_npp_f)) {
+  benthic_npp_raw <- raster(here_anx('stressors/fishing/npp',
+                                     'Present.Benthic.Mean.Depth.Primary.productivity.Mean.tif'))
+  # class      : RasterLayer 
+  # dimensions : 2160, 4320, 9331200  (nrow, ncol, ncell)
+  # resolution : 0.08333333, 0.08333333  (x, y)
+  # extent     : -180, 180, -90, 90  (xmin, xmax, ymin, ymax)
+  # crs        : +proj=longlat +datum=WGS84 +no_defs 
+  # source     : Present.Benthic.Mean.Depth.Primary.productivity.Mean.tif 
+  # names      : Present.Benthic.Mean.Depth.Primary.productivity.Mean 
+  # values     : 0, 0.376071  (min, max)
+  benthic_npp_mol <- projectRaster(benthic_npp_raw, ocean_r)
+  
+  benth_surf_npp_mol <- (benthic_npp_mol + surface_npp_mol) / 2
+  
+  log_ben_surf_npp_mol <- log_plus(benth_surf_npp_mol)
+  
+  log_ben_surf_npp_gapfill <- focal_gapfill(log_ben_surf_npp_mol, iters = 50)
+  # x <- check_missing_cells(log_ben_surf_npp_gapfill)
+  
+  # get_qtiles(log_ben_surf_npp_gapfill)
+  #      50%      90%      95%      99%    99.9%     100% 
+  # 0.420190 1.021973 1.227471 1.947043 2.844674 4.615121
+  
+  writeRaster(log_ben_surf_npp_gapfill, benth_npp_f, overwrite = TRUE)
+} else {
+  log_ben_surf_npp_gapfill <- raster(benth_npp_f)
+}
 ```
 
 ### Normalize bycatch and write out

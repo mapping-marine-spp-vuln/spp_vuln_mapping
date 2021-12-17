@@ -26,6 +26,7 @@ library(tidyverse)
 library(here)
 
 source(here('common_fxns.R'))
+source('stressor_fxns.R') ### in same dir as this Rmd
 ```
 
 # Summary

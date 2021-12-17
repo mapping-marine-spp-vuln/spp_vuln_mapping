@@ -1,0 +1,75 @@
+---
+title: "Stressors: targeted fishing by taxon and cell - align Watson and WoRMS taxa"
+author: "*Compiled on `r date()` by `r Sys.info()['user']`*"
+output: 
+  html_document:
+    code_folding: show
+    toc: true
+    toc_depth: 1
+    toc_float: yes
+    number_sections: false
+    theme: cerulean
+    highlight: haddock
+    includes: 
+      in_header: '~/github/src/templates/ohara_hdr.html'
+  pdf_document:
+    toc: true
+---
+
+``` {r setup, echo = TRUE, message = FALSE, warning = FALSE}
+
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
+
+library(raster)
+library(oharac) ### remotes::install_github('oharac/oharac')
+  ### includes some helper functions, e.g., dt_join
+library(tidyverse)
+library(here)
+
+source(here('common_fxns.R'))
+source('stressor_fxns.R') ### in same dir as this Rmd
+```
+
+# Summary
+
+Read in rasters (as csvs) of fisheries catch per species per cell.  Normalize by NPP (surface and benthic); identify a reference point; save.
+
+# Data
+
+Data from
+
+* Watson, R.A. and Tidd, A.N. (2018) Mapping nearly a century and a half of global marine fishing: 1869 to 2015. Marine Policy 93, 171-177
+* Watson, R. (2017) A database of global marine commercial, small-scale, illegal and unreported fisheries catch 1950-2014. Nature Scientific Data 4 (170039).
+
+Included in data:
+
+* Industrial Catch (1950 - 2017) - reported, iuu, and discard catch data for each cell location and unique identifier
+* Non-Industrial Catch (1950 - 2017) - reported, iuu, and discard catch data for each cell location and unique identifier
+* DATA CODE DEFINITIONS (gear/taxa/country codes and cell lat/lon references)
+
+# Methods
+
+## Examine NPP layers
+
+Can these be aggregated upward to 0.5 degrees with little loss of information?  Examine mean and variance of aggregated results.  Low variance within an aggregated cell means little information is lost in the aggregation process.
+```{r}
+surface_npp_raw <- raster(here_anx('stressors/fishing/npp',
+                                   'Present.Surface.Primary.productivity.Mean.tif'))
+# class      : RasterLayer 
+# dimensions : 2160, 4320, 9331200  (nrow, ncol, ncell)
+# resolution : 0.08333333, 0.08333333  (x, y)
+# extent     : -180, 180, -90, 90  (xmin, xmax, ymin, ymax)
+# crs        : +proj=longlat +datum=WGS84 +no_defs 
+# source     : Present.Surface.Primary.productivity.Mean.tif 
+# names      : Present.Surface.Primary.productivity.Mean 
+# values     : 6e-05, 0.257881  (min, max)
+agg_mean <- aggregate(surface_npp_raw, fact = 6, fun = mean, progress = 'text')
+agg_sd   <- aggregate(surface_npp_raw, fact = 6, fun = sd, progress = 'text')
+agg_min  <- aggregate(surface_npp_raw, fact = 6, fun = min, progress = 'text')
+agg_max  <- aggregate(surface_npp_raw, fact = 6, fun = max, progress = 'text')
+
+agg_range <- agg_max - agg_min
+agg_cv <- agg_sd / agg_mean
+
+```
+
