@@ -27,6 +27,7 @@ library(here)
 library(RColorBrewer)
 library(xlsx)
 
+library(oharac)
 source(here('common_fxns.R'))
 source('stressor_fxns.R') ### in same dir as this Rmd
 ```
@@ -181,14 +182,14 @@ for(i in 1:nrow(gear_short_df)) {
                                      by = 'cell', which = 'discard_sum')
     writeRaster(tmp_bycatch_rast, bycatch_rast_f, overwrite = TRUE)
   } else {
-    message('File ', bycatch_rast_f, ' exists... skipping!')
+    # message('File ', bycatch_rast_f, ' exists... skipping!')
   }
 }
 ```
 
-### Plot discards by gear type
+<!-- ### Plot discards by gear type -->
 
-```{r}
+```{r, eval = FALSE, include = FALSE}
 rast_fs <- list.files(here_anx('stressors', 'fishing', 'bycatch_by_gear'), 
                                full.names = TRUE)
 for(f in rast_fs) {
@@ -249,16 +250,16 @@ for(i in 1:nrow(gear_short_df)) {
                                    by = 'cell', which = 'catch_sum')
     writeRaster(tmp_catch_rast, rep_catch_f, overwrite = TRUE)
   } else {
-    message('File ', rep_catch_f, ' exists... skipping!')
+    # message('File ', rep_catch_f, ' exists... skipping!')
   }
 }
 ```
 
-### Examine bycatch ratio by gear type
+<!-- ### Examine bycatch ratio by gear type -->
 
-Here, read in each bycatch raster and reported catch raster, and plot the map of this ratio globally to identify heterogeneity in spatial patterns of bycatch intensity.  Also plot a histogram of the resulting values to visualize the distribution.
+<!-- Here, read in each bycatch raster and reported catch raster, and plot the map of this ratio globally to identify heterogeneity in spatial patterns of bycatch intensity.  Also plot a histogram of the resulting values to visualize the distribution. -->
 
-```{r}
+```{r bycatch ratios, eval = FALSE, include = FALSE}
 for(i in 1:nrow(gear_short_df)) {
   ### i <- 1
   g_name <- gear_short_df$name[i]
@@ -299,50 +300,49 @@ Use chlorophyll layers from Bio-ORACLE (https://www.bio-oracle.org/release-notes
 > 
 > Assis, J., Tyberghein, L., Bosh, S., Verbruggen, H., Serrão, E. A., & De Clerck, O. (2017). Bio-ORACLE v2.0: Extending marine data layers for bioclimatic modelling. Global Ecology and Biogeography.
 
-Idea: use sea surface NPP to normalize pelagic/surface/midwater bycatch, and bottom concentration to normalize benthic bycatch.
+Idea: use sea surface NPP to normalize pelagic/surface/midwater bycatch, and bottom concentration, combined with export flux from surface, to normalize benthic bycatch.
 
+From Yool et al (2009), "Low efficiency of nutrient translocation for enhancing oceanic uptake of carbon dioxide": table 1, control, in Gt C a^-1^ (globally integrated):
 
-```{r, eval = FALSE, include = FALSE}
-library(sdmpredictors)
+| Field               | Control |
+|:--------------------|--------:|
+| Primary production  |  35.143 |
+| Export flux,  100 m |   7.428 |
+| Export flux,  200 m |   4.934 |
+| Export flux,  500 m |   2.986 |
+| Export flux, 1000 m |   1.715 |
 
-chl_dir <- here_anx('stressors/fishing/npp')
-l <- list_layers('Bio-ORACLE') %>%
-  filter(str_detect(tolower(name), 'primary produc'))
-chl_ss <- load_layers(c('BO21_chlomean_bdmean', 'BO21_chlomean_bdmin', 'BO21_chlomean_bdmax'),
-                      datadir = chl_dir)
-```
+From this, can we generate a profile of flux per depth? use non-linear least squares to estimate parameter $r, \theta$ for exponential decay:
+$f(d) = f_0 \times (1 - r)^{d^{\theta}}$
 
-NOTE: `sdmpredictors::load_layers()` returns error: 
+```{r}
+c_flux_df <- tribble(
+  ~depth,  ~flux,
+       0, 35.143,
+     100,  7.428,
+     200,  4.934,
+     500,  2.986,
+    1000,  1.715
+) %>%
+  mutate(f_rel = flux / max(flux))
 
-```
-Error in utils::download.file(layer_url, path, method = "auto", quiet = FALSE,  : 
-  cannot open URL 'https://bio-oracle.org/data/2.2/Present.Benthic.Mean.Depth.Chlorophyll.Mean.BOv2_1.tif.zip'
-```
+flux_nls <- nls(f_rel ~ (1 - r) ^ (depth^theta), data = c_flux_df, start = list(r = 0.01, theta = 0.8))
 
-Instead, I've downloaded layers from https://www.bio-oracle.org/downloads-to-email.php
+r <- coef(flux_nls)[1]
+th <- coef(flux_nls)[2]
 
-```{r explore data}
-npp_dir <- here_anx('stressors/fishing/npp')
+flux_model <- c_flux_df %>%
+  mutate(flux_pred = max(flux) * (1 - r)^(depth^th))
 
-npp_fs <- list.files(npp_dir, pattern = 'Mean.tif', full.names = TRUE)
-
-npp_stack <- raster::stack(npp_fs)
-
-log_npp_stack <- log_plus(npp_stack)
-# hist(log_npp_stack[[2]])
-
-npp_df <- as.data.frame(values(npp_stack))
-
-npp_sample_df <- npp_df %>%
-  sample_n(1e4) %>%
-  rename(surface_npp = Present.Surface.Primary.productivity.Mean,
-         benthic_npp = Present.Benthic.Mean.Depth.Primary.productivity.Mean)
-
-ggplot(npp_sample_df, aes(x = surface_npp,
-                          y = benthic_npp)) +
-  geom_point() +
-  geom_abline(slope = 1, intercept = 0, color = 'red') +
-  theme_minimal()
+ggplot(flux_model, aes(x = depth, y = flux)) +
+  geom_point(color = 'red3') +
+  geom_line(color = 'red3') +
+  geom_point(aes(y = flux_pred), color = 'green3') +
+  geom_line(aes(y = flux_pred), color = 'green3') +
+  theme_ohara() +
+  scale_y_log10() +
+  labs(y = 'Export flux, Gt C per year',
+       x = 'Depth, m')
 ```
 
 ### Read and transform benthic and pelagic bycatch layers
@@ -364,6 +364,10 @@ ocean_r <- raster(here('_spatial/ocean_area_mol.tif'))
 
 bycatch_fs <- list.files(here_anx('stressors', 'fishing', 'bycatch_by_gear'),
                          full.names = TRUE)
+```
+
+```{r}
+
 ```
 
 ``` {r bycatch from pelagic gear types}
@@ -414,13 +418,13 @@ ben_r <- ben_sum_km2_r_moll * 100
 # 0.0000000    0.1199553   21.1216807  195.4432071  894.6216718 5035.5973327 
 ```
 
-### Set up NPP layers for surface and benthic
+### Set up surface NPP layer
 
-For surface and midwater bycatch, estimate biomass based on surface productivity (log-transformed).  For benthic bycatch, estimate biomass based on a mean of surface and benthic productivity (again, log-transformed).  Since deepwater environments have no productivity at depth, these ecosystems are dependent on productivity on the surface trickling down as marine snow.
+For surface and midwater bycatch, estimate biomass based on surface productivity (log-transformed).  
 
-Because these are at a resolution comparable to 10 km cells (0.0833°), no need for aggregation prior to reprojecting.
+Because this ius at a resolution comparable to 10 km cells (0.0833°), no need for aggregation prior to reprojecting.
 
-The NPP layers contain some areas where no data is present, mostly in Arctic and Antarctic areas.  Use an iterative `focal()` process to fill out these layers (see `focal_gapfill()` function in `stressor_fxns.R` script)
+Both the surface and benthic NPP layer contains some areas where no data is present, mostly in Arctic and Antarctic areas.  Use an iterative `focal()` process to fill out these layers (see `focal_gapfill()` function in `stressor_fxns.R` script)
 
 ```{r surface NPP}
 surf_npp_f <- here_anx('stressors/fishing/npp', 'log_npp_present_surf_gf_mol.tif')
@@ -457,10 +461,60 @@ if(!file.exists(surf_npp_f)) {
 }
 ```
 
+### Set up benthic NPP/surface flux layer
 
-``` {r mean of surface and benthic}
+For benthic bycatch, we will normalize by a combination of surface NPP, as export flux per the model above, and benthic NPP where non-zero.  First create a layer that converts depth to the $(1 - r)^{d^{\theta}}$ portion of our flux model:
+
+$flux(depth) = NPP_{surface} \times (1 - r)^{d^{\theta}}$
+
+where $r = 0.3412355$ and $\theta = 0.2877847$.
+
+```{r create depth raster}
+flux_r_f <- here_anx('stressors/fishing/npp', 'flux_model.tif')
+
+flux_model <- function(d) {
+  ### function to calculate flux based on depth
+  values(d)[values(d) > 1000] <- 1000 ### cap depth adjustment at 1000 m value
+  f <- (1 - 0.3412355)^(d^0.2877847)
+}
+
+if(!file.exists(flux_r_f)) {
+  ### read in surface NPP as base raster
+  surface_npp_raw <- raster(here_anx('stressors/fishing/npp',
+                                     'Present.Surface.Primary.productivity.Mean.tif'))
+  
+  gebco_rast_file <- here_anx('_spatial/gebco/GRIDONE_1D.nc')
+  elev_rast  <- raster(gebco_rast_file)
+  # class      : RasterLayer 
+  # dimensions : 10801, 21601, 233312401  (nrow, ncol, ncell)
+  # resolution : 0.01666667, 0.01666667  (x, y)
+  # extent     : -180.0083, 180.0083, -90.00833, 90.00833  (xmin, xmax, ymin, ymax)
+  # crs        : +proj=longlat +datum=WGS84 +no_defs 
+  # source     : GRIDONE_1D.nc 
+  # names      : layer 
+  # zvar       : z 
+  ### The GEBCO raster is elevation, so depth is neg... mult by -1, clip out
+  ### cells with neg depth, aggregate by a factor of 5 to NPP res using mean 
+  ### depth
+  depth_rast <- elev_rast * -1
+  values(depth_rast)[values(depth_rast) < 0] <- NA
+  depth_rast_agg <- aggregate(depth_rast, 
+                              fact = 5, fun = mean)
+  ### even at same res, different extents etc.
+  depth_rast_npp <- depth_rast_agg %>%
+    projectRaster(surface_npp_raw, ### target CRS/res/extent
+                  progress = 'text',
+                  method = 'bilinear')
+  
+  flux_rast <- flux_model(depth_rast_npp)
+  
+  writeRaster(flux_rast, flux_r_f, overwrite = TRUE)
+}
+```
+
+``` {r surface export flux plus benthic NPP}
 benth_npp_f <- here_anx('stressors/fishing/npp', 'log_npp_present_benth_gf_mol.tif')
-
+# unlink(benth_npp_f)
 if(!file.exists(benth_npp_f)) {
   benthic_npp_raw <- raster(here_anx('stressors/fishing/npp',
                                      'Present.Benthic.Mean.Depth.Primary.productivity.Mean.tif'))
@@ -472,28 +526,36 @@ if(!file.exists(benth_npp_f)) {
   # source     : Present.Benthic.Mean.Depth.Primary.productivity.Mean.tif 
   # names      : Present.Benthic.Mean.Depth.Primary.productivity.Mean 
   # values     : 0, 0.376071  (min, max)
-  benthic_npp_mol <- projectRaster(benthic_npp_raw, ocean_r)
   
-  benth_surf_npp_mol <- (benthic_npp_mol + surface_npp_mol) / 2
+  surface_npp_raw <- raster(here_anx('stressors/fishing/npp',
+                                     'Present.Surface.Primary.productivity.Mean.tif'))
+  flux_model_rast <- raster(flux_r_f)
   
-  log_ben_surf_npp_mol <- log_plus(benth_surf_npp_mol)
+  export_flux_rast <- surface_npp_raw * flux_model_rast
   
-  log_ben_surf_npp_gapfill <- focal_gapfill(log_ben_surf_npp_mol, iters = 50)
-  # x <- check_missing_cells(log_ben_surf_npp_gapfill)
+  ### sum benthic NPP and export flux
+  benth_total_rast <- benthic_npp_raw + export_flux_rast
   
-  # get_qtiles(log_ben_surf_npp_gapfill)
+  benth_total_moll <- benth_total_rast %>%
+    projectRaster(ocean_r)
+  log_ben_total_C_mol <- log_plus(benth_total_moll)
+  
+  log_ben_tot_npp_gapfill <- focal_gapfill(log_ben_total_C_mol, iters = 50)
+  # x <- check_missing_cells(log_ben_tot_npp_gapfill)
+  
+  # get_qtiles(log_ben_tot_npp_gapfill)
   #      50%      90%      95%      99%    99.9%     100% 
   # 0.420190 1.021973 1.227471 1.947043 2.844674 4.615121
   
-  writeRaster(log_ben_surf_npp_gapfill, benth_npp_f, overwrite = TRUE)
+  writeRaster(log_ben_tot_npp_gapfill, benth_npp_f, overwrite = TRUE)
 } else {
-  log_ben_surf_npp_gapfill <- raster(benth_npp_f)
+  log_ben_tot_npp_gapfill <- raster(benth_npp_f)
 }
 ```
 
 ### Normalize bycatch and write out
 
-Normalize the pelagic and benthic bycatch values (untransformed) by the appropriate NPP layer (log-transformed) then rescale, using a 99.9%ile as reference point.  These new layers seem substantially less right-skewed (though still very very skewed) than the ones from CHI Recent Pace of Change project - perhaps due to the 99.9%ile?
+Normalize the pelagic and benthic bycatch values (untransformed) by the appropriate NPP layer (log-transformed) then rescale, using a 99.9%ile as reference point.  These new layers seem substantially less right-skewed (though still very very skewed) than the ones from CHI Recent Pace of Change project.
 
 ```{r finalize pelagic bycatch}
 pel_normalized_r <- pel_r / log_surf_npp_gapfill
@@ -504,7 +566,7 @@ pel_normalized_r <- pel_r / log_surf_npp_gapfill
 pel_rescaled_r <- rescale_stressor(pel_normalized_r, qtile = .999)
 # get_qtiles(pel_rescaled_r)
 #          50%          90%          95%          99%        99.9%         100% 
-# 0.0007091492 0.0196607291 0.0472818617 0.1903854709 0.9999991161 1.0000000000 
+# 0.0007091492 0.0196607281 0.0472818584 0.1903854619 0.9999991162 1.0000000000 
 
 ### compare to old pelagic high bycatch stressor (~1 km Mollweide)
 # dir <- '/home/shares/ohi/git-annex/impact_acceleration/stressors/comm_fish/final'
@@ -527,15 +589,15 @@ writeRaster(pel_rescaled_r,
 ```
 
 ``` {r finalize benthic bycatch}
-ben_normalized_r <- ben_r / log_ben_surf_npp_gapfill
+ben_normalized_r <- ben_r / log_ben_tot_npp_gapfill
 # get_qtiles(ben_normalized_r)
-#      50%          90%          95%          99%        99.9%         100% 
-# 0.000000     1.443894    40.268696   276.279933  1312.343122 16885.477998 
+#          50%          90%          95%          99%        99.9%         100% 
+# 0.000000e+00 8.043595e+00 9.285327e+01 9.891995e+02 8.660429e+03 2.399188e+05 
 
 ben_rescaled_r <- rescale_stressor(ben_normalized_r, qtile = .999)
 # get_qtiles(ben_rescaled_r)
-#         50%         90%         95%         99%       99.9%        100% 
-# 0.000000000 0.001100241 0.030684579 0.210524160 0.999999671 1.000000000 
+#          50%          90%          95%          99%        99.9%         100% 
+# 0.0000000000 0.0009287756 0.0107215559 0.1142206140 0.9999968780 1.0000000000 
 
 ### compare to old pelagic high bycatch stressor
 # r1 <- raster(file.path(dir, 'dem_nondest_hb', 'dem_nondest_hb_2014_rescaled_mol.tif'))
