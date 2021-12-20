@@ -132,7 +132,7 @@ tons_by_pel_benth <- w_catch_df %>%
   group_by(benthic) %>%
   summarize(tot_tonnes = sum(reported_ind + reported_nind + iuuind + iuunind))
 
-am_spp_cells <- get_am_spp_cells()
+am_spp_cells <- get_am_spp_cells(occurcells_cut = 0, prob_cut = 0)
 
 ```
 
@@ -389,24 +389,28 @@ build_spp_catch_map <- function(tx_ids, tx_nms) {
 
 ```{r process species level catch}
 
-spp_vec <- watson_am_cleaned_df$spp %>% unique() %>% sort()
+spp_vec <- watson_am_cleaned_df$spp %>% 
+  unique() %>% sort()
     ### 23801 spp
 
 spp_map_fstem <- here_anx('stressors/fishing/total_catch_by_spp_cell',
                           'spp_catch_%s.csv')
 ### unlink(list.files(dirname(spp_map_fstem), full.names = TRUE))
 
-process_species_catch <- function(i) {
-  # i <- 1
-  s <- spp_vec[i]
+process_species_catch <- function(s) {
+
   # s <- 'gadus macrocephalus' ### multiple taxonkey at spp level
   # s <- 'platybelone argalus' ### multiple am_sid
   # s <- 'lepas anatifera' ### file not being created
+  # s <- spp_wo_files[2]
+  i <- which(s == spp_vec)
+  
   spp_map_f <- sprintf(spp_map_fstem, str_replace(s, ' +', '_'))
   
   if(!file.exists(spp_map_f)) {
     
-    message('Processing species-total catch map for ', s, ' (', i, ' of ', length(spp_vec), ')')
+    message('Processing species-total catch map for ', s, 
+            ' (', i, ' of ', length(spp_vec), ')')
   
     s_df <- watson_am_cleaned_df %>%
       filter(spp == s) 
@@ -439,16 +443,32 @@ process_species_catch <- function(i) {
   }
 }
 
-tmp <- parallel::mclapply(seq_along(spp_vec), mc.cores = 12, 
+tmp <- parallel::mclapply(spp_vec, mc.cores = 12,
                           FUN = process_species_catch)
+
+### to run just those spp without files already (e.g., unlinked zero-
+### length files and need to just rerun those)
+# x <- list.files(dirname(spp_map_fstem), full.names = TRUE)
+# 
+# spp_with_files <- basename(x) %>%
+#   str_remove_all('spp_catch_|.csv') %>%
+#   str_replace('_', ' ')
+# 
+# spp_wo_files <- spp_vec[!spp_vec %in% spp_with_files]
+# 
+# tmp <- parallel::mclapply(spp_wo_files, mc.cores = 12,
+#                           FUN = process_species_catch)
 
 ```
 
 ```{r check results, eval = FALSE, include = FALSE}
 x <- list.files(dirname(spp_map_fstem), full.names = TRUE)
 
+### unlink zero-length files if necessary to reprocess
 # df <- data.frame(x, fsize = file.size(x))
 # y <- df %>% filter(fsize < 100) %>% .$x
+# unlink(y)
+
 spp_with_files <- basename(x) %>% str_remove_all('spp_catch_|.csv') %>% str_replace('_', ' ')
 
 spp_wo_files <- spp_vec[!spp_vec %in% spp_with_files]

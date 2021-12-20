@@ -1,5 +1,5 @@
 ---
-title: "Stressors: targeted fishing by species and cell - finalize stressors per spp"
+title: "Stressors: targeted fishing by species and cell - rescale stressor"
 author: "*Compiled on `r date()` by `r Sys.info()['user']`*"
 output: 
   html_document:
@@ -32,7 +32,7 @@ source('stressor_fxns.R') ### in same dir as this Rmd
 
 # Summary
 
-Read in rasters (as csvs) of fisheries catch per species per cell.  Normalize by NPP (surface and benthic); identify a reference point; save as .csvs of cell ID and normalized catch. 
+Read in rasters (as csvs) of NPP-adjusted fisheries catch per species per cell.  Identify a reference point and rescale stressor layers from 0-1 for each species.
 
 # Data
 
@@ -43,15 +43,9 @@ Data from
 
 # Methods
 
-Briefly, here is the process for finalizing catch stressor layers:
-
-* Process catch data for the species:
-    * Read in catch per LOICZID cell (for both pelagic and benthic gears)
-    * Convert catch per 0.5° cell to catch per km^2^
-    * Reproject to Mollweide (either projectRaster or join to a lookup dataframe of LOICZID to Mollweide cell ID)
-    * Convert to pelagic and benthic catch per 10 x 10 km cell.
-* Divide each processed catch layer (benthic and pelagic) by the appropriate NPP layer (log-transformed)
-* Convert to dataframe of cell ID and NPP-normalized catch, and write out.
+* For each species, considering its entire range, identify the 99.9th percentile of NPP-adjusted total catch. 
+* Take the highest value across all species as the reference point.
+* Normalize all species fishing stressor maps using that reference point and save out.
 
 ## Examine NPP layers
 
@@ -180,19 +174,7 @@ spp_hcaf_map_fstem <- here_anx('stressors/fishing/total_catch_by_spp_cell',
 spp_mol_map_fstem  <- here_anx('stressors/fishing/npp_norm_catch_by_spp_moll',
                                'npp_spp_catch_%s_mol.csv')
 spp_vec <- watson_am_lookup$spp %>% unique()
-
-### to cut zero-length files
 # x <- list.files(dirname(spp_mol_map_fstem), full.names = TRUE)
-# df <- data.frame(f = x, fsize = file.size(x))
-# y <- df %>% filter(fsize < 100) %>% .$f
-# unlink(y)
-
-### to run only missing files
-# x <- list.files(dirname(spp_mol_map_fstem), full.names = TRUE)
-# x_spp <- basename(x) %>% 
-#   str_remove_all('npp_spp_catch_|_mol.csv') %>%
-#   str_replace_all('_', ' ')
-# spp_vec <- spp_vec[!spp_vec %in% x_spp]
 
 process_species_to_moll <- function(s) {
   # s <- spp_vec[1]
@@ -231,10 +213,161 @@ process_species_to_moll <- function(s) {
     
     write_csv(out_df, spp_mol_map_f)
   } else {
-    # message('File ', basename(spp_mol_map_f), ' exists... skipping!')
+    message('File ', basename(spp_mol_map_f), ' exists... skipping!')
   }
 }
 
-tmp <- parallel::mclapply(spp_vec, mc.cores = 16, FUN = process_species_to_moll)
+tmp <- parallel::mclapply(spp_vec, mc.cores = 32, FUN = process_species_to_moll)
 ```
+
+## Identify reference point
+
+The reference point will be the 99.9%ile value of total fishing stressor across all species/cells.  In general, stressor quantiles are based on the entire ocean, including zero-value cells.  
+
+### Ref point version 1: across all cells/species simultaneously.  
+
+If we had unlimited RAM:
+
+Each species map can be converted into a vector of 3.68M elements (the number of non-zero ocean cells).  These vectors can then be joined as columns of a matrix, with 23.8k columns, one for each species.  `NA`-valued cells are filled with zeros, then the `quantile()` function is run on the entire massive matrix to determine the 99.9%ile value.  Alternately, using parallel::mclapply, we can create a list of vectors, then unlist it into a single massive vector - R v3.0+ can handle vectors up to size 2^52^, i.e., 4.5e+15 elements.  Then run `quantile()` on that massive vector.
+
+But this would take far more RAM than Mazu has available.  If instead we bound all non-zero values, making a much smaller vector (most spp have a small number of fished cells), we identify the position of the value equivalent to the 99.9%ile IF the non-fished cells had been expanded with zeros.
+
+```{r, eval = FALSE}
+mol_fs <- list.files(dirname(spp_mol_map_fstem), full.names = TRUE)
+n_cells <- sum(!is.na(values(ocean_a_mol)))
+
+vectorize_map <- function(f) { # f <- mol_fs[4]
+  x <- read_csv(f, show_col_types = FALSE)
+  
+  if(nrow(x) == 0) return(NA)
+  
+  x <- x %>%
+    mutate(tot_norm_catch = ben_norm_catch + pel_norm_catch) %>%
+    .$tot_norm_catch
+}
+
+# fish_sum_vec <- parallel::mclapply(mol_fs, mc.cores = 32,
+#                                     FUN = vectorize_map) %>%
+#   unlist() %>%
+#   sort()
+
+### had zeros been filled, the length of resulting vector would be:
+virtual_length <- as.numeric(n_cells) * length(mol_fs)
+### and the number of leading zero elements would be:
+n_zeros <- virtual_length - length(fish_sum_vec)
+
+### The 99.9%ile would be found in element:
+pos_999_qtile <- round(virtual_length * .999)
+### shifting since leading zeros are omitted:
+pos_999_qtile_shift <- pos_999_qtile - n_zeros
+
+ref <- sort(fish_sum_vec)[pos_999_qtile_shift]
+### According to this, the reference point is .43355 NPP-adjusted tonnes...
+### that seems ludicrously small.
+
+```
+
+### Ref point version 2: quantiles per spp, then max across all spp
+
+Alternately: What if we instead took each species fishing stressor map, identified the 99.9%ile for that (across entire ocean), and then used the highest one across all species?
+
+```{r calc reference point by entire ocean}
+ref2_f <- here('_setup/stressors/int/fish_npp_catch_ref_option2.csv')
+
+if(!file.exists(ref2_f)) {
+  mol_fs <- list.files(dirname(spp_mol_map_fstem), full.names = TRUE)
+  n_cells <- sum(!is.na(values(ocean_a_mol)))
+  
+  calc_quantiles <- function(f) {
+    # f <- mol_fs[1]
+    x <- read_csv(f, show_col_types = FALSE)
+    
+    spp <- str_remove_all(basename(f), 'npp_spp_catch_|_mol.csv') %>%
+      str_replace_all('[^a-z]+', ' ')
+    v <- rep(0, times = n_cells)
+    if(nrow(x) > 0) {
+      y <- x %>%
+        mutate(tot_norm_catch = ben_norm_catch + pel_norm_catch) %>%
+        .$tot_norm_catch
+      tot_catch <- sum(x$ben_tot_catch + x$pel_tot_catch)
+      v[1:length(y)] <- y
+    } else {
+      # v is unchanged, all zeros
+      tot_catch = 0
+    }
+    z <- quantile(v, c(.50, .9, .99, .999, 1.0))
+    df <- as.matrix(z) %>% t() %>%
+      as.data.frame() %>%
+      mutate(spp = spp,
+             tot_catch = tot_catch)
+    return(df)
+  }
+  fish_qtile_df <- parallel::mclapply(mol_fs, mc.cores = 24,
+                                      FUN = calc_quantiles) %>%
+    bind_rows() %>%
+    arrange(desc(`99.9%`))
+  
+  write_csv(fish_qtile_df, ref2_f)
+}
+  
+
+qtile_results <- read_csv(ref2_f) %>%
+  mutate(across(where(is.numeric), ~round(.x, 3)))
+knitr::kable(head(qtile_results, 20))
+```
+
+
+### Ref point version 3: quantiles per spp by range, then max across all spp
+
+This is similar to option 2, but instead of looking at the 99.9%ile of catch for each species across the entire ocean, we look instead just at the 99.9%ile of catch for each species _within its range_.  This will result in higher reference points, since the quantile won't be pulled downward from a bunch of added zero value cells.
+
+```{r calc reference point by range}
+mol_fs <- list.files(dirname(spp_mol_map_fstem), full.names = TRUE)
+
+range_map_fstem <- here_anx('spp_maps_mol', 'am_spp_mol_%s.csv')
+
+am_spp_info <- get_am_spp_info()
+am_spp_cells <- get_am_spp_cells(occurcells_cut = 0, prob_cut = 0)
+
+calc_quantiles_range <- function(f) {
+  # f <- mol_fs[1]
+  catch_df <- read_csv(f, show_col_types = FALSE)
+  
+  spp <- str_remove_all(basename(f), 'npp_spp_catch_|_mol.csv')
+  
+  range_df <- read_csv(sprintf(range_map_fstem, spp), show_col_types = FALSE)
+  
+  v <- rep(0, times = n_distinct(range_df$cell_id))
+  if(nrow(catch_df) > 0) {
+    catch_sum <- catch_df %>%
+      mutate(tot_norm_catch = ben_norm_catch + pel_norm_catch) %>%
+      .$tot_norm_catch
+    tot_catch <- sum(catch_sum)
+    
+    v[1:length(catch_sum)] <- catch_sum
+  } else {
+    # v is unchanged, all zeros
+    tot_catch <- 0
+  }
+  z <- quantile(v, c(.50, .9, .99, .999, 1.0))
+  df <- as.matrix(z) %>% t() %>%
+    as.data.frame() %>%
+    mutate(spp = str_replace_all(spp, '_', ' '),
+           tot_catch = tot_catch)
+  return(df)
+}
+
+fish_qtile_range_df <- parallel::mclapply(mol_fs, mc.cores = 24,
+                                    FUN = calc_quantiles_range) %>%
+  bind_rows() %>%
+  arrange(desc(`99.9%`))
+
+write_csv(fish_qtile_range_df, here('_setup/stressors/int/fish_npp_catch_ref_option3.csv'))
+
+qtile_results <- read_csv(here('_setup/stressors/int', 
+                               'fish_npp_catch_ref_option3.csv')) %>%
+  mutate(across(where(is.numeric), ~round(.x, 3)))
+knitr::kable(head(qtile_results, 20))
+```
+
 

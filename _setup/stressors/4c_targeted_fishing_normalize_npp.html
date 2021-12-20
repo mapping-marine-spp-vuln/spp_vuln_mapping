@@ -9,7 +9,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
 
 
-<meta name="author" content="Compiled on Sat Dec 18 20:46:50 2021 by ohara" />
+<meta name="author" content="Compiled on Mon Dec 20 10:35:24 2021 by ohara" />
 
 
 <title>Stressors: targeted fishing by species and cell - finalize stressors per spp</title>
@@ -357,7 +357,7 @@ div.tocify {
 
 
 <h1 class="title toc-ignore">Stressors: targeted fishing by species and cell - finalize stressors per spp</h1>
-<h4 class="author"><em>Compiled on Sat Dec 18 20:46:50 2021 by ohara</em></h4>
+<h4 class="author"><em>Compiled on Mon Dec 20 10:35:24 2021 by ohara</em></h4>
 
 </div>
 
@@ -374,7 +374,7 @@ div.tocify {
 <span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a><span class="fu">source</span>(<span class="st">&#39;stressor_fxns.R&#39;</span>) <span class="do">### in same dir as this Rmd</span></span></code></pre></div>
 <div id="summary" class="section level1">
 <h1>Summary</h1>
-<p>Read in rasters (as csvs) of fisheries catch per species per cell. Normalize by NPP (surface and benthic); identify a reference point; save as .csvs of cell ID and normalized catch. Identify a reference point based on highest normalized catch across all species and cells.</p>
+<p>Read in rasters (as csvs) of fisheries catch per species per cell. Normalize by NPP (surface and benthic); identify a reference point; save as .csvs of cell ID and normalized catch.</p>
 </div>
 <div id="data" class="section level1">
 <h1>Data</h1>
@@ -539,59 +539,71 @@ div.tocify {
 <span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a>                         <span class="at">pel_npp =</span> <span class="fu">values</span>(surf_npp),</span>
 <span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a>                         <span class="at">ben_npp =</span> <span class="fu">values</span>(benth_npp))</span>
 <span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a>hcaf_area_df <span class="ot">&lt;-</span> <span class="fu">get_hcaf_info</span>() <span class="sc">%&gt;%</span></span>
-<span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">select</span>(loiczid, cell_area, ocean_area) <span class="sc">%&gt;%</span></span>
-<span id="cb8-12"><a href="#cb8-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(ocean_area <span class="sc">&gt;</span> <span class="dv">0</span>)</span></code></pre></div>
+<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a><span class="do">### using ocean area at half deg generated from Natural Earth</span></span>
+<span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a>ocean_a_0<span class="fl">.5</span> <span class="ot">&lt;-</span> <span class="fu">raster</span>(<span class="fu">here</span>(<span class="st">&#39;_spatial/ocean_area_wgs84_0.5deg.tif&#39;</span>))</span>
+<span id="cb8-12"><a href="#cb8-12" aria-hidden="true" tabindex="-1"></a>ocean_a_hcaf_df <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(<span class="at">ocean_a_hcaf =</span> <span class="fu">values</span>(ocean_a_0<span class="fl">.5</span>),</span>
+<span id="cb8-13"><a href="#cb8-13" aria-hidden="true" tabindex="-1"></a>                              <span class="at">loiczid =</span> <span class="dv">1</span><span class="sc">:</span><span class="fu">ncell</span>(ocean_a_0<span class="fl">.5</span>))</span></code></pre></div>
 <div class="sourceCode" id="cb9"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>spp_hcaf_map_fstem <span class="ot">&lt;-</span> <span class="fu">here_anx</span>(<span class="st">&#39;stressors/fishing/total_catch_by_spp_cell&#39;</span>,</span>
 <span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>                               <span class="st">&#39;spp_catch_%s.csv&#39;</span>)</span>
 <span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>spp_mol_map_fstem  <span class="ot">&lt;-</span> <span class="fu">here_anx</span>(<span class="st">&#39;stressors/fishing/npp_norm_catch_by_spp_moll&#39;</span>,</span>
 <span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>                               <span class="st">&#39;npp_spp_catch_%s_mol.csv&#39;</span>)</span>
 <span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>spp_vec <span class="ot">&lt;-</span> watson_am_lookup<span class="sc">$</span>spp <span class="sc">%&gt;%</span> <span class="fu">unique</span>()</span>
-<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a><span class="co"># spp_vec &lt;- list.files(dirname(spp_hcaf_map_fstem)) %&gt;% </span></span>
-<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a><span class="co">#   str_remove_all(&#39;spp_catch_|.csv&#39;) %&gt;%</span></span>
-<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a><span class="co">#   str_replace_all(&#39;[^a-z]+&#39;, &#39; &#39;)</span></span>
-<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a>process_species_to_moll <span class="ot">&lt;-</span> <span class="cf">function</span>(s) {</span>
-<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a>  <span class="co"># s &lt;- spp_vec[1]</span></span>
-<span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a>  spp_mol_map_f <span class="ot">&lt;-</span> <span class="fu">sprintf</span>(spp_mol_map_fstem, <span class="fu">str_replace</span>(s, <span class="st">&#39; +&#39;</span>, <span class="st">&#39;_&#39;</span>))</span>
-<span id="cb9-12"><a href="#cb9-12" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb9-13"><a href="#cb9-13" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span>(<span class="sc">!</span><span class="fu">file.exists</span>(spp_mol_map_f)) {</span>
-<span id="cb9-14"><a href="#cb9-14" aria-hidden="true" tabindex="-1"></a>    </span>
-<span id="cb9-15"><a href="#cb9-15" aria-hidden="true" tabindex="-1"></a>    i <span class="ot">&lt;-</span> <span class="fu">which</span>(spp_vec <span class="sc">==</span> s)</span>
-<span id="cb9-16"><a href="#cb9-16" aria-hidden="true" tabindex="-1"></a>    <span class="fu">message</span>(<span class="st">&#39;Processing NPP-normalized species-total catch map for &#39;</span>, s, </span>
-<span id="cb9-17"><a href="#cb9-17" aria-hidden="true" tabindex="-1"></a>            <span class="st">&#39; (&#39;</span>, i, <span class="st">&#39; of &#39;</span>, <span class="fu">length</span>(spp_vec), <span class="st">&#39;)&#39;</span>)</span>
-<span id="cb9-18"><a href="#cb9-18" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-19"><a href="#cb9-19" aria-hidden="true" tabindex="-1"></a>    <span class="do">### Read in catch per LOICZID cell; convert catch per 0.5° cell to catch per km^2^</span></span>
-<span id="cb9-20"><a href="#cb9-20" aria-hidden="true" tabindex="-1"></a>    spp_hcaf_map_f <span class="ot">&lt;-</span> <span class="fu">sprintf</span>(spp_hcaf_map_fstem, <span class="fu">str_replace</span>(s, <span class="st">&#39; +&#39;</span>, <span class="st">&#39;_&#39;</span>))</span>
-<span id="cb9-21"><a href="#cb9-21" aria-hidden="true" tabindex="-1"></a>    spp_catch_hcaf <span class="ot">&lt;-</span> <span class="fu">read_csv</span>(spp_hcaf_map_f, <span class="at">show_col_types =</span> <span class="cn">FALSE</span>) <span class="sc">%&gt;%</span></span>
-<span id="cb9-22"><a href="#cb9-22" aria-hidden="true" tabindex="-1"></a>      oharac<span class="sc">::</span><span class="fu">dt_join</span>(hcaf_area_df, <span class="at">by =</span> <span class="st">&#39;loiczid&#39;</span>, <span class="at">type =</span> <span class="st">&#39;left&#39;</span>) <span class="sc">%&gt;%</span></span>
-<span id="cb9-23"><a href="#cb9-23" aria-hidden="true" tabindex="-1"></a>      <span class="fu">mutate</span>(<span class="at">pel_per_km2 =</span> pel_tot_catch <span class="sc">/</span> ocean_area,</span>
-<span id="cb9-24"><a href="#cb9-24" aria-hidden="true" tabindex="-1"></a>             <span class="at">ben_per_km2 =</span> ben_tot_catch <span class="sc">/</span> ocean_area)</span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a><span class="do">### to cut zero-length files</span></span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a><span class="co"># x &lt;- list.files(dirname(spp_mol_map_fstem), full.names = TRUE)</span></span>
+<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a><span class="co"># df &lt;- data.frame(f = x, fsize = file.size(x))</span></span>
+<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a><span class="co"># y &lt;- df %&gt;% filter(fsize &lt; 100) %&gt;% .$f</span></span>
+<span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a><span class="co"># unlink(y)</span></span>
+<span id="cb9-12"><a href="#cb9-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-13"><a href="#cb9-13" aria-hidden="true" tabindex="-1"></a><span class="do">### to run only missing files</span></span>
+<span id="cb9-14"><a href="#cb9-14" aria-hidden="true" tabindex="-1"></a><span class="co"># x &lt;- list.files(dirname(spp_mol_map_fstem), full.names = TRUE)</span></span>
+<span id="cb9-15"><a href="#cb9-15" aria-hidden="true" tabindex="-1"></a><span class="co"># x_spp &lt;- basename(x) %&gt;% </span></span>
+<span id="cb9-16"><a href="#cb9-16" aria-hidden="true" tabindex="-1"></a><span class="co">#   str_remove_all(&#39;npp_spp_catch_|_mol.csv&#39;) %&gt;%</span></span>
+<span id="cb9-17"><a href="#cb9-17" aria-hidden="true" tabindex="-1"></a><span class="co">#   str_replace_all(&#39;_&#39;, &#39; &#39;)</span></span>
+<span id="cb9-18"><a href="#cb9-18" aria-hidden="true" tabindex="-1"></a><span class="co"># spp_vec &lt;- spp_vec[!spp_vec %in% x_spp]</span></span>
+<span id="cb9-19"><a href="#cb9-19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-20"><a href="#cb9-20" aria-hidden="true" tabindex="-1"></a>process_species_to_moll <span class="ot">&lt;-</span> <span class="cf">function</span>(s) {</span>
+<span id="cb9-21"><a href="#cb9-21" aria-hidden="true" tabindex="-1"></a>  <span class="co"># s &lt;- spp_vec[1]</span></span>
+<span id="cb9-22"><a href="#cb9-22" aria-hidden="true" tabindex="-1"></a>  spp_mol_map_f <span class="ot">&lt;-</span> <span class="fu">sprintf</span>(spp_mol_map_fstem, <span class="fu">str_replace</span>(s, <span class="st">&#39; +&#39;</span>, <span class="st">&#39;_&#39;</span>))</span>
+<span id="cb9-23"><a href="#cb9-23" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb9-24"><a href="#cb9-24" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span>(<span class="sc">!</span><span class="fu">file.exists</span>(spp_mol_map_f)) {</span>
 <span id="cb9-25"><a href="#cb9-25" aria-hidden="true" tabindex="-1"></a>    </span>
-<span id="cb9-26"><a href="#cb9-26" aria-hidden="true" tabindex="-1"></a>    <span class="do">### &quot;Reproject&quot; to Mollweide by joining to LOICZID-cell_id lookup;</span></span>
-<span id="cb9-27"><a href="#cb9-27" aria-hidden="true" tabindex="-1"></a>    <span class="do">### normalize by dividing by log-transformed NPP</span></span>
-<span id="cb9-28"><a href="#cb9-28" aria-hidden="true" tabindex="-1"></a>    spp_catch_mol <span class="ot">&lt;-</span> spp_catch_hcaf <span class="sc">%&gt;%</span></span>
-<span id="cb9-29"><a href="#cb9-29" aria-hidden="true" tabindex="-1"></a>      oharac<span class="sc">::</span><span class="fu">dt_join</span>(cell_id_df, <span class="at">by =</span> <span class="st">&#39;loiczid&#39;</span>, <span class="at">type =</span> <span class="st">&#39;left&#39;</span>) <span class="sc">%&gt;%</span></span>
-<span id="cb9-30"><a href="#cb9-30" aria-hidden="true" tabindex="-1"></a>      <span class="fu">mutate</span>(<span class="at">pel_sum =</span> pel_per_km2 <span class="sc">*</span> ocean_a_mol <span class="sc">*</span> <span class="dv">100</span>,</span>
-<span id="cb9-31"><a href="#cb9-31" aria-hidden="true" tabindex="-1"></a>             <span class="at">ben_sum =</span> ben_per_km2 <span class="sc">*</span> ocean_a_mol <span class="sc">*</span> <span class="dv">100</span>,</span>
-<span id="cb9-32"><a href="#cb9-32" aria-hidden="true" tabindex="-1"></a>             <span class="at">pel_norm =</span> pel_sum <span class="sc">/</span> pel_npp,</span>
-<span id="cb9-33"><a href="#cb9-33" aria-hidden="true" tabindex="-1"></a>             <span class="at">ben_norm =</span> ben_sum <span class="sc">/</span> ben_npp) <span class="sc">%&gt;%</span></span>
-<span id="cb9-34"><a href="#cb9-34" aria-hidden="true" tabindex="-1"></a>      <span class="fu">drop_na</span>()</span>
-<span id="cb9-35"><a href="#cb9-35" aria-hidden="true" tabindex="-1"></a>    </span>
-<span id="cb9-36"><a href="#cb9-36" aria-hidden="true" tabindex="-1"></a>    out_df <span class="ot">&lt;-</span> spp_catch_mol <span class="sc">%&gt;%</span></span>
-<span id="cb9-37"><a href="#cb9-37" aria-hidden="true" tabindex="-1"></a>      dplyr<span class="sc">::</span><span class="fu">select</span>(cell_id, </span>
-<span id="cb9-38"><a href="#cb9-38" aria-hidden="true" tabindex="-1"></a>             <span class="at">pel_tot_catch =</span> pel_sum, </span>
-<span id="cb9-39"><a href="#cb9-39" aria-hidden="true" tabindex="-1"></a>             <span class="at">ben_tot_catch =</span> ben_sum, </span>
-<span id="cb9-40"><a href="#cb9-40" aria-hidden="true" tabindex="-1"></a>             <span class="at">pel_norm_catch =</span> pel_norm,</span>
-<span id="cb9-41"><a href="#cb9-41" aria-hidden="true" tabindex="-1"></a>             <span class="at">ben_norm_catch =</span> ben_norm) <span class="sc">%&gt;%</span></span>
-<span id="cb9-42"><a href="#cb9-42" aria-hidden="true" tabindex="-1"></a>      <span class="fu">mutate</span>(<span class="fu">across</span>(<span class="fu">where</span>(is.numeric), <span class="sc">~</span><span class="fu">round</span>(.x, <span class="dv">5</span>)))</span>
-<span id="cb9-43"><a href="#cb9-43" aria-hidden="true" tabindex="-1"></a>    </span>
-<span id="cb9-44"><a href="#cb9-44" aria-hidden="true" tabindex="-1"></a>    <span class="fu">write_csv</span>(out_df, spp_mol_map_f)</span>
-<span id="cb9-45"><a href="#cb9-45" aria-hidden="true" tabindex="-1"></a>  } <span class="cf">else</span> {</span>
-<span id="cb9-46"><a href="#cb9-46" aria-hidden="true" tabindex="-1"></a>    <span class="fu">message</span>(<span class="st">&#39;File &#39;</span>, <span class="fu">basename</span>(spp_mol_map_f), <span class="st">&#39; exists... skipping!&#39;</span>)</span>
-<span id="cb9-47"><a href="#cb9-47" aria-hidden="true" tabindex="-1"></a>  }</span>
-<span id="cb9-48"><a href="#cb9-48" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb9-49"><a href="#cb9-49" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-50"><a href="#cb9-50" aria-hidden="true" tabindex="-1"></a>tmp <span class="ot">&lt;-</span> parallel<span class="sc">::</span><span class="fu">mclapply</span>(spp_vec, <span class="at">mc.cores =</span> <span class="dv">20</span>, <span class="at">FUN =</span> process_species_to_moll)</span></code></pre></div>
+<span id="cb9-26"><a href="#cb9-26" aria-hidden="true" tabindex="-1"></a>    i <span class="ot">&lt;-</span> <span class="fu">which</span>(spp_vec <span class="sc">==</span> s)</span>
+<span id="cb9-27"><a href="#cb9-27" aria-hidden="true" tabindex="-1"></a>    <span class="fu">message</span>(<span class="st">&#39;Processing NPP-normalized species-total catch map for &#39;</span>, s, </span>
+<span id="cb9-28"><a href="#cb9-28" aria-hidden="true" tabindex="-1"></a>            <span class="st">&#39; (&#39;</span>, i, <span class="st">&#39; of &#39;</span>, <span class="fu">length</span>(spp_vec), <span class="st">&#39;)&#39;</span>)</span>
+<span id="cb9-29"><a href="#cb9-29" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-30"><a href="#cb9-30" aria-hidden="true" tabindex="-1"></a>    <span class="do">### Read in catch per LOICZID cell; convert catch per 0.5° cell to catch per km^2^</span></span>
+<span id="cb9-31"><a href="#cb9-31" aria-hidden="true" tabindex="-1"></a>    spp_hcaf_map_f <span class="ot">&lt;-</span> <span class="fu">sprintf</span>(spp_hcaf_map_fstem, <span class="fu">str_replace</span>(s, <span class="st">&#39; +&#39;</span>, <span class="st">&#39;_&#39;</span>))</span>
+<span id="cb9-32"><a href="#cb9-32" aria-hidden="true" tabindex="-1"></a>    spp_catch_hcaf <span class="ot">&lt;-</span> <span class="fu">read_csv</span>(spp_hcaf_map_f, <span class="at">show_col_types =</span> <span class="cn">FALSE</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb9-33"><a href="#cb9-33" aria-hidden="true" tabindex="-1"></a>      oharac<span class="sc">::</span><span class="fu">dt_join</span>(ocean_a_hcaf_df, <span class="at">by =</span> <span class="st">&#39;loiczid&#39;</span>, <span class="at">type =</span> <span class="st">&#39;left&#39;</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb9-34"><a href="#cb9-34" aria-hidden="true" tabindex="-1"></a>      <span class="fu">mutate</span>(<span class="at">pel_per_km2 =</span> pel_tot_catch <span class="sc">/</span> ocean_a_hcaf,</span>
+<span id="cb9-35"><a href="#cb9-35" aria-hidden="true" tabindex="-1"></a>             <span class="at">ben_per_km2 =</span> ben_tot_catch <span class="sc">/</span> ocean_a_hcaf)</span>
+<span id="cb9-36"><a href="#cb9-36" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb9-37"><a href="#cb9-37" aria-hidden="true" tabindex="-1"></a>    <span class="do">### &quot;Reproject&quot; to Mollweide by joining to LOICZID-cell_id lookup;</span></span>
+<span id="cb9-38"><a href="#cb9-38" aria-hidden="true" tabindex="-1"></a>    <span class="do">### normalize by dividing by log-transformed NPP</span></span>
+<span id="cb9-39"><a href="#cb9-39" aria-hidden="true" tabindex="-1"></a>    spp_catch_mol <span class="ot">&lt;-</span> spp_catch_hcaf <span class="sc">%&gt;%</span></span>
+<span id="cb9-40"><a href="#cb9-40" aria-hidden="true" tabindex="-1"></a>      oharac<span class="sc">::</span><span class="fu">dt_join</span>(cell_id_df, <span class="at">by =</span> <span class="st">&#39;loiczid&#39;</span>, <span class="at">type =</span> <span class="st">&#39;left&#39;</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb9-41"><a href="#cb9-41" aria-hidden="true" tabindex="-1"></a>      <span class="fu">mutate</span>(<span class="at">pel_sum =</span> pel_per_km2 <span class="sc">*</span> ocean_a_mol <span class="sc">*</span> <span class="dv">100</span>,</span>
+<span id="cb9-42"><a href="#cb9-42" aria-hidden="true" tabindex="-1"></a>             <span class="at">ben_sum =</span> ben_per_km2 <span class="sc">*</span> ocean_a_mol <span class="sc">*</span> <span class="dv">100</span>,</span>
+<span id="cb9-43"><a href="#cb9-43" aria-hidden="true" tabindex="-1"></a>             <span class="at">pel_norm =</span> pel_sum <span class="sc">/</span> pel_npp,</span>
+<span id="cb9-44"><a href="#cb9-44" aria-hidden="true" tabindex="-1"></a>             <span class="at">ben_norm =</span> ben_sum <span class="sc">/</span> ben_npp) <span class="sc">%&gt;%</span></span>
+<span id="cb9-45"><a href="#cb9-45" aria-hidden="true" tabindex="-1"></a>      <span class="fu">drop_na</span>()</span>
+<span id="cb9-46"><a href="#cb9-46" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb9-47"><a href="#cb9-47" aria-hidden="true" tabindex="-1"></a>    out_df <span class="ot">&lt;-</span> spp_catch_mol <span class="sc">%&gt;%</span></span>
+<span id="cb9-48"><a href="#cb9-48" aria-hidden="true" tabindex="-1"></a>      dplyr<span class="sc">::</span><span class="fu">select</span>(cell_id, </span>
+<span id="cb9-49"><a href="#cb9-49" aria-hidden="true" tabindex="-1"></a>             <span class="at">pel_tot_catch =</span> pel_sum,</span>
+<span id="cb9-50"><a href="#cb9-50" aria-hidden="true" tabindex="-1"></a>             <span class="at">ben_tot_catch =</span> ben_sum,</span>
+<span id="cb9-51"><a href="#cb9-51" aria-hidden="true" tabindex="-1"></a>             <span class="at">pel_norm_catch =</span> pel_norm,</span>
+<span id="cb9-52"><a href="#cb9-52" aria-hidden="true" tabindex="-1"></a>             <span class="at">ben_norm_catch =</span> ben_norm) <span class="sc">%&gt;%</span></span>
+<span id="cb9-53"><a href="#cb9-53" aria-hidden="true" tabindex="-1"></a>      <span class="fu">mutate</span>(<span class="fu">across</span>(<span class="fu">where</span>(is.numeric), <span class="sc">~</span><span class="fu">round</span>(.x, <span class="dv">5</span>)))</span>
+<span id="cb9-54"><a href="#cb9-54" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb9-55"><a href="#cb9-55" aria-hidden="true" tabindex="-1"></a>    <span class="fu">write_csv</span>(out_df, spp_mol_map_f)</span>
+<span id="cb9-56"><a href="#cb9-56" aria-hidden="true" tabindex="-1"></a>  } <span class="cf">else</span> {</span>
+<span id="cb9-57"><a href="#cb9-57" aria-hidden="true" tabindex="-1"></a>    <span class="fu">message</span>(<span class="st">&#39;File &#39;</span>, <span class="fu">basename</span>(spp_mol_map_f), <span class="st">&#39; exists... skipping!&#39;</span>)</span>
+<span id="cb9-58"><a href="#cb9-58" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb9-59"><a href="#cb9-59" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb9-60"><a href="#cb9-60" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-61"><a href="#cb9-61" aria-hidden="true" tabindex="-1"></a>tmp <span class="ot">&lt;-</span> parallel<span class="sc">::</span><span class="fu">mclapply</span>(spp_vec, <span class="at">mc.cores =</span> <span class="dv">16</span>, <span class="at">FUN =</span> process_species_to_moll)</span></code></pre></div>
 </div>
 </div>
 

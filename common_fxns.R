@@ -107,7 +107,7 @@ map_to_hcaf <- function(df, by = 'loiczid', which, xfm = NULL) {
   return(out_rast)
 }
 
-get_am_spp_cells <- function(occurcells_cut = 10, prob_cut = 0) {
+get_am_spp_cells <- function(occurcells_cut = 0, prob_cut = 0) {
   
   spp_cell_file <- file.path(am_dir, 'hcaf_species_native_clean.csv')
   
