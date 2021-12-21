@@ -196,7 +196,7 @@ spp_vec <- watson_am_lookup$spp %>% unique()
 
 process_species_to_moll <- function(s) {
   # s <- spp_vec[1]
-  spp_mol_map_f <- sprintf(spp_mol_map_fstem, str_replace(s, ' +', '_'))
+  spp_mol_map_f <- sprintf(spp_mol_map_fstem, str_replace_all(s, ' +', '_'))
   
   if(!file.exists(spp_mol_map_f)) {
     
@@ -205,7 +205,7 @@ process_species_to_moll <- function(s) {
             ' (', i, ' of ', length(spp_vec), ')')
 
     ### Read in catch per LOICZID cell; convert catch per 0.5° cell to catch per km^2^
-    spp_hcaf_map_f <- sprintf(spp_hcaf_map_fstem, str_replace(s, ' +', '_'))
+    spp_hcaf_map_f <- sprintf(spp_hcaf_map_fstem, str_replace_all(s, ' +', '_'))
     spp_catch_hcaf <- read_csv(spp_hcaf_map_f, show_col_types = FALSE) %>%
       oharac::dt_join(ocean_a_hcaf_df, by = 'loiczid', type = 'left') %>%
       mutate(pel_per_km2 = pel_tot_catch / ocean_a_hcaf,

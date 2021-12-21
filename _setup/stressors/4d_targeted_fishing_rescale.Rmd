@@ -47,327 +47,144 @@ Data from
 * Take the highest value across all species as the reference point.
 * Normalize all species fishing stressor maps using that reference point and save out.
 
-## Examine NPP layers
-
-Can these be aggregated upward to 0.5 degrees with little loss of information?  Examine mean and variance of aggregated results.  Low variance within an aggregated cell means little information is lost in the aggregation process.
-
-```{r, eval = FALSE}
-surface_npp_raw <- raster(here_anx('stressors/fishing/npp',
-                                   'Present.Surface.Primary.productivity.Mean.tif'))
-# class      : RasterLayer 
-# dimensions : 2160, 4320, 9331200  (nrow, ncol, ncell)
-# resolution : 0.08333333, 0.08333333  (x, y)
-# extent     : -180, 180, -90, 90  (xmin, xmax, ymin, ymax)
-# crs        : +proj=longlat +datum=WGS84 +no_defs 
-# source     : Present.Surface.Primary.productivity.Mean.tif 
-# names      : Present.Surface.Primary.productivity.Mean 
-# values     : 6e-05, 0.257881  (min, max)
-agg_mean <- aggregate(surface_npp_raw, fact = 6, fun = mean, progress = 'text')
-agg_sd   <- aggregate(surface_npp_raw, fact = 6, fun = sd, progress = 'text')
-# agg_min  <- aggregate(surface_npp_raw, fact = 6, fun = min, progress = 'text')
-# agg_max  <- aggregate(surface_npp_raw, fact = 6, fun = max, progress = 'text')
-
-# agg_range <- agg_max - agg_min
-agg_cv <- agg_sd / agg_mean
-high_cv <- agg_cv; high_cv[high_cv < 0.1] <- NA
-
-plot(agg_sd, axes = FALSE, col = hcl.colors(20), main = 'std dev')
-plot(high_cv, axes = FALSE, col = hcl.colors(20), main = 'coef of var ≥ 0.1')
-
-```
-The coastal regions have a relatively high variance, as could be expected.  Because of this, we should probably retain the original resolution.
-
-### Read in processed NPP layers
-
-These layers are created in script `3_process_fishing_bycatch.Rmd`.  The surface NPP raster is the log(x + max(x)/100) transformed surface NPP, normalized by the 99.9th percentile.  The benthic NPP raster is the log-transformed combination of benthic NPP (where non-zero) and export flux from surface NPP, to account for the fact that particularly for deep benthic environments, food is derived from NPP sinking from the surface.  See the indicated script for the derivation of the export flux model.
-
-```{r}
-surf_npp  <- raster(here_anx('stressors/fishing/npp', 'log_npp_present_surf_gf_mol.tif'))
-benth_npp <- raster(here_anx('stressors/fishing/npp', 'log_npp_present_benth_gf_mol.tif'))
-
-plot(surf_npp, axes = FALSE, main = 'Surface log(NPP)', col = hcl.colors(n = 20))
-plot(benth_npp, axes = FALSE, main = 'Benthic log(NPP)', col = hcl.colors(n = 20))
-```
-
-
-
-### Identify species position in water column
-
-Using the water column position functional trait, separate species into pelagic (surface NPP) and non-pelagic (benthic NPP).
-
-```{r}
-watson_am_lookup <- read_csv(here('_setup/stressors/int/watson_am_lookup.csv'))
-wcol_pos <- read_csv(here('_data/grouping_traits_post_imputation.csv')) %>%
-  dplyr::select(species, wcol)
-
-table(wcol_pos$wcol)
-#   ben    bp   pel    rf 
-# 28453  3832  4243 14804
-### the vast majority of species are not pelagic (92%).  But from script 4b,
-### the bulk of catch is not benthic.
-
-# catch_fs <- list.files(here_anx('stressors/fishing/total_catch_by_spp_cell'), full.names = TRUE)
-# 
-# tot_catch_df <- parallel::mclapply(catch_fs, mc.cores = 20,
-#                        FUN = function(f) {
-#                          # f <- catch_fs[3]
-#                          nm <- str_remove_all(basename(f), 'spp_catch_|.csv') %>%
-#                            str_replace_all('[^a-z]+', ' ')
-#                          x <- read_csv(f, show_col_types = FALSE)
-#                          y <- x %>% summarize(pel_sum = sum(pel_tot_catch),
-#                                               ben_sum = sum(ben_tot_catch)) %>%
-#                            mutate(spp = nm)
-#                        }) %>%
-#   bind_rows()
-# 
-# benth_check <- tot_catch_df %>%
-#   left_join(wcol_pos, by = c('spp' = 'species')) %>%
-#   group_by(wcol) %>%
-#   summarize(ben_tot = sum(ben_sum, na.rm = TRUE),
-#             pel_tot = sum(pel_sum, na.rm = TRUE))
-# 
-# knitr::kable(benth_check)
-```
-
-Based on sample of about 16000 spp:
-
-|water col pos | benthic total | pelagic total |
-|:-------------|--------------:|--------------:|
-|benthic       |   30,861,033  |   19,139,614  |
-|benthopelagic |    7,720,392  |   23,181,578  |
-|pelagic       |   10,930,387  |   75,876,780  |
-|reef          |   13,033,919  |   22,844,775  |
-|NA            |   11,217,167  |   19,549,369  |
-
-Catch by benthic and pelagic gear types does not seem well linked to position in water column...
-
-## Process catch layers
-
-* Process catch data for the species:
-    * Read in catch per LOICZID cell
-    * Convert catch per 0.5° cell to catch per km^2^
-    * Reproject to Mollweide (either projectRaster or join to a lookup dataframe of LOICZID to Mollweide cell ID)
-    * Convert to catch per 10 x 10 km cell.
-* Divide the processed catch layer by the appropriate NPP layer (log-transformed)
-* Convert to dataframe of cell ID and NPP-normalized catch, and write out.
-
-```{r set up dataframe of cell_id to loiczid to ocean_a lookup}
-loiczid_mol <- raster(here('_spatial/loiczid_mol.tif'))
-ocean_a_mol <- raster(here('_spatial/ocean_area_mol.tif'))
-
-cell_id_df <- data.frame(loiczid = values(loiczid_mol),
-                         ocean_a_mol = values(ocean_a_mol),
-                         cell_id = 1:ncell(ocean_a_mol),
-                         pel_npp = values(surf_npp),
-                         ben_npp = values(benth_npp))
-
-### using ocean area at half deg generated from Natural Earth
-ocean_a_0.5 <- raster(here('_spatial/ocean_area_wgs84_0.5deg.tif'))
-ocean_a_hcaf_df <- data.frame(ocean_a_hcaf = values(ocean_a_0.5),
-                              loiczid = 1:ncell(ocean_a_0.5))
-```
-
-```{r}
-
-spp_hcaf_map_fstem <- here_anx('stressors/fishing/total_catch_by_spp_cell',
-                               'spp_catch_%s.csv')
-spp_mol_map_fstem  <- here_anx('stressors/fishing/npp_norm_catch_by_spp_moll',
-                               'npp_spp_catch_%s_mol.csv')
-spp_vec <- watson_am_lookup$spp %>% unique()
-# x <- list.files(dirname(spp_mol_map_fstem), full.names = TRUE)
-
-process_species_to_moll <- function(s) {
-  # s <- spp_vec[1]
-  spp_mol_map_f <- sprintf(spp_mol_map_fstem, str_replace(s, ' +', '_'))
-  
-  if(!file.exists(spp_mol_map_f)) {
-    
-    i <- which(spp_vec == s)
-    message('Processing NPP-normalized species-total catch map for ', s, 
-            ' (', i, ' of ', length(spp_vec), ')')
-
-    ### Read in catch per LOICZID cell; convert catch per 0.5° cell to catch per km^2^
-    spp_hcaf_map_f <- sprintf(spp_hcaf_map_fstem, str_replace(s, ' +', '_'))
-    spp_catch_hcaf <- read_csv(spp_hcaf_map_f, show_col_types = FALSE) %>%
-      oharac::dt_join(ocean_a_hcaf_df, by = 'loiczid', type = 'left') %>%
-      mutate(pel_per_km2 = pel_tot_catch / ocean_a_hcaf,
-             ben_per_km2 = ben_tot_catch / ocean_a_hcaf)
-    
-    ### "Reproject" to Mollweide by joining to LOICZID-cell_id lookup;
-    ### normalize by dividing by log-transformed NPP
-    spp_catch_mol <- spp_catch_hcaf %>%
-      oharac::dt_join(cell_id_df, by = 'loiczid', type = 'left') %>%
-      mutate(pel_sum = pel_per_km2 * ocean_a_mol * 100,
-             ben_sum = ben_per_km2 * ocean_a_mol * 100,
-             pel_norm = pel_sum / pel_npp,
-             ben_norm = ben_sum / ben_npp) %>%
-      drop_na()
-    
-    out_df <- spp_catch_mol %>%
-      dplyr::select(cell_id, 
-             pel_tot_catch = pel_sum,
-             ben_tot_catch = ben_sum,
-             pel_norm_catch = pel_norm,
-             ben_norm_catch = ben_norm) %>%
-      mutate(across(where(is.numeric), ~round(.x, 5)))
-    
-    write_csv(out_df, spp_mol_map_f)
-  } else {
-    message('File ', basename(spp_mol_map_f), ' exists... skipping!')
-  }
-}
-
-tmp <- parallel::mclapply(spp_vec, mc.cores = 32, FUN = process_species_to_moll)
-```
-
 ## Identify reference point
 
-The reference point will be the 99.9%ile value of total fishing stressor across all species/cells.  In general, stressor quantiles are based on the entire ocean, including zero-value cells.  
+Take each species fishing map, expand out to include unfished cells in the species' range, and then determine the 99.9%ile of catch for each species.
 
-### Ref point version 1: across all cells/species simultaneously.  
+```{r set up vars}
+watson_am_lookup <- read_csv(here('_setup/stressors/int/watson_am_lookup.csv'))
 
-If we had unlimited RAM:
+spp_vec <- watson_am_lookup$spp %>% unique() %>% sort()
 
-Each species map can be converted into a vector of 3.68M elements (the number of non-zero ocean cells).  These vectors can then be joined as columns of a matrix, with 23.8k columns, one for each species.  `NA`-valued cells are filled with zeros, then the `quantile()` function is run on the entire massive matrix to determine the 99.9%ile value.  Alternately, using parallel::mclapply, we can create a list of vectors, then unlist it into a single massive vector - R v3.0+ can handle vectors up to size 2^52^, i.e., 4.5e+15 elements.  Then run `quantile()` on that massive vector.
-
-But this would take far more RAM than Mazu has available.  If instead we bound all non-zero values, making a much smaller vector (most spp have a small number of fished cells), we identify the position of the value equivalent to the 99.9%ile IF the non-fished cells had been expanded with zeros.
-
-```{r, eval = FALSE}
-mol_fs <- list.files(dirname(spp_mol_map_fstem), full.names = TRUE)
-n_cells <- sum(!is.na(values(ocean_a_mol)))
-
-vectorize_map <- function(f) { # f <- mol_fs[4]
-  x <- read_csv(f, show_col_types = FALSE)
-  
-  if(nrow(x) == 0) return(NA)
-  
-  x <- x %>%
-    mutate(tot_norm_catch = ben_norm_catch + pel_norm_catch) %>%
-    .$tot_norm_catch
-}
-
-# fish_sum_vec <- parallel::mclapply(mol_fs, mc.cores = 32,
-#                                     FUN = vectorize_map) %>%
-#   unlist() %>%
-#   sort()
-
-### had zeros been filled, the length of resulting vector would be:
-virtual_length <- as.numeric(n_cells) * length(mol_fs)
-### and the number of leading zero elements would be:
-n_zeros <- virtual_length - length(fish_sum_vec)
-
-### The 99.9%ile would be found in element:
-pos_999_qtile <- round(virtual_length * .999)
-### shifting since leading zeros are omitted:
-pos_999_qtile_shift <- pos_999_qtile - n_zeros
-
-ref <- sort(fish_sum_vec)[pos_999_qtile_shift]
-### According to this, the reference point is .43355 NPP-adjusted tonnes...
-### that seems ludicrously small.
-
+npp_catch_fstem <- here_anx('stressors/fishing/npp_norm_catch_by_spp_moll',
+                            'npp_spp_catch_%s_mol.csv')
+range_map_fstem <- here_anx('spp_maps_mol', 'am_spp_mol_%s.csv')
 ```
 
-### Ref point version 2: quantiles per spp, then max across all spp
+``` {r calc ref point by range}
+calc_quantiles_range <- function(s, fstem) {
+  # s <- spp_vec[1]
+  s_snake <- str_replace_all(s, '[^a-z]+', '_')
+  i <- which(s == spp_vec)
 
-Alternately: What if we instead took each species fishing stressor map, identified the 99.9%ile for that (across entire ocean), and then used the highest one across all species?
+  out_f <- sprintf(fstem, s_snake)
 
-```{r calc reference point by entire ocean}
-ref2_f <- here('_setup/stressors/int/fish_npp_catch_ref_option2.csv')
-
-if(!file.exists(ref2_f)) {
-  mol_fs <- list.files(dirname(spp_mol_map_fstem), full.names = TRUE)
-  n_cells <- sum(!is.na(values(ocean_a_mol)))
-  
-  calc_quantiles <- function(f) {
-    # f <- mol_fs[1]
-    x <- read_csv(f, show_col_types = FALSE)
+  if(!file.exists(out_f)) {
+    message('Processing ', s, '... (', i, ' of ', length(spp_vec), ')')
+    catch_df <- read_csv(sprintf(npp_catch_fstem, s_snake), 
+                         show_col_types = FALSE)
     
-    spp <- str_remove_all(basename(f), 'npp_spp_catch_|_mol.csv') %>%
-      str_replace_all('[^a-z]+', ' ')
-    v <- rep(0, times = n_cells)
-    if(nrow(x) > 0) {
-      y <- x %>%
+    range_df <- read_csv(sprintf(range_map_fstem, s_snake), 
+                         show_col_types = FALSE)
+    
+    v <- rep(0, times = n_distinct(range_df$cell_id))
+    if(nrow(catch_df) > 0) {
+      catch_sum <- catch_df %>%
         mutate(tot_norm_catch = ben_norm_catch + pel_norm_catch) %>%
         .$tot_norm_catch
-      tot_catch <- sum(x$ben_tot_catch + x$pel_tot_catch)
-      v[1:length(y)] <- y
+      tot_npp_catch <- sum(catch_sum)
+      tot_catch <- sum(catch_df$ben_tot_catch + catch_df$pel_tot_catch)
+      
+      v[1:length(catch_sum)] <- catch_sum
     } else {
       # v is unchanged, all zeros
-      tot_catch = 0
+      tot_catch <- 0
+      tot_npp_catch <- 0
     }
     z <- quantile(v, c(.50, .9, .99, .999, 1.0))
     df <- as.matrix(z) %>% t() %>%
       as.data.frame() %>%
-      mutate(spp = spp,
-             tot_catch = tot_catch)
-    return(df)
+      mutate(spp = s,
+             tot_catch = tot_catch,
+             tot_npp_catch = tot_npp_catch)
+    write_csv(df, out_f)
   }
-  fish_qtile_df <- parallel::mclapply(mol_fs, mc.cores = 24,
-                                      FUN = calc_quantiles) %>%
-    bind_rows() %>%
-    arrange(desc(`99.9%`))
-  
-  write_csv(fish_qtile_df, ref2_f)
 }
-  
 
-qtile_results <- read_csv(ref2_f) %>%
+fishing_ref_f <- here('_setup/stressors/int/fish_npp_catch_ref_point.csv')
+if(!file.exists(fishing_ref_f)) {
+  ref_tmp_fstem <- here('tmp', 'fishing_str_ref_%s.csv')
+
+  tmp <- parallel::mclapply(spp_vec, mc.cores = 16,
+                            FUN = calc_quantiles_range,
+                            fstem = ref_tmp_fstem)
+  
+  tmp_fs <- list.files(here('tmp'), pattern = 'fishing_str_ref', full.names = TRUE)
+  # unlink(tmp_fs)
+  fish_qtile_range_df <- parallel::mclapply(tmp_fs, read_csv, mc.cores = 24,
+                                            show_col_types = FALSE) %>%
+    bind_rows() %>%
+    janitor::clean_names() %>%
+    arrange(desc(x99_9_percent))
+  
+  write_csv(fish_qtile_range_df, fishing_ref_f)
+}
+
+qtile_results <- read_csv(fishing_ref_f) %>%
   mutate(across(where(is.numeric), ~round(.x, 3)))
 knitr::kable(head(qtile_results, 20))
+
+ref_pt <- max(qtile_results$x99_9_percent)
 ```
 
+Based on this method, the reference point for NPP-adjusted targeted catch is `r round(ref_pt)` tonnes/log(NPP), for species _`r qtile_results$spp[1]`_.
 
-### Ref point version 3: quantiles per spp by range, then max across all spp
+## Rescale NPP-adjusted targeted catch layers
 
-This is similar to option 2, but instead of looking at the 99.9%ile of catch for each species across the entire ocean, we look instead just at the 99.9%ile of catch for each species _within its range_.  This will result in higher reference points, since the quantile won't be pulled downward from a bunch of added zero value cells.
+Using this reference point, rescale NPP-adjusted catch layers for each species, and save out the finalized stressor file for each.
 
-```{r calc reference point by range}
-mol_fs <- list.files(dirname(spp_mol_map_fstem), full.names = TRUE)
-
-range_map_fstem <- here_anx('spp_maps_mol', 'am_spp_mol_%s.csv')
-
-am_spp_info <- get_am_spp_info()
-am_spp_cells <- get_am_spp_cells(occurcells_cut = 0, prob_cut = 0)
-
-calc_quantiles_range <- function(f) {
-  # f <- mol_fs[1]
-  catch_df <- read_csv(f, show_col_types = FALSE)
+```{r rescale catch}
+rescaled_fstem <- here_anx('stressors/fishing/rescaled_catch_by_spp_cell',
+                           'rescaled_catch_%s.csv')
+rescale_catch <- function(s, ref_pt) {
+  # s <- missing_spp[2]
+  # s <- 'pleoticus muelleri'
+  # s <- 'abyssaster planus'
+  s_snake <- str_replace_all(s, '[^a-z]+', '_')
+  i <- which(s == spp_vec)
   
-  spp <- str_remove_all(basename(f), 'npp_spp_catch_|_mol.csv')
-  
-  range_df <- read_csv(sprintf(range_map_fstem, spp), show_col_types = FALSE)
-  
-  v <- rep(0, times = n_distinct(range_df$cell_id))
-  if(nrow(catch_df) > 0) {
-    catch_sum <- catch_df %>%
-      mutate(tot_norm_catch = ben_norm_catch + pel_norm_catch) %>%
-      .$tot_norm_catch
-    tot_catch <- sum(catch_sum)
+  out_f <- sprintf(rescaled_fstem, s_snake)
+  if(!file.exists(out_f)) {
+    message('Rescaling catch for ', s, '... (', i, ' of ', length(spp_vec), ')')
     
-    v[1:length(catch_sum)] <- catch_sum
+    catch_df <- read_csv(sprintf(npp_catch_fstem, s_snake), 
+                         show_col_types = FALSE)
+    if(nrow(catch_df) == 0) {
+      rescaled_df <- data.frame(cell_id = -1, rescaled_catch = 0)
+    } else {
+      rescaled_df <- catch_df %>%
+        mutate(tot_c = pel_norm_catch + ben_norm_catch,
+               rescaled_catch = ifelse(tot_c < ref_pt, tot_c / ref_pt, 1)) %>%
+        select(cell_id, rescaled_catch)
+    }
+    write_csv(rescaled_df, out_f)
+    
   } else {
-    # v is unchanged, all zeros
-    tot_catch <- 0
+    message('... File exists: ', basename(out_f), '... skipping!')
   }
-  z <- quantile(v, c(.50, .9, .99, .999, 1.0))
-  df <- as.matrix(z) %>% t() %>%
-    as.data.frame() %>%
-    mutate(spp = str_replace_all(spp, '_', ' '),
-           tot_catch = tot_catch)
-  return(df)
 }
 
-fish_qtile_range_df <- parallel::mclapply(mol_fs, mc.cores = 24,
-                                    FUN = calc_quantiles_range) %>%
-  bind_rows() %>%
-  arrange(desc(`99.9%`))
+tmp <- parallel::mclapply(spp_vec, mc.cores = 24,
+                          FUN = rescale_catch, ref_pt = ref_pt)
 
-write_csv(fish_qtile_range_df, here('_setup/stressors/int/fish_npp_catch_ref_option3.csv'))
+# df <- data.frame(s = spp_vec, f = sprintf(rescaled_fstem, spp_vec)) %>%
+#   mutate(f = str_replace_all(f, ' ', '_'))
+# fs <- list.files(dirname(rescaled_fstem), full.names = TRUE)
+# missing_spp <- df %>%
+#   filter(!f %in% fs) %>%
+#   .$s
+# 
+# tmp <- parallel::mclapply(missing_spp, mc.cores = 24, 
+#                           FUN = rescale_catch, ref_pt = ref_pt)
 
-qtile_results <- read_csv(here('_setup/stressors/int', 
-                               'fish_npp_catch_ref_option3.csv')) %>%
-  mutate(across(where(is.numeric), ~round(.x, 3)))
-knitr::kable(head(qtile_results, 20))
+```
+
+```{r check files}
+fs <- list.files(dirname(rescaled_fstem), full.names = TRUE)
+df <- data.frame(f = basename(fs), fsize = file.size(fs)) %>%
+  arrange(desc(fsize))
+
+knitr::kable(head(df, 10))
 ```
 
 

@@ -405,7 +405,7 @@ process_species_catch <- function(s) {
   # s <- spp_wo_files[2]
   i <- which(s == spp_vec)
   
-  spp_map_f <- sprintf(spp_map_fstem, str_replace(s, ' +', '_'))
+  spp_map_f <- sprintf(spp_map_fstem, str_replace_all(s, ' +', '_'))
   
   if(!file.exists(spp_map_f)) {
     
@@ -452,7 +452,7 @@ tmp <- parallel::mclapply(spp_vec, mc.cores = 12,
 # 
 # spp_with_files <- basename(x) %>%
 #   str_remove_all('spp_catch_|.csv') %>%
-#   str_replace('_', ' ')
+#   str_replace_all('_', ' ')
 # 
 # spp_wo_files <- spp_vec[!spp_vec %in% spp_with_files]
 # 
@@ -469,7 +469,9 @@ x <- list.files(dirname(spp_map_fstem), full.names = TRUE)
 # y <- df %>% filter(fsize < 100) %>% .$x
 # unlink(y)
 
-spp_with_files <- basename(x) %>% str_remove_all('spp_catch_|.csv') %>% str_replace('_', ' ')
+spp_with_files <- basename(x) %>% 
+  str_remove_all('spp_catch_|.csv') %>% 
+  str_replace_all('_', ' ')
 
 spp_wo_files <- spp_vec[!spp_vec %in% spp_with_files]
 head(spp_wo_files)
