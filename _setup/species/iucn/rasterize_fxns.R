@@ -6,14 +6,14 @@ clip_to_globe <- function(x) {
   ### for SF features, transform to wgs84, clip to +-180 and +-90
   epsg <- st_crs(x)$epsg
   if(epsg != 4326 | is.na(epsg)) {
-    message('Original EPSG = ', epsg, '; Proj4 = ', st_crs(x)$proj4string,
+    message('  Original EPSG = ', epsg, '; Proj4 = ', st_crs(x)$proj4string,
             '\n...converting to EPSG:4326 WGS84 for clipping')
     x <- st_transform(x, 4326)
   }
   x_bbox <- st_bbox(x)
   if(x_bbox$xmin < -180 | x_bbox$xmax > +180 |
      x_bbox$ymin <  -90 | x_bbox$ymax >  +90) {
-    message('Some bounds outside +-180 and +-90 - clipping')
+    message('  Some bounds outside +-180 and +-90 - clipping')
     z <- st_crop(x, y = c('xmin' = -180,
                           'ymin' =  -90,
                           'xmax' = +180,
@@ -26,10 +26,10 @@ clip_to_globe <- function(x) {
     ### The st_crop solution works great most of the time; but for
     ### spp 21132910 (at least) the crop turned things into linestrings
     ### that couldn't be converted with st_cast('MULTIPOLYGON').
-    message('Smoothing to half degree max')
+    message('  Smoothing to half degree max')
     z <- smoothr::densify(z, max_distance = 0.5)
   } else {
-    message('All bounds OK, no clipping necessary')
+    # message('  All bounds OK, no clipping necessary')
     z <- x
   }
   return(z)
@@ -38,60 +38,80 @@ clip_to_globe <- function(x) {
 valid_check <- function(spp_shp) {
   valid <- st_is_valid(spp_shp)
   ### can return a vector if multiple polygons with same ID
-  if(any(!valid)) {
-    message('Found invalid geometries')
-    
-    bbox_shp <- st_bbox(spp_shp)
-    if(bbox_shp$xmin < -180 | bbox_shp$xmax > 180) {
-      message('Bounding box outside +/- 180; buffering with dist = 0')
-      ### check area before and after buffering to make sure no loss
-      area_pre  <- st_area(spp_shp) %>% as.numeric() / 1e6
-      spp_shp   <- st_buffer(spp_shp, dist = 0) %>%
-        st_cast('MULTIPOLYGON')
-      area_post <- st_area(spp_shp) %>% as.numeric() / 1e6
-      
-      area_check <- all.equal(area_pre, area_post)
-      area_ratio <- max(sum(area_pre) / sum(area_post),
-                        sum(area_post) / sum(area_pre))
-      
-      
-      ### error check to make sure the buffer didn't lose polygons
-      if(area_check == FALSE | 
-         (class(area_check) != 'logical' & area_ratio > 1.001)) {
-        ### use all.equal() for near equality, and for comparing all 
-        ### elements in case of a vector.  If a difference, choose an arbitrary
-        ### threshold for "close enough".
-        message('Error: area_pre = ', round(sum(area_pre), 3), 
-                '; area_post = ', round(sum(area_post), 3), 
-                '; area_ratio = ', round(area_ratio, 5), '; not equal!')
-        stop('Area_pre and area_post not equal!')
-      } else {
-        message('Area check good!  area_pre = ', round(sum(area_pre), 3), 
-                '; area_post = ', round(sum(area_post), 3), 
-                '; area_ratio = ', round(area_ratio, 5), '; all equal!')
-      }
-    } else {
-      message('bbox not exceeded; no need to fix polygon with buffer')
-    }
+  
+  if(all(valid)) {
+    ### all good!
+    return(spp_shp)
+  } 
+  
+  ### at least one invalid geometry to deal with
+
+  id <- unique(spp_shp$iucn_sid)
+  message('  Found invalid geometries in ', id)
+
+  ### first try st_make_valid?
+  spp_shp1 <- st_make_valid(spp_shp)
+  if(all(st_is_valid(spp_shp1))) {
+    message('  ...fixed invalid geoms in ', id, ' using st_make_valid()')
+    return(spp_shp1)
+  } else {
+    # message('  ...invalid geometry in ', id, ' not fixed with st_make_valid()!')
   }
-  return(spp_shp)
+  
+  ### idea from:
+  ### https://stackoverflow.com/questions/68478179/how-to-resolve-spherical-geometry-failures-when-joining-spatial-data
+  check_use_s2 <- sf::sf_use_s2()
+  sf::sf_use_s2(FALSE) ### turn off spherical geometry
+  
+  ### try zero-distance buffer method
+  spp_shp2   <- st_buffer(spp_shp1, dist = 0) %>%
+    st_cast('MULTIPOLYGON')
+  if(all(st_is_valid(spp_shp2))) {
+    ### check area before and after buffering to make sure no loss
+    area_pre  <- st_area(spp_shp) %>% as.numeric() / 1e6
+    area_post <- st_area(spp_shp2) %>% as.numeric() / 1e6
+    
+    area_check <- all.equal(area_pre, area_post)
+    area_ratio <- max(sum(area_pre) / sum(area_post),
+                      sum(area_post) / sum(area_pre))
+    ### set sf_use_s2 back to prior value
+    sf::sf_use_s2(check_use_s2)
+    
+    
+    ### error check to make sure the buffer didn't lose polygons
+    if(area_check == FALSE | 
+       (class(area_check) != 'logical' & area_ratio > 1.001)) {
+      ### use all.equal() for near equality, and for comparing all 
+      ### elements in case of a vector.  If a difference, choose an arbitrary
+      ### threshold for "close enough".
+      message('Error: area_pre = ', round(sum(area_pre), 3), 
+              '; area_post = ', round(sum(area_post), 3), 
+              '; area_ratio = ', round(area_ratio, 5), '; not equal!')
+      stop('Area_pre and area_post not equal!')
+    } else {
+      # message('  Area check good for ', id, '!  area_pre = ', round(sum(area_pre), 3), 
+      #         '; area_post = ', round(sum(area_post), 3), 
+      #         '; area_ratio = ', round(area_ratio, 5), '; all equal!')
+      
+      message('  ...fixed invalid geoms in ', id, ' using zero-distance buffer!')
+      return(spp_shp2)
+    }
+  } else {
+    message('  ...invalid geometry in ', id, ' not fixed with zero-distance buffer!')
+  }
+  return(NULL)
 }
 
 fix_fieldnames <- function(poly_sf) {
-  if(!'sciname' %in% names(poly_sf)) {
-    poly_sf <- poly_sf %>%
-      rename(sciname = binomial)
-  }
+  names(poly_sf)[names(poly_sf) %in% c('binomial', 'binomil')] <- 'sciname'
+  names(poly_sf)[names(poly_sf) %in% c('id_no', 'sisid')] <- 'iucn_sid'
+  names(poly_sf)[names(poly_sf) %in% c('presenc')] <- 'presence'
   
   if(!'subpop' %in% names(poly_sf)) {
     poly_sf$subpop <- NA_character_
     ### if shape doesn't have subpop column, add it as NA
   }
-  if('id_no' %in% names(poly_sf)) {
-    ### if id_no field, reset to iucn_sid
-    poly_sf <- poly_sf %>%
-      rename(iucn_sid = id_no)
-  }
+
   if(!'presence' %in% names(poly_sf)) {
     poly_sf <- poly_sf %>%
       mutate(presence = 1)
@@ -100,27 +120,27 @@ fix_fieldnames <- function(poly_sf) {
 }
 
 fix_turtle_polys <- function(shp) {
-  message('Replacing REPTILES with buffered turtle polygons!!!')
+  message('Replacing TURTLES with buffered turtle polygons!!!')
   ### the turtle polys have issues with the western boundary - not quite at
   ### +180; some have issues on the east as well. Buffer problem spp by
-  ### 0.25 degrees before clipping.  Near the equator this adds an error of
-  ### ~ 28 km!  But clearly the shitty polygons are creating an error as well.
+  ### 0.15 degrees before clipping.  Near the equator this adds an error of
+  ### ~ 15 km!  But clearly the shitty polygons are creating an error as well.
   ### Identify the problem ones:
   ### Caretta caretta 3897;          Dermochelys coriacea 6494; 
   ### Eretmochelys imbricata 8005;   Chelonia mydas 4615
-  ### I'll just buffer all subpops, for ease.  Land gets clipped later.
+  ### I'll just buffer all subpops, for ease.  Land gets masked out later.
   
-  turtles_buffered_file <- file.path(dir_bd_anx, 'tmp/reptiles_shp_buffered.shp')
+  turtles_buffered_file <- here_anx('iucn_spp/turtles_shp_buffered.shp')
   
   if(!file.exists(turtles_buffered_file)) {
-    message('Creating a temporary buffered reptiles shapefile...')
+    message('...Creating a temporary buffered turtles shapefile...')
     polys_rept <- read_sf(shp, type = 6) %>%
       janitor::clean_names() %>%
       fix_fieldnames()
     
     polys_rept_buff <- polys_rept %>%
       filter(iucn_sid %in% c(3897, 6494, 8005, 4615)) %>%
-      st_buffer(dist = 0.25)
+      st_buffer(dist = 0.15)
     polys_rept_non_buff <- polys_rept %>%
       filter(!iucn_sid %in% c(3897, 6494, 8005, 4615))
     polys_rept_fixed <- rbind(polys_rept_non_buff, polys_rept_buff)
@@ -138,7 +158,7 @@ match_to_map <- function(poly_sf, maps_df) {
   ### rasterized (from the id_fix dataframe).
   id_fix <- maps_df %>%
     filter(shp_file == shp) %>%
-    select(shp_iucn_sid, iucn_sid, subpop, max_depth) %>%
+    select(shp_iucn_sid, iucn_sid, subpop, max_depth, worms_name) %>%
     distinct()
   
   polys_match <- poly_sf %>%
@@ -152,29 +172,36 @@ match_to_map <- function(poly_sf, maps_df) {
 
 buffer_tiny_polys <- function(spp_shp) {
   ### Check that CRS is in meters.
-  poly_crs <- st_crs(spp_shp)[1] %>%
+  poly_crs <- raster::crs(spp_shp) %>%
     as.character()
   if(!str_detect(poly_crs, '\\+units=m')) {
     stop('For buffer_tiny_polys(), expecting units in meters')
   }
+  id <- unique(spp_shp$iucn_sid)
   
   ### Identify small polygons by their total area.  Most tiny zero-range
   ### spp have an area less than 100 km^2; one (Conus decoratus)
   ### is 124 km^2.  Use a little more than this as the size threshold.
   thresh_m2 <- units::set_units(130 * 1e6, m^2)
-  ### Cell resolution is 10279.3 meters.  A buffer of ~half
+  ### Cell resolution is 10000 meters.  A buffer of ~half
   ### that would nearly guarantee all polygons to result in at least
   ### one raster cell, unless the polygon is near a corner.
   poly_area_m2 <- st_area(spp_shp$geometry)
   buffer_dist <- 5000 ### in meters
   
-  
-  if(poly_area_m2 < thresh_m2) {
-    msg_stem <- 'Tiny polygon (%s km^2 < %s km2 threshold); buffering by %s km...'
-    message(sprintf(msg_stem, round(poly_area_m2/1e6), thresh_m2/1e6, buffer_dist/1e3))
-    spp_shp_buffered <- spp_shp %>%
-      st_buffer(dist = buffer_dist)
-    return(spp_shp_buffered)
+  if(any(poly_area_m2 < thresh_m2)) { ### first just check across all polygons
+    spp_shp_buffered <- spp_shp
+    for(z in 1:nrow(spp_shp)) {
+      ### z <- 1
+      poly_area_z <- poly_area_m2[z]
+      if(poly_area_z < thresh_m2) { ### then check poly by poly}
+        msg_stem <- '  Tiny polygon in %s (%s km^2 < %s km2 threshold); buffering by %s km...'
+        message(sprintf(msg_stem, id, round(poly_area_z/1e6), thresh_m2/1e6, buffer_dist/1e3))
+        spp_shp_buffered[z, ] <- spp_shp[z, ] %>%
+          st_buffer(dist = buffer_dist)
+      }
+    }
+    return(spp_shp_buffered %>% st_cast('MULTIPOLYGON'))
   } else {
     return(spp_shp)
   }

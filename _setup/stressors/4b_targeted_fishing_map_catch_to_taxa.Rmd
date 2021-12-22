@@ -60,24 +60,36 @@ am_spp_ids <- get_am_spp_info() %>%
 am_spp_valid <- am_spp_ids %>%
   filter(occur_cells >= 10)
 
+iucn_spp_ids <- read_csv(here('_data/iucn_spp/iucn_to_worms_match.csv')) %>%
+  filter(mapped) %>%
+  select(iucn_sid, worms_name) %>%
+  distinct()
+
 worms_long <- assemble_worms(aspect = 'long')
 
+### Watson taxa recoded to match with WoRMS
 watson_worms_tx_df <- read_csv(here('_raw/worms_to_watson_lookup.csv')) 
 
+### Watson taxa, expanded to species, joined to AM and IUCN maps
 watson_worms_spp_df <- watson_worms_tx_df %>%
   left_join(worms_long, by = c('worms_name' = 'name')) %>%
-  left_join(am_spp_ids, by = c('spp' = 'sciname'))
+  left_join(am_spp_ids, by = c('spp' = 'sciname')) %>%
+  left_join(iucn_spp_ids, by = c('spp' = 'worms_name'))
 
-watson_am_spp_df <- watson_worms_spp_df %>%
-  filter(!is.na(am_sid))
+### Keep just the ones with maps:
+watson_maps_spp_df <- watson_worms_spp_df %>%
+  filter(!is.na(am_sid) | !is.na(iucn_sid))
+
 # watson_worms_spp_df$spp %>% n_distinct() 
     # 96053 total species
-# watson_am_spp_df$am_sid %>% n_distinct() 
+# watson_maps_spp_df %>% filter(!is.na(am_sid)) %>% .$am_sid %>% n_distinct() 
     # 25099 spp ids in AquaMaps
-# watson_am_spp_df$spp %>% n_distinct() 
-    # 24701 distinct species in AquaMaps
-# watson_am_spp_df %>% filter(am_sid %in% am_spp_valid$am_sid) %>% .$spp %>% n_distinct()
-#   # 18174 species when accounting for occur_cells >= 10
+# watson_maps_spp_df %>% filter(!is.na(iucn_sid)) %>% .$iucn_sid %>% n_distinct() 
+    # 5079 spp ids in IUCN
+# watson_maps_spp_df$spp %>% n_distinct() 
+    # 26169 distinct species across AquaMaps and IUCN
+# watson_maps_spp_df %>% filter(am_sid %in% am_spp_valid$am_sid | !is.na(iucn_sid)) %>% .$spp %>% n_distinct()
+#   # 20326 species when accounting for occur_cells >= 10; 2000+ of these are in IUCN
 
 ```
 
@@ -133,7 +145,8 @@ tons_by_pel_benth <- w_catch_df %>%
   summarize(tot_tonnes = sum(reported_ind + reported_nind + iuuind + iuunind))
 
 am_spp_cells <- get_am_spp_cells(occurcells_cut = 0, prob_cut = 0)
-
+### this is the IUCN spp mapped to HCAF:
+iucn_spp_cells <- read_csv(here_anx('iucn_spp', 'iucn_spp_hcaf.csv'))
 ```
 
 ### Check catch levels across various taxonomic levels
@@ -178,7 +191,7 @@ __NOTE:__  taxon 100039 (Marine fishes not identified, demersal <30 cm, Misc Fin
 
 Apply the same size-sorting method to other higher-level taxa to the family level (4XXXXX and below), using descriptors of species as small (≤ 30 cm), large (≥ 90 cm), or in between (< 90 cm)
 
-```{r drop big species from taxonkey 100039}
+```{r drop big species from certain taxa}
 spp_traits <- read_csv(here('_data/grouping_traits_post_imputation.csv')) %>%
   mutate(len = exp(log_l))
 
@@ -205,7 +218,7 @@ large_taxa <- w_taxa_raw_df %>%
   filter(str_detect(descript, '>=90 cm')) %>% 
   .$taxonkey
 
-watson_am_cleaned_df <- watson_am_spp_df %>%
+watson_maps_cleaned_df <- watson_maps_spp_df %>%
   ### for small taxa, drop big_spp:
   filter(!(taxonkey %in% small_taxa & spp %in% big_spp)) %>%
   ### for medium taxa, drop huge_spp:
@@ -213,11 +226,11 @@ watson_am_cleaned_df <- watson_am_spp_df %>%
   ### for large taxa, include only huge_spp:
   filter(!(taxonkey %in% large_taxa & !spp %in% huge_spp))
   
-### write out lookup table for Watson taxonkey to AquaMaps species and id
-watson_am_lookup <- watson_am_cleaned_df %>%
-  select(taxonkey, am_sid, spp) %>%
+### write out lookup table for Watson taxonkey to AquaMaps/IUCN species and id
+watson_maps_lookup <- watson_am_cleaned_df %>%
+  select(taxonkey, am_sid, iucn_sid, spp) %>%
   distinct()
-write_csv(watson_am_lookup, here('_setup/stressors/int/watson_am_lookup.csv'))
+write_csv(watson_maps_lookup, here('_setup/stressors/int/watson_maps_lookup.csv'))
 
 ```
 
@@ -389,15 +402,7 @@ build_spp_catch_map <- function(tx_ids, tx_nms) {
 
 ```{r process species level catch}
 
-spp_vec <- watson_am_cleaned_df$spp %>% 
-  unique() %>% sort()
-    ### 23801 spp
-
-spp_map_fstem <- here_anx('stressors/fishing/total_catch_by_spp_cell',
-                          'spp_catch_%s.csv')
-### unlink(list.files(dirname(spp_map_fstem), full.names = TRUE))
-
-process_species_catch <- function(s) {
+process_species_catch <- function(s, spp_map_fstem) {
 
   # s <- 'gadus macrocephalus' ### multiple taxonkey at spp level
   # s <- 'platybelone argalus' ### multiple am_sid
@@ -443,8 +448,17 @@ process_species_catch <- function(s) {
   }
 }
 
+spp_vec <- watson_am_cleaned_df$spp %>% 
+  unique() %>% sort()
+    ### 23801 spp
+
+spp_map_fstem <- here_anx('stressors/fishing/total_catch_by_spp_cell',
+                          'am_spp_catch_%s.csv')
+### unlink(list.files(dirname(spp_map_fstem), full.names = TRUE))
+
 tmp <- parallel::mclapply(spp_vec, mc.cores = 12,
-                          FUN = process_species_catch)
+                          FUN = process_species_catch, 
+                          spp_map_fstem = spp_map_fstem)
 
 ### to run just those spp without files already (e.g., unlinked zero-
 ### length files and need to just rerun those)

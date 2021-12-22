@@ -57,7 +57,7 @@ watson_am_lookup <- read_csv(here('_setup/stressors/int/watson_am_lookup.csv'))
 spp_vec <- watson_am_lookup$spp %>% unique() %>% sort()
 
 npp_catch_fstem <- here_anx('stressors/fishing/npp_norm_catch_by_spp_moll',
-                            'npp_spp_catch_%s_mol.csv')
+                            'am_spp_npp_catch_%s_mol.csv')
 range_map_fstem <- here_anx('spp_maps_mol', 'am_spp_mol_%s.csv')
 ```
 
@@ -135,7 +135,7 @@ Using this reference point, rescale NPP-adjusted catch layers for each species, 
 
 ```{r rescale catch}
 rescaled_fstem <- here_anx('stressors/fishing/rescaled_catch_by_spp_cell',
-                           'rescaled_catch_%s.csv')
+                           'am_spp_rescaled_catch_%s.csv')
 rescale_catch <- function(s, ref_pt) {
   # s <- missing_spp[2]
   # s <- 'pleoticus muelleri'

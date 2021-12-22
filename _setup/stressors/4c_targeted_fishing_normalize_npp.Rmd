@@ -176,9 +176,9 @@ ocean_a_hcaf_df <- data.frame(ocean_a_hcaf = values(ocean_a_0.5),
 ```{r}
 
 spp_hcaf_map_fstem <- here_anx('stressors/fishing/total_catch_by_spp_cell',
-                               'spp_catch_%s.csv')
+                               'am_spp_catch_%s.csv')
 spp_mol_map_fstem  <- here_anx('stressors/fishing/npp_norm_catch_by_spp_moll',
-                               'npp_spp_catch_%s_mol.csv')
+                               'am_spp_npp_catch_%s_mol.csv')
 spp_vec <- watson_am_lookup$spp %>% unique()
 
 ### to cut zero-length files
