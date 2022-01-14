@@ -54,11 +54,9 @@ The Watson/WoRMS lookup contains many species, but also higher-order taxa. Expan
 
 ```{r read in watson and aquamaps taxa data}
 am_spp_ids <- get_am_spp_info() %>%
-  select(am_sid, sciname, occur_cells) %>%
+  filter(occur_cells >= 10) %>%
+  select(am_sid, sciname) %>%
   distinct()
-
-am_spp_valid <- am_spp_ids %>%
-  filter(occur_cells >= 10)
 
 iucn_spp_ids <- read_csv(here('_data/iucn_spp/iucn_to_worms_match.csv')) %>%
   filter(mapped) %>%
@@ -78,40 +76,31 @@ watson_worms_spp_df <- watson_worms_tx_df %>%
 
 ### Keep just the ones with maps:
 watson_maps_spp_df <- watson_worms_spp_df %>%
-  filter(!is.na(am_sid) | !is.na(iucn_sid))
+  filter(!is.na(am_sid) | !is.na(iucn_sid)) %>%
+  mutate(source = ifelse(!is.na(am_sid), 'aquamaps', 'iucn'))
 
 # watson_worms_spp_df$spp %>% n_distinct() 
     # 96053 total species
 # watson_maps_spp_df %>% filter(!is.na(am_sid)) %>% .$am_sid %>% n_distinct() 
-    # 25099 spp ids in AquaMaps
+    # 18368 spp ids in AquaMaps (25099 if no occurcells cut)
 # watson_maps_spp_df %>% filter(!is.na(iucn_sid)) %>% .$iucn_sid %>% n_distinct() 
     # 5079 spp ids in IUCN
 # watson_maps_spp_df$spp %>% n_distinct() 
-    # 26169 distinct species across AquaMaps and IUCN
-# watson_maps_spp_df %>% filter(am_sid %in% am_spp_valid$am_sid | !is.na(iucn_sid)) %>% .$spp %>% n_distinct()
-#   # 20326 species when accounting for occur_cells >= 10; 2000+ of these are in IUCN
-
-```
-
-For reference read in the original Watson taxonomic info.
-```{r read in raw watson taxa}
-watson_dir <- here_anx('../../git-annex/globalprep/_raw_data', 
-                       'IMAS_GlobalFisheriesLandings/d2020')
-
-codes_xlsx <- file.path(watson_dir, 'Codes_raw.xlsx')
-# codes_sheets <- readxl::excel_sheets(codes_xlsx)
-w_taxa_raw_df <- readxl::read_excel(codes_xlsx, sheet = 'Taxa') %>%
-  janitor::clean_names() %>%
-  select(-c(x8:taxonkey_11), taxonkey = taxonkey_1)
-
+    # 20326 distinct species across AquaMaps and IUCN (26169 if no occur_cells cut)
+### how many spp from each source, prioritizing AquaMaps?
+# table(watson_maps_spp_df %>% select(iucn_sid, am_sid, source) %>% distinct() %>% .$source)
+    # aquamaps     iucn 
+    #    18393     2179
 ```
 
 ## Higher-order taxonomic catch data
 
 For higher-order taxonomic fishing data (i.e., not at species level):
 
-* Identify all spp in that taxon with species distributions in AquaMaps (later, incl IUCN).
+* Identify all spp in that taxon with species distributions in AquaMaps and IUCN.
+    * Prioritize AquaMaps range maps with occurcells >= 10, then IUCN.
 * Generate a map of spp richness for the taxon (unique spp in each cell).
+    * For AquaMaps maps, use probability threshold of 50%.
 * Map out total catch across pelagic and benthic gear types for this taxon.
 * Save out as a dataframe of cell ID, total catch, number of species.  Alternately: raster of catch, raster of species.  Use Watson `taxonkey` in filename.
     * It is quite convenient that Watson's cell ID is identical to LOICZID.
@@ -130,10 +119,14 @@ w_cell_df <- readxl::read_excel(w_codes_xlsx, sheet = 'Cell') %>%
   janitor::clean_names() %>%
   select(-c(x5:x7))
 
-w_gear_df <- readxl::read_excel(codes_xlsx, sheet = 'Gear') %>%
+w_gear_df <- readxl::read_excel(w_codes_xlsx, sheet = 'Gear') %>%
   janitor::clean_names() %>%
   select(-x9, -x10)
 ### Benthic gears: trap (f_gear_code = 4), dredge (5), trawl (6)
+
+w_taxa_raw_df <- readxl::read_excel(w_codes_xlsx, sheet = 'Taxa') %>% 
+  janitor::clean_names() %>%
+  select(-c(x8:taxonkey_11), taxonkey = taxonkey_1)
 
 w_catch_df <- readRDS(file.path(w_dir, 'Catch2015_2019.rds')) %>%
   janitor::clean_names() %>%
@@ -144,9 +137,6 @@ tons_by_pel_benth <- w_catch_df %>%
   group_by(benthic) %>%
   summarize(tot_tonnes = sum(reported_ind + reported_nind + iuuind + iuunind))
 
-am_spp_cells <- get_am_spp_cells(occurcells_cut = 0, prob_cut = 0)
-### this is the IUCN spp mapped to HCAF:
-iucn_spp_cells <- read_csv(here_anx('iucn_spp', 'iucn_spp_hcaf.csv'))
 ```
 
 ### Check catch levels across various taxonomic levels
@@ -191,7 +181,7 @@ __NOTE:__  taxon 100039 (Marine fishes not identified, demersal <30 cm, Misc Fin
 
 Apply the same size-sorting method to other higher-level taxa to the family level (4XXXXX and below), using descriptors of species as small (≤ 30 cm), large (≥ 90 cm), or in between (< 90 cm)
 
-```{r drop big species from certain taxa}
+```{r clean taxa by filtering based on size}
 spp_traits <- read_csv(here('_data/grouping_traits_post_imputation.csv')) %>%
   mutate(len = exp(log_l))
 
@@ -227,8 +217,8 @@ watson_maps_cleaned_df <- watson_maps_spp_df %>%
   filter(!(taxonkey %in% large_taxa & !spp %in% huge_spp))
   
 ### write out lookup table for Watson taxonkey to AquaMaps/IUCN species and id
-watson_maps_lookup <- watson_am_cleaned_df %>%
-  select(taxonkey, am_sid, iucn_sid, spp) %>%
+watson_maps_lookup <- watson_maps_cleaned_df %>%
+  select(taxonkey, am_sid, iucn_sid, spp, source) %>%
   distinct()
 write_csv(watson_maps_lookup, here('_setup/stressors/int/watson_maps_lookup.csv'))
 
@@ -239,28 +229,37 @@ write_csv(watson_maps_lookup, here('_setup/stressors/int/watson_maps_lookup.csv'
 
 Functions to map the taxon species richness and total catch per cell for the taxon:
 
-* `map_tx_spp_richness(am_sids, am_spp_cells, thresh = 0)`
+* `map_tx_spp_richness(spp_in_taxon, am_spp_cells, iucn_spp_cells)`
 * `map_tx_catch(tx_id, catch_df)`
 
 ```{r helper functions}
 
-map_tx_spp_rich <- function(am_sids, am_spp_cells, thresh = 0) {
-  ### 
-  if(thresh > 0) {
-    tx_cells <- am_spp_cells %>%
-      filter(prob > thresh) %>%
-      filter(am_sid %in% am_sids)
-  } else {
-    tx_cells <- am_spp_cells %>%
-      filter(am_sid %in% am_sids)
-  }
+map_tx_spp_rich <- function(spp_in_taxon, am_spp_cells, iucn_spp_cells) {
   
-  tx_cell_sum <- tx_cells %>%
+  am_sids <- spp_in_taxon %>%
+    filter(source == 'aquamaps') %>%
+    .$am_sid
+  iucn_sids <- spp_in_taxon %>%
+    filter(source == 'iucn') %>%
+    .$iucn_sid
+  
+  ### find cells for all AquaMaps spp in this taxon
+  am_tx_cells <- am_spp_cells %>%
+    filter(am_sid %in% am_sids) %>%
+    rename(id = am_sid)
+  ### find cells for all IUCN spp in this taxon
+  iucn_tx_cells <- iucn_spp_cells %>%
+    filter(iucn_sid %in% iucn_sids) %>%
+    mutate(id = as.character(iucn_sid)) ### to join with character am_sid
+
+  
+  tx_cell_sum <- am_tx_cells %>%
+    bind_rows(iucn_tx_cells) %>%
     group_by(loiczid) %>%
-    summarize(n_spp = n_distinct(am_sid))
+    summarize(n_spp = n_distinct(id))
   
   if(nrow(tx_cell_sum) == 0) {
-    message('  ... no species range found for ', paste(am_sids, collapse = ';'), '!')
+    message('  ... no species range found for ', paste(am_sids, iucn_sids, sep = ';', collapse = ';'), '!')
   }
   
   return(tx_cell_sum)
@@ -281,7 +280,8 @@ map_tx_catch <- function(tx_id, catch_df) {
               pel_tot_catch  = pel_ind_catch + pel_nind_catch,
               ben_tot_catch  = ben_ind_catch + ben_nind_catch)
   
-  ### at this point, not using industrial vs non-industrial...
+  ### at this point, not using industrial vs non-industrial, so drop distinction.
+  ### If it is needed, add to select() here:
   tx_catch_sum <- tx_catch_sum %>%
     select(cell, pel_tot_catch, ben_tot_catch)
   
@@ -294,39 +294,50 @@ map_tx_catch <- function(tx_id, catch_df) {
 
 Loop over higher-order taxa and generate taxon catch summary files.  For 100039, filter out big species specifically for a more accurate species richness value.  Write out to `stressors/fishing/total_catch_by_taxon_and_cell` in the Mazu annex directory.
 
+```{r Read in species maps}
+# am_spp_cells <- get_am_spp_cells(occurcells_cut = 0, prob_cut = 0)
+am_spp_cells <- get_am_spp_cells(occurcells_cut = 10, prob_cut = 0.50)
+### this is the IUCN spp mapped to HCAF:
+iucn_spp_cells <- read_csv(here_anx('iucn_spp', 'iucn_spp_hcaf.csv'),
+                           show_col_types = FALSE)
+
+```
+
+
 ```{r process higher order taxa}
 
-tx_high <- watson_worms_tx_df %>%
-  filter(tax_level < 6)
-
-tx_map_fstem <- here_anx('stressors/fishing', 
-                         'total_catch_by_tx_cell/tx_catch_%s_%s.csv')
-# unlink(list.files(dirname(tx_map_fstem), full.names = TRUE))
-
-process_higher_taxa <- function(i) {
+process_higher_taxa <- function(i, tx_high) {
   ### i <- 1
   ### i <- which(tx_high$taxonkey == 590107)
   tx_id <- tx_high$taxonkey[i]
   tx_nm <- tx_high$worms_name[i]
   
+  tx_map_fstem <- here_anx('stressors/fishing', 
+                           'total_catch_by_tx_cell/tx_catch_%s_%s.csv')
+  # unlink(list.files(dirname(tx_map_fstem), full.names = TRUE))
   tx_map_f <- sprintf(tx_map_fstem, tx_id, tx_nm)
   
   if(!file.exists(tx_map_f)) {
     message('Processing ', basename(tx_map_f), '...')
-    spp_in_taxon <- watson_am_cleaned_df %>%
+    spp_in_taxon <- watson_maps_cleaned_df %>%
       filter(taxonkey == tx_id) %>%
-      .$am_sid %>% unique()
+      select(am_sid, iucn_sid, source) %>%
+      distinct()
     
-    tx_spp_rich <- map_tx_spp_rich(spp_in_taxon, 
-                                   am_spp_cells = am_spp_cells, thresh = 0)
+    tx_spp_rich <- map_tx_spp_rich(spp_in_taxon, am_spp_cells = am_spp_cells, 
+                                   iucn_spp_cells = iucn_spp_cells)
   
     tx_catch <- map_tx_catch(tx_id = tx_id, catch_df = w_catch_df)
+    tx_catch_total <- tx_catch %>%
+      summarize(tot_catch = sum(pel_tot_catch + ben_tot_catch)) %>%
+      .$tot_catch %>% round(2)
     
     tx_map_out <- inner_join(tx_spp_rich, tx_catch, by = c('loiczid' = 'cell'))
     
     if(nrow(tx_map_out) == 0) {
       if(nrow(tx_spp_rich > 0) & nrow(tx_catch > 0)) {
-        message('  ... no observed overlap of catch and species range for ', tx_id, ': ', tx_nm)
+        message('  ... no observed overlap of catch and species range for ', tx_id, ': ', tx_nm,
+                '\n      this drops ', tx_catch_total, ' tonnes of catch...')
       }
       tx_map_out <- data.frame(loiczid = -1, n_spp = NA,
                                pel_tot_catch = 0, ben_tot_catch = 0)
@@ -338,17 +349,21 @@ process_higher_taxa <- function(i) {
   }
 }
 
+tx_high <- watson_worms_tx_df %>%
+  filter(tax_level < 6)
+
 tmp <- parallel::mclapply(1:nrow(tx_high), mc.cores = 12,
-                          FUN = process_higher_taxa)
+                          FUN = process_higher_taxa, 
+                          tx_high = tx_high)
 
 ```
 
 
 ## Species-level catch maps
 
-Here, for each species in AquaMaps, total up the catch associated with that species at the species level and at higher taxonomic levels, per LOICZID cell.  Write out as .csv.
+Here, for each species in AquaMaps and IUCN, total up the catch associated with that species at the species level and at higher taxonomic levels, per LOICZID cell.  Write out as .csv.
 
-Note, due to name mismatches and synonyms between AquaMaps and WoRMS, some species are listed across multiple AquaMaps species IDs.
+Note, due to name mismatches and synonyms between AquaMaps, IUCN, and WoRMS, some species are listed across multiple species IDs.
 
 Helper functions:
 
@@ -402,12 +417,11 @@ build_spp_catch_map <- function(tx_ids, tx_nms) {
 
 ```{r process species level catch}
 
-process_species_catch <- function(s, spp_map_fstem) {
-
+process_species_catch <- function(s, spp_vec, spp_map_fstem, source = 'aquamaps') {
   # s <- 'gadus macrocephalus' ### multiple taxonkey at spp level
   # s <- 'platybelone argalus' ### multiple am_sid
   # s <- 'lepas anatifera' ### file not being created
-  # s <- spp_wo_files[2]
+  # s <- am_spp_vec[1]
   i <- which(s == spp_vec)
   
   spp_map_f <- sprintf(spp_map_fstem, str_replace_all(s, ' +', '_'))
@@ -417,11 +431,16 @@ process_species_catch <- function(s, spp_map_fstem) {
     message('Processing species-total catch map for ', s, 
             ' (', i, ' of ', length(spp_vec), ')')
   
-    s_df <- watson_am_cleaned_df %>%
-      filter(spp == s) 
+    s_df <- watson_maps_cleaned_df %>%
+      filter(spp == s)
     
-    am_sid_vec <- s_df$am_sid %>% unique()
-    spp_map <- map_tx_spp_rich(am_sid_vec, am_spp_cells = am_spp_cells) %>%
+    spp_ids <- s_df %>%
+      select(am_sid, iucn_sid) %>%
+      mutate(source = source) %>%
+      distinct()
+    
+    spp_map <- map_tx_spp_rich(spp_ids, 
+                               am_spp_cells = am_spp_cells, iucn_spp_cells = iucn_spp_cells) %>%
       select(-n_spp)
     
     tx_keys_df <- s_df %>%
@@ -434,9 +453,14 @@ process_species_catch <- function(s, spp_map_fstem) {
     spp_catch_map <- spp_map %>%
       inner_join(catch_map, by = 'loiczid')
     
-    # raster::plot(map_to_hcaf(spp_catch_map, which = 'tot_catch'))
+    tot_catch <- spp_catch_map %>%
+      summarize(tot_catch = sum(pel_tot_catch + ben_tot_catch)) %>%
+      .$tot_catch %>% round(2)
     
-    message('  Found ', nrow(spp_catch_map), ' catch/presence cells for ', s, '...')
+    # raster::plot(map_to_hcaf(spp_catch_map, which = 'pel_tot_catch'))
+    
+    message('  Found ', nrow(spp_catch_map), ' catch/presence cells for ', s, 
+            ' totalling ', tot_catch, ' tonnes...')
     if(nrow(spp_catch_map) == 0) {
       spp_catch_map <- data.frame(loiczid = -1, pel_tot_catch = 0, ben_tot_catch = 0)
     }
@@ -447,31 +471,66 @@ process_species_catch <- function(s, spp_map_fstem) {
     # message('File ', basename(spp_map_f), ' exists... skipping!')
   }
 }
+```
 
-spp_vec <- watson_am_cleaned_df$spp %>% 
+``` {r iterate over AquaMaps species IDs}
+
+am_spp_vec <- read_csv(here('_setup/stressors/int/watson_maps_lookup.csv')) %>%
+  filter(source == 'aquamaps') %>%
+  .$spp %>% 
   unique() %>% sort()
-    ### 23801 spp
+    ### 17392 spp
 
-spp_map_fstem <- here_anx('stressors/fishing/total_catch_by_spp_cell',
+am_spp_map_fstem <- here_anx('stressors/fishing/total_catch_by_spp_cell',
                           'am_spp_catch_%s.csv')
-### unlink(list.files(dirname(spp_map_fstem), full.names = TRUE))
 
-tmp <- parallel::mclapply(spp_vec, mc.cores = 12,
+x <- list.files(dirname(am_spp_map_fstem), pattern = 'am_spp_catch', full.names = TRUE)
+### unlink(x)
+
+# x <- list.files(dirname(am_spp_map_fstem), full.names = TRUE)
+# drop <- data.frame(f = x, y = file.size(x)) %>% filter(y < 100) %>% .$f
+### unlink(drop)
+
+### don't rerun species already done...
+spp_with_files <- basename(x) %>% 
+  str_remove_all('am_spp_catch_|.csv') %>% 
+  str_replace_all('_', ' ')
+
+am_spp_vec <- am_spp_vec[!am_spp_vec %in% spp_with_files]
+
+tmp <- parallel::mclapply(am_spp_vec, mc.cores = 12,
                           FUN = process_species_catch, 
-                          spp_map_fstem = spp_map_fstem)
+                          spp_vec = am_spp_vec,
+                          spp_map_fstem = am_spp_map_fstem)
+```
 
-### to run just those spp without files already (e.g., unlinked zero-
-### length files and need to just rerun those)
-# x <- list.files(dirname(spp_map_fstem), full.names = TRUE)
-# 
-# spp_with_files <- basename(x) %>%
-#   str_remove_all('spp_catch_|.csv') %>%
-#   str_replace_all('_', ' ')
-# 
-# spp_wo_files <- spp_vec[!spp_vec %in% spp_with_files]
-# 
-# tmp <- parallel::mclapply(spp_wo_files, mc.cores = 12,
-#                           FUN = process_species_catch)
+``` {r iterate over IUCN species}
+### While we prioritized AquaMaps over IUCN, here let's just run all the 
+### available IUCN species in case we change our priority later...
+iucn_spp_vec <- read_csv(here('_setup/stressors/int/watson_maps_lookup.csv')) %>%
+  filter(!is.na(iucn_sid)) %>%
+  .$spp %>% 
+  unique() %>% sort()
+    ### 4744 spp
+
+iucn_spp_map_fstem <- here_anx('stressors/fishing/total_catch_by_spp_cell',
+                          'iucn_spp_catch_%s.csv')
+
+x <- list.files(dirname(iucn_spp_map_fstem), pattern = 'iucn_spp_catch', full.names = TRUE)
+### unlink(x)
+
+spp_with_files <- basename(x) %>% 
+  str_remove_all('iucn_spp_catch_|.csv') %>% 
+  str_replace_all('_', ' ')
+
+iucn_spp_vec <- iucn_spp_vec[!iucn_spp_vec %in% spp_with_files]
+
+
+tmp <- parallel::mclapply(iucn_spp_vec, mc.cores = 12,
+                          FUN = process_species_catch, 
+                          spp_vec = iucn_spp_vec,
+                          spp_map_fstem = iucn_spp_map_fstem,
+                          source = 'iucn')
 
 ```
 
@@ -484,7 +543,7 @@ x <- list.files(dirname(spp_map_fstem), full.names = TRUE)
 # unlink(y)
 
 spp_with_files <- basename(x) %>% 
-  str_remove_all('spp_catch_|.csv') %>% 
+  str_remove_all('^am_|^iucn_|spp_catch_|.csv') %>% 
   str_replace_all('_', ' ')
 
 spp_wo_files <- spp_vec[!spp_vec %in% spp_with_files]

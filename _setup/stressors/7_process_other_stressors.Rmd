@@ -27,12 +27,21 @@ library(here)
 library(RColorBrewer)
 
 source(here('common_fxns.R'))
+source('stressor_fxns.R') ### must be in same directory for relative path
 
 ```
 
 # Summary
 
-Gather stressor layers and process to the CRS for this analysis: Mollweide, 10 km x 10 km.  Identify gapfill needs if necessary.  
+Gather stressor layers and process to the CRS for this analysis: Mollweide, 10 km x 10 km.  Identify gapfill needs if necessary.  Layers gathered/processed here:
+
+* Benthic disturbance (from effort in destructive fishing practices)
+* Direct human (from human population density)
+* Extreme temperature events
+* Sea Level Rise
+* Ocean Acidification
+* Ultraviolet
+* Light pollution
 
 Note that for some stressors, we may need to convert a raw value (e.g., ship track count) to an intensity (count per km^2) prior to reprojecting.
 
@@ -44,7 +53,7 @@ Note in methodology: where in CHI at ~1 km Mollweide we frequently use the 99.99
 
 All files are located on Mazu, starting from `/home/shares/ohi/` unless otherwise noted.
 
-## Fishing-related stressors other than targeted biomass removal
+## Benthic disturbance from fishing
 
 * GFW data to estimate benthic disturbance from food systems project:   
     * dir: `stressors_2021/_dataprep/fishing_benthic_destructive`
@@ -53,69 +62,62 @@ All files are located on Mazu, starting from `/home/shares/ohi/` unless otherwis
     * cite food systems project where GFW data was processed to this layer?
     * or cite GFW and include methods/code to generate this layer within this project.
     * Information from the food systems project: https://github.com/OHI-Science/food_systems/tree/master/fisheries/marine/disturbance
-* Artisanal and Commercial High Bycatch fishing from OHI 2021
-    * dir: `git-annex/globalprep/prs_fish/v2020/output/`
-        * in this, subdirs: `art_high_bycatch`, `art_low_bycatch`, `comm_high_bycatch`, `comm_low_bycatch`
-        * in subdirs: `art_high_bycatch/ahb_fish_pressure_2013_2017.tif` and `comm_high_bycatch/hb_fish_pressure_2013_2017.tif`
-    * From Watson data, 0.5° rasters, catch per cell - convert to catch per km^2^.
-    
-## Land-based stressors
 
-* Nutrient pollution: combine ag runoff from OHI plume model, wastewater inputs, and mariculture inputs.
-    * Nutrient pollution from OHI 2021 plume model
-        * This appears to be absolute amounts per cell, so can be normalized to an intensity (tonnes per km^2^ e.g.) to be combined with wastewater data.
-        * dir: `git-annex/globalprep/prs_land-based_nutrient/v2021/output/N_plume`
-            * file: `pourpoints_crop_manure_leached_volt_N_2019_joined.tif`
-            * log-transform(?)
-        * See OHI processing scripts for details: https://github.com/OHI-Science/ohiprep_v2021/tree/gh-pages/globalprep/prs_land-based_nutrient/v2021
-    * Wastewater
-        * Get from KNB: https://knb.ecoinformatics.org/view/doi%3A10.5063%2FF76B09
-        * confirm units; perhaps use this note from Mel to make sure the numbers are in the same ballpark between ag and wastewater:
-        * > Our model indicates that wastewater adds 6.2Tg nitrogen into coastal waters, which is approximately 40% of total nitrogen from agriculture.
-    * Aquaculture: 
-        * see https://github.com/OHI-Science/food_systems/tree/master/aquaculture/marine/
-        * > These values, in the scheme of these kinds of things, should be fairly accurate (the models are pretty simple and N flows directly into the marine system). I would check the units to make sure they are the same as other datasources (I think they are tonnes/cell here).
-* Direct human impact/habitat destruction using population as proxy
-    * dir: `git-annex/globalprep/mar_prs_population/v2020/int/`
-        * file: `human_density_2020_mol_tmp.tif`
-        * also files for `human_count...` and `yearly_change...`
-        * Log-transform
-* Organic chemical pollution?
+## Direct human impact/habitat destruction 
+
+using population as proxy:
+
+* dir: `git-annex/globalprep/mar_prs_population/v2020/int/`
+    * file: `human_density_2020_mol_tmp.tif`
+    * also files for `human_count...` and `yearly_change...`
+    * Log-transform
+
+## Organic chemical pollution?
         
 
 ## Climate stressors other than SST
 
 Count these as intensities - no conversion to intensity required.
 
-* Sea level rise from OHI 2021
-    * Use annual mean SLR anomaly rasters from here:
-        * dir: `git-annex/globalprep/prs_slr/v2021/int/msla_annual_mean/`
-            * file: `msla_annual_2019.tif`
-        * These are pre-transform and mask.  Transformed and masked are also available, but let's use these so we can make sure the transform and mask are accurate to our particular CRS.
-    * See OHI processing script for details: `https://github.com/OHI-Science/ohiprep_v2021/blob/gh-pages/globalprep/prs_slr/v2021/slr_layer_prep_v2.Rmd`
-* Ocean acidification from CHI Pace of Change (2017 data year)
-    * dir: `git-annex/impact_acceleration/stressors/oa/final`
-        * file: `oa_2017_rescaled_mol.tif`
-    * These are in Mollweide but at 934 meter resolution... reproject to 10 km
-    * Or, use OHI or CHI processing script to process from raw data?
-* Ultraviolet radiation from OHI 2021
-    * dir: `git-annex/globalprep/prs_uv/v2021/int/rescaled/`
-        * file: `annual_diff_2016_2020_rescaled.tif`
-    * See OHI processing script for details: `https://ohi-science.org/ohiprep_v2020/globalprep/prs_uv/v2020/uv_dataprep.html`
+### Extreme temperature events
 
-## Ocean-based stressors
+These maps were created for Mel's MARISCO stressors project.  See there for methodology.  Nutshell:
 
+1. For each week and raster cell: determine the anomaly value (observed weekly temp - climatological weekly mean) that corresponds to the 90th quantile using years ~1985-2015.
+2. Then for each week/raster cell: determine the weeks in each year of 2016-2020 that exceed the 90th quantile value calculated using the 1985-2015 data.
+3. Sum exceedences occurring from 2016-2020.
 
+* Use annual mean SLR anomaly rasters from here:
+    * dir: `/stressors_2021/_dataprep/SST_past_present/final_extreme`
+        * file: `sst_exceeds_90quant_2016-2020.tif`
+    * These are projected to Mollweide, but not rescaled 0-1 (currently, sum of extreme weeks / total number of weeks)
+* See this issue for methods, for now: https://github.com/mapping-marine-spp-vuln/issues/issues/22
+
+### Sea level rise from OHI 2021
+
+* Use annual mean SLR anomaly rasters from here:
+    * dir: `git-annex/globalprep/prs_slr/v2021/int/msla_annual_mean/`
+        * file: `msla_annual_2019.tif`
+    * These are pre-transform and mask.  Transformed and masked are also available, but let's use these so we can make sure the transform and mask are accurate to our particular CRS.
+* See OHI processing script for details: `https://github.com/OHI-Science/ohiprep_v2021/blob/gh-pages/globalprep/prs_slr/v2021/slr_layer_prep_v2.Rmd`
     
-## Sensory pollution
+### Ocean acidification from CHI Pace of Change (2017 data year)
 
-Light pollution is an intensity.
+* dir: `git-annex/impact_acceleration/stressors/oa/final`
+    * file: `oa_2017_rescaled_mol.tif`
+* These are in Mollweide but at 934 meter resolution... reproject to 10 km
+    
+### Ultraviolet radiation from OHI 2021
+
+* dir: `git-annex/globalprep/prs_uv/v2021/int/rescaled/`
+    * file: `annual_diff_2016_2020_rescaled.tif`
+* See OHI processing script for details: `https://ohi-science.org/ohiprep_v2020/globalprep/prs_uv/v2020/uv_dataprep.html`
+
+## Light pollution
 
 * Light pollution from [Li et al. (2020) A harmonized global nighttime light dataset 1992–2018](https://www.nature.com/articles/s41597-020-0510-y#Sec8)
     * Night time light averaged over year, at 30 arc-second resolution.
     * Downloaded data from FigShare 11/30/21: https://figshare.com/articles/dataset/Harmonization_of_DMSP_and_VIIRS_nighttime_light_data_from_1992-2018_at_the_global_scale/9828827/2?file=17626049
-
-* Noise pollution?
 
 # Methods
 
@@ -156,49 +158,11 @@ ocean_area_0.1deg <- raster(here('_spatial/ocean_area_wgs84_0.1deg.tif'))
 # writeRaster(ocean_area_0.1deg, here('_spatial/ocean_area_wgs84_0.1deg.tif'))
 ```
 
-## Fishing-related stressors other than targeted biomass removal
-
-### Global Fishing Watch for benthic disturbance
+## Global Fishing Watch for benthic disturbance
 
 Reproject, then rescale 0-1.
 
-These data are extremely right-skewed - instead of $\log(x+1)$ transform consider inverse hyperbolic sine from https://marcfbellemare.com/wordpress/12856:
-$$IHS(x) = \log(x + \sqrt{x^2 + 1})$$
-The `ihs()` and `log_plus()` functions I define here allow for adding a given constant (e.g., 1), but default to a value of $\max(x)/1000$, to reduce (for `ihs()`) or eliminate (for `log_plus()`) scale dependence.
-
-For these layers, let's use the `log_plus()` transformation as more simple.
-
-```{r}
-ihs <- function(x, add = NULL) {
-  ### inverse hyperbolic sine from https://marcfbellemare.com/wordpress/12856
-  ### modified so the added component is relative to x, for consistency
-  ### across scales.  Can set add to be a numeric value to override.
-  if(is.null(add)) {
-    add <- max(x, na.rm = TRUE)/1000
-  }
-  y <- log(x + sqrt(x^2 + add))
-  ### still seems very slightly scale dependent though!
-}
-
-log_plus <- function(x, add = NULL) {
-  if(is.null(add)) {
-    add <- max(x, na.rm = TRUE)/1000
-    if(add > 1) add <- 1
-  }
-  y <- log(x + add)
-}
-
-```
-
 GFW data for OHI at 0.01 degree resolution.  Aggregate by a factor of about 10x to get closer to 10 km x 10 km target resolution (at equator...), convert to intensity (hours/km^2^) then log transform and reproject.
-
-```{r, include = FALSE, eval = FALSE}
-lognorm_var <- exp(rnorm(1000, 10, 2))
-hist(lognorm_var)
-
-mean(log(lognorm_var)) # [1] 9.937873
-log(mean(lognorm_var)) # [1] 11.65589
-```
 
 
 ```{r GFW data for benthic disturbance}
@@ -223,13 +187,13 @@ if(!file.exists(benth_dist_f)) {
   agg_r <- aggregate(orig_r, fact = 10, fun = 'sum', progress = 'text')
   intensity_r <- agg_r / ocean_area_0.1deg
     
-  ### reproject intensity to Mollweide
+  ### reproject intensity to Mollweide and clip out tiny neg numbers
   reproj_intens_r <- projectRaster(intensity_r, ocean_rast, progress = 'text')
+  reproj_intens_r[reproj_intens_r < 0] <- 0
   
   ### rescale the reprojected raster, fill all NAs with 0, then mask to just ocean
-  reproj_log_r <- reproj_intens_r
-  values(reproj_log_r) <- log_plus(values(reproj_intens_r))
-  values(reproj_log_r) <- rescale(values(reproj_log_r))
+  reproj_log_r <- log_plus(reproj_intens_r)
+  reproj_log_r <- rescale_stressor(reproj_log_r)
   values(reproj_log_r)[is.na(values(reproj_log_r))] <- 0
 
   log_r_ocean <- mask(reproj_log_r, ocean_rast, progress = 'text')
@@ -245,164 +209,12 @@ r <- raster(benth_dist_f)
 plot(r, axes = FALSE, 
      main = 'rescaled, log(x+xmax/1000)-transformed annual destructive hours')
 
-hist(r[r > 0.0001], main = 'distribution of non-zero values')
-
-```
-
-### Artisanal and Commercial High Bycatch fishing
-
-#### DO NOT USE THIS - use benthic and pelagic bycatch instead...
-
-    * dir: `git-annex/globalprep/prs_fish/v2020/output/`
-        * in this, subdirs: `art_high_bycatch`, `art_low_bycatch`, `comm_high_bycatch`, `comm_low_bycatch`
-        * in subdirs: `art_high_bycatch/ahb_fish_pressure_2013_2017.tif` and `comm_high_bycatch/hb_fish_pressure_2013_2017.tif`
-    * From Watson data, 0.5° rasters.
-
-```{r Watson data for artisanal high bycatch, eval = FALSE}
-abh_f <- here('_data/stressors_mol/art_high_bycatch_2017.tif')
-### unlink(abh_f)
-
-if(!file.exists(abh_f)) {
-  orig_f <- here_ohi(paste('git-annex/globalprep/prs_fish/v2020/output', 
-                           'art_high_bycatch', 
-                           'ahb_fish_pressure_2013_2017.tif', sep = '/'))
-  orig_r <- raster(orig_f)
-  # class      : RasterLayer 
-  # dimensions : 19305, 38610, 745366050  (nrow, ncol, ncell)
-  # resolution : 934.4789, 934.4789  (x, y)
-  # extent     : -18040095, 18040134, -9020047, 9020067  (xmin, xmax, ymin, ymax)
-  # crs        : +proj=moll +lon_0=0 +x_0=0 +y_0=0 +ellps=WGS84 +units=m +no_defs 
-  # source     : ahb_fish_pressure_2013_2017.tif 
-  # names      : ahb_fish_pressure_2013_2017 
-  # values     : 0, 1  (min, max)
-  
-  ### Already in Mollweide and rescaled, but wrong resolution... aggregate up to ~ 10 km
-  agg_r <- aggregate(orig_r, fact = 10, fun = 'mean', progress = 'text')
-  ahb_r <- projectRaster(agg_r, ocean_rast, progress = 'text')
-
-  ### rescale the reprojected raster, fill all NAs with 0, then mask to just ocean
-  values(ahb_r) <- rescale(values(ahb_r))
-  values(ahb_r)[is.na(values(ahb_r))] <- 0
-  ahb_r_ocean <- mask(ahb_r, ocean_rast, progress = 'text')
-  
-  ### round to drop ludicrous precision then save out
-  values(ahb_r_ocean) <- round(values(ahb_r_ocean), 5)
-  writeRaster(ahb_r_ocean, abh_f)
-  
-}
-
-r <- raster(abh_f)
-  
-plot(r, axes = FALSE, 
-     main = 'rescaled artisanal high bycatch fishing catch')
-
-hist(r[r > 0], main = 'distribution of non-zero values')
-
-```
-
-```{r Watson data for commercial high bycatch, eval = FALSE}
-chb_f <- here('_data/stressors_mol/comm_high_bycatch_2017.tif')
-### unlink(chb_f)
-
-if(!file.exists(chb_f)) {
-  orig_f <- here_ohi(paste('git-annex/globalprep/prs_fish/v2020/output', 
-                           'comm_high_bycatch', 
-                           'hb_fish_pressure_2013_2017.tif', sep = '/'))
-  orig_r <- raster(orig_f)
-  # class      : RasterLayer 
-  # dimensions : 19305, 38610, 745366050  (nrow, ncol, ncell)
-  # resolution : 934.4789, 934.4789  (x, y)
-  # extent     : -18040095, 18040134, -9020047, 9020067  (xmin, xmax, ymin, ymax)
-  # crs        : +proj=moll +lon_0=0 +x_0=0 +y_0=0 +ellps=WGS84 +units=m +no_defs 
-  # source     : ahb_fish_pressure_2013_2017.tif 
-  # names      : ahb_fish_pressure_2013_2017 
-  # values     : 0, 1  (min, max)
-  
-  ### Already in Mollweide and rescaled, but wrong resolution... aggregate up to near 10 km
-  agg_r <- aggregate(orig_r, fact = 10, fun = 'mean', progress = 'text')
-  chb_r <- projectRaster(agg_r, ocean_rast, progress = 'text')
-
-  ### rescale the reprojected raster, fill all NAs with 0, then mask to just ocean
-  values(chb_r) <- rescale(values(chb_r))
-  values(chb_r)[is.na(values(chb_r))] <- 0
-  
-  chb_r_ocean <- mask(chb_r, ocean_rast, progress = 'text')
-  
-  ### round to drop ludicrous precision then save out
-  values(chb_r_ocean) <- round(values(chb_r_ocean), 5)
-  writeRaster(chb_r_ocean, chb_f)
-  
-}
-
-r <- raster(chb_f)
-  
-plot(r, axes = FALSE, 
-     main = 'rescaled commercial high bycatch fishing catch')
-
 hist(r[r > 0], main = 'distribution of non-zero values')
 
 ```
 
 
-## Land-based stressors
-
-### Nutrient pollution
-
-Combine OHI nutrient plume with wastewater and aquaculture N inputs
-
-#### Nutrient pollution from OHI 2021 plume model
-
-This is in tonnes per cell (0.5 arc-minute cell).  Convert to tonnes per km^2, aggregate, reproject to 10 km x 10 km Mollweide.  This will still be tonnes per km^2.
-
-```{r Nutrient plume data}
-nutr_f <- here('_data/stressors_mol/nutrient_plume_2019.tif')
-### unlink(nutr_f)
-
-if(!file.exists(nutr_f)) {
-  orig_f <- here_ohi(paste('git-annex/globalprep/prs_land-based_nutrient', 
-                           'v2021/output/N_plume', 
-                           'pourpoints_crop_manure_leached_volt_N_2019_joined.tif', sep = '/'))
-  orig_r <- raster(orig_f)
-  # class      : RasterLayer 
-  # dimensions : 16981, 43465, 738079165  (nrow, ncol, ncell)
-  # resolution : 0.008333333, 0.008333333  (x, y)
-  # extent     : -181.0083, 181.2, -57.33333, 84.175  (xmin, xmax, ymin, ymax)
-  # crs        : +proj=longlat +datum=WGS84 +no_defs 
-  # source     : pourpoints_crop_manure_leached_volt_N_2019_joined.tif 
-  # names      : pourpoints_crop_manure_leached_volt_N_2019_joined 
-  
-  ### mask to just ocean cells to avoid land-based zeros from influencing mean
-  ocean_mask_sf <- read_sf(here('_spatial/ne_10m_ocean/ne_10m_ocean.shp'))
-  ocean_mask_r <- fasterize::fasterize(ocean_mask_sf, orig_r)
-  masked_r <- mask(orig_r, ocean_mask_r, progress = 'text')
-  
-  ### Log-transform, then aggregate up to ~ 10 km, 0.1°, then reproject
-  log_r <- log_plus(masked_r)
-  agg_r <- aggregate(log_r, fact = 12, fun = 'mean', progress = 'text')
-  nutr_r <- projectRaster(agg_r, ocean_rast, progress = 'text')
-  
-  ### rescale to 99.9%ile
-  values(nutr_r) <- rescale(values(nutr_r), qtile = .999)
-  values(nutr_r)[is.na(values(nutr_r))] <- 0
-  nutr_r_ocean <- mask(nutr_r, ocean_rast, progress = 'text')
-  
-  ### round to drop ludicrous precision then save out
-  values(nutr_r_ocean) <- round(values(nutr_r_ocean), 5)
-  writeRaster(nutr_r_ocean, nutr_f)
-  
-}
-
-r <- raster(nutr_f)
-  
-plot(r, axes = FALSE, 
-     main = 'Nutrient pollution: log(x+1), rescaled to 99.9%ile')
-
-hist(r[r > 0], main = 'distribution of non-zero values')
-
-```
-
-
-### Direct human impact/habitat destruction using population as proxy
+## Direct human impact/habitat destruction using population as proxy
 
 The data for this is population density or count (on land).  We want an indication of the number of people living within 25 km (or so) of the coast.  To do this, try `raster::focal()`: Calculate focal ("moving window") values for the neighborhood of focal cells using a matrix of weights, perhaps in combination with a function.
 
@@ -464,9 +276,8 @@ if(!file.exists(pop_f)) {
   ### Masking to coastal cells rather than whole ocean, then
   ### rescale based on cropped raster to 99.9%ile
   coastal_r <- raster(here('_spatial/coastal_3nmi_area_mol.tif'))
-  pop_coastal <- mask(agg_focal_pop_r_10km, coastal_r, progress = 'text')
-  
-  values(pop_coastal) <- rescale(values(pop_coastal), qtile = .999)
+  pop_coastal <- mask(agg_focal_pop_r_10km, coastal_r, progress = 'text') %>%
+    rescale_stressor(qtile = .999)
 
   ### round to drop ludicrous precision then save out
   values(pop_coastal) <- round(values(pop_coastal), 5)
@@ -483,15 +294,39 @@ hist(r[r > 0], main = 'distribution of non-zero values')
 
 ```
 
-## Climate stressors other than SST
+## Climate stressors other than long-term temperature rise
+
+### Sea surface temperature extremes
+
+Analogous to marine heat waves.  
+
+* dir: `stressors_2021/_dataprep/SST_past_present/final_extreme`
+        * file: `sst_exceeds_90quant_2016-2020.tif`
+        
+Read in, leave as proportion of weeks exceeding 90th percentile of climatological variance over the reference period (no need for rescale).
+
+```{r}
+extreme_sst_f <- here_ohi('stressors_2021/_dataprep/SST_past_present/final_extreme', 
+                          'sst_exceeds_90quant_2016-2020.tif')
+file.exists(extreme_sst_f)
+
+extreme_sst_r <- raster(extreme_sst_f)
+
+compareRaster(extreme_sst_r, ocean_rast)
+
+### round values to reduce file size
+values(extreme_sst_r) <- round(values(extreme_sst_r), 3)
+
+writeRaster(extreme_sst_r, here('_data/stressors_mol/sst_extremes_2020.tif'), overwrite = TRUE)
+```
 
 ### Sea level rise from OHI 2021
 
-    * Use annual mean SLR anomaly rasters from here:
-        * dir: `git-annex/globalprep/prs_slr/v2021/int/msla_annual_mean/`
-            * file: `msla_annual_2019.tif`
-        * These are pre-transform and mask.  Transformed and masked are also available, but let's use these so we can make sure the transform and mask are accurate to our particular CRS.
-    * See OHI processing script for details: `https://github.com/OHI-Science/ohiprep_v2021/blob/gh-pages/globalprep/prs_slr/v2021/slr_layer_prep_v2.Rmd`
+* Use annual mean SLR anomaly rasters from here:
+    * dir: `git-annex/globalprep/prs_slr/v2021/int/msla_annual_mean/`
+        * file: `msla_annual_2019.tif`
+    * These are pre-transform and mask.  Transformed and masked are also available, but let's use these so we can make sure the transform and mask are accurate to our particular CRS.
+* See OHI processing script for details: `https://github.com/OHI-Science/ohiprep_v2021/blob/gh-pages/globalprep/prs_slr/v2021/slr_layer_prep_v2.Rmd`
 
 ```{r Sea level rise data}
 slr_f <- here('_data/stressors_mol/slr_2019.tif')
@@ -544,7 +379,7 @@ if(!file.exists(slr_f)) {
   
   ### Set negative values to zero, then rescale
   values(slr_coastal_r)[values(slr_coastal_r) < 0] <- 0
-  values(slr_coastal_r) <- rescale(values(slr_coastal_r), qtile = .999)
+  slr_coastal_r <- rescale_stressor(slr_coastal_r, qtile = .999)
 
   ### round to drop ludicrous precision then save out
   values(slr_coastal_r) <- round(values(slr_coastal_r), 5)
@@ -569,35 +404,40 @@ hist(r[r > 0], main = 'distribution of non-zero values')
     
 ### Ocean acidification from CHI Pace of Change (2017 data year)
 
-* dir: `git-annex/impact_acceleration/stressors/oa/final`
-    * file: `oa_2017_rescaled_mol.tif`
-* These are in Mollweide but at 934 meter resolution... reproject to 10 km
-* Or, use OHI or CHI processing script to process from raw data?
+* dir: `git-annex/globalprep/prs_oa/v2017/int/annual_avg_moll_rescaled_int`
+    * file: `oa_resc_int_2020.tif`
+* These are in Mollweide and rescaled based on normalized gain toward $\Omega = 1$: 
+    * $stressor_{OA} = \begin{cases} \frac{\Omega_{ref} - \Omega_{2020}}{\Omega_{ref} - 1} \text{ when } \Omega_{2020} > 1\\ 1 \text{ when } \Omega_{2020} \leq 1 \end{cases}$
+    * The resolution is based on the original resolution; the data have been gapfilled.
+    * Here, resample to 10 km Mollweide and mask out land
 
 ```{r Ocean acidification data}
-oa_f <- here('_data/stressors_mol/oa_2017.tif')
+oa_f <- here('_data/stressors_mol/oa_2020.tif')
 ### unlink(oa_f)
 
 if(!file.exists(oa_f)) {
-  orig_f <- here_ohi(paste('git-annex/impact_acceleration/stressors/oa/final', 
-                           'oa_2017_rescaled_mol.tif', sep = '/'))
-  orig_r <- raster(orig_f)
+  
+  oa_resc_mol_f <- here_ohi('git-annex/globalprep/prs_oa/v2017/int', 
+                       'annual_avg_moll_rescaled_int',
+                       'oa_resc_int_2020.tif')
+
+  orig_r <- raster(oa_resc_mol_f)
   # class      : RasterLayer 
-  # dimensions : 19305, 38610, 745366050  (nrow, ncol, ncell)
-  # resolution : 934.4789, 934.4789  (x, y)
-  # extent     : -18040095, 18040134, -9020047, 9020067  (xmin, xmax, ymin, ymax)
+  # dimensions : 341, 332, 113212  (nrow, ncol, ncell)
+  # resolution : 112000, 54700  (x, y)
+  # extent     : -18597502, 18586498, -9085652, 9567048  (xmin, xmax, ymin, ymax)
   # crs        : +proj=moll +lon_0=0 +x_0=0 +y_0=0 +ellps=WGS84 +units=m +no_defs 
-  # source     : oa_2017_rescaled_mol.tif 
-  # names      : oa_2017_rescaled_mol 
+  # source     : oa_resc_int_2020.tif 
+  # names      : oa_resc_int_2020 
   # values     : 0, 1  (min, max)
   
-  ### Aggregate from 934 m to ~ 10 km
-  agg_r <- aggregate(orig_r, fact = 10, fun = 'mean', progress = 'text')
-  oa_r <- projectRaster(agg_r, ocean_rast, progress = 'text')
+  ### project to 10 km
+  oa_r <- projectRaster(orig_r, ocean_rast, progress = 'text')
+  oa_masked <- mask(oa_r, ocean_rast)
   
   ### round to drop ludicrous precision then save out
-  values(oa_r) <- round(values(oa_r), 5)
-  writeRaster(oa_r, oa_f)
+  values(oa_masked) <- round(values(oa_masked), 4)
+  writeRaster(oa_masked, oa_f, overwrite = TRUE)
   
 }
 
@@ -661,7 +501,7 @@ Per the suggestion by the authors, we will clip out any values below a threshold
 
 > The VIIRS-derived results are more fluctuated during the period from 2015 to 2018 for pixels with DN values greater than 7 (Fig. 5a,b), and this fluctuation was notably mitigated for pixels with relatively high DNs. This suggests the converted DN values from VIIRS data are more reliable for pixels with DN values larger than 20 (Fig. 5c,d), and the derived temporal patterns of SNTL and lit pixels are more reliable for pixels with DN values above 30 (Fig. 5e,f). There are two possible reasons for the fluctuation of derived NTL time series data from VIIRS. First, the original observations of VIIRS NTL data fluctuate over years24. For example, the drop of SNTL and lit pixels from 2015 to 2016 in our result was also observed in the annual result of VIIRS data from the Payne Institute for Public Policy under the Colorado School of Mines24. Second, the simulated DMSP-like NTL data from VIIRS have a larger extent than the DMSP data with the improved sensitivity of sensors in VIIRS and the aggregation procedure using the kernel density method and point-spread function, especially in low luminance regions (Fig. S3). After excluding those low luminance regions using the threshold of 7, the derived NTL result from VIIRS is closer with the DMSP data. When the threshold increases to 20 and 30, most blooming effects around the city and villages are eliminated, resulting in a more continuous time series data of the SNTL and the number of lit pixels (Fig. 5)
 
-Note that with a threshold of 7 there appear to be artifacts in the 2018 data in the arctic and in the waters south of Australia.  Could this be legit light pollution, or auroras?  Try using the minimum value for each cell between the 2017 and 2018 rasters, then dropping values below 7.
+Note that with a threshold of 7 there appear to be artifacts in the 2018 data in the arctic and in the waters south of Australia.  Could this be legit light pollution, or auroras?  Try using the minimum value for each cell between the 2017 and 2018 rasters, then dropping values below 10.
 
 Also, examine the ocean-based sources of stable light as potential benthic structures?
 
@@ -691,8 +531,8 @@ if(!file.exists(light_f)) {
   ### crop north/south slightly to remove artifacts
   bbox <- c(-180, 180, -64.5, 74.5)
   crop_light_r <- crop(min_light_r, extent(bbox), progress = 'text')
-  
-  thresh <- 7
+
+  thresh <- 10
   values(crop_light_r)[values(crop_light_r) < thresh] <- 0
   
   light_agg_r <- aggregate(crop_light_r, fact = 12, progress = 'text')
@@ -702,8 +542,8 @@ if(!file.exists(light_f)) {
   values(light_r_mol)[is.na(values(light_r_mol))] <- 0
   ### convert negative cells (result of projection artifacts?) to zero
   values(light_r_mol)[values(light_r_mol) < 0] <- 0
-  light_r_mol <- mask(light_r_mol, ocean_rast)
-  values(light_r_mol) <- rescale(values(light_r_mol))
+  light_r_mol <- mask(light_r_mol, ocean_rast) %>%
+    rescale_stressor(qtile = .999)
   
   ### round to drop ludicrous precision then save out
   values(light_r_mol) <- round(values(light_r_mol), 5)

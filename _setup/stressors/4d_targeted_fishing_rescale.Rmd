@@ -52,30 +52,45 @@ Data from
 Take each species fishing map, expand out to include unfished cells in the species' range, and then determine the 99.9%ile of catch for each species.
 
 ```{r set up vars}
-watson_am_lookup <- read_csv(here('_setup/stressors/int/watson_am_lookup.csv'))
+watson_maps_lookup <- read_csv(here('_setup/stressors/int/watson_maps_lookup.csv'))
 
-spp_vec <- watson_am_lookup$spp %>% unique() %>% sort()
+spp_vec <- watson_maps_lookup$spp %>% unique() %>% sort()
 
-npp_catch_fstem <- here_anx('stressors/fishing/npp_norm_catch_by_spp_moll',
-                            'am_spp_npp_catch_%s_mol.csv')
-range_map_fstem <- here_anx('spp_maps_mol', 'am_spp_mol_%s.csv')
+npp_catch_dir <- here_anx('stressors/fishing/npp_norm_catch_by_spp_moll')
+
+npp_catch_fs <- list.files(npp_catch_dir, full.names = TRUE)
+
 ```
 
 ``` {r calc ref point by range}
-calc_quantiles_range <- function(s, fstem) {
-  # s <- spp_vec[1]
-  s_snake <- str_replace_all(s, '[^a-z]+', '_')
-  i <- which(s == spp_vec)
+calc_quantiles_range <- function(f, fstem) {
+  # f <- npp_catch_fs[1]
+  i <- which(f == npp_catch_fs)
+  
+  s_snake <- basename(f) %>% 
+    str_remove_all('.+spp_npp_catch_|_mol.csv')
+  s <- s_snake %>% str_replace_all('_', ' ')
+  src <- basename(f) %>% str_remove_all('_spp_npp_catch.+')
 
-  out_f <- sprintf(fstem, s_snake)
+  out_f <- sprintf(fstem, s_snake, src)
 
   if(!file.exists(out_f)) {
-    message('Processing ', s, '... (', i, ' of ', length(spp_vec), ')')
-    catch_df <- read_csv(sprintf(npp_catch_fstem, s_snake), 
-                         show_col_types = FALSE)
+    message('Processing ', s, ' (', i, ' of ', length(npp_catch_fs), ') based on ', toupper(src), ' rangemaps...')
+    catch_df <- read_csv(f, show_col_types = FALSE)
     
-    range_df <- read_csv(sprintf(range_map_fstem, s_snake), 
+    if(src == 'am') {
+    range_df <- read_csv(sprintf(here_anx('spp_maps_mol', '%s_spp_mol_%s.csv'), src, s_snake), 
                          show_col_types = FALSE)
+    } else {
+      ### src is IUCN, and file(s) by ID - perhaps multiple IDs for a given spp?
+      iucn_ids <- watson_maps_lookup %>%
+        filter(spp == s) %>%
+        .$iucn_sid %>% unique()
+      range_fs <- sprintf(here_anx('spp_maps_mol', '%s_spp_mol_%s.csv'), src, iucn_ids)
+      range_df <- lapply(range_fs, read_csv, show_col_types = FALSE) %>%
+        bind_rows() %>%
+        distinct()
+    }
     
     v <- rep(0, times = n_distinct(range_df$cell_id))
     if(nrow(catch_df) > 0) {
@@ -95,20 +110,32 @@ calc_quantiles_range <- function(s, fstem) {
     df <- as.matrix(z) %>% t() %>%
       as.data.frame() %>%
       mutate(spp = s,
+             source = src,
              tot_catch = tot_catch,
              tot_npp_catch = tot_npp_catch)
     write_csv(df, out_f)
   }
 }
+```
+
+``` {r}
 
 fishing_ref_f <- here('_setup/stressors/int/fish_npp_catch_ref_point.csv')
+# unlink(fishing_ref_f)
 if(!file.exists(fishing_ref_f)) {
-  ref_tmp_fstem <- here('tmp', 'fishing_str_ref_%s.csv')
+  
+  # spp_in_npp_catch <- basename(npp_catch_fs) %>% 
+  #   str_remove_all('.+spp_npp_catch_|_mol.csv') %>%
+  #   str_replace_all('_', ' ')
+  # missing <- spp_vec[!spp_vec %in% spp_in_npp_catch]
 
-  tmp <- parallel::mclapply(spp_vec, mc.cores = 16,
+  ref_tmp_fstem <- here('tmp', 'fishing_str_ref_%s_%s.csv')
+
+  tmp <- parallel::mclapply(npp_catch_fs, mc.cores = 16,
                             FUN = calc_quantiles_range,
                             fstem = ref_tmp_fstem)
-  
+
+
   tmp_fs <- list.files(here('tmp'), pattern = 'fishing_str_ref', full.names = TRUE)
   # unlink(tmp_fs)
   fish_qtile_range_df <- parallel::mclapply(tmp_fs, read_csv, mc.cores = 24,
@@ -116,15 +143,19 @@ if(!file.exists(fishing_ref_f)) {
     bind_rows() %>%
     janitor::clean_names() %>%
     arrange(desc(x99_9_percent))
-  
+
   write_csv(fish_qtile_range_df, fishing_ref_f)
 }
 
 qtile_results <- read_csv(fishing_ref_f) %>%
+  group_by(spp) %>%
+  filter(n() == 1 | source == 'am') %>%
+    ### pref AM for spp with both sources
+  ungroup() %>%
   mutate(across(where(is.numeric), ~round(.x, 3)))
 knitr::kable(head(qtile_results, 20))
 
-ref_pt <- max(qtile_results$x99_9_percent)
+ref_pt <- max(qtile_results$x99_9_percent, na.rm = TRUE)
 ```
 
 Based on this method, the reference point for NPP-adjusted targeted catch is `r round(ref_pt)` tonnes/log(NPP), for species _`r qtile_results$spp[1]`_.
@@ -134,21 +165,22 @@ Based on this method, the reference point for NPP-adjusted targeted catch is `r 
 Using this reference point, rescale NPP-adjusted catch layers for each species, and save out the finalized stressor file for each.
 
 ```{r rescale catch}
-rescaled_fstem <- here_anx('stressors/fishing/rescaled_catch_by_spp_cell',
-                           'am_spp_rescaled_catch_%s.csv')
-rescale_catch <- function(s, ref_pt) {
-  # s <- missing_spp[2]
-  # s <- 'pleoticus muelleri'
-  # s <- 'abyssaster planus'
-  s_snake <- str_replace_all(s, '[^a-z]+', '_')
-  i <- which(s == spp_vec)
+rescale_catch <- function(f, ref_pt) {
+  # f <- npp_catch_fs[1]
+  # f <- fs_to_process[1]
+  i <- which(f == fs_to_process)
   
-  out_f <- sprintf(rescaled_fstem, s_snake)
+  s_snake <- basename(f) %>% 
+    str_remove_all('.+spp_npp_catch_|_mol.csv')
+  s <- s_snake %>% str_replace_all('_', ' ')
+  src <- basename(f) %>% str_remove_all('_spp_npp_catch.+')
+
+  out_f <- sprintf(rescaled_fstem, src, s_snake)
   if(!file.exists(out_f)) {
-    message('Rescaling catch for ', s, '... (', i, ' of ', length(spp_vec), ')')
+    message('Rescaling catch for ', s, ' (', i, ' of ', length(fs_to_process), 
+            ') based on ', toupper(src), ' range map...')
     
-    catch_df <- read_csv(sprintf(npp_catch_fstem, s_snake), 
-                         show_col_types = FALSE)
+    catch_df <- read_csv(f, show_col_types = FALSE)
     if(nrow(catch_df) == 0) {
       rescaled_df <- data.frame(cell_id = -1, rescaled_catch = 0)
     } else {
@@ -160,11 +192,28 @@ rescale_catch <- function(s, ref_pt) {
     write_csv(rescaled_df, out_f)
     
   } else {
-    message('... File exists: ', basename(out_f), '... skipping!')
+    # message('... File exists: ', basename(out_f), '... skipping!')
   }
 }
+```
 
-tmp <- parallel::mclapply(spp_vec, mc.cores = 24,
+``` {r}
+
+rescaled_fstem <- here_anx('stressors/fishing/rescaled_catch_by_spp_cell',
+                           '%s_spp_rescaled_catch_%s.csv')
+
+x <- list.files(dirname(rescaled_fstem), full.names = TRUE)
+### y <- list.files(dirname(rescaled_fstem), full.names = TRUE, pattern = 'am_spp_rescaled_catch')
+### unlink(y)
+done_vec <- basename(x) %>% 
+  str_remove_all('spp_rescaled_catch_|.csv')
+
+todo_vec <- basename(npp_catch_fs) %>%
+  str_remove_all('spp_npp_catch_|_mol.csv')
+
+fs_to_process <- npp_catch_fs[!todo_vec %in% done_vec]
+
+tmp <- parallel::mclapply(fs_to_process, mc.cores = 24,
                           FUN = rescale_catch, ref_pt = ref_pt)
 
 # df <- data.frame(s = spp_vec, f = sprintf(rescaled_fstem, spp_vec)) %>%

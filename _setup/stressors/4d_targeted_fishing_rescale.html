@@ -9,7 +9,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
 
 
-<meta name="author" content="Compiled on Mon Dec 20 14:09:52 2021 by ohara" />
+<meta name="author" content="Compiled on Mon Jan 10 18:58:25 2022 by ohara" />
 
 
 <title>Stressors: targeted fishing by species and cell - rescale stressor</title>
@@ -357,7 +357,7 @@ div.tocify {
 
 
 <h1 class="title toc-ignore">Stressors: targeted fishing by species and cell - rescale stressor</h1>
-<h4 class="author"><em>Compiled on Mon Dec 20 14:09:52 2021 by ohara</em></h4>
+<h4 class="author"><em>Compiled on Mon Jan 10 18:58:25 2022 by ohara</em></h4>
 
 </div>
 
@@ -394,84 +394,111 @@ div.tocify {
 <div id="identify-reference-point" class="section level2">
 <h2>Identify reference point</h2>
 <p>Take each species fishing map, expand out to include unfished cells in the species’ range, and then determine the 99.9%ile of catch for each species.</p>
-<div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>watson_am_lookup <span class="ot">&lt;-</span> <span class="fu">read_csv</span>(<span class="fu">here</span>(<span class="st">&#39;_setup/stressors/int/watson_am_lookup.csv&#39;</span>))</span>
+<div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>watson_maps_lookup <span class="ot">&lt;-</span> <span class="fu">read_csv</span>(<span class="fu">here</span>(<span class="st">&#39;_setup/stressors/int/watson_maps_lookup.csv&#39;</span>))</span>
 <span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>spp_vec <span class="ot">&lt;-</span> watson_am_lookup<span class="sc">$</span>spp <span class="sc">%&gt;%</span> <span class="fu">unique</span>() <span class="sc">%&gt;%</span> <span class="fu">sort</span>()</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>spp_vec <span class="ot">&lt;-</span> watson_maps_lookup<span class="sc">$</span>spp <span class="sc">%&gt;%</span> <span class="fu">unique</span>() <span class="sc">%&gt;%</span> <span class="fu">sort</span>()</span>
 <span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>npp_catch_fstem <span class="ot">&lt;-</span> <span class="fu">here_anx</span>(<span class="st">&#39;stressors/fishing/npp_norm_catch_by_spp_moll&#39;</span>,</span>
-<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>                            <span class="st">&#39;npp_spp_catch_%s_mol.csv&#39;</span>)</span>
-<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>range_map_fstem <span class="ot">&lt;-</span> <span class="fu">here_anx</span>(<span class="st">&#39;spp_maps_mol&#39;</span>, <span class="st">&#39;am_spp_mol_%s.csv&#39;</span>)</span></code></pre></div>
-<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>calc_quantiles_range <span class="ot">&lt;-</span> <span class="cf">function</span>(s, fstem) {</span>
-<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>  <span class="co"># s &lt;- spp_vec[1]</span></span>
-<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>  s_snake <span class="ot">&lt;-</span> <span class="fu">str_replace_all</span>(s, <span class="st">&#39;[^a-z]+&#39;</span>, <span class="st">&#39;_&#39;</span>)</span>
-<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>  i <span class="ot">&lt;-</span> <span class="fu">which</span>(s <span class="sc">==</span> spp_vec)</span>
-<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>  out_f <span class="ot">&lt;-</span> <span class="fu">sprintf</span>(fstem, s_snake)</span>
-<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span>(<span class="sc">!</span><span class="fu">file.exists</span>(out_f)) {</span>
-<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>    <span class="fu">message</span>(<span class="st">&#39;Processing &#39;</span>, s, <span class="st">&#39;... (&#39;</span>, i, <span class="st">&#39; of &#39;</span>, <span class="fu">length</span>(spp_vec), <span class="st">&#39;)&#39;</span>)</span>
-<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>    catch_df <span class="ot">&lt;-</span> <span class="fu">read_csv</span>(<span class="fu">sprintf</span>(npp_catch_fstem, s_snake), </span>
-<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a>                         <span class="at">show_col_types =</span> <span class="cn">FALSE</span>)</span>
-<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a>    </span>
-<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a>    range_df <span class="ot">&lt;-</span> <span class="fu">read_csv</span>(<span class="fu">sprintf</span>(range_map_fstem, s_snake), </span>
-<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a>                         <span class="at">show_col_types =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>npp_catch_dir <span class="ot">&lt;-</span> <span class="fu">here_anx</span>(<span class="st">&#39;stressors/fishing/npp_norm_catch_by_spp_moll&#39;</span>)</span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>npp_catch_fs <span class="ot">&lt;-</span> <span class="fu">list.files</span>(npp_catch_dir, <span class="at">full.names =</span> <span class="cn">TRUE</span>)</span></code></pre></div>
+<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>calc_quantiles_range <span class="ot">&lt;-</span> <span class="cf">function</span>(f, fstem) {</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>  <span class="co"># f &lt;- npp_catch_fs[1]</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>  i <span class="ot">&lt;-</span> <span class="fu">which</span>(f <span class="sc">==</span> npp_catch_fs)</span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>  s_snake <span class="ot">&lt;-</span> <span class="fu">basename</span>(f) <span class="sc">%&gt;%</span> </span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>    <span class="fu">str_remove_all</span>(<span class="st">&#39;.+spp_npp_catch_|_mol.csv&#39;</span>)</span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>  s <span class="ot">&lt;-</span> s_snake <span class="sc">%&gt;%</span> <span class="fu">str_replace_all</span>(<span class="st">&#39;_&#39;</span>, <span class="st">&#39; &#39;</span>)</span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>  src <span class="ot">&lt;-</span> <span class="fu">basename</span>(f) <span class="sc">%&gt;%</span> <span class="fu">str_remove_all</span>(<span class="st">&#39;_spp_npp_catch.+&#39;</span>)</span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>  out_f <span class="ot">&lt;-</span> <span class="fu">sprintf</span>(fstem, s_snake, src)</span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span>(<span class="sc">!</span><span class="fu">file.exists</span>(out_f)) {</span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a>    <span class="fu">message</span>(<span class="st">&#39;Processing &#39;</span>, s, <span class="st">&#39; (&#39;</span>, i, <span class="st">&#39; of &#39;</span>, <span class="fu">length</span>(npp_catch_fs), <span class="st">&#39;) based on &#39;</span>, <span class="fu">toupper</span>(src), <span class="st">&#39; rangemaps...&#39;</span>)</span>
+<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a>    catch_df <span class="ot">&lt;-</span> <span class="fu">read_csv</span>(f, <span class="at">show_col_types =</span> <span class="cn">FALSE</span>)</span>
 <span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a>    </span>
-<span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a>    v <span class="ot">&lt;-</span> <span class="fu">rep</span>(<span class="dv">0</span>, <span class="at">times =</span> <span class="fu">n_distinct</span>(range_df<span class="sc">$</span>cell_id))</span>
-<span id="cb3-17"><a href="#cb3-17" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span>(<span class="fu">nrow</span>(catch_df) <span class="sc">&gt;</span> <span class="dv">0</span>) {</span>
-<span id="cb3-18"><a href="#cb3-18" aria-hidden="true" tabindex="-1"></a>      catch_sum <span class="ot">&lt;-</span> catch_df <span class="sc">%&gt;%</span></span>
-<span id="cb3-19"><a href="#cb3-19" aria-hidden="true" tabindex="-1"></a>        <span class="fu">mutate</span>(<span class="at">tot_norm_catch =</span> ben_norm_catch <span class="sc">+</span> pel_norm_catch) <span class="sc">%&gt;%</span></span>
-<span id="cb3-20"><a href="#cb3-20" aria-hidden="true" tabindex="-1"></a>        .<span class="sc">$</span>tot_norm_catch</span>
-<span id="cb3-21"><a href="#cb3-21" aria-hidden="true" tabindex="-1"></a>      tot_npp_catch <span class="ot">&lt;-</span> <span class="fu">sum</span>(catch_sum)</span>
-<span id="cb3-22"><a href="#cb3-22" aria-hidden="true" tabindex="-1"></a>      tot_catch <span class="ot">&lt;-</span> <span class="fu">sum</span>(catch_df<span class="sc">$</span>ben_tot_catch <span class="sc">+</span> catch_df<span class="sc">$</span>pel_tot_catch)</span>
-<span id="cb3-23"><a href="#cb3-23" aria-hidden="true" tabindex="-1"></a>      </span>
-<span id="cb3-24"><a href="#cb3-24" aria-hidden="true" tabindex="-1"></a>      v[<span class="dv">1</span><span class="sc">:</span><span class="fu">length</span>(catch_sum)] <span class="ot">&lt;-</span> catch_sum</span>
-<span id="cb3-25"><a href="#cb3-25" aria-hidden="true" tabindex="-1"></a>    } <span class="cf">else</span> {</span>
-<span id="cb3-26"><a href="#cb3-26" aria-hidden="true" tabindex="-1"></a>      <span class="co"># v is unchanged, all zeros</span></span>
-<span id="cb3-27"><a href="#cb3-27" aria-hidden="true" tabindex="-1"></a>      tot_catch <span class="ot">&lt;-</span> <span class="dv">0</span></span>
-<span id="cb3-28"><a href="#cb3-28" aria-hidden="true" tabindex="-1"></a>      tot_npp_catch <span class="ot">&lt;-</span> <span class="dv">0</span></span>
-<span id="cb3-29"><a href="#cb3-29" aria-hidden="true" tabindex="-1"></a>    }</span>
-<span id="cb3-30"><a href="#cb3-30" aria-hidden="true" tabindex="-1"></a>    z <span class="ot">&lt;-</span> <span class="fu">quantile</span>(v, <span class="fu">c</span>(.<span class="dv">50</span>, .<span class="dv">9</span>, .<span class="dv">99</span>, .<span class="dv">999</span>, <span class="fl">1.0</span>))</span>
-<span id="cb3-31"><a href="#cb3-31" aria-hidden="true" tabindex="-1"></a>    df <span class="ot">&lt;-</span> <span class="fu">as.matrix</span>(z) <span class="sc">%&gt;%</span> <span class="fu">t</span>() <span class="sc">%&gt;%</span></span>
-<span id="cb3-32"><a href="#cb3-32" aria-hidden="true" tabindex="-1"></a>      <span class="fu">as.data.frame</span>() <span class="sc">%&gt;%</span></span>
-<span id="cb3-33"><a href="#cb3-33" aria-hidden="true" tabindex="-1"></a>      <span class="fu">mutate</span>(<span class="at">spp =</span> s,</span>
-<span id="cb3-34"><a href="#cb3-34" aria-hidden="true" tabindex="-1"></a>             <span class="at">tot_catch =</span> tot_catch,</span>
-<span id="cb3-35"><a href="#cb3-35" aria-hidden="true" tabindex="-1"></a>             <span class="at">tot_npp_catch =</span> tot_npp_catch)</span>
-<span id="cb3-36"><a href="#cb3-36" aria-hidden="true" tabindex="-1"></a>    <span class="fu">write_csv</span>(df, out_f)</span>
-<span id="cb3-37"><a href="#cb3-37" aria-hidden="true" tabindex="-1"></a>  }</span>
-<span id="cb3-38"><a href="#cb3-38" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb3-39"><a href="#cb3-39" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-40"><a href="#cb3-40" aria-hidden="true" tabindex="-1"></a>fishing_ref_f <span class="ot">&lt;-</span> <span class="fu">here</span>(<span class="st">&#39;_setup/stressors/int/fish_npp_catch_ref_point.csv&#39;</span>)</span>
-<span id="cb3-41"><a href="#cb3-41" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span>(<span class="sc">!</span><span class="fu">file.exists</span>(fishing_ref_f)) {</span>
-<span id="cb3-42"><a href="#cb3-42" aria-hidden="true" tabindex="-1"></a>  ref_tmp_fstem <span class="ot">&lt;-</span> <span class="fu">here</span>(<span class="st">&#39;tmp&#39;</span>, <span class="st">&#39;fishing_str_ref_%s.csv&#39;</span>)</span>
-<span id="cb3-43"><a href="#cb3-43" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-44"><a href="#cb3-44" aria-hidden="true" tabindex="-1"></a>  tmp <span class="ot">&lt;-</span> parallel<span class="sc">::</span><span class="fu">mclapply</span>(spp_vec, <span class="at">mc.cores =</span> <span class="dv">16</span>,</span>
-<span id="cb3-45"><a href="#cb3-45" aria-hidden="true" tabindex="-1"></a>                            <span class="at">FUN =</span> calc_quantiles_range,</span>
-<span id="cb3-46"><a href="#cb3-46" aria-hidden="true" tabindex="-1"></a>                            <span class="at">fstem =</span> ref_tmp_fstem)</span>
-<span id="cb3-47"><a href="#cb3-47" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb3-48"><a href="#cb3-48" aria-hidden="true" tabindex="-1"></a>  tmp_fs <span class="ot">&lt;-</span> <span class="fu">list.files</span>(<span class="fu">here</span>(<span class="st">&#39;tmp&#39;</span>), <span class="at">pattern =</span> <span class="st">&#39;fishing_str_ref&#39;</span>, <span class="at">full.names =</span> <span class="cn">TRUE</span>)</span>
-<span id="cb3-49"><a href="#cb3-49" aria-hidden="true" tabindex="-1"></a>  <span class="co"># unlink(tmp_fs)</span></span>
-<span id="cb3-50"><a href="#cb3-50" aria-hidden="true" tabindex="-1"></a>  fish_qtile_range_df <span class="ot">&lt;-</span> parallel<span class="sc">::</span><span class="fu">mclapply</span>(tmp_fs, read_csv, <span class="at">mc.cores =</span> <span class="dv">24</span>,</span>
-<span id="cb3-51"><a href="#cb3-51" aria-hidden="true" tabindex="-1"></a>                                            <span class="at">show_col_types =</span> <span class="cn">FALSE</span>) <span class="sc">%&gt;%</span></span>
-<span id="cb3-52"><a href="#cb3-52" aria-hidden="true" tabindex="-1"></a>    <span class="fu">bind_rows</span>() <span class="sc">%&gt;%</span></span>
-<span id="cb3-53"><a href="#cb3-53" aria-hidden="true" tabindex="-1"></a>    janitor<span class="sc">::</span><span class="fu">clean_names</span>() <span class="sc">%&gt;%</span></span>
-<span id="cb3-54"><a href="#cb3-54" aria-hidden="true" tabindex="-1"></a>    <span class="fu">arrange</span>(<span class="fu">desc</span>(x99_9_percent))</span>
-<span id="cb3-55"><a href="#cb3-55" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb3-56"><a href="#cb3-56" aria-hidden="true" tabindex="-1"></a>  <span class="fu">write_csv</span>(fish_qtile_range_df, fishing_ref_f)</span>
-<span id="cb3-57"><a href="#cb3-57" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb3-58"><a href="#cb3-58" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-59"><a href="#cb3-59" aria-hidden="true" tabindex="-1"></a>qtile_results <span class="ot">&lt;-</span> <span class="fu">read_csv</span>(fishing_ref_f) <span class="sc">%&gt;%</span></span>
-<span id="cb3-60"><a href="#cb3-60" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="fu">across</span>(<span class="fu">where</span>(is.numeric), <span class="sc">~</span><span class="fu">round</span>(.x, <span class="dv">3</span>)))</span>
-<span id="cb3-61"><a href="#cb3-61" aria-hidden="true" tabindex="-1"></a>knitr<span class="sc">::</span><span class="fu">kable</span>(<span class="fu">head</span>(qtile_results, <span class="dv">20</span>))</span></code></pre></div>
+<span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span>(src <span class="sc">==</span> <span class="st">&#39;am&#39;</span>) {</span>
+<span id="cb3-17"><a href="#cb3-17" aria-hidden="true" tabindex="-1"></a>    range_df <span class="ot">&lt;-</span> <span class="fu">read_csv</span>(<span class="fu">sprintf</span>(<span class="fu">here_anx</span>(<span class="st">&#39;spp_maps_mol&#39;</span>, <span class="st">&#39;%s_spp_mol_%s.csv&#39;</span>), src, s_snake), </span>
+<span id="cb3-18"><a href="#cb3-18" aria-hidden="true" tabindex="-1"></a>                         <span class="at">show_col_types =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb3-19"><a href="#cb3-19" aria-hidden="true" tabindex="-1"></a>    } <span class="cf">else</span> {</span>
+<span id="cb3-20"><a href="#cb3-20" aria-hidden="true" tabindex="-1"></a>      <span class="do">### src is IUCN, and file(s) by ID - perhaps multiple IDs for a given spp?</span></span>
+<span id="cb3-21"><a href="#cb3-21" aria-hidden="true" tabindex="-1"></a>      iucn_ids <span class="ot">&lt;-</span> watson_maps_lookup <span class="sc">%&gt;%</span></span>
+<span id="cb3-22"><a href="#cb3-22" aria-hidden="true" tabindex="-1"></a>        <span class="fu">filter</span>(spp <span class="sc">==</span> s) <span class="sc">%&gt;%</span></span>
+<span id="cb3-23"><a href="#cb3-23" aria-hidden="true" tabindex="-1"></a>        .<span class="sc">$</span>iucn_sid <span class="sc">%&gt;%</span> <span class="fu">unique</span>()</span>
+<span id="cb3-24"><a href="#cb3-24" aria-hidden="true" tabindex="-1"></a>      range_fs <span class="ot">&lt;-</span> <span class="fu">sprintf</span>(<span class="fu">here_anx</span>(<span class="st">&#39;spp_maps_mol&#39;</span>, <span class="st">&#39;%s_spp_mol_%s.csv&#39;</span>), src, iucn_ids)</span>
+<span id="cb3-25"><a href="#cb3-25" aria-hidden="true" tabindex="-1"></a>      range_df <span class="ot">&lt;-</span> <span class="fu">lapply</span>(range_fs, read_csv, <span class="at">show_col_types =</span> <span class="cn">FALSE</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb3-26"><a href="#cb3-26" aria-hidden="true" tabindex="-1"></a>        <span class="fu">bind_rows</span>() <span class="sc">%&gt;%</span></span>
+<span id="cb3-27"><a href="#cb3-27" aria-hidden="true" tabindex="-1"></a>        <span class="fu">distinct</span>()</span>
+<span id="cb3-28"><a href="#cb3-28" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb3-29"><a href="#cb3-29" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb3-30"><a href="#cb3-30" aria-hidden="true" tabindex="-1"></a>    v <span class="ot">&lt;-</span> <span class="fu">rep</span>(<span class="dv">0</span>, <span class="at">times =</span> <span class="fu">n_distinct</span>(range_df<span class="sc">$</span>cell_id))</span>
+<span id="cb3-31"><a href="#cb3-31" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span>(<span class="fu">nrow</span>(catch_df) <span class="sc">&gt;</span> <span class="dv">0</span>) {</span>
+<span id="cb3-32"><a href="#cb3-32" aria-hidden="true" tabindex="-1"></a>      catch_sum <span class="ot">&lt;-</span> catch_df <span class="sc">%&gt;%</span></span>
+<span id="cb3-33"><a href="#cb3-33" aria-hidden="true" tabindex="-1"></a>        <span class="fu">mutate</span>(<span class="at">tot_norm_catch =</span> ben_norm_catch <span class="sc">+</span> pel_norm_catch) <span class="sc">%&gt;%</span></span>
+<span id="cb3-34"><a href="#cb3-34" aria-hidden="true" tabindex="-1"></a>        .<span class="sc">$</span>tot_norm_catch</span>
+<span id="cb3-35"><a href="#cb3-35" aria-hidden="true" tabindex="-1"></a>      tot_npp_catch <span class="ot">&lt;-</span> <span class="fu">sum</span>(catch_sum)</span>
+<span id="cb3-36"><a href="#cb3-36" aria-hidden="true" tabindex="-1"></a>      tot_catch <span class="ot">&lt;-</span> <span class="fu">sum</span>(catch_df<span class="sc">$</span>ben_tot_catch <span class="sc">+</span> catch_df<span class="sc">$</span>pel_tot_catch)</span>
+<span id="cb3-37"><a href="#cb3-37" aria-hidden="true" tabindex="-1"></a>      </span>
+<span id="cb3-38"><a href="#cb3-38" aria-hidden="true" tabindex="-1"></a>      v[<span class="dv">1</span><span class="sc">:</span><span class="fu">length</span>(catch_sum)] <span class="ot">&lt;-</span> catch_sum</span>
+<span id="cb3-39"><a href="#cb3-39" aria-hidden="true" tabindex="-1"></a>    } <span class="cf">else</span> {</span>
+<span id="cb3-40"><a href="#cb3-40" aria-hidden="true" tabindex="-1"></a>      <span class="co"># v is unchanged, all zeros</span></span>
+<span id="cb3-41"><a href="#cb3-41" aria-hidden="true" tabindex="-1"></a>      tot_catch <span class="ot">&lt;-</span> <span class="dv">0</span></span>
+<span id="cb3-42"><a href="#cb3-42" aria-hidden="true" tabindex="-1"></a>      tot_npp_catch <span class="ot">&lt;-</span> <span class="dv">0</span></span>
+<span id="cb3-43"><a href="#cb3-43" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb3-44"><a href="#cb3-44" aria-hidden="true" tabindex="-1"></a>    z <span class="ot">&lt;-</span> <span class="fu">quantile</span>(v, <span class="fu">c</span>(.<span class="dv">50</span>, .<span class="dv">9</span>, .<span class="dv">99</span>, .<span class="dv">999</span>, <span class="fl">1.0</span>))</span>
+<span id="cb3-45"><a href="#cb3-45" aria-hidden="true" tabindex="-1"></a>    df <span class="ot">&lt;-</span> <span class="fu">as.matrix</span>(z) <span class="sc">%&gt;%</span> <span class="fu">t</span>() <span class="sc">%&gt;%</span></span>
+<span id="cb3-46"><a href="#cb3-46" aria-hidden="true" tabindex="-1"></a>      <span class="fu">as.data.frame</span>() <span class="sc">%&gt;%</span></span>
+<span id="cb3-47"><a href="#cb3-47" aria-hidden="true" tabindex="-1"></a>      <span class="fu">mutate</span>(<span class="at">spp =</span> s,</span>
+<span id="cb3-48"><a href="#cb3-48" aria-hidden="true" tabindex="-1"></a>             <span class="at">source =</span> src,</span>
+<span id="cb3-49"><a href="#cb3-49" aria-hidden="true" tabindex="-1"></a>             <span class="at">tot_catch =</span> tot_catch,</span>
+<span id="cb3-50"><a href="#cb3-50" aria-hidden="true" tabindex="-1"></a>             <span class="at">tot_npp_catch =</span> tot_npp_catch)</span>
+<span id="cb3-51"><a href="#cb3-51" aria-hidden="true" tabindex="-1"></a>    <span class="fu">write_csv</span>(df, out_f)</span>
+<span id="cb3-52"><a href="#cb3-52" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb3-53"><a href="#cb3-53" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
+<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>fishing_ref_f <span class="ot">&lt;-</span> <span class="fu">here</span>(<span class="st">&#39;_setup/stressors/int/fish_npp_catch_ref_point.csv&#39;</span>)</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="co"># unlink(fishing_ref_f)</span></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span>(<span class="sc">!</span><span class="fu">file.exists</span>(fishing_ref_f)) {</span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>  <span class="co"># spp_in_npp_catch &lt;- basename(npp_catch_fs) %&gt;% </span></span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>  <span class="co">#   str_remove_all(&#39;.+spp_npp_catch_|_mol.csv&#39;) %&gt;%</span></span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>  <span class="co">#   str_replace_all(&#39;_&#39;, &#39; &#39;)</span></span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a>  <span class="co"># missing &lt;- spp_vec[!spp_vec %in% spp_in_npp_catch]</span></span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a>  ref_tmp_fstem <span class="ot">&lt;-</span> <span class="fu">here</span>(<span class="st">&#39;tmp&#39;</span>, <span class="st">&#39;fishing_str_ref_%s_%s.csv&#39;</span>)</span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a>  tmp <span class="ot">&lt;-</span> parallel<span class="sc">::</span><span class="fu">mclapply</span>(npp_catch_fs, <span class="at">mc.cores =</span> <span class="dv">16</span>,</span>
+<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a>                            <span class="at">FUN =</span> calc_quantiles_range,</span>
+<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a>                            <span class="at">fstem =</span> ref_tmp_fstem)</span>
+<span id="cb4-15"><a href="#cb4-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-16"><a href="#cb4-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-17"><a href="#cb4-17" aria-hidden="true" tabindex="-1"></a>  tmp_fs <span class="ot">&lt;-</span> <span class="fu">list.files</span>(<span class="fu">here</span>(<span class="st">&#39;tmp&#39;</span>), <span class="at">pattern =</span> <span class="st">&#39;fishing_str_ref&#39;</span>, <span class="at">full.names =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb4-18"><a href="#cb4-18" aria-hidden="true" tabindex="-1"></a>  <span class="co"># unlink(tmp_fs)</span></span>
+<span id="cb4-19"><a href="#cb4-19" aria-hidden="true" tabindex="-1"></a>  fish_qtile_range_df <span class="ot">&lt;-</span> parallel<span class="sc">::</span><span class="fu">mclapply</span>(tmp_fs, read_csv, <span class="at">mc.cores =</span> <span class="dv">24</span>,</span>
+<span id="cb4-20"><a href="#cb4-20" aria-hidden="true" tabindex="-1"></a>                                            <span class="at">show_col_types =</span> <span class="cn">FALSE</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb4-21"><a href="#cb4-21" aria-hidden="true" tabindex="-1"></a>    <span class="fu">bind_rows</span>() <span class="sc">%&gt;%</span></span>
+<span id="cb4-22"><a href="#cb4-22" aria-hidden="true" tabindex="-1"></a>    janitor<span class="sc">::</span><span class="fu">clean_names</span>() <span class="sc">%&gt;%</span></span>
+<span id="cb4-23"><a href="#cb4-23" aria-hidden="true" tabindex="-1"></a>    <span class="fu">arrange</span>(<span class="fu">desc</span>(x99_9_percent))</span>
+<span id="cb4-24"><a href="#cb4-24" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-25"><a href="#cb4-25" aria-hidden="true" tabindex="-1"></a>  <span class="fu">write_csv</span>(fish_qtile_range_df, fishing_ref_f)</span>
+<span id="cb4-26"><a href="#cb4-26" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb4-27"><a href="#cb4-27" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-28"><a href="#cb4-28" aria-hidden="true" tabindex="-1"></a>qtile_results <span class="ot">&lt;-</span> <span class="fu">read_csv</span>(fishing_ref_f) <span class="sc">%&gt;%</span></span>
+<span id="cb4-29"><a href="#cb4-29" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(spp) <span class="sc">%&gt;%</span></span>
+<span id="cb4-30"><a href="#cb4-30" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(<span class="fu">n</span>() <span class="sc">==</span> <span class="dv">1</span> <span class="sc">|</span> source <span class="sc">==</span> <span class="st">&#39;am&#39;</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb4-31"><a href="#cb4-31" aria-hidden="true" tabindex="-1"></a>    <span class="do">### pref AM for spp with both sources</span></span>
+<span id="cb4-32"><a href="#cb4-32" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ungroup</span>() <span class="sc">%&gt;%</span></span>
+<span id="cb4-33"><a href="#cb4-33" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="fu">across</span>(<span class="fu">where</span>(is.numeric), <span class="sc">~</span><span class="fu">round</span>(.x, <span class="dv">3</span>)))</span>
+<span id="cb4-34"><a href="#cb4-34" aria-hidden="true" tabindex="-1"></a>knitr<span class="sc">::</span><span class="fu">kable</span>(<span class="fu">head</span>(qtile_results, <span class="dv">20</span>))</span></code></pre></div>
 <table>
 <colgroup>
-<col width="10%" />
-<col width="10%" />
-<col width="10%" />
-<col width="12%" />
+<col width="9%" />
+<col width="9%" />
+<col width="9%" />
 <col width="11%" />
-<col width="21%" />
 <col width="10%" />
-<col width="12%" />
+<col width="21%" />
+<col width="5%" />
+<col width="10%" />
+<col width="11%" />
 </colgroup>
 <thead>
 <tr class="header">
@@ -481,265 +508,301 @@ div.tocify {
 <th align="right">x99_9_percent</th>
 <th align="right">x100_percent</th>
 <th align="left">spp</th>
+<th align="left">source</th>
 <th align="right">tot_catch</th>
 <th align="right">tot_npp_catch</th>
 </tr>
 </thead>
 <tbody>
 <tr class="odd">
-<td align="right">49.388</td>
-<td align="right">209.721</td>
-<td align="right">22908.323</td>
-<td align="right">47119.777</td>
-<td align="right">61215.334</td>
+<td align="right">61.403</td>
+<td align="right">248.896</td>
+<td align="right">27425.944</td>
+<td align="right">49515.613</td>
+<td align="right">61215.513</td>
 <td align="left">illex argentinus</td>
-<td align="right">1641218.48</td>
-<td align="right">7780000.1</td>
+<td align="left">am</td>
+<td align="right">1605614.485</td>
+<td align="right">7674254.5</td>
 </tr>
 <tr class="even">
-<td align="right">0.002</td>
-<td align="right">236.250</td>
-<td align="right">1731.054</td>
-<td align="right">33861.730</td>
-<td align="right">153619.658</td>
-<td align="left">pleoticus muelleri</td>
-<td align="right">649580.14</td>
-<td align="right">1956674.4</td>
-</tr>
-<tr class="odd">
-<td align="right">0.007</td>
-<td align="right">85.488</td>
-<td align="right">7161.267</td>
-<td align="right">18895.810</td>
-<td align="right">37329.878</td>
-<td align="left">chamelea gallina</td>
-<td align="right">216871.67</td>
-<td align="right">4558122.8</td>
-</tr>
-<tr class="even">
-<td align="right">21.455</td>
-<td align="right">1071.662</td>
-<td align="right">6759.170</td>
-<td align="right">17297.235</td>
-<td align="right">229077.410</td>
-<td align="left">ethmalosa fimbriata</td>
-<td align="right">4141636.66</td>
-<td align="right">2374725.7</td>
-</tr>
-<tr class="odd">
-<td align="right">0.090</td>
-<td align="right">411.060</td>
-<td align="right">5981.952</td>
-<td align="right">15197.797</td>
-<td align="right">21408.990</td>
-<td align="left">strombus pugilis</td>
-<td align="right">97060.02</td>
-<td align="right">6988806.9</td>
-</tr>
-<tr class="even">
-<td align="right">3.421</td>
-<td align="right">559.827</td>
-<td align="right">7754.440</td>
-<td align="right">13931.928</td>
-<td align="right">32596.133</td>
-<td align="left">panulirus argus</td>
-<td align="right">172644.63</td>
-<td align="right">15124354.1</td>
-</tr>
-<tr class="odd">
 <td align="right">0.000</td>
-<td align="right">306.792</td>
-<td align="right">3513.816</td>
-<td align="right">13602.886</td>
-<td align="right">132739.067</td>
+<td align="right">1987.507</td>
+<td align="right">5033.246</td>
+<td align="right">32210.212</td>
+<td align="right">132747.514</td>
 <td align="left">engraulis ringens</td>
-<td align="right">12531405.32</td>
-<td align="right">3876385.4</td>
-</tr>
-<tr class="even">
-<td align="right">4.460</td>
-<td align="right">261.005</td>
-<td align="right">1951.903</td>
-<td align="right">13249.385</td>
-<td align="right">42763.576</td>
-<td align="left">merluccius hubbsi</td>
-<td align="right">1254243.79</td>
-<td align="right">2517211.5</td>
+<td align="left">am</td>
+<td align="right">11596192.327</td>
+<td align="right">3572149.6</td>
 </tr>
 <tr class="odd">
-<td align="right">33.885</td>
-<td align="right">1111.871</td>
-<td align="right">5943.638</td>
-<td align="right">11795.770</td>
-<td align="right">15725.226</td>
+<td align="right">0.001</td>
+<td align="right">32.427</td>
+<td align="right">6200.102</td>
+<td align="right">18840.621</td>
+<td align="right">37810.452</td>
+<td align="left">chamelea gallina</td>
+<td align="left">am</td>
+<td align="right">167810.534</td>
+<td align="right">2504418.9</td>
+</tr>
+<tr class="even">
+<td align="right">6.558</td>
+<td align="right">1235.776</td>
+<td align="right">8341.274</td>
+<td align="right">16322.475</td>
+<td align="right">32596.421</td>
+<td align="left">panulirus argus</td>
+<td align="left">am</td>
+<td align="right">142568.180</td>
+<td align="right">14586228.2</td>
+</tr>
+<tr class="odd">
+<td align="right">1.268</td>
+<td align="right">692.775</td>
+<td align="right">7509.514</td>
+<td align="right">15948.375</td>
+<td align="right">21409.108</td>
+<td align="left">strombus pugilis</td>
+<td align="left">am</td>
+<td align="right">96949.993</td>
+<td align="right">7156106.2</td>
+</tr>
+<tr class="even">
+<td align="right">37.812</td>
+<td align="right">1075.130</td>
+<td align="right">6098.101</td>
+<td align="right">12239.970</td>
+<td align="right">15725.405</td>
 <td align="left">opisthonema libertate</td>
-<td align="right">685448.34</td>
-<td align="right">2172291.4</td>
-</tr>
-<tr class="even">
-<td align="right">0.233</td>
-<td align="right">1210.979</td>
-<td align="right">2488.537</td>
-<td align="right">9697.709</td>
-<td align="right">15510.050</td>
-<td align="left">brevoortia patronus</td>
-<td align="right">1369235.78</td>
-<td align="right">1786173.6</td>
+<td align="left">am</td>
+<td align="right">651081.366</td>
+<td align="right">2038213.1</td>
 </tr>
 <tr class="odd">
-<td align="right">5.990</td>
-<td align="right">277.957</td>
-<td align="right">3681.207</td>
-<td align="right">9544.385</td>
-<td align="right">131745.800</td>
+<td align="right">12.294</td>
+<td align="right">411.045</td>
+<td align="right">4519.616</td>
+<td align="right">11848.411</td>
+<td align="right">131746.278</td>
 <td align="left">sardina pilchardus</td>
-<td align="right">4870486.07</td>
-<td align="right">6481099.6</td>
+<td align="left">am</td>
+<td align="right">4400223.934</td>
+<td align="right">6186408.4</td>
 </tr>
 <tr class="even">
-<td align="right">0.022</td>
-<td align="right">1.251</td>
-<td align="right">560.053</td>
-<td align="right">9053.111</td>
-<td align="right">17213.133</td>
-<td align="left">nematopalaemon hastatus</td>
-<td align="right">86336.99</td>
-<td align="right">262426.5</td>
+<td align="right">21.400</td>
+<td align="right">1162.803</td>
+<td align="right">6462.341</td>
+<td align="right">11011.807</td>
+<td align="right">229106.834</td>
+<td align="left">ethmalosa fimbriata</td>
+<td align="left">am</td>
+<td align="right">3243867.296</td>
+<td align="right">1786829.4</td>
 </tr>
 <tr class="odd">
-<td align="right">0.298</td>
-<td align="right">4.602</td>
-<td align="right">2762.348</td>
-<td align="right">7478.968</td>
-<td align="right">12688.920</td>
-<td align="left">mizuhopecten yessoensis</td>
-<td align="right">562378.31</td>
-<td align="right">458548.4</td>
+<td align="right">67.626</td>
+<td align="right">10086.260</td>
+<td align="right">10667.165</td>
+<td align="right">10774.037</td>
+<td align="right">10786.398</td>
+<td align="left">panulirus pascuensis</td>
+<td align="left">iucn</td>
+<td align="right">675.123</td>
+<td align="right">282484.1</td>
 </tr>
 <tr class="even">
-<td align="right">0.920</td>
-<td align="right">232.645</td>
-<td align="right">1988.153</td>
-<td align="right">6562.039</td>
+<td align="right">0.160</td>
+<td align="right">3.997</td>
+<td align="right">649.104</td>
+<td align="right">9752.503</td>
+<td align="right">10113.870</td>
+<td align="left">pomatoschistus marmoratus</td>
+<td align="left">am</td>
+<td align="right">6629.710</td>
+<td align="right">422364.4</td>
+</tr>
+<tr class="odd">
+<td align="right">0.083</td>
+<td align="right">4.757</td>
+<td align="right">1086.326</td>
+<td align="right">9531.820</td>
+<td align="right">17402.332</td>
+<td align="left">nematopalaemon hastatus</td>
+<td align="left">am</td>
+<td align="right">112416.827</td>
+<td align="right">294114.0</td>
+</tr>
+<tr class="even">
+<td align="right">0.378</td>
+<td align="right">29.795</td>
+<td align="right">3351.715</td>
+<td align="right">7904.878</td>
+<td align="right">12689.522</td>
+<td align="left">mizuhopecten yessoensis</td>
+<td align="left">am</td>
+<td align="right">497538.124</td>
+<td align="right">422963.4</td>
+</tr>
+<tr class="odd">
+<td align="right">15.996</td>
+<td align="right">530.092</td>
+<td align="right">2522.736</td>
+<td align="right">6847.304</td>
+<td align="right">13680.016</td>
+<td align="left">pollachius virens</td>
+<td align="left">am</td>
+<td align="right">1851831.306</td>
+<td align="right">5396981.9</td>
+</tr>
+<tr class="even">
+<td align="right">3.400</td>
+<td align="right">85.746</td>
+<td align="right">1298.384</td>
+<td align="right">6795.261</td>
+<td align="right">17945.241</td>
+<td align="left">pseudotolithus elongatus</td>
+<td align="left">am</td>
+<td align="right">223293.579</td>
+<td align="right">215699.9</td>
+</tr>
+<tr class="odd">
+<td align="right">0.106</td>
+<td align="right">7.161</td>
+<td align="right">153.337</td>
+<td align="right">6592.914</td>
+<td align="right">45128.978</td>
+<td align="left">leiognathus berbis</td>
+<td align="left">am</td>
+<td align="right">281135.038</td>
+<td align="right">2410748.6</td>
+</tr>
+<tr class="even">
+<td align="right">1.124</td>
+<td align="right">225.857</td>
+<td align="right">1816.861</td>
+<td align="right">6033.065</td>
 <td align="right">14880.228</td>
 <td align="left">strombus alatus</td>
-<td align="right">26309.77</td>
-<td align="right">2051557.6</td>
+<td align="left">am</td>
+<td align="right">24866.610</td>
+<td align="right">1667933.2</td>
 </tr>
 <tr class="odd">
-<td align="right">2.094</td>
-<td align="right">77.357</td>
-<td align="right">1124.667</td>
-<td align="right">5977.446</td>
-<td align="right">16486.405</td>
-<td align="left">pseudotolithus elongatus</td>
-<td align="right">278857.97</td>
-<td align="right">255234.1</td>
+<td align="right">45.460</td>
+<td align="right">172.331</td>
+<td align="right">611.975</td>
+<td align="right">5968.437</td>
+<td align="right">7831.192</td>
+<td align="left">sarda chiliensis</td>
+<td align="left">am</td>
+<td align="right">514115.611</td>
+<td align="right">156759.0</td>
 </tr>
 <tr class="even">
-<td align="right">0.004</td>
-<td align="right">33.261</td>
-<td align="right">593.483</td>
-<td align="right">5537.756</td>
-<td align="right">165645.059</td>
-<td align="left">dosidicus gigas</td>
-<td align="right">4036664.16</td>
-<td align="right">1561608.6</td>
+<td align="right">0.767</td>
+<td align="right">31.202</td>
+<td align="right">335.392</td>
+<td align="right">5859.963</td>
+<td align="right">8621.217</td>
+<td align="left">penaeus kerathurus</td>
+<td align="left">am</td>
+<td align="right">29905.003</td>
+<td align="right">343699.1</td>
 </tr>
 <tr class="odd">
-<td align="right">0.314</td>
-<td align="right">250.460</td>
-<td align="right">1832.072</td>
-<td align="right">5530.601</td>
-<td align="right">13679.991</td>
-<td align="left">pollachius virens</td>
-<td align="right">2127082.68</td>
-<td align="right">5828120.7</td>
+<td align="right">1.164</td>
+<td align="right">35.837</td>
+<td align="right">591.387</td>
+<td align="right">5844.906</td>
+<td align="right">6145.789</td>
+<td align="left">maja squinado</td>
+<td align="left">am</td>
+<td align="right">5726.120</td>
+<td align="right">295987.5</td>
 </tr>
 <tr class="even">
-<td align="right">0.016</td>
-<td align="right">4.105</td>
-<td align="right">294.189</td>
-<td align="right">5044.160</td>
-<td align="right">6378.543</td>
-<td align="left">okamejei heemstrai</td>
-<td align="right">23532.05</td>
-<td align="right">194500.6</td>
-</tr>
-<tr class="odd">
-<td align="right">0.000</td>
-<td align="right">0.414</td>
-<td align="right">131.951</td>
-<td align="right">4928.807</td>
-<td align="right">10822.554</td>
-<td align="left">stromateus fiatola</td>
-<td align="right">28830.63</td>
-<td align="right">355477.3</td>
-</tr>
-<tr class="even">
-<td align="right">0.008</td>
-<td align="right">2.684</td>
-<td align="right">1218.470</td>
-<td align="right">4887.013</td>
-<td align="right">16088.269</td>
-<td align="left">placopecten magellanicus</td>
-<td align="right">496135.96</td>
-<td align="right">879069.7</td>
+<td align="right">0.024</td>
+<td align="right">649.102</td>
+<td align="right">1624.436</td>
+<td align="right">5818.284</td>
+<td align="right">15510.052</td>
+<td align="left">brevoortia patronus</td>
+<td align="left">am</td>
+<td align="right">982798.213</td>
+<td align="right">880799.0</td>
 </tr>
 </tbody>
 </table>
-<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>ref_pt <span class="ot">&lt;-</span> <span class="fu">max</span>(qtile_results<span class="sc">$</span>x99_9_percent)</span></code></pre></div>
-<p>Based on this method, the reference point for NPP-adjusted targeted catch is 4.712^{4} tonnes/log(NPP), for species <em>illex argentinus</em>.</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>ref_pt <span class="ot">&lt;-</span> <span class="fu">max</span>(qtile_results<span class="sc">$</span>x99_9_percent, <span class="at">na.rm =</span> <span class="cn">TRUE</span>)</span></code></pre></div>
+<p>Based on this method, the reference point for NPP-adjusted targeted catch is 4.9516^{4} tonnes/log(NPP), for species <em>illex argentinus</em>.</p>
 </div>
 <div id="rescale-npp-adjusted-targeted-catch-layers" class="section level2">
 <h2>Rescale NPP-adjusted targeted catch layers</h2>
 <p>Using this reference point, rescale NPP-adjusted catch layers for each species, and save out the finalized stressor file for each.</p>
-<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>rescaled_fstem <span class="ot">&lt;-</span> <span class="fu">here_anx</span>(<span class="st">&#39;stressors/fishing/rescaled_catch_by_spp_cell&#39;</span>,</span>
-<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>                           <span class="st">&#39;rescaled_catch_%s.csv&#39;</span>)</span>
-<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>rescale_catch <span class="ot">&lt;-</span> <span class="cf">function</span>(s, ref_pt) {</span>
-<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>  <span class="co"># s &lt;- missing_spp[1]</span></span>
-<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>  <span class="co"># s &lt;- &#39;pleoticus muelleri&#39;</span></span>
-<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>  <span class="co"># s &lt;- &#39;abyssaster planus&#39;</span></span>
-<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>  s_snake <span class="ot">&lt;-</span> <span class="fu">str_replace_all</span>(s, <span class="st">&#39;[^a-z]+&#39;</span>, <span class="st">&#39;_&#39;</span>)</span>
-<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>  i <span class="ot">&lt;-</span> <span class="fu">which</span>(s <span class="sc">==</span> spp_vec)</span>
-<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a>  out_f <span class="ot">&lt;-</span> <span class="fu">sprintf</span>(rescaled_fstem, s_snake)</span>
-<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span>(<span class="sc">!</span><span class="fu">file.exists</span>(out_f)) {</span>
-<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a>    <span class="fu">message</span>(<span class="st">&#39;Rescaling catch for &#39;</span>, s, <span class="st">&#39;... (&#39;</span>, i, <span class="st">&#39; of &#39;</span>, <span class="fu">length</span>(spp_vec), <span class="st">&#39;)&#39;</span>)</span>
-<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a>    </span>
-<span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a>    catch_df <span class="ot">&lt;-</span> <span class="fu">read_csv</span>(<span class="fu">sprintf</span>(npp_catch_fstem, s_snake), </span>
-<span id="cb5-15"><a href="#cb5-15" aria-hidden="true" tabindex="-1"></a>                         <span class="at">show_col_types =</span> <span class="cn">FALSE</span>)</span>
-<span id="cb5-16"><a href="#cb5-16" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span>(<span class="fu">nrow</span>(catch_df) <span class="sc">==</span> <span class="dv">0</span>) {</span>
-<span id="cb5-17"><a href="#cb5-17" aria-hidden="true" tabindex="-1"></a>      rescaled_df <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(<span class="at">cell_id =</span> <span class="sc">-</span><span class="dv">1</span>, <span class="at">rescaled_catch =</span> <span class="dv">0</span>)</span>
-<span id="cb5-18"><a href="#cb5-18" aria-hidden="true" tabindex="-1"></a>    } <span class="cf">else</span> {</span>
-<span id="cb5-19"><a href="#cb5-19" aria-hidden="true" tabindex="-1"></a>      rescaled_df <span class="ot">&lt;-</span> catch_df <span class="sc">%&gt;%</span></span>
-<span id="cb5-20"><a href="#cb5-20" aria-hidden="true" tabindex="-1"></a>        <span class="fu">mutate</span>(<span class="at">tot_c =</span> pel_norm_catch <span class="sc">+</span> ben_norm_catch,</span>
-<span id="cb5-21"><a href="#cb5-21" aria-hidden="true" tabindex="-1"></a>               <span class="at">rescaled_catch =</span> <span class="fu">ifelse</span>(tot_c <span class="sc">&lt;</span> ref_pt, tot_c <span class="sc">/</span> ref_pt, <span class="dv">1</span>)) <span class="sc">%&gt;%</span></span>
-<span id="cb5-22"><a href="#cb5-22" aria-hidden="true" tabindex="-1"></a>        <span class="fu">select</span>(cell_id, rescaled_catch)</span>
-<span id="cb5-23"><a href="#cb5-23" aria-hidden="true" tabindex="-1"></a>    }</span>
-<span id="cb5-24"><a href="#cb5-24" aria-hidden="true" tabindex="-1"></a>    <span class="fu">write_csv</span>(rescaled_df, out_f)</span>
-<span id="cb5-25"><a href="#cb5-25" aria-hidden="true" tabindex="-1"></a>    </span>
-<span id="cb5-26"><a href="#cb5-26" aria-hidden="true" tabindex="-1"></a>  } <span class="cf">else</span> {</span>
-<span id="cb5-27"><a href="#cb5-27" aria-hidden="true" tabindex="-1"></a>    <span class="fu">message</span>(<span class="st">&#39;... File exists: &#39;</span>, <span class="fu">basename</span>(out_f), <span class="st">&#39;... skipping!&#39;</span>)</span>
-<span id="cb5-28"><a href="#cb5-28" aria-hidden="true" tabindex="-1"></a>  }</span>
-<span id="cb5-29"><a href="#cb5-29" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb5-30"><a href="#cb5-30" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb5-31"><a href="#cb5-31" aria-hidden="true" tabindex="-1"></a>df <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(<span class="at">s =</span> spp_vec, <span class="at">f =</span> <span class="fu">sprintf</span>(rescaled_fstem, spp_vec)) <span class="sc">%&gt;%</span></span>
-<span id="cb5-32"><a href="#cb5-32" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">f =</span> <span class="fu">str_replace_all</span>(f, <span class="st">&#39; &#39;</span>, <span class="st">&#39;_&#39;</span>))</span>
-<span id="cb5-33"><a href="#cb5-33" aria-hidden="true" tabindex="-1"></a>fs <span class="ot">&lt;-</span> <span class="fu">list.files</span>(<span class="fu">dirname</span>(rescaled_fstem), <span class="at">full.names =</span> <span class="cn">TRUE</span>)</span>
-<span id="cb5-34"><a href="#cb5-34" aria-hidden="true" tabindex="-1"></a>missing_spp <span class="ot">&lt;-</span> df <span class="sc">%&gt;%</span></span>
-<span id="cb5-35"><a href="#cb5-35" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(<span class="sc">!</span>f <span class="sc">%in%</span> fs) <span class="sc">%&gt;%</span></span>
-<span id="cb5-36"><a href="#cb5-36" aria-hidden="true" tabindex="-1"></a>  .<span class="sc">$</span>s</span>
-<span id="cb5-37"><a href="#cb5-37" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb5-38"><a href="#cb5-38" aria-hidden="true" tabindex="-1"></a>tmp <span class="ot">&lt;-</span> parallel<span class="sc">::</span><span class="fu">mclapply</span>(missing_spp, <span class="at">mc.cores =</span> <span class="dv">24</span>, </span>
-<span id="cb5-39"><a href="#cb5-39" aria-hidden="true" tabindex="-1"></a>                          <span class="at">FUN =</span> rescale_catch, <span class="at">ref_pt =</span> ref_pt)</span>
-<span id="cb5-40"><a href="#cb5-40" aria-hidden="true" tabindex="-1"></a><span class="co"># tmp &lt;- parallel::mclapply(spp_vec, mc.cores = 24, </span></span>
-<span id="cb5-41"><a href="#cb5-41" aria-hidden="true" tabindex="-1"></a><span class="co">#                           FUN = rescale_catch, ref_pt = ref_pt)</span></span></code></pre></div>
-<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>fs <span class="ot">&lt;-</span> <span class="fu">list.files</span>(<span class="fu">dirname</span>(rescaled_fstem), <span class="at">full.names =</span> <span class="cn">TRUE</span>)</span>
-<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>df <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(<span class="at">f =</span> <span class="fu">basename</span>(fs), <span class="at">fsize =</span> <span class="fu">file.size</span>(fs)) <span class="sc">%&gt;%</span></span>
-<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">arrange</span>(<span class="fu">desc</span>(fsize))</span>
-<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>knitr<span class="sc">::</span><span class="fu">kable</span>(<span class="fu">head</span>(df, <span class="dv">10</span>))</span></code></pre></div>
+<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>rescale_catch <span class="ot">&lt;-</span> <span class="cf">function</span>(f, ref_pt) {</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>  <span class="co"># f &lt;- npp_catch_fs[1]</span></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>  <span class="co"># f &lt;- fs_to_process[1]</span></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>  i <span class="ot">&lt;-</span> <span class="fu">which</span>(f <span class="sc">==</span> fs_to_process)</span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>  s_snake <span class="ot">&lt;-</span> <span class="fu">basename</span>(f) <span class="sc">%&gt;%</span> </span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>    <span class="fu">str_remove_all</span>(<span class="st">&#39;.+spp_npp_catch_|_mol.csv&#39;</span>)</span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>  s <span class="ot">&lt;-</span> s_snake <span class="sc">%&gt;%</span> <span class="fu">str_replace_all</span>(<span class="st">&#39;_&#39;</span>, <span class="st">&#39; &#39;</span>)</span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a>  src <span class="ot">&lt;-</span> <span class="fu">basename</span>(f) <span class="sc">%&gt;%</span> <span class="fu">str_remove_all</span>(<span class="st">&#39;_spp_npp_catch.+&#39;</span>)</span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a>  out_f <span class="ot">&lt;-</span> <span class="fu">sprintf</span>(rescaled_fstem, src, s_snake)</span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span>(<span class="sc">!</span><span class="fu">file.exists</span>(out_f)) {</span>
+<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a>    <span class="fu">message</span>(<span class="st">&#39;Rescaling catch for &#39;</span>, s, <span class="st">&#39; (&#39;</span>, i, <span class="st">&#39; of &#39;</span>, <span class="fu">length</span>(fs_to_process), </span>
+<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a>            <span class="st">&#39;) based on &#39;</span>, <span class="fu">toupper</span>(src), <span class="st">&#39; range map...&#39;</span>)</span>
+<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb6-16"><a href="#cb6-16" aria-hidden="true" tabindex="-1"></a>    catch_df <span class="ot">&lt;-</span> <span class="fu">read_csv</span>(f, <span class="at">show_col_types =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb6-17"><a href="#cb6-17" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span>(<span class="fu">nrow</span>(catch_df) <span class="sc">==</span> <span class="dv">0</span>) {</span>
+<span id="cb6-18"><a href="#cb6-18" aria-hidden="true" tabindex="-1"></a>      rescaled_df <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(<span class="at">cell_id =</span> <span class="sc">-</span><span class="dv">1</span>, <span class="at">rescaled_catch =</span> <span class="dv">0</span>)</span>
+<span id="cb6-19"><a href="#cb6-19" aria-hidden="true" tabindex="-1"></a>    } <span class="cf">else</span> {</span>
+<span id="cb6-20"><a href="#cb6-20" aria-hidden="true" tabindex="-1"></a>      rescaled_df <span class="ot">&lt;-</span> catch_df <span class="sc">%&gt;%</span></span>
+<span id="cb6-21"><a href="#cb6-21" aria-hidden="true" tabindex="-1"></a>        <span class="fu">mutate</span>(<span class="at">tot_c =</span> pel_norm_catch <span class="sc">+</span> ben_norm_catch,</span>
+<span id="cb6-22"><a href="#cb6-22" aria-hidden="true" tabindex="-1"></a>               <span class="at">rescaled_catch =</span> <span class="fu">ifelse</span>(tot_c <span class="sc">&lt;</span> ref_pt, tot_c <span class="sc">/</span> ref_pt, <span class="dv">1</span>)) <span class="sc">%&gt;%</span></span>
+<span id="cb6-23"><a href="#cb6-23" aria-hidden="true" tabindex="-1"></a>        <span class="fu">select</span>(cell_id, rescaled_catch)</span>
+<span id="cb6-24"><a href="#cb6-24" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb6-25"><a href="#cb6-25" aria-hidden="true" tabindex="-1"></a>    <span class="fu">write_csv</span>(rescaled_df, out_f)</span>
+<span id="cb6-26"><a href="#cb6-26" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb6-27"><a href="#cb6-27" aria-hidden="true" tabindex="-1"></a>  } <span class="cf">else</span> {</span>
+<span id="cb6-28"><a href="#cb6-28" aria-hidden="true" tabindex="-1"></a>    <span class="co"># message(&#39;... File exists: &#39;, basename(out_f), &#39;... skipping!&#39;)</span></span>
+<span id="cb6-29"><a href="#cb6-29" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb6-30"><a href="#cb6-30" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
+<div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>rescaled_fstem <span class="ot">&lt;-</span> <span class="fu">here_anx</span>(<span class="st">&#39;stressors/fishing/rescaled_catch_by_spp_cell&#39;</span>,</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>                           <span class="st">&#39;%s_spp_rescaled_catch_%s.csv&#39;</span>)</span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>x <span class="ot">&lt;-</span> <span class="fu">list.files</span>(<span class="fu">dirname</span>(rescaled_fstem), <span class="at">full.names =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a><span class="do">### y &lt;- list.files(dirname(rescaled_fstem), full.names = TRUE, pattern = &#39;am_spp_rescaled_catch&#39;)</span></span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a><span class="do">### unlink(y)</span></span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>done_vec <span class="ot">&lt;-</span> <span class="fu">basename</span>(x) <span class="sc">%&gt;%</span> </span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">str_remove_all</span>(<span class="st">&#39;spp_rescaled_catch_|.csv&#39;</span>)</span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a>todo_vec <span class="ot">&lt;-</span> <span class="fu">basename</span>(npp_catch_fs) <span class="sc">%&gt;%</span></span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">str_remove_all</span>(<span class="st">&#39;spp_npp_catch_|_mol.csv&#39;</span>)</span>
+<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a>fs_to_process <span class="ot">&lt;-</span> npp_catch_fs[<span class="sc">!</span>todo_vec <span class="sc">%in%</span> done_vec]</span>
+<span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-15"><a href="#cb7-15" aria-hidden="true" tabindex="-1"></a>tmp <span class="ot">&lt;-</span> parallel<span class="sc">::</span><span class="fu">mclapply</span>(fs_to_process, <span class="at">mc.cores =</span> <span class="dv">24</span>,</span>
+<span id="cb7-16"><a href="#cb7-16" aria-hidden="true" tabindex="-1"></a>                          <span class="at">FUN =</span> rescale_catch, <span class="at">ref_pt =</span> ref_pt)</span>
+<span id="cb7-17"><a href="#cb7-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-18"><a href="#cb7-18" aria-hidden="true" tabindex="-1"></a><span class="co"># df &lt;- data.frame(s = spp_vec, f = sprintf(rescaled_fstem, spp_vec)) %&gt;%</span></span>
+<span id="cb7-19"><a href="#cb7-19" aria-hidden="true" tabindex="-1"></a><span class="co">#   mutate(f = str_replace_all(f, &#39; &#39;, &#39;_&#39;))</span></span>
+<span id="cb7-20"><a href="#cb7-20" aria-hidden="true" tabindex="-1"></a><span class="co"># fs &lt;- list.files(dirname(rescaled_fstem), full.names = TRUE)</span></span>
+<span id="cb7-21"><a href="#cb7-21" aria-hidden="true" tabindex="-1"></a><span class="co"># missing_spp &lt;- df %&gt;%</span></span>
+<span id="cb7-22"><a href="#cb7-22" aria-hidden="true" tabindex="-1"></a><span class="co">#   filter(!f %in% fs) %&gt;%</span></span>
+<span id="cb7-23"><a href="#cb7-23" aria-hidden="true" tabindex="-1"></a><span class="co">#   .$s</span></span>
+<span id="cb7-24"><a href="#cb7-24" aria-hidden="true" tabindex="-1"></a><span class="co"># </span></span>
+<span id="cb7-25"><a href="#cb7-25" aria-hidden="true" tabindex="-1"></a><span class="co"># tmp &lt;- parallel::mclapply(missing_spp, mc.cores = 24, </span></span>
+<span id="cb7-26"><a href="#cb7-26" aria-hidden="true" tabindex="-1"></a><span class="co">#                           FUN = rescale_catch, ref_pt = ref_pt)</span></span></code></pre></div>
+<div class="sourceCode" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>fs <span class="ot">&lt;-</span> <span class="fu">list.files</span>(<span class="fu">dirname</span>(rescaled_fstem), <span class="at">full.names =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>df <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(<span class="at">f =</span> <span class="fu">basename</span>(fs), <span class="at">fsize =</span> <span class="fu">file.size</span>(fs)) <span class="sc">%&gt;%</span></span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">arrange</span>(<span class="fu">desc</span>(fsize))</span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>knitr<span class="sc">::</span><span class="fu">kable</span>(<span class="fu">head</span>(df, <span class="dv">10</span>))</span></code></pre></div>
 <table>
 <thead>
 <tr class="header">
@@ -749,44 +812,44 @@ div.tocify {
 </thead>
 <tbody>
 <tr class="odd">
-<td align="left">rescaled_catch_thunnus_alalunga.csv</td>
-<td align="right">80480360</td>
+<td align="left">am_spp_rescaled_catch_thunnus_albacares.csv</td>
+<td align="right">75231600</td>
 </tr>
 <tr class="even">
-<td align="left">rescaled_catch_thunnus_albacares.csv</td>
-<td align="right">79875742</td>
+<td align="left">am_spp_rescaled_catch_thunnus_alalunga.csv</td>
+<td align="right">75143880</td>
 </tr>
 <tr class="odd">
-<td align="left">rescaled_catch_thunnus_obesus.csv</td>
-<td align="right">72217337</td>
+<td align="left">am_spp_rescaled_catch_thunnus_obesus.csv</td>
+<td align="right">69633522</td>
 </tr>
 <tr class="even">
-<td align="left">rescaled_catch_katsuwonus_pelamis.csv</td>
-<td align="right">66485454</td>
+<td align="left">am_spp_rescaled_catch_katsuwonus_pelamis.csv</td>
+<td align="right">65952180</td>
 </tr>
 <tr class="odd">
-<td align="left">rescaled_catch_xiphias_gladius.csv</td>
-<td align="right">64532652</td>
+<td align="left">am_spp_rescaled_catch_xiphias_gladius.csv</td>
+<td align="right">63808543</td>
 </tr>
 <tr class="even">
-<td align="left">rescaled_catch_acanthocybium_solandri.csv</td>
-<td align="right">38376279</td>
+<td align="left">iucn_spp_rescaled_catch_thunnus_obesus.csv</td>
+<td align="right">60932895</td>
 </tr>
 <tr class="odd">
-<td align="left">rescaled_catch_ectreposebastes_imus.csv</td>
-<td align="right">29156569</td>
+<td align="left">iucn_spp_rescaled_catch_xiphias_gladius.csv</td>
+<td align="right">60723330</td>
 </tr>
 <tr class="even">
-<td align="left">rescaled_catch_kajikia_audax.csv</td>
-<td align="right">28260386</td>
+<td align="left">iucn_spp_rescaled_catch_thunnus_albacares.csv</td>
+<td align="right">60546657</td>
 </tr>
 <tr class="odd">
-<td align="left">rescaled_catch_istiompax_indica.csv</td>
-<td align="right">27529894</td>
+<td align="left">iucn_spp_rescaled_catch_katsuwonus_pelamis.csv</td>
+<td align="right">60109091</td>
 </tr>
 <tr class="even">
-<td align="left">rescaled_catch_prionace_glauca.csv</td>
-<td align="right">27267537</td>
+<td align="left">iucn_spp_rescaled_catch_thunnus_alalunga.csv</td>
+<td align="right">56546390</td>
 </tr>
 </tbody>
 </table>

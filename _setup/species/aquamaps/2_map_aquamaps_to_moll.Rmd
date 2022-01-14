@@ -52,28 +52,45 @@ cell_id_df <- data.frame(loiczid = values(loiczid_mol_r),
 ```
 
 ```{r load am data}
+
 am_spp_cells <- get_am_spp_cells()
-am_spp_depth <- get_am_spp_envelopes() %>%
+
+wcol_position <- read_csv(here('_data/traits_grouping/trait_water_col_position.csv')) %>%
+  select(sciname = species, wcol_pos = value) %>%
+  distinct()
+
+am_spp_info <- get_am_spp_info() %>%
+  oharac::dt_join(get_am_spp_envelopes(), by = 'am_sid', type = 'left') %>%
+  oharac::dt_join(wcol_position, by = 'sciname', type = 'left') %>%
   filter(param == 'log10_depth') %>%
   # mutate(value = 10^value) %>%
   spread(dist, value) %>%
   mutate(am_sid = tolower(am_sid),
-         mask   = case_when(max <=  60 ~ 'shallow',
+         mask   = case_when(str_detect(wcol_pos, 'pelagic') ~ 'none', ### don't clip pelagics
+                            is.na(wcol_pos)                 ~ 'none', ### don't clip unknowns
+                            max <=  60 ~ 'shallow',
                             max <= 200 ~ 'neritic',
                             TRUE       ~ 'none')) %>%
-  select(am_sid, mask)
+  mutate(mask = factor(mask, levels = c('shallow', 'neritic', 'none'), ordered = TRUE)) %>%
+  select(am_sid, sciname, mask)
 
-am_spp_info  <- get_am_spp_info() %>%
-  left_join(am_spp_depth, by = 'am_sid') %>%
-  mutate(mask = factor(mask, levels = c('shallow', 'neritic', 'none'), ordered = TRUE))
-
+# x <- am_spp_info %>%
+#   filter(is.na(wcol_pos)) %>%
+#   mutate(f = sprintf(map_fstem, str_replace_all(sciname, ' ', '_')))
 ```
 
 ``` {r process maps}
-spp_vec <- am_spp_info$sciname %>% unique() %>% sort()
-
 map_fstem <- here_anx('spp_maps_mol', 'am_spp_mol_%s.csv')
-# x <- list.files(dirname(map_fstem), pattern = 'am_spp_mol', full.names = TRUE)
+
+x <- list.files(dirname(map_fstem), pattern = 'am_spp_mol', full.names = TRUE)
+spp_done <- basename(x) %>% str_remove_all('am_spp_mol_|.csv$') %>%
+  str_replace_all('[^a-z]+', ' ')
+
+spp_vec <- am_spp_info %>%
+  filter(!is.na(sciname)) %>%
+  filter(!sciname %in% spp_done) %>%
+  .$sciname %>% unique() %>% sort()
+
 
 map_am_hcaf_to_moll <- function(s) {
   # s <- spp_vec[1]

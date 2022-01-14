@@ -158,7 +158,7 @@ match_to_map <- function(poly_sf, maps_df) {
   ### rasterized (from the id_fix dataframe).
   id_fix <- maps_df %>%
     filter(shp_file == shp) %>%
-    select(shp_iucn_sid, iucn_sid, subpop, max_depth, worms_name) %>%
+    select(shp_iucn_sid, iucn_sid, subpop, depth_zone, worms_name) %>%
     distinct()
   
   polys_match <- poly_sf %>%
@@ -207,22 +207,18 @@ buffer_tiny_polys <- function(spp_shp) {
   }
 }
 
-clip_to_depth <- function(spp_rast, spp_shp) {
+clip_to_depth <- function(spp_rast, depth_zone) {
   ### depth clip if necessary; otherwise clip to bathy raster (which previously
   ### was clipped to area raster - so cells with any marine area will be kept,
   ### and non-marine cells will be dropped).
-  ### Manual adds of shallow spp:
-  spp_shallow <- c(133512)
   
-  max_depth <- unique(spp_shp$max_depth)
-  
-  if(length(max_depth) != 1) stop('Non-unique max_depth field!')
+  if(length(depth_zone) != 1) stop('Non-unique depth_zone field!')
   ### this shouldn't happen - each spp should have only one depth
   
-  if(max_depth == '< 20 m') {
+  if(depth_zone == '< 20 m') {
     ### intertidal, very shallow spp
     spp_rast <- mask(spp_rast, rast_shallow)
-  } else if(max_depth == '< 200 m' | spp_shp$iucn_sid %in% spp_shallow) {
+  } else if(depth_zone == '< 200 m') {
     ### spp on the continental shelf
     spp_rast <- mask(spp_rast, rast_neritic)
   } else {

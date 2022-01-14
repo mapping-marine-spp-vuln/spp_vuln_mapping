@@ -1,9 +1,9 @@
 ### set options
 options(readr.show_types = FALSE)
 
-###################################
-### Helper functions in general ###
-###################################
+#####################################.
+#### Helper functions in general ####
+#####################################.
 here_anx <- function(f = '', ...) { 
   ### create file path to git-annex dir for project
   f <- paste(f, ..., sep = '/')
@@ -13,9 +13,9 @@ here_anx <- function(f = '', ...) {
 }
 
 
-#####################################
-### Helper functions for AquaMaps ###
-#####################################
+#######################################.
+#### Helper functions for AquaMaps ####
+#######################################.
 
 am_dir <- '/home/shares/ohi/spp_vuln/aquamaps_2021'
 get_am_spp_info <- function() {
@@ -73,7 +73,9 @@ get_am_spp_envelopes <- function() {
   #   
   #   write_csv(env_sum_df, env_file)
   # }
-  return(data.table::fread(env_file))
+  env_df <- data.table::fread(env_file) %>%
+    mutate(am_sid = tolower(am_sid))
+  return(env_df)
 }
 
 get_hcaf_info <- function() {
@@ -142,9 +144,36 @@ get_am_spp_cells <- function(occurcells_cut = 0, prob_cut = 0) {
   return(spp_cells)
 }
 
-#####################################################
-###    Helper functions for vulnerability data    ###
-#####################################################
+###############################################.
+####   Helper functions for IUCN species   ####
+###############################################.
+
+get_mol_rast <- function() {
+  rast_base <- raster::raster(here('_spatial/ocean_area_mol.tif')) %>%
+    raster::setValues(1:raster::ncell(.))
+  return(rast_base)
+}
+
+map_to_mol <- function(df, by = 'cell_id', which, xfm = NULL) {
+  if(!by %in% names(df)) stop('Dataframe needs a valid column for "by" (e.g., cell_id)!')
+  if(!which %in% names(df)) stop('Dataframe needs a valid column for "which" (e.g., n_spp)!')
+  if(any(is.na(df[[by]]))) stop('Dataframe contains NA values for "by"!')
+  
+  r_base <- get_mol_rast()
+  
+  out_rast <- raster::subs(x = r_base, y = df, 
+                           by = by, which = which)
+  
+  if(!is.null(xfm)) {
+    if(class(xfm) != 'function') stop('xfm argument must be a function!')
+    out_rast <- xfm(out_rast)
+  }
+  return(out_rast)
+}
+
+#####################################################.
+####   Helper functions for vulnerability data   ####
+#####################################################.
 get_spp_vuln <- function(gapfill = c('family', 'all')[2]) {
   if(gapfill == 'family') {
     ### read from pre-filtered gapfill files in Github
@@ -172,9 +201,9 @@ get_spp_vuln <- function(gapfill = c('family', 'all')[2]) {
   return(vuln_df)
 }
 
-#####################################################
-### Helper functions for FishBase and SeaLifeBase ###
-#####################################################
+#######################################################.
+#### Helper functions for FishBase and SeaLifeBase ####
+#######################################################.
 get_fb_slb <- function(fxn = species, 
                        keep_cols = NULL, keep_fxn = contains, 
                        drop_cols = NULL, drop_fxn = all_of) {
@@ -219,9 +248,9 @@ get_fb_slb <- function(fxn = species,
   return(bind_rows(fb, slb) %>% mutate(species = tolower(species)))
 }
 
-#################################################
-### function for downstream direct match fill ###
-#################################################
+###################################################.
+#### function for downstream direct match fill ####
+###################################################.
 
 assign_repr_level <- function(df) {
   # message('Assigning representative ranks to species-level info...')
@@ -309,9 +338,9 @@ downfill <- function(df) {
   return(rank_df)
 }
 
-################################################
-### function for upstream/downstream gapfill ###
-################################################
+##################################################.
+#### function for upstream/downstream gapfill ####
+##################################################.
 gapfill_up_down <- function(df, col) {
   ### gf_level: 
   ### 1 = match/species, 2 = genus, 3 = family, 4 = order, 5 = class
@@ -403,9 +432,9 @@ gapfill_up_down <- function(df, col) {
 }
 
 
-###################################################################
-### assemble overall species taxonomy from extracted WoRMS data ###
-###################################################################
+#####################################################################.
+#### assemble overall species taxonomy from extracted WoRMS data ####
+#####################################################################.
 assemble_worms <- function(aspect = 'wide', seabirds_only = TRUE, am_patch = TRUE) {
   ### Note: this drops all kingdoms but Animalia 
   
@@ -703,9 +732,9 @@ get_vuln_traits <- function() {
   x <- data.table::fread(here('_data/traits_vulnerability/spp_traits_valid.csv'))
 }
 
-####################################################=
+#####################################################.
 ####  Resolve names using WoRMS API fuzzy match  ####
-####################################################=
+#####################################################.
 
 fuzzy_match <- function(spp_vec, marine_only = TRUE) {
   
@@ -808,9 +837,9 @@ clean_scinames <- function(df, field) {
     rename(!!field := tmp)
 }
 
-####################################################=
+####################################################.
 ####          Raster support functions          ####
-####################################################=
+####################################################.
 
 mask_ocean <- function(r) {
   ### for a raster in 10 km Mollweide, mask it to just
