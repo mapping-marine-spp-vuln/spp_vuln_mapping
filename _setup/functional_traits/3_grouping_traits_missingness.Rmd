@@ -192,6 +192,7 @@ MICE gapfilling can use traits from species that don't fall within AquaMaps.  He
 ```{r}
 
 vert_keep   <- c(actinopterygii = 'actinopterygii',
+                 sarcopterygii  = 'actinopterygii',
                  coelacanthi    = 'actinopterygii',
                  elasmobranchii = 'elasmobranchii',
                  holocephali    = 'elasmobranchii',
@@ -199,6 +200,7 @@ vert_keep   <- c(actinopterygii = 'actinopterygii',
                  aves           = 'aves', 
                  reptilia       = 'reptilia', 
                  myxini         = 'myxini',
+                 cephalaspidomorphi = 'myxini',
                  petromyzonti   = 'myxini')
 invert_keep <- worms_am_premice %>%
   filter(phylum != 'chordata' & phylum != 'mollusca') %>%

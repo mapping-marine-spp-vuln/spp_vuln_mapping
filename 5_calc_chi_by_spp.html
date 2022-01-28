@@ -9,7 +9,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
 
 
-<meta name="author" content="Compiled on Sun Nov 21 14:34:40 2021 by ohara" />
+<meta name="author" content="Compiled on Fri Jan 28 07:14:05 2022 by ohara" />
 
 
 <title>Calculate cumulative impacts per species</title>
@@ -357,7 +357,7 @@ div.tocify {
 
 
 <h1 class="title toc-ignore">Calculate cumulative impacts per species</h1>
-<h4 class="author"><em>Compiled on Sun Nov 21 14:34:40 2021 by ohara</em></h4>
+<h4 class="author"><em>Compiled on Fri Jan 28 07:14:05 2022 by ohara</em></h4>
 
 </div>
 
@@ -365,9 +365,11 @@ div.tocify {
 <div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>knitr<span class="sc">::</span>opts_chunk<span class="sc">$</span><span class="fu">set</span>(<span class="at">echo =</span> <span class="cn">TRUE</span>, <span class="at">message =</span> <span class="cn">FALSE</span>, <span class="at">warning =</span> <span class="cn">FALSE</span>, <span class="at">fig.height =</span> <span class="dv">3</span>, <span class="at">fig.width =</span> <span class="dv">12</span>)</span>
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(raster)</span>
-<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(oharac)</span>
-<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>oharac<span class="sc">::</span><span class="fu">setup</span>()</span>
-<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="fu">source</span>(<span class="fu">here</span>(<span class="st">&#39;common_fxns.R&#39;</span>))</span></code></pre></div>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(sf)</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tidyverse)</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(here)</span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(oharac)</span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="fu">source</span>(<span class="fu">here</span>(<span class="st">&#39;common_fxns.R&#39;</span>))</span></code></pre></div>
 <div id="summary" class="section level1" number="1">
 <h1><span class="header-section-number">1</span> Summary</h1>
 <p>On a per-species basis, we can calculate the total intensity of impacts across the species range. We can do this per stressor, then sum. We calculate this for the species entire range, as well as for just the coastal range, defined as those cells less than 200 meters OR including any part of the 3 nautical mile coastal buffer.</p>
@@ -377,7 +379,7 @@ div.tocify {
 <ul>
 <li>Vulnerability scores from the trait-based vulnerability framework: Butt et al. 2021, Ecosphere.</li>
 <li>Species ranges from AquaMaps and IUCN Red List.</li>
-<li>Stressors (currently) from Halpern et al. 2019.</li>
+<li>Stressors - see stressor setup scripts.</li>
 </ul>
 </div>
 <div id="methods" class="section level1" number="3">
@@ -393,59 +395,51 @@ div.tocify {
 </thead>
 <tbody>
 <tr class="odd">
-<td align="left">sst</td>
+<td align="left">sst_extremes_2020</td>
 <td align="left">water_temp</td>
 </tr>
 <tr class="even">
+<td align="left">oa_2020</td>
 <td align="left">oa</td>
-<td align="left">oa</td>
 </tr>
 <tr class="odd">
+<td align="left">slr_2019</td>
 <td align="left">slr</td>
-<td align="left">slr</td>
 </tr>
 <tr class="even">
-<td align="left">uv</td>
+<td align="left">uv_2020</td>
 <td align="left">uv</td>
 </tr>
 <tr class="odd">
-<td align="left">dem_dest</td>
+<td align="left">fishing_benthic_dest_2017</td>
 <td align="left">habitat_loss_degradation</td>
 </tr>
 <tr class="even">
-<td align="left">benthic_str</td>
+<td align="left">benthic_str_2020</td>
 <td align="left">habitat_loss_degradation</td>
 </tr>
 <tr class="odd">
-<td align="left">direct_human</td>
+<td align="left">direct_human_2020</td>
 <td align="left">habitat_loss_degradation</td>
 </tr>
 <tr class="even">
-<td align="left">shipping</td>
+<td align="left">shipping_large_2020</td>
 <td align="left">wildlife_strike</td>
 </tr>
 <tr class="odd">
-<td align="left">shipping</td>
-<td align="left">noise_pollution</td>
-</tr>
-<tr class="even">
-<td align="left">direct_human</td>
-<td align="left">noise_pollution</td>
-</tr>
-<tr class="odd">
-<td align="left">direct_human</td>
+<td align="left">light_2018</td>
 <td align="left">light_pollution</td>
 </tr>
 <tr class="even">
-<td align="left">benthic_str</td>
-<td align="left">light_pollution</td>
+<td align="left">microplastics_2015</td>
+<td align="left">microplastics</td>
 </tr>
 <tr class="odd">
-<td align="left">dem_nondest_hb</td>
+<td align="left">bycatch_benthic_2017</td>
 <td align="left">bycatch</td>
 </tr>
 <tr class="even">
-<td align="left">pel_hb</td>
+<td align="left">bycatch_pelagic_2017</td>
 <td align="left">bycatch</td>
 </tr>
 <tr class="odd">
@@ -453,56 +447,91 @@ div.tocify {
 <td align="left">organic_pollution</td>
 </tr>
 <tr class="even">
-<td align="left">nutrient</td>
+<td align="left">nutrient_2020</td>
 <td align="left">eutrophication_nutrient_pollution</td>
 </tr>
 </tbody>
 </table>
+<p>In addition, two stressors are scored individually: targeted fishing and sea surface temperature rise.</p>
+<p>Targeted fishing sensitivity is scored as 1 for all species (if targeted, we will find a way to efficiently catch it) modified by general adaptive capacity to determine vulnerability, and intensity of exposure is based on catch noted in Watson 2018 data.</p>
+<p>SST rise sensitivity is scored as 1 for all species (if outside its thermal envelope, high stress) modified by general adaptive capacity to determine vulnerability. Intensity of exposure is based on a linear increasing stressor from <span class="math inline">\(T_{max,pref} = 0\)</span> to <span class="math inline">\(T_{max,abs} = 1\)</span>.</p>
 <div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>str_vuln_lookup <span class="ot">&lt;-</span> <span class="fu">tribble</span>(</span>
-<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>  <span class="sc">~</span>stressor,        <span class="sc">~</span>vulnerability,</span>
-<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>   <span class="st">&#39;sst&#39;</span>,            <span class="st">&#39;water_temp&#39;</span>,</span>
-<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>   <span class="st">&#39;oa&#39;</span>,             <span class="st">&#39;oa&#39;</span>,</span>
-<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>   <span class="st">&#39;slr&#39;</span>,            <span class="st">&#39;slr&#39;</span>,</span>
-<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>   <span class="st">&#39;uv&#39;</span>,             <span class="st">&#39;uv&#39;</span>,</span>
-<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>   <span class="st">&#39;dem_dest&#39;</span>,       <span class="st">&#39;habitat_loss_degradation&#39;</span>,</span>
-<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>   <span class="st">&#39;benthic_str&#39;</span>,    <span class="st">&#39;habitat_loss_degradation&#39;</span>,</span>
-<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>   <span class="st">&#39;direct_human&#39;</span>,   <span class="st">&#39;habitat_loss_degradation&#39;</span>,</span>
-<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>   <span class="st">&#39;shipping&#39;</span>,       <span class="st">&#39;wildlife_strike&#39;</span>,</span>
-<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a>   <span class="st">&#39;shipping&#39;</span>,       <span class="st">&#39;noise_pollution&#39;</span>,</span>
-<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a>   <span class="st">&#39;direct_human&#39;</span>,   <span class="st">&#39;noise_pollution&#39;</span>,</span>
-<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a>   <span class="st">&#39;direct_human&#39;</span>,   <span class="st">&#39;light_pollution&#39;</span>,</span>
-<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a>   <span class="st">&#39;benthic_str&#39;</span>,    <span class="st">&#39;light_pollution&#39;</span>,</span>
-<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a>   <span class="st">&#39;dem_nondest_hb&#39;</span>, <span class="st">&#39;bycatch&#39;</span>,</span>
-<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a>   <span class="st">&#39;pel_hb&#39;</span>,         <span class="st">&#39;bycatch&#39;</span>,</span>
-<span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a>   <span class="st">&#39;organic&#39;</span>,        <span class="st">&#39;organic_pollution&#39;</span>,</span>
-<span id="cb2-18"><a href="#cb2-18" aria-hidden="true" tabindex="-1"></a>   <span class="st">&#39;nutrient&#39;</span>,       <span class="st">&#39;eutrophication_nutrient_pollution&#39;</span>)</span></code></pre></div>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>  <span class="sc">~</span>stressor,                   <span class="sc">~</span>vulnerability,</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>   <span class="st">&#39;sst_extremes_2020&#39;</span>,         <span class="st">&#39;marine_heat_waves&#39;</span>,</span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>   <span class="st">&#39;oa_2020&#39;</span>,                   <span class="st">&#39;oa&#39;</span>,</span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>   <span class="st">&#39;slr_2019&#39;</span>,                  <span class="st">&#39;slr&#39;</span>,</span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>   <span class="st">&#39;uv_2020&#39;</span>,                   <span class="st">&#39;uv&#39;</span>,</span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>   <span class="st">&#39;fishing_benthic_dest_2017&#39;</span>, <span class="st">&#39;habitat_loss_degradation&#39;</span>,</span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>   <span class="st">&#39;benth_str_2020&#39;</span>,            <span class="st">&#39;habitat_loss_degradation&#39;</span>,</span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>   <span class="st">&#39;direct_human_2020&#39;</span>,         <span class="st">&#39;habitat_loss_degradation&#39;</span>,</span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>   <span class="st">&#39;shipping_large_2021&#39;</span>,       <span class="st">&#39;wildlife_strike&#39;</span>,</span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a>   <span class="st">&#39;light_2018&#39;</span>,                <span class="st">&#39;light_pollution&#39;</span>,</span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a>   <span class="st">&#39;bycatch_benthic_2017&#39;</span>,      <span class="st">&#39;bycatch&#39;</span>,</span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a>   <span class="st">&#39;bycatch_pelagic_2017&#39;</span>,      <span class="st">&#39;bycatch&#39;</span>,</span>
+<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a>   <span class="co"># &#39;organic&#39;,                   &#39;organic_pollution&#39;,</span></span>
+<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a>   <span class="st">&#39;nutrient_2020&#39;</span>,             <span class="st">&#39;eutrophication_nutrient_pollution&#39;</span>,</span>
+<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a>   <span class="st">&#39;microplastics_2015&#39;</span>,        <span class="st">&#39;plastic_pollution_microplastic&#39;</span>,</span>
+<span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a>   <span class="st">&#39;sst_rise&#39;</span>,                  <span class="st">&#39;sst_rise&#39;</span>,</span>
+<span id="cb2-18"><a href="#cb2-18" aria-hidden="true" tabindex="-1"></a>   <span class="st">&#39;biomass_removal&#39;</span>,           <span class="st">&#39;biomass_removal&#39;</span></span>
+<span id="cb2-19"><a href="#cb2-19" aria-hidden="true" tabindex="-1"></a>  )</span></code></pre></div>
 </div>
 <div id="create-species-x-vulnerability-data.frame" class="section level2" number="3.2">
 <h2><span class="header-section-number">3.2</span> Create species x vulnerability data.frame</h2>
-<p>This will list vulnerability scores for each species that also has range information.</p>
+<p>This will list vulnerability scores for each species that also has range information. For species with IUCN maps, prefer those over AquaMaps. This allows for comparing IUCN subpops where available.</p>
 <div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>spp_vuln_all <span class="ot">&lt;-</span> <span class="fu">get_spp_vuln</span>() <span class="sc">%&gt;%</span></span>
 <span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(<span class="at">vuln =</span> stressor, species, score) <span class="sc">%&gt;%</span></span>
 <span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">distinct</span>()</span>
 <span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>am_spp_all <span class="ot">&lt;-</span> <span class="fu">get_am_spp_info</span>() <span class="sc">%&gt;%</span></span>
-<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(<span class="at">species =</span> sciname, am_sid)</span>
-<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>spp_am_vuln_all <span class="ot">&lt;-</span> <span class="fu">inner_join</span>(spp_vuln_all, am_spp_all, <span class="at">by =</span> <span class="st">&#39;species&#39;</span>) <span class="sc">%&gt;%</span></span>
-<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(<span class="sc">!</span><span class="fu">is.na</span>(score)) <span class="sc">%&gt;%</span></span>
-<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">left_join</span>(str_vuln_lookup, <span class="at">by =</span> <span class="fu">c</span>(<span class="st">&#39;vuln&#39;</span> <span class="ot">=</span> <span class="st">&#39;vulnerability&#39;</span>)) <span class="sc">%&gt;%</span></span>
-<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(<span class="sc">!</span><span class="fu">is.na</span>(stressor)) <span class="sc">%&gt;%</span></span>
-<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">distinct</span>() <span class="sc">%&gt;%</span></span>
-<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">spp_fname =</span> <span class="fu">str_replace_all</span>(species, <span class="st">&#39;[^a-z]+&#39;</span>, <span class="st">&#39;_&#39;</span>))</span></code></pre></div>
-<p>At this point, we have vulnerability information for 27469 species across 12 stressors.</p>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(<span class="at">species =</span> sciname, am_sid, occur_cells)</span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>iucn_mapped <span class="ot">&lt;-</span> <span class="fu">read_csv</span>(<span class="fu">here</span>(<span class="st">&#39;_data/iucn_spp/spp_marine_maps_2021-3.csv&#39;</span>))</span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>iucn_spp_all <span class="ot">&lt;-</span> <span class="fu">read_csv</span>(<span class="fu">here</span>(<span class="st">&#39;_data/iucn_spp/iucn_to_worms_match.csv&#39;</span>), <span class="at">show_col_types =</span> <span class="cn">FALSE</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(<span class="at">species =</span> worms_name, iucn_sid) <span class="sc">%&gt;%</span></span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(iucn_sid <span class="sc">%in%</span> iucn_mapped<span class="sc">$</span>iucn_sid)</span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a><span class="do">### to assign bycatch type, look at water col position. Assume benthic and pelagic</span></span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a><span class="do">### positions are total, but benthopelagic and reef are vulnerable to both types.</span></span>
+<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a>spp_wcol <span class="ot">&lt;-</span> <span class="fu">read_csv</span>(<span class="fu">here</span>(<span class="st">&#39;_data/traits_grouping/trait_water_col_position.csv&#39;</span>), <span class="at">show_col_types =</span> <span class="cn">FALSE</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(species, <span class="at">wcol =</span> value)</span>
+<span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-17"><a href="#cb3-17" aria-hidden="true" tabindex="-1"></a>spp_vuln_mapped <span class="ot">&lt;-</span> spp_vuln_all <span class="sc">%&gt;%</span></span>
+<span id="cb3-18"><a href="#cb3-18" aria-hidden="true" tabindex="-1"></a>  <span class="fu">left_join</span>(am_spp_all,   <span class="at">by =</span> <span class="st">&#39;species&#39;</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb3-19"><a href="#cb3-19" aria-hidden="true" tabindex="-1"></a>  <span class="fu">left_join</span>(iucn_spp_all, <span class="at">by =</span> <span class="st">&#39;species&#39;</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb3-20"><a href="#cb3-20" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(<span class="sc">!</span><span class="fu">is.na</span>(score)) <span class="sc">%&gt;%</span></span>
+<span id="cb3-21"><a href="#cb3-21" aria-hidden="true" tabindex="-1"></a>  <span class="fu">left_join</span>(str_vuln_lookup, <span class="at">by =</span> <span class="fu">c</span>(<span class="st">&#39;vuln&#39;</span> <span class="ot">=</span> <span class="st">&#39;vulnerability&#39;</span>)) <span class="sc">%&gt;%</span></span>
+<span id="cb3-22"><a href="#cb3-22" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(<span class="sc">!</span><span class="fu">is.na</span>(stressor)) <span class="sc">%&gt;%</span></span>
+<span id="cb3-23"><a href="#cb3-23" aria-hidden="true" tabindex="-1"></a>  <span class="fu">left_join</span>(spp_wcol, <span class="at">by =</span> <span class="st">&#39;species&#39;</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb3-24"><a href="#cb3-24" aria-hidden="true" tabindex="-1"></a>  <span class="do">### zero out bycatch vulnerability based on benthic/pelagic water col position</span></span>
+<span id="cb3-25"><a href="#cb3-25" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">score =</span> <span class="fu">ifelse</span>(wcol <span class="sc">==</span> <span class="st">&#39;benthic&#39;</span> <span class="sc">&amp;</span> <span class="fu">str_detect</span>(stressor, <span class="st">&#39;bycatch_pelagic&#39;</span>), <span class="dv">0</span>, score),</span>
+<span id="cb3-26"><a href="#cb3-26" aria-hidden="true" tabindex="-1"></a>         <span class="at">score =</span> <span class="fu">ifelse</span>(wcol <span class="sc">==</span> <span class="st">&#39;pelagic&#39;</span> <span class="sc">&amp;</span> <span class="fu">str_detect</span>(stressor, <span class="st">&#39;bycatch_benthic&#39;</span>), <span class="dv">0</span>, score)) <span class="sc">%&gt;%</span></span>
+<span id="cb3-27"><a href="#cb3-27" aria-hidden="true" tabindex="-1"></a>  <span class="do">### set source to be used for mapping:</span></span>
+<span id="cb3-28"><a href="#cb3-28" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">src =</span> <span class="fu">case_when</span>(<span class="sc">!</span><span class="fu">is.na</span>(iucn_sid) <span class="sc">~</span> <span class="st">&#39;iucn&#39;</span>, <span class="do">### prefer IUCN</span></span>
+<span id="cb3-29"><a href="#cb3-29" aria-hidden="true" tabindex="-1"></a>                         <span class="sc">!</span><span class="fu">is.na</span>(am_sid)   <span class="sc">~</span> <span class="st">&#39;am&#39;</span>,   <span class="do">### then AquaMaps - include even if low occur_cells</span></span>
+<span id="cb3-30"><a href="#cb3-30" aria-hidden="true" tabindex="-1"></a>                         <span class="cn">TRUE</span> <span class="sc">~</span> <span class="cn">NA_character_</span>)) <span class="sc">%&gt;%</span></span>
+<span id="cb3-31"><a href="#cb3-31" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(<span class="sc">!</span><span class="fu">is.na</span>(src)) <span class="sc">%&gt;%</span></span>
+<span id="cb3-32"><a href="#cb3-32" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(<span class="sc">-</span>wcol, <span class="sc">-</span>occur_cells)</span>
+<span id="cb3-33"><a href="#cb3-33" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-34"><a href="#cb3-34" aria-hidden="true" tabindex="-1"></a><span class="do">### some IUCN spp have multiple ID numbers for same spp - some due to</span></span>
+<span id="cb3-35"><a href="#cb3-35" aria-hidden="true" tabindex="-1"></a><span class="do">### synonyms adjusted based on WoRMS, some due to subpopulations</span></span>
+<span id="cb3-36"><a href="#cb3-36" aria-hidden="true" tabindex="-1"></a>dupe_check <span class="ot">&lt;-</span> spp_vuln_mapped <span class="sc">%&gt;%</span></span>
+<span id="cb3-37"><a href="#cb3-37" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(src <span class="sc">==</span> <span class="st">&#39;iucn&#39;</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb3-38"><a href="#cb3-38" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(species, iucn_sid) <span class="sc">%&gt;%</span></span>
+<span id="cb3-39"><a href="#cb3-39" aria-hidden="true" tabindex="-1"></a>  <span class="fu">distinct</span>() <span class="sc">%&gt;%</span></span>
+<span id="cb3-40"><a href="#cb3-40" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(species) <span class="sc">%&gt;%</span></span>
+<span id="cb3-41"><a href="#cb3-41" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">n_ids =</span> <span class="fu">n_distinct</span>(iucn_sid)) <span class="sc">%&gt;%</span></span>
+<span id="cb3-42"><a href="#cb3-42" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(iucn_sid) <span class="sc">%&gt;%</span></span>
+<span id="cb3-43"><a href="#cb3-43" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">n_spp =</span> <span class="fu">n_distinct</span>(species)) <span class="sc">%&gt;%</span></span>
+<span id="cb3-44"><a href="#cb3-44" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(n_ids <span class="sc">&gt;</span> <span class="dv">1</span> <span class="sc">|</span> n_spp <span class="sc">&gt;</span> <span class="dv">1</span>)</span></code></pre></div>
+<p>At this point, we have vulnerability information for 29409 species across 15 stressors.</p>
 </div>
 <div id="read-in-stressor-layers" class="section level2" number="3.3">
 <h2><span class="header-section-number">3.3</span> Read in stressor layers</h2>
-<p>Currently these are pulled from the 2019 cumulative human impact paper; the most recent year is kept.</p>
-<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>str_fs <span class="ot">&lt;-</span> <span class="fu">list.files</span>(<span class="fu">here</span>(<span class="st">&#39;_data/stressors_hcaf&#39;</span>), <span class="at">pattern =</span> <span class="st">&#39;hcaf.tif&#39;</span>, <span class="at">full.names =</span> <span class="cn">TRUE</span>)</span>
+<p>These layers have been developed in scripts found in <code>_setup/stressors</code>. This excludes the per-spp stressors of <code>sst_rise</code> and <code>biomass_removal</code>.</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>str_fs <span class="ot">&lt;-</span> <span class="fu">list.files</span>(<span class="fu">here</span>(<span class="st">&#39;_data/stressors_mol&#39;</span>), <span class="at">pattern =</span> <span class="st">&#39;.tif&#39;</span>, <span class="at">full.names =</span> <span class="cn">TRUE</span>)</span>
 <span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>str_fs <span class="ot">&lt;-</span> str_fs[<span class="fu">str_detect</span>(str_fs, <span class="fu">paste</span>(str_vuln_lookup<span class="sc">$</span>stressor, <span class="at">collapse =</span> <span class="st">&#39;|&#39;</span>))]</span>
 <span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>str_stack <span class="ot">&lt;-</span> <span class="fu">stack</span>(str_fs) <span class="sc">%&gt;%</span></span>
-<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">setNames</span>(<span class="fu">basename</span>(str_fs) <span class="sc">%&gt;%</span> <span class="fu">str_remove</span>(<span class="st">&#39;_[0-9]{4}_hcaf.tif&#39;</span>))</span></code></pre></div>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">setNames</span>(<span class="fu">basename</span>(str_fs) <span class="sc">%&gt;%</span> <span class="fu">str_remove</span>(<span class="st">&#39;.tif&#39;</span>))</span></code></pre></div>
 </div>
 <div id="loop-over-each-species-and-calculate" class="section level2" number="3.4">
 <h2><span class="header-section-number">3.4</span> Loop over each species and calculate</h2>
@@ -510,26 +539,20 @@ div.tocify {
 <ul>
 <li>Collect the species range; also identify its coastal-only range.
 <ul>
-<li>calculate total range in square km.</li>
-<li>For now, use any presence (prob &gt; 0) and include species with few occur_cells.</li>
+<li>If IUCN map available, use it.</li>
+<li>For AquaMaps species, use presence ≥ 50%.</li>
+<li>For AquaMaps species with low occur_cells, use IUCN if available, otherwise include as AquaMaps (but flagged).</li>
 </ul></li>
-<li>Looping over each vulnerablity score:
+<li>For each species:
 <ul>
-<li>multiply the stressor intensity by the species vulnerability</li>
-<li>mask to the species range</li>
+<li>mask map of stressor intensities to just those cells in spp range</li>
+<li>multiply the stressor intensities by the species vulnerability</li>
 <li>sum the intensity <span class="math inline">\(\times\)</span> vulnerability <span class="math inline">\(\times\)</span> cell ocean area across the entire species range</li>
 <li>sum the intensity <span class="math inline">\(\times\)</span> vulnerability <span class="math inline">\(\times\)</span> cell ocean area across only the coastal portion of species range</li>
 </ul></li>
 <li>Assemble the values into a data.frame.</li>
 <li>Save out to the server - the files will be small but there will be tens of thousands, so don’t keep them in GitHub.</li>
 </ul>
-<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>hcaf_info <span class="ot">&lt;-</span> <span class="fu">get_hcaf_info</span>() <span class="sc">%&gt;%</span></span>
-<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(loiczid, ocean_area, depth_min) <span class="sc">%&gt;%</span></span>
-<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">coastal =</span> depth_min <span class="sc">&lt;=</span> <span class="dv">200</span>)</span>
-<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>am_spp_cells <span class="ot">&lt;-</span> <span class="fu">get_am_spp_cells</span>() <span class="sc">%&gt;%</span></span>
-<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(am_sid, loiczid) <span class="sc">%&gt;%</span></span>
-<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dt_join</span>(hcaf_info, <span class="at">by =</span> <span class="st">&#39;loiczid&#39;</span>, <span class="at">type =</span> <span class="st">&#39;left&#39;</span>)</span></code></pre></div>
 <p>Set up a function to process the species impacts for any given species, to be used in a loop or <code>parallel::mclapply()</code>. This will return a dataframe of:</p>
 <ul>
 <li>stressor-vulnerability combination (character)</li>
@@ -537,120 +560,352 @@ div.tocify {
 <li>total impact per stressor/vulnerability combo over coastal range, in same units</li>
 </ul>
 <p>Species range information (entire range and coastal range, in km<sup>2</sup>) will be appended to these results outside the <code>mclapply</code>. No species information is included here; that will be included in the file name used to save the results.</p>
-<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>process_spp_impact <span class="ot">&lt;-</span> <span class="cf">function</span>(j, spp_am_vuln, spp_cells, str_stack) {</span>
-<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>  s <span class="ot">&lt;-</span> str_vuln_lookup[j, ]<span class="sc">$</span>stressor</span>
-<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>  v <span class="ot">&lt;-</span> str_vuln_lookup[j, ]<span class="sc">$</span>vulnerability</span>
-<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>  spp_v <span class="ot">&lt;-</span> spp_am_vuln <span class="sc">%&gt;%</span></span>
-<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>    <span class="fu">filter</span>(vuln <span class="sc">==</span> v) <span class="sc">%&gt;%</span></span>
-<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>    <span class="fu">pull</span>(score)</span>
-<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>  s_rast <span class="ot">&lt;-</span> str_stack[[s]]</span>
-<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>  impact_df <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(<span class="at">str     =</span> <span class="fu">values</span>(s_rast),</span>
-<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a>                          <span class="at">loiczid =</span> <span class="dv">1</span><span class="sc">:</span><span class="fu">ncell</span>(s_rast)) <span class="sc">%&gt;%</span></span>
-<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a>    <span class="fu">filter</span>(<span class="sc">!</span><span class="fu">is.na</span>(str)) <span class="sc">%&gt;%</span></span>
-<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a>    oharac<span class="sc">::</span><span class="fu">dt_join</span>(spp_cells, <span class="at">by =</span> <span class="st">&#39;loiczid&#39;</span>, <span class="at">type =</span> <span class="st">&#39;inner&#39;</span>) <span class="sc">%&gt;%</span></span>
-<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a>    <span class="fu">summarize</span>(<span class="at">str_vuln =</span> <span class="fu">paste</span>(s, v, <span class="at">sep =</span> <span class="st">&#39;-&#39;</span>),</span>
-<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a>              <span class="at">impact_tot     =</span> <span class="fu">sum</span>(str <span class="sc">*</span> spp_v <span class="sc">*</span> ocean_area),</span>
-<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a>              <span class="at">impact_coastal =</span> <span class="fu">sum</span>(str <span class="sc">*</span> spp_v <span class="sc">*</span> ocean_area <span class="sc">*</span> coastal))</span>
-<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb6-16"><a href="#cb6-16" aria-hidden="true" tabindex="-1"></a>  <span class="fu">return</span>(impact_df)</span>
-<span id="cb6-17"><a href="#cb6-17" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
-<div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>am_sid_vec <span class="ot">&lt;-</span> spp_am_vuln_all<span class="sc">$</span>am_sid <span class="sc">%&gt;%</span></span>
-<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">unique</span>()</span>
-<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>chunk_size <span class="ot">&lt;-</span> <span class="dv">100</span></span>
-<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>n_chunks <span class="ot">&lt;-</span> <span class="fu">ceiling</span>(<span class="fu">length</span>(am_sid_vec) <span class="sc">/</span> chunk_size)</span>
-<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>outf_stem <span class="ot">&lt;-</span> <span class="fu">here_anx</span>(<span class="st">&#39;impacts_by_species/impacts_%s.csv&#39;</span>)</span>
-<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a><span class="do">### for vector attempt:</span></span>
-<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a>ocean_area_vec  <span class="ot">&lt;-</span> <span class="fu">get_hcaf_info</span>() <span class="sc">%&gt;%</span></span>
-<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">arrange</span>(loiczid) <span class="sc">%&gt;%</span></span>
-<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">pull</span>(ocean_area)</span>
+<div id="define-helper-functions" class="section level3" number="3.4.1">
+<h3><span class="header-section-number">3.4.1</span> Define helper functions</h3>
+<ul>
+<li><code>get_spp_range(spp_id, src, thresh = .50)</code>
+<ul>
+<li>given a species ID (iucn_sid for IUCN, species name for AquaMaps), load the species range map.<br />
+</li>
+<li>If AquaMaps, filter to probability of occurrence ≥ 50%.<br />
+</li>
+<li>If IUCN, filter out extinct locations (keep only <code>presence</code> != 5)</li>
+</ul></li>
+<li><code>get_spp_biomass_removal(spp_name, src)</code>
+<ul>
+<li>given a species name (all biomass removal stressors, based on catch normalized by NPP then rescaled, are stored based on species name, even for IUCN-mapped species), load the rescaled targeted catch stressor map.<br />
+</li>
+<li>This will be masked to just those cells in the species range, when this is left-joined to the stressor-species intersection.</li>
+</ul></li>
+<li><code>get_spp_sst_rise(spp_id, src)</code>
+<ul>
+<li>Read in the sst rise stressor based on species ID (iucn_sid or species name).</li>
+<li>This should already be trimmed based on species range, but will definitely be masked when left-joined to the stressor-species intersection.</li>
+</ul></li>
+</ul>
+<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>get_spp_range <span class="ot">&lt;-</span> <span class="cf">function</span>(spp_id, src, <span class="at">thresh =</span> .<span class="dv">50</span>) {</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>  spp_id_fix <span class="ot">&lt;-</span> <span class="fu">str_replace_all</span>(spp_id, <span class="st">&#39;[^a-z0-9]+&#39;</span>, <span class="st">&#39;_&#39;</span>)</span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>  src_fix <span class="ot">&lt;-</span> src <span class="sc">%&gt;%</span> <span class="fu">str_remove</span>(<span class="st">&#39;_.+&#39;</span>)</span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>  spp_range_f <span class="ot">&lt;-</span> <span class="fu">here_anx</span>(<span class="st">&#39;spp_maps_mol&#39;</span>, <span class="fu">sprintf</span>(<span class="st">&#39;%s_spp_mol_%s.csv&#39;</span>, src_fix, spp_id_fix))</span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>  spp_cells <span class="ot">&lt;-</span> data.table<span class="sc">::</span><span class="fu">fread</span>(spp_range_f) </span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span>(<span class="st">&#39;prob&#39;</span> <span class="sc">%in%</span> <span class="fu">names</span>(spp_cells)) {</span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>    spp_cells <span class="ot">&lt;-</span> spp_cells <span class="sc">%&gt;%</span></span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a>      <span class="fu">filter</span>(prob <span class="sc">&gt;=</span> thresh)</span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span>(<span class="st">&#39;presence&#39;</span> <span class="sc">%in%</span> <span class="fu">names</span>(spp_cells)) {</span>
+<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a>    spp_cells <span class="ot">&lt;-</span> spp_cells <span class="sc">%&gt;%</span></span>
+<span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a>      <span class="fu">filter</span>(presence <span class="sc">!=</span> <span class="dv">5</span>)</span>
+<span id="cb5-15"><a href="#cb5-15" aria-hidden="true" tabindex="-1"></a>  } </span>
+<span id="cb5-16"><a href="#cb5-16" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb5-17"><a href="#cb5-17" aria-hidden="true" tabindex="-1"></a>  spp_cells <span class="ot">&lt;-</span> spp_cells <span class="sc">%&gt;%</span></span>
+<span id="cb5-18"><a href="#cb5-18" aria-hidden="true" tabindex="-1"></a>      <span class="fu">select</span>(cell_id)</span>
+<span id="cb5-19"><a href="#cb5-19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-20"><a href="#cb5-20" aria-hidden="true" tabindex="-1"></a>  <span class="fu">return</span>(spp_cells)</span>
+<span id="cb5-21"><a href="#cb5-21" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb5-22"><a href="#cb5-22" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-23"><a href="#cb5-23" aria-hidden="true" tabindex="-1"></a>get_spp_biomass_removal <span class="ot">&lt;-</span> <span class="cf">function</span>(spp_name, src) {</span>
+<span id="cb5-24"><a href="#cb5-24" aria-hidden="true" tabindex="-1"></a>  <span class="do">### for IUCN, unlike other places, these are stored by sciname not IUCN sid</span></span>
+<span id="cb5-25"><a href="#cb5-25" aria-hidden="true" tabindex="-1"></a>  biomass_rem_fstem <span class="ot">&lt;-</span> <span class="fu">here_anx</span>(<span class="st">&#39;stressors/fishing/rescaled_catch_by_spp_cell&#39;</span>, </span>
+<span id="cb5-26"><a href="#cb5-26" aria-hidden="true" tabindex="-1"></a>                                <span class="st">&#39;%s_spp_rescaled_catch_%s.csv&#39;</span>)</span>
+<span id="cb5-27"><a href="#cb5-27" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb5-28"><a href="#cb5-28" aria-hidden="true" tabindex="-1"></a>  spp_nospace <span class="ot">&lt;-</span> <span class="fu">str_replace_all</span>(spp_name, <span class="st">&#39;[^a-z]+&#39;</span>, <span class="st">&#39;_&#39;</span>)</span>
+<span id="cb5-29"><a href="#cb5-29" aria-hidden="true" tabindex="-1"></a>  src_fix <span class="ot">&lt;-</span> src <span class="sc">%&gt;%</span> <span class="fu">str_remove</span>(<span class="st">&#39;_.+&#39;</span>)</span>
+<span id="cb5-30"><a href="#cb5-30" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb5-31"><a href="#cb5-31" aria-hidden="true" tabindex="-1"></a>  spp_biomass_removal_f <span class="ot">&lt;-</span> <span class="fu">sprintf</span>(biomass_rem_fstem, src_fix, spp_nospace)</span>
+<span id="cb5-32"><a href="#cb5-32" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb5-33"><a href="#cb5-33" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span>(<span class="sc">!</span><span class="fu">file.exists</span>(spp_biomass_removal_f)) {</span>
+<span id="cb5-34"><a href="#cb5-34" aria-hidden="true" tabindex="-1"></a>    <span class="do">### not all spp have targeted biomass removal data</span></span>
+<span id="cb5-35"><a href="#cb5-35" aria-hidden="true" tabindex="-1"></a>    spp_biomass_removal_cells <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(<span class="at">cell_id =</span> <span class="sc">-</span><span class="dv">1</span>, <span class="at">biomass_removal =</span> <span class="dv">0</span>)</span>
+<span id="cb5-36"><a href="#cb5-36" aria-hidden="true" tabindex="-1"></a>  } <span class="cf">else</span> {</span>
+<span id="cb5-37"><a href="#cb5-37" aria-hidden="true" tabindex="-1"></a>    spp_biomass_removal_cells <span class="ot">&lt;-</span> data.table<span class="sc">::</span><span class="fu">fread</span>(spp_biomass_removal_f) <span class="sc">%&gt;%</span></span>
+<span id="cb5-38"><a href="#cb5-38" aria-hidden="true" tabindex="-1"></a>        <span class="fu">rename</span>(<span class="at">biomass_removal =</span> rescaled_catch)</span>
+<span id="cb5-39"><a href="#cb5-39" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb5-40"><a href="#cb5-40" aria-hidden="true" tabindex="-1"></a>  <span class="fu">return</span>(spp_biomass_removal_cells)  </span>
+<span id="cb5-41"><a href="#cb5-41" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb5-42"><a href="#cb5-42" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-43"><a href="#cb5-43" aria-hidden="true" tabindex="-1"></a>get_spp_sst_rise <span class="ot">&lt;-</span> <span class="cf">function</span>(spp_id, src) {</span>
+<span id="cb5-44"><a href="#cb5-44" aria-hidden="true" tabindex="-1"></a>  sst_rise_fstem <span class="ot">&lt;-</span> <span class="fu">here_anx</span>(<span class="st">&#39;stressors/max_temp&#39;</span>, <span class="st">&#39;%s_spp_max_temp_%s.csv&#39;</span>)</span>
+<span id="cb5-45"><a href="#cb5-45" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb5-46"><a href="#cb5-46" aria-hidden="true" tabindex="-1"></a>  spp_id <span class="ot">&lt;-</span> <span class="fu">str_replace_all</span>(spp_id, <span class="st">&#39; &#39;</span>, <span class="st">&#39;_&#39;</span>)</span>
+<span id="cb5-47"><a href="#cb5-47" aria-hidden="true" tabindex="-1"></a>  src_fix <span class="ot">&lt;-</span> src <span class="sc">%&gt;%</span> <span class="fu">str_remove</span>(<span class="st">&#39;_.+&#39;</span>)</span>
+<span id="cb5-48"><a href="#cb5-48" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb5-49"><a href="#cb5-49" aria-hidden="true" tabindex="-1"></a>  spp_sst_rise_f <span class="ot">&lt;-</span> <span class="fu">sprintf</span>(sst_rise_fstem, src_fix, spp_id)</span>
+<span id="cb5-50"><a href="#cb5-50" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span>(<span class="sc">!</span><span class="fu">file.exists</span>(spp_sst_rise_f)) <span class="fu">stop</span>(<span class="st">&#39;No file found: &#39;</span>, <span class="fu">basename</span>(spp_sst_rise_f))</span>
+<span id="cb5-51"><a href="#cb5-51" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb5-52"><a href="#cb5-52" aria-hidden="true" tabindex="-1"></a>  spp_sst_rise_cells <span class="ot">&lt;-</span> data.table<span class="sc">::</span><span class="fu">fread</span>(spp_sst_rise_f) <span class="sc">%&gt;%</span></span>
+<span id="cb5-53"><a href="#cb5-53" aria-hidden="true" tabindex="-1"></a>    <span class="fu">rename</span>(<span class="at">sst_rise =</span> therm_prs)</span>
+<span id="cb5-54"><a href="#cb5-54" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb5-55"><a href="#cb5-55" aria-hidden="true" tabindex="-1"></a>  <span class="fu">return</span>(spp_sst_rise_cells)  </span>
+<span id="cb5-56"><a href="#cb5-56" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
+<p>Functions for processing stressors and impacts:</p>
+<ul>
+<li><code>process_spp_str_intsx(tmp_vuln_df, str_df)</code>
+<ul>
+<li>given a dataframe of vulnerability scores for one species, and the full global stressor dataframe (cell_id vs stressor intensity)</li>
+<li>get species range for this species</li>
+<li>mask stressor dataframe to species range</li>
+<li>append species-specific biomass removal and sst rise stressors, using left-join to effectively mask these</li>
+</ul></li>
+<li>summarize_spp_impact &lt;- function(spp_str_intsx_df, area_df)
+<ul>
+<li>given the species-stressor intersection, and an area dataframe (full ocean or just coastal)</li>
+<li>mask spp-str intersection to area dataframe (no masking if full ocean, or mask to coastal) - masking done with a datatable inner join.</li>
+<li>for each stressor, summarize impacts as stressor intensity * vulnerability * cell area.</li>
+<li>for all stressors cumulative, summarize impacts as stressor intensity * vulnerability * cell area.</li>
+<li>append total range area for this range type (full or coastal).</li>
+</ul></li>
+</ul>
+<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>fill_missing_stressors <span class="ot">&lt;-</span> <span class="cf">function</span>(df) {</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>    <span class="do">### some spp are missing rows for some reason</span></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>    missing <span class="ot">&lt;-</span> str_vuln_lookup <span class="sc">%&gt;%</span></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>      <span class="fu">rename</span>(<span class="at">vuln =</span> vulnerability) <span class="sc">%&gt;%</span></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>      <span class="fu">anti_join</span>(df, <span class="at">by =</span> <span class="fu">c</span>(<span class="st">&#39;stressor&#39;</span>, <span class="st">&#39;vuln&#39;</span>)) <span class="sc">%&gt;%</span></span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>      <span class="fu">mutate</span>(<span class="at">score =</span> <span class="dv">0</span>)</span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>    df1 <span class="ot">&lt;-</span> df <span class="sc">%&gt;%</span></span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>      <span class="fu">bind_rows</span>(missing) <span class="sc">%&gt;%</span></span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a>      <span class="fu">fill</span>(species, am_sid, iucn_sid, src)</span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a>    <span class="fu">return</span>(df1)</span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a>process_spp_str_intsx <span class="ot">&lt;-</span> <span class="cf">function</span>(tmp_vuln_df, str_df) {</span>
+<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a>  <span class="co"># tmp_vuln_df &lt;- spp_vuln_mapped %&gt;%</span></span>
+<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a>  <span class="co">#   filter(!is.na(iucn_sid)) %&gt;%</span></span>
+<span id="cb6-16"><a href="#cb6-16" aria-hidden="true" tabindex="-1"></a>  <span class="co">#   filter(species == first(species))</span></span>
+<span id="cb6-17"><a href="#cb6-17" aria-hidden="true" tabindex="-1"></a>  src <span class="ot">&lt;-</span> tmp_vuln_df<span class="sc">$</span>src <span class="sc">%&gt;%</span> <span class="fu">unique</span>()</span>
+<span id="cb6-18"><a href="#cb6-18" aria-hidden="true" tabindex="-1"></a>  spp_name <span class="ot">&lt;-</span> tmp_vuln_df<span class="sc">$</span>species <span class="sc">%&gt;%</span> <span class="fu">unique</span>()</span>
+<span id="cb6-19"><a href="#cb6-19" aria-hidden="true" tabindex="-1"></a>  iucn_sid <span class="ot">&lt;-</span> tmp_vuln_df<span class="sc">$</span>iucn_sid <span class="sc">%&gt;%</span> <span class="fu">unique</span>()</span>
+<span id="cb6-20"><a href="#cb6-20" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb6-21"><a href="#cb6-21" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span>(<span class="fu">any</span>(<span class="fu">c</span>(<span class="fu">length</span>(src), <span class="fu">length</span>(spp_name), <span class="fu">length</span>(iucn_sid)) <span class="sc">&gt;</span> <span class="dv">1</span>)) {</span>
+<span id="cb6-22"><a href="#cb6-22" aria-hidden="true" tabindex="-1"></a>    <span class="fu">stop</span>(<span class="fu">sprintf</span>(<span class="st">&#39;Too many rows for src %s, spp_name %s, iucn_sid %s&#39;</span>, src, spp_name, iucn_sid))</span>
+<span id="cb6-23"><a href="#cb6-23" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb6-24"><a href="#cb6-24" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb6-25"><a href="#cb6-25" aria-hidden="true" tabindex="-1"></a>  spp_range <span class="ot">&lt;-</span> <span class="fu">get_spp_range</span>(<span class="at">spp_id =</span> <span class="fu">ifelse</span>(src <span class="sc">==</span> <span class="st">&#39;iucn&#39;</span>, iucn_sid, spp_name), src)</span>
+<span id="cb6-26"><a href="#cb6-26" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span>(<span class="fu">nrow</span>(spp_range) <span class="sc">==</span> <span class="dv">0</span>) {</span>
+<span id="cb6-27"><a href="#cb6-27" aria-hidden="true" tabindex="-1"></a>    <span class="do">### zero range spp</span></span>
+<span id="cb6-28"><a href="#cb6-28" aria-hidden="true" tabindex="-1"></a>    out_df <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(<span class="at">cell_id =</span> <span class="sc">-</span><span class="dv">1</span>,</span>
+<span id="cb6-29"><a href="#cb6-29" aria-hidden="true" tabindex="-1"></a>                         <span class="at">stressor =</span> str_vuln_lookup<span class="sc">$</span>stressor,</span>
+<span id="cb6-30"><a href="#cb6-30" aria-hidden="true" tabindex="-1"></a>                         <span class="at">intensity =</span> <span class="dv">0</span>)</span>
+<span id="cb6-31"><a href="#cb6-31" aria-hidden="true" tabindex="-1"></a>    <span class="fu">return</span>(out_df)</span>
+<span id="cb6-32"><a href="#cb6-32" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb6-33"><a href="#cb6-33" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb6-34"><a href="#cb6-34" aria-hidden="true" tabindex="-1"></a>  spp_biomass_rm <span class="ot">&lt;-</span> <span class="fu">get_spp_biomass_removal</span>(spp_name, src)</span>
+<span id="cb6-35"><a href="#cb6-35" aria-hidden="true" tabindex="-1"></a>  spp_sst_rise   <span class="ot">&lt;-</span> <span class="fu">get_spp_sst_rise</span>(<span class="at">spp_id =</span> <span class="fu">ifelse</span>(src <span class="sc">==</span> <span class="st">&#39;iucn&#39;</span>, iucn_sid, spp_name), src)</span>
+<span id="cb6-36"><a href="#cb6-36" aria-hidden="true" tabindex="-1"></a>                      </span>
+<span id="cb6-37"><a href="#cb6-37" aria-hidden="true" tabindex="-1"></a>  spp_str_intsx <span class="ot">&lt;-</span> str_df <span class="sc">%&gt;%</span></span>
+<span id="cb6-38"><a href="#cb6-38" aria-hidden="true" tabindex="-1"></a>    oharac<span class="sc">::</span><span class="fu">dt_join</span>(spp_range, <span class="at">by =</span> <span class="st">&#39;cell_id&#39;</span>, <span class="at">type =</span> <span class="st">&#39;inner&#39;</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb6-39"><a href="#cb6-39" aria-hidden="true" tabindex="-1"></a>    oharac<span class="sc">::</span><span class="fu">dt_join</span>(spp_biomass_rm, <span class="at">by =</span> <span class="st">&#39;cell_id&#39;</span>, <span class="at">type =</span> <span class="st">&#39;left&#39;</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb6-40"><a href="#cb6-40" aria-hidden="true" tabindex="-1"></a>    oharac<span class="sc">::</span><span class="fu">dt_join</span>(spp_sst_rise, <span class="at">by =</span> <span class="st">&#39;cell_id&#39;</span>, <span class="at">type =</span> <span class="st">&#39;left&#39;</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb6-41"><a href="#cb6-41" aria-hidden="true" tabindex="-1"></a>    <span class="fu">gather</span>(stressor, intensity, <span class="sc">-</span>cell_id) <span class="sc">%&gt;%</span></span>
+<span id="cb6-42"><a href="#cb6-42" aria-hidden="true" tabindex="-1"></a>    <span class="fu">mutate</span>(<span class="at">intensity =</span> <span class="fu">ifelse</span>(<span class="fu">is.na</span>(intensity), <span class="dv">0</span>, intensity))</span>
+<span id="cb6-43"><a href="#cb6-43" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb6-44"><a href="#cb6-44" aria-hidden="true" tabindex="-1"></a>  <span class="fu">return</span>(spp_str_intsx)</span>
+<span id="cb6-45"><a href="#cb6-45" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb6-46"><a href="#cb6-46" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-47"><a href="#cb6-47" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-48"><a href="#cb6-48" aria-hidden="true" tabindex="-1"></a>summarize_spp_impact <span class="ot">&lt;-</span> <span class="cf">function</span>(spp_str_intsx, area_df) {</span>
+<span id="cb6-49"><a href="#cb6-49" aria-hidden="true" tabindex="-1"></a>  spp_intsx_area_df <span class="ot">&lt;-</span> spp_str_intsx <span class="sc">%&gt;%</span></span>
+<span id="cb6-50"><a href="#cb6-50" aria-hidden="true" tabindex="-1"></a>    oharac<span class="sc">::</span><span class="fu">dt_join</span>(area_df, <span class="at">by =</span> <span class="st">&#39;cell_id&#39;</span>, <span class="at">type =</span> <span class="st">&#39;inner&#39;</span>) </span>
+<span id="cb6-51"><a href="#cb6-51" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb6-52"><a href="#cb6-52" aria-hidden="true" tabindex="-1"></a>  spp_range_km2 <span class="ot">&lt;-</span> spp_intsx_area_df <span class="sc">%&gt;%</span></span>
+<span id="cb6-53"><a href="#cb6-53" aria-hidden="true" tabindex="-1"></a>    <span class="fu">select</span>(cell_id, ocean_a_km2) <span class="sc">%&gt;%</span></span>
+<span id="cb6-54"><a href="#cb6-54" aria-hidden="true" tabindex="-1"></a>    <span class="fu">distinct</span>() <span class="sc">%&gt;%</span></span>
+<span id="cb6-55"><a href="#cb6-55" aria-hidden="true" tabindex="-1"></a>    <span class="fu">summarize</span>(<span class="at">range_a_km2 =</span> <span class="fu">sum</span>(ocean_a_km2), <span class="at">.groups =</span> <span class="st">&#39;drop&#39;</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb6-56"><a href="#cb6-56" aria-hidden="true" tabindex="-1"></a>    .<span class="sc">$</span>range_a_km2</span>
+<span id="cb6-57"><a href="#cb6-57" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb6-58"><a href="#cb6-58" aria-hidden="true" tabindex="-1"></a>  imp_by_str <span class="ot">&lt;-</span> spp_intsx_area_df <span class="sc">%&gt;%</span></span>
+<span id="cb6-59"><a href="#cb6-59" aria-hidden="true" tabindex="-1"></a>    <span class="fu">group_by</span>(vuln, stressor) <span class="sc">%&gt;%</span></span>
+<span id="cb6-60"><a href="#cb6-60" aria-hidden="true" tabindex="-1"></a>    <span class="fu">summarize</span>(<span class="at">impact_tot =</span> <span class="fu">sum</span>(intensity <span class="sc">*</span> score <span class="sc">*</span> ocean_a_km2), <span class="at">.groups =</span> <span class="st">&#39;drop&#39;</span>)</span>
+<span id="cb6-61"><a href="#cb6-61" aria-hidden="true" tabindex="-1"></a>  imp_cum <span class="ot">&lt;-</span> spp_intsx_area_df <span class="sc">%&gt;%</span></span>
+<span id="cb6-62"><a href="#cb6-62" aria-hidden="true" tabindex="-1"></a>    <span class="fu">summarize</span>(<span class="at">vuln =</span> <span class="st">&#39;cumulative&#39;</span>, <span class="at">stressor =</span> <span class="st">&#39;cumulative&#39;</span>, </span>
+<span id="cb6-63"><a href="#cb6-63" aria-hidden="true" tabindex="-1"></a>              <span class="at">impact_tot =</span> <span class="fu">sum</span>(intensity <span class="sc">*</span> score <span class="sc">*</span> ocean_a_km2), <span class="at">.groups =</span> <span class="st">&#39;drop&#39;</span>)</span>
+<span id="cb6-64"><a href="#cb6-64" aria-hidden="true" tabindex="-1"></a>  impact_df <span class="ot">&lt;-</span> imp_by_str <span class="sc">%&gt;%</span></span>
+<span id="cb6-65"><a href="#cb6-65" aria-hidden="true" tabindex="-1"></a>    <span class="fu">bind_rows</span>(imp_cum) <span class="sc">%&gt;%</span></span>
+<span id="cb6-66"><a href="#cb6-66" aria-hidden="true" tabindex="-1"></a>    <span class="fu">mutate</span>(<span class="at">range_km2 =</span> spp_range_km2)</span>
+<span id="cb6-67"><a href="#cb6-67" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-68"><a href="#cb6-68" aria-hidden="true" tabindex="-1"></a>  <span class="fu">return</span>(impact_df)</span>
+<span id="cb6-69"><a href="#cb6-69" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
+<div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>ocean_a_rast <span class="ot">&lt;-</span> <span class="fu">raster</span>(<span class="fu">here</span>(<span class="st">&#39;_spatial/ocean_area_mol.tif&#39;</span>))</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>ocean_a_df <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(<span class="at">ocean_a_km2 =</span> <span class="fu">values</span>(ocean_a_rast) <span class="sc">*</span> <span class="dv">100</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">cell_id =</span> <span class="dv">1</span><span class="sc">:</span><span class="fu">n</span>()) <span class="sc">%&gt;%</span></span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(<span class="sc">!</span><span class="fu">is.na</span>(ocean_a_km2))</span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>coastal_a_rast <span class="ot">&lt;-</span> <span class="fu">raster</span>(<span class="fu">here</span>(<span class="st">&#39;_spatial/bathy_mol_neritic.tif&#39;</span>))</span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>coastal_a_df <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(<span class="at">ocean_a_km2 =</span> <span class="fu">values</span>(ocean_a_rast) <span class="sc">*</span> <span class="dv">100</span>,</span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>                           <span class="at">coastal =</span> <span class="fu">values</span>(coastal_a_rast)) <span class="sc">%&gt;%</span></span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">cell_id =</span> <span class="dv">1</span><span class="sc">:</span><span class="fu">n</span>()) <span class="sc">%&gt;%</span></span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(<span class="sc">!</span><span class="fu">is.na</span>(coastal)) <span class="sc">%&gt;%</span></span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(cell_id, ocean_a_km2)</span>
 <span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span>(k <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>n_chunks) {</span>
-<span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a>  <span class="do">### k &lt;- 13</span></span>
-<span id="cb7-15"><a href="#cb7-15" aria-hidden="true" tabindex="-1"></a>  ptm_k <span class="ot">&lt;-</span> <span class="fu">proc.time</span>()</span>
-<span id="cb7-16"><a href="#cb7-16" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb7-17"><a href="#cb7-17" aria-hidden="true" tabindex="-1"></a>  <span class="do">### Chunk out large species-cell dataframe into smaller bits for</span></span>
-<span id="cb7-18"><a href="#cb7-18" aria-hidden="true" tabindex="-1"></a>  <span class="do">### quicker filtering at the species level.</span></span>
-<span id="cb7-19"><a href="#cb7-19" aria-hidden="true" tabindex="-1"></a>  i_min <span class="ot">&lt;-</span> (k<span class="dv">-1</span>) <span class="sc">*</span> chunk_size <span class="sc">+</span> <span class="dv">1</span></span>
-<span id="cb7-20"><a href="#cb7-20" aria-hidden="true" tabindex="-1"></a>  i_max <span class="ot">&lt;-</span> <span class="fu">min</span>(k <span class="sc">*</span> chunk_size, <span class="fu">length</span>(am_sid_vec))</span>
-<span id="cb7-21"><a href="#cb7-21" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb7-22"><a href="#cb7-22" aria-hidden="true" tabindex="-1"></a>  chunk_sid_vec <span class="ot">&lt;-</span> am_sid_vec[i_min<span class="sc">:</span>i_max]</span>
-<span id="cb7-23"><a href="#cb7-23" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb7-24"><a href="#cb7-24" aria-hidden="true" tabindex="-1"></a>  <span class="do">### check that some of these spp still need to be processed, otherwise</span></span>
-<span id="cb7-25"><a href="#cb7-25" aria-hidden="true" tabindex="-1"></a>  <span class="do">### skip to the next chunk:</span></span>
-<span id="cb7-26"><a href="#cb7-26" aria-hidden="true" tabindex="-1"></a>  spp_name_vec <span class="ot">&lt;-</span> spp_am_vuln_all <span class="sc">%&gt;%</span></span>
-<span id="cb7-27"><a href="#cb7-27" aria-hidden="true" tabindex="-1"></a>    <span class="fu">filter</span>(am_sid <span class="sc">%in%</span> chunk_sid_vec) <span class="sc">%&gt;%</span></span>
-<span id="cb7-28"><a href="#cb7-28" aria-hidden="true" tabindex="-1"></a>    <span class="fu">pull</span>(spp_fname) <span class="sc">%&gt;%</span> <span class="fu">unique</span>()</span>
-<span id="cb7-29"><a href="#cb7-29" aria-hidden="true" tabindex="-1"></a>  chunk_spp_files <span class="ot">&lt;-</span> <span class="fu">sprintf</span>(outf_stem, spp_name_vec)</span>
-<span id="cb7-30"><a href="#cb7-30" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span>(<span class="fu">all</span>(<span class="fu">file.exists</span>(chunk_spp_files))) {</span>
-<span id="cb7-31"><a href="#cb7-31" aria-hidden="true" tabindex="-1"></a>    <span class="fu">message</span>(<span class="st">&#39;All spp in chunk &#39;</span>, k, <span class="st">&#39; already have impact files... skipping!&#39;</span>)</span>
-<span id="cb7-32"><a href="#cb7-32" aria-hidden="true" tabindex="-1"></a>    <span class="cf">next</span>()</span>
-<span id="cb7-33"><a href="#cb7-33" aria-hidden="true" tabindex="-1"></a>  }</span>
-<span id="cb7-34"><a href="#cb7-34" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb7-35"><a href="#cb7-35" aria-hidden="true" tabindex="-1"></a>  <span class="do">### Filter complete am_spp_cells dataframe to just those spp in the</span></span>
-<span id="cb7-36"><a href="#cb7-36" aria-hidden="true" tabindex="-1"></a>  <span class="do">### current chunk; this will speed later filtering immensely (factor of ~20)</span></span>
-<span id="cb7-37"><a href="#cb7-37" aria-hidden="true" tabindex="-1"></a>  am_spp_cells_chunk <span class="ot">&lt;-</span> am_spp_cells <span class="sc">%&gt;%</span></span>
-<span id="cb7-38"><a href="#cb7-38" aria-hidden="true" tabindex="-1"></a>    <span class="fu">filter</span>(am_sid <span class="sc">%in%</span> chunk_sid_vec)</span>
-<span id="cb7-39"><a href="#cb7-39" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-40"><a href="#cb7-40" aria-hidden="true" tabindex="-1"></a>  tmp <span class="ot">&lt;-</span> parallel<span class="sc">::</span><span class="fu">mclapply</span>(<span class="fu">seq_along</span>(chunk_sid_vec),</span>
-<span id="cb7-41"><a href="#cb7-41" aria-hidden="true" tabindex="-1"></a>                            <span class="at">mc.cores =</span> <span class="dv">34</span>,</span>
-<span id="cb7-42"><a href="#cb7-42" aria-hidden="true" tabindex="-1"></a>                            <span class="at">FUN =</span> <span class="cf">function</span>(i) {</span>
-<span id="cb7-43"><a href="#cb7-43" aria-hidden="true" tabindex="-1"></a>    <span class="co"># for(i in seq_along(chunk_sid_vec)) {</span></span>
-<span id="cb7-44"><a href="#cb7-44" aria-hidden="true" tabindex="-1"></a>      <span class="do">### i &lt;- 89</span></span>
-<span id="cb7-45"><a href="#cb7-45" aria-hidden="true" tabindex="-1"></a>      ptm_i <span class="ot">&lt;-</span> <span class="fu">proc.time</span>()</span>
-<span id="cb7-46"><a href="#cb7-46" aria-hidden="true" tabindex="-1"></a>      id <span class="ot">&lt;-</span> chunk_sid_vec[i]</span>
-<span id="cb7-47"><a href="#cb7-47" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb7-48"><a href="#cb7-48" aria-hidden="true" tabindex="-1"></a>      spp_am_vuln <span class="ot">&lt;-</span> spp_am_vuln_all <span class="sc">%&gt;%</span></span>
-<span id="cb7-49"><a href="#cb7-49" aria-hidden="true" tabindex="-1"></a>        <span class="fu">filter</span>(am_sid <span class="sc">==</span> id)</span>
-<span id="cb7-50"><a href="#cb7-50" aria-hidden="true" tabindex="-1"></a>      </span>
-<span id="cb7-51"><a href="#cb7-51" aria-hidden="true" tabindex="-1"></a>      spp_fname <span class="ot">&lt;-</span> spp_am_vuln<span class="sc">$</span>spp_fname <span class="sc">%&gt;%</span></span>
-<span id="cb7-52"><a href="#cb7-52" aria-hidden="true" tabindex="-1"></a>        <span class="fu">unique</span>()</span>
-<span id="cb7-53"><a href="#cb7-53" aria-hidden="true" tabindex="-1"></a>      outfile <span class="ot">&lt;-</span> <span class="fu">sprintf</span>(outf_stem, spp_fname)</span>
-<span id="cb7-54"><a href="#cb7-54" aria-hidden="true" tabindex="-1"></a>      </span>
-<span id="cb7-55"><a href="#cb7-55" aria-hidden="true" tabindex="-1"></a>      <span class="cf">if</span>(<span class="fu">file.exists</span>(outfile)) {</span>
-<span id="cb7-56"><a href="#cb7-56" aria-hidden="true" tabindex="-1"></a>        <span class="co"># message(&#39;File &#39;, outfile, &#39; exists... skipping!&#39;)</span></span>
-<span id="cb7-57"><a href="#cb7-57" aria-hidden="true" tabindex="-1"></a>        <span class="fu">return</span>()</span>
-<span id="cb7-58"><a href="#cb7-58" aria-hidden="true" tabindex="-1"></a>      }</span>
-<span id="cb7-59"><a href="#cb7-59" aria-hidden="true" tabindex="-1"></a>      </span>
-<span id="cb7-60"><a href="#cb7-60" aria-hidden="true" tabindex="-1"></a>      <span class="fu">message</span>(i, <span class="st">&#39; of &#39;</span>, <span class="fu">length</span>(chunk_sid_vec), <span class="st">&#39;, chunk &#39;</span>, k, <span class="st">&#39; of &#39;</span>, n_chunks, </span>
-<span id="cb7-61"><a href="#cb7-61" aria-hidden="true" tabindex="-1"></a>              <span class="st">&#39;: processing impacts on &#39;</span>, spp_am_vuln<span class="sc">$</span>species <span class="sc">%&gt;%</span> <span class="fu">unique</span>(), <span class="st">&#39;...&#39;</span>)</span>
-<span id="cb7-62"><a href="#cb7-62" aria-hidden="true" tabindex="-1"></a>      </span>
-<span id="cb7-63"><a href="#cb7-63" aria-hidden="true" tabindex="-1"></a>      <span class="do">### filtering a small chunk is WAY faster than filtering the entire</span></span>
-<span id="cb7-64"><a href="#cb7-64" aria-hidden="true" tabindex="-1"></a>      <span class="do">### am_spp_cells dataframe.</span></span>
-<span id="cb7-65"><a href="#cb7-65" aria-hidden="true" tabindex="-1"></a>      spp_cells <span class="ot">&lt;-</span> am_spp_cells_chunk <span class="sc">%&gt;%</span></span>
-<span id="cb7-66"><a href="#cb7-66" aria-hidden="true" tabindex="-1"></a>        <span class="fu">filter</span>(am_sid <span class="sc">==</span> id)</span>
-<span id="cb7-67"><a href="#cb7-67" aria-hidden="true" tabindex="-1"></a>      </span>
-<span id="cb7-68"><a href="#cb7-68" aria-hidden="true" tabindex="-1"></a>      <span class="do">### create a vector of species presence by cell area</span></span>
-<span id="cb7-69"><a href="#cb7-69" aria-hidden="true" tabindex="-1"></a>      spp_ocean_vec <span class="ot">&lt;-</span> spp_coastal_vec <span class="ot">&lt;-</span> ocean_area_vec</span>
-<span id="cb7-70"><a href="#cb7-70" aria-hidden="true" tabindex="-1"></a>      spp_ocean_vec[<span class="sc">-</span>spp_cells<span class="sc">$</span>loiczid] <span class="ot">&lt;-</span> <span class="cn">NA</span></span>
-<span id="cb7-71"><a href="#cb7-71" aria-hidden="true" tabindex="-1"></a>      spp_coastal_vec[<span class="sc">-</span>(spp_cells <span class="sc">%&gt;%</span> <span class="fu">filter</span>(coastal) <span class="sc">%&gt;%</span> <span class="fu">pull</span>(loiczid))] <span class="ot">&lt;-</span> <span class="cn">NA</span></span>
-<span id="cb7-72"><a href="#cb7-72" aria-hidden="true" tabindex="-1"></a>    </span>
-<span id="cb7-73"><a href="#cb7-73" aria-hidden="true" tabindex="-1"></a>      <span class="do">### Calculate species total range and coastal range</span></span>
-<span id="cb7-74"><a href="#cb7-74" aria-hidden="true" tabindex="-1"></a>      range_tot_km2 <span class="ot">&lt;-</span> <span class="fu">sum</span>(spp_ocean_vec, <span class="at">na.rm =</span> <span class="cn">TRUE</span>)</span>
-<span id="cb7-75"><a href="#cb7-75" aria-hidden="true" tabindex="-1"></a>      range_coastal_km2 <span class="ot">&lt;-</span> <span class="fu">sum</span>(spp_coastal_vec, <span class="at">na.rm =</span> <span class="cn">TRUE</span>)</span>
-<span id="cb7-76"><a href="#cb7-76" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-77"><a href="#cb7-77" aria-hidden="true" tabindex="-1"></a>      <span class="do">### Process species impacts</span></span>
-<span id="cb7-78"><a href="#cb7-78" aria-hidden="true" tabindex="-1"></a>      spp_impacts_list <span class="ot">&lt;-</span> <span class="fu">lapply</span>(<span class="dv">1</span><span class="sc">:</span><span class="fu">nrow</span>(str_vuln_lookup), </span>
-<span id="cb7-79"><a href="#cb7-79" aria-hidden="true" tabindex="-1"></a>                                 <span class="at">FUN =</span> process_spp_impact,</span>
-<span id="cb7-80"><a href="#cb7-80" aria-hidden="true" tabindex="-1"></a>                                 spp_am_vuln, spp_cells, str_stack) </span>
-<span id="cb7-81"><a href="#cb7-81" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb7-82"><a href="#cb7-82" aria-hidden="true" tabindex="-1"></a>      <span class="do">### bind rows, add total and coastal ranges, and write out</span></span>
-<span id="cb7-83"><a href="#cb7-83" aria-hidden="true" tabindex="-1"></a>      spp_impacts_df <span class="ot">&lt;-</span> spp_impacts_list <span class="sc">%&gt;%</span></span>
-<span id="cb7-84"><a href="#cb7-84" aria-hidden="true" tabindex="-1"></a>        <span class="fu">bind_rows</span>() <span class="sc">%&gt;%</span></span>
-<span id="cb7-85"><a href="#cb7-85" aria-hidden="true" tabindex="-1"></a>        <span class="fu">mutate</span>(<span class="at">range_tot_km2     =</span> range_tot_km2,</span>
-<span id="cb7-86"><a href="#cb7-86" aria-hidden="true" tabindex="-1"></a>               <span class="at">range_coastal_km2 =</span> range_coastal_km2)</span>
-<span id="cb7-87"><a href="#cb7-87" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-88"><a href="#cb7-88" aria-hidden="true" tabindex="-1"></a>      <span class="fu">write_csv</span>(spp_impacts_df, outfile)</span>
-<span id="cb7-89"><a href="#cb7-89" aria-hidden="true" tabindex="-1"></a>      </span>
-<span id="cb7-90"><a href="#cb7-90" aria-hidden="true" tabindex="-1"></a>      <span class="fu">message</span>(i, <span class="st">&#39; of &#39;</span>, <span class="fu">length</span>(chunk_sid_vec), <span class="st">&#39;, chunk &#39;</span>, k, <span class="st">&#39; of &#39;</span>, n_chunks, </span>
-<span id="cb7-91"><a href="#cb7-91" aria-hidden="true" tabindex="-1"></a>              <span class="st">&#39;: processed impacts on &#39;</span>, spp_am_vuln<span class="sc">$</span>species <span class="sc">%&gt;%</span> <span class="fu">unique</span>(), </span>
-<span id="cb7-92"><a href="#cb7-92" aria-hidden="true" tabindex="-1"></a>              <span class="st">&#39;... elapsed time: &#39;</span>, <span class="fu">round</span>(<span class="fu">proc.time</span>() <span class="sc">-</span> ptm_i, <span class="dv">3</span>)[<span class="dv">3</span>], <span class="st">&#39;s.&#39;</span>)</span>
-<span id="cb7-93"><a href="#cb7-93" aria-hidden="true" tabindex="-1"></a>    })</span>
-<span id="cb7-94"><a href="#cb7-94" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb7-95"><a href="#cb7-95" aria-hidden="true" tabindex="-1"></a>  <span class="fu">message</span>(<span class="st">&#39;Chunk time to process: &#39;</span>, <span class="fu">round</span>(<span class="fu">proc.time</span>() <span class="sc">-</span> ptm_k, <span class="dv">3</span>)[<span class="dv">3</span>], <span class="st">&#39;s.&#39;</span>)</span>
-<span id="cb7-96"><a href="#cb7-96" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb7-97"><a href="#cb7-97" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
+<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a>str_df <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(<span class="fu">values</span>(str_stack)) <span class="sc">%&gt;%</span></span>
+<span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">cell_id =</span> <span class="dv">1</span><span class="sc">:</span><span class="fu">n</span>()) <span class="sc">%&gt;%</span></span>
+<span id="cb7-15"><a href="#cb7-15" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(cell_id <span class="sc">%in%</span> ocean_a_df<span class="sc">$</span>cell_id)</span></code></pre></div>
+</div>
+<div id="loop-over-aquamaps-species" class="section level3" number="3.4.2">
+<h3><span class="header-section-number">3.4.2</span> Loop over AquaMaps species</h3>
+<div class="sourceCode" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>am_spp_vec <span class="ot">&lt;-</span> spp_vuln_mapped <span class="sc">%&gt;%</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(<span class="fu">str_detect</span>(src, <span class="st">&#39;am&#39;</span>)) <span class="sc">%&gt;%</span></span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>  .<span class="sc">$</span>species <span class="sc">%&gt;%</span> <span class="fu">unique</span>()</span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>chunk_size <span class="ot">&lt;-</span> <span class="dv">100</span></span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>n_chunks <span class="ot">&lt;-</span> <span class="fu">ceiling</span>(<span class="fu">length</span>(am_spp_vec) <span class="sc">/</span> chunk_size)</span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a>outf_stem <span class="ot">&lt;-</span> <span class="fu">here_anx</span>(<span class="st">&#39;impacts_by_species/impacts_am_%s.csv&#39;</span>)</span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span>(k <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>n_chunks) {</span>
+<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a>  <span class="do">### k &lt;- 1</span></span>
+<span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a>  ptm_k <span class="ot">&lt;-</span> <span class="fu">proc.time</span>()</span>
+<span id="cb8-12"><a href="#cb8-12" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb8-13"><a href="#cb8-13" aria-hidden="true" tabindex="-1"></a>  <span class="do">### Chunk out large species-cell dataframe into smaller bits for</span></span>
+<span id="cb8-14"><a href="#cb8-14" aria-hidden="true" tabindex="-1"></a>  <span class="do">### quicker filtering at the species level.</span></span>
+<span id="cb8-15"><a href="#cb8-15" aria-hidden="true" tabindex="-1"></a>  i_min <span class="ot">&lt;-</span> (k<span class="dv">-1</span>) <span class="sc">*</span> chunk_size <span class="sc">+</span> <span class="dv">1</span></span>
+<span id="cb8-16"><a href="#cb8-16" aria-hidden="true" tabindex="-1"></a>  i_max <span class="ot">&lt;-</span> <span class="fu">min</span>(k <span class="sc">*</span> chunk_size, <span class="fu">length</span>(am_spp_vec))</span>
+<span id="cb8-17"><a href="#cb8-17" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb8-18"><a href="#cb8-18" aria-hidden="true" tabindex="-1"></a>  chunk_spp_vec <span class="ot">&lt;-</span> am_spp_vec[i_min<span class="sc">:</span>i_max]</span>
+<span id="cb8-19"><a href="#cb8-19" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb8-20"><a href="#cb8-20" aria-hidden="true" tabindex="-1"></a>  <span class="do">### check that some of these spp still need to be processed, otherwise</span></span>
+<span id="cb8-21"><a href="#cb8-21" aria-hidden="true" tabindex="-1"></a>  <span class="do">### skip to the next chunk:</span></span>
+<span id="cb8-22"><a href="#cb8-22" aria-hidden="true" tabindex="-1"></a>  chunk_spp_files <span class="ot">&lt;-</span> <span class="fu">sprintf</span>(outf_stem, <span class="fu">str_replace_all</span>(chunk_spp_vec, <span class="st">&#39; &#39;</span>, <span class="st">&#39;_&#39;</span>))</span>
+<span id="cb8-23"><a href="#cb8-23" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span>(<span class="fu">all</span>(<span class="fu">file.exists</span>(chunk_spp_files))) {</span>
+<span id="cb8-24"><a href="#cb8-24" aria-hidden="true" tabindex="-1"></a>    <span class="fu">message</span>(<span class="st">&#39;All spp in chunk &#39;</span>, k, <span class="st">&#39; already have impact files... skipping!&#39;</span>)</span>
+<span id="cb8-25"><a href="#cb8-25" aria-hidden="true" tabindex="-1"></a>    <span class="cf">next</span>()</span>
+<span id="cb8-26"><a href="#cb8-26" aria-hidden="true" tabindex="-1"></a>  } <span class="cf">else</span> {</span>
+<span id="cb8-27"><a href="#cb8-27" aria-hidden="true" tabindex="-1"></a>    chunk_spp_vec <span class="ot">&lt;-</span> chunk_spp_vec[<span class="sc">!</span><span class="fu">file.exists</span>(chunk_spp_files)]</span>
+<span id="cb8-28"><a href="#cb8-28" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb8-29"><a href="#cb8-29" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb8-30"><a href="#cb8-30" aria-hidden="true" tabindex="-1"></a>  tmp <span class="ot">&lt;-</span> parallel<span class="sc">::</span><span class="fu">mclapply</span>(<span class="fu">seq_along</span>(chunk_spp_vec),</span>
+<span id="cb8-31"><a href="#cb8-31" aria-hidden="true" tabindex="-1"></a>                            <span class="at">mc.cores =</span> <span class="dv">34</span>,</span>
+<span id="cb8-32"><a href="#cb8-32" aria-hidden="true" tabindex="-1"></a>                            <span class="at">FUN =</span> <span class="cf">function</span>(i) {</span>
+<span id="cb8-33"><a href="#cb8-33" aria-hidden="true" tabindex="-1"></a>      <span class="do">### i &lt;- 1</span></span>
+<span id="cb8-34"><a href="#cb8-34" aria-hidden="true" tabindex="-1"></a>      <span class="do">### i &lt;- which(chunk_spp_vec == &#39;abyssaster planus&#39;)</span></span>
+<span id="cb8-35"><a href="#cb8-35" aria-hidden="true" tabindex="-1"></a>      ptm_i <span class="ot">&lt;-</span> <span class="fu">proc.time</span>()</span>
+<span id="cb8-36"><a href="#cb8-36" aria-hidden="true" tabindex="-1"></a>      spp <span class="ot">&lt;-</span> chunk_spp_vec[i]</span>
+<span id="cb8-37"><a href="#cb8-37" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb8-38"><a href="#cb8-38" aria-hidden="true" tabindex="-1"></a>      outfile <span class="ot">&lt;-</span> <span class="fu">sprintf</span>(outf_stem, <span class="fu">str_replace_all</span>(spp, <span class="st">&#39; &#39;</span>, <span class="st">&#39;_&#39;</span>))</span>
+<span id="cb8-39"><a href="#cb8-39" aria-hidden="true" tabindex="-1"></a>      </span>
+<span id="cb8-40"><a href="#cb8-40" aria-hidden="true" tabindex="-1"></a>      <span class="cf">if</span>(<span class="fu">file.exists</span>(outfile)) {</span>
+<span id="cb8-41"><a href="#cb8-41" aria-hidden="true" tabindex="-1"></a>        <span class="co"># message(&#39;File &#39;, outfile, &#39; exists... skipping!&#39;)</span></span>
+<span id="cb8-42"><a href="#cb8-42" aria-hidden="true" tabindex="-1"></a>        <span class="fu">return</span>()</span>
+<span id="cb8-43"><a href="#cb8-43" aria-hidden="true" tabindex="-1"></a>      }</span>
+<span id="cb8-44"><a href="#cb8-44" aria-hidden="true" tabindex="-1"></a>      </span>
+<span id="cb8-45"><a href="#cb8-45" aria-hidden="true" tabindex="-1"></a>      <span class="fu">message</span>(i, <span class="st">&#39; of &#39;</span>, <span class="fu">length</span>(chunk_spp_vec), <span class="st">&#39;, chunk &#39;</span>, k, <span class="st">&#39; of &#39;</span>, n_chunks, </span>
+<span id="cb8-46"><a href="#cb8-46" aria-hidden="true" tabindex="-1"></a>              <span class="st">&#39;: processing impacts on AM &#39;</span>, spp <span class="sc">%&gt;%</span> <span class="fu">unique</span>(), <span class="st">&#39;...&#39;</span>)</span>
+<span id="cb8-47"><a href="#cb8-47" aria-hidden="true" tabindex="-1"></a>      </span>
+<span id="cb8-48"><a href="#cb8-48" aria-hidden="true" tabindex="-1"></a>      spp_am_vuln <span class="ot">&lt;-</span> spp_vuln_mapped <span class="sc">%&gt;%</span></span>
+<span id="cb8-49"><a href="#cb8-49" aria-hidden="true" tabindex="-1"></a>        <span class="fu">filter</span>(species <span class="sc">==</span> spp) <span class="sc">%&gt;%</span></span>
+<span id="cb8-50"><a href="#cb8-50" aria-hidden="true" tabindex="-1"></a>        <span class="fu">fill_missing_stressors</span>() <span class="sc">%&gt;%</span></span>
+<span id="cb8-51"><a href="#cb8-51" aria-hidden="true" tabindex="-1"></a>        <span class="do">### drop confounding IDs</span></span>
+<span id="cb8-52"><a href="#cb8-52" aria-hidden="true" tabindex="-1"></a>        <span class="fu">select</span>(<span class="sc">-</span>iucn_sid, <span class="sc">-</span>am_sid) <span class="sc">%&gt;%</span></span>
+<span id="cb8-53"><a href="#cb8-53" aria-hidden="true" tabindex="-1"></a>        <span class="fu">distinct</span>()</span>
+<span id="cb8-54"><a href="#cb8-54" aria-hidden="true" tabindex="-1"></a>      </span>
+<span id="cb8-55"><a href="#cb8-55" aria-hidden="true" tabindex="-1"></a>      spp_str_intsx <span class="ot">&lt;-</span> <span class="fu">process_spp_str_intsx</span>(spp_am_vuln, str_df) <span class="sc">%&gt;%</span></span>
+<span id="cb8-56"><a href="#cb8-56" aria-hidden="true" tabindex="-1"></a>        oharac<span class="sc">::</span><span class="fu">dt_join</span>(spp_am_vuln <span class="sc">%&gt;%</span> <span class="fu">select</span>(vuln, stressor, score), </span>
+<span id="cb8-57"><a href="#cb8-57" aria-hidden="true" tabindex="-1"></a>                        <span class="at">by =</span> <span class="st">&#39;stressor&#39;</span>, <span class="at">type =</span> <span class="st">&#39;left&#39;</span>)</span>
+<span id="cb8-58"><a href="#cb8-58" aria-hidden="true" tabindex="-1"></a>      </span>
+<span id="cb8-59"><a href="#cb8-59" aria-hidden="true" tabindex="-1"></a>      <span class="do">### calc sum of impacts by str and cum over full range and coastal range</span></span>
+<span id="cb8-60"><a href="#cb8-60" aria-hidden="true" tabindex="-1"></a>      imp_full_range <span class="ot">&lt;-</span> <span class="fu">summarize_spp_impact</span>(spp_str_intsx, ocean_a_df) <span class="sc">%&gt;%</span></span>
+<span id="cb8-61"><a href="#cb8-61" aria-hidden="true" tabindex="-1"></a>        <span class="fu">mutate</span>(<span class="at">range =</span> <span class="st">&#39;full&#39;</span>)</span>
+<span id="cb8-62"><a href="#cb8-62" aria-hidden="true" tabindex="-1"></a>      imp_coastal_range <span class="ot">&lt;-</span> <span class="fu">summarize_spp_impact</span>(spp_str_intsx, coastal_a_df) <span class="sc">%&gt;%</span></span>
+<span id="cb8-63"><a href="#cb8-63" aria-hidden="true" tabindex="-1"></a>        <span class="fu">mutate</span>(<span class="at">range =</span> <span class="st">&#39;coastal&#39;</span>)</span>
+<span id="cb8-64"><a href="#cb8-64" aria-hidden="true" tabindex="-1"></a>      </span>
+<span id="cb8-65"><a href="#cb8-65" aria-hidden="true" tabindex="-1"></a>      <span class="do">### bind rows, add total and coastal ranges, and write out</span></span>
+<span id="cb8-66"><a href="#cb8-66" aria-hidden="true" tabindex="-1"></a>      spp_impacts_df <span class="ot">&lt;-</span> <span class="fu">bind_rows</span>(imp_full_range, imp_coastal_range)</span>
+<span id="cb8-67"><a href="#cb8-67" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-68"><a href="#cb8-68" aria-hidden="true" tabindex="-1"></a>      <span class="fu">write_csv</span>(spp_impacts_df, outfile)</span>
+<span id="cb8-69"><a href="#cb8-69" aria-hidden="true" tabindex="-1"></a>      </span>
+<span id="cb8-70"><a href="#cb8-70" aria-hidden="true" tabindex="-1"></a>      <span class="fu">message</span>(i, <span class="st">&#39; of &#39;</span>, <span class="fu">length</span>(chunk_spp_vec), <span class="st">&#39;, chunk &#39;</span>, k, <span class="st">&#39; of &#39;</span>, n_chunks, </span>
+<span id="cb8-71"><a href="#cb8-71" aria-hidden="true" tabindex="-1"></a>              <span class="st">&#39;: processed impacts on &#39;</span>, spp,</span>
+<span id="cb8-72"><a href="#cb8-72" aria-hidden="true" tabindex="-1"></a>              <span class="st">&#39;... elapsed time: &#39;</span>, <span class="fu">round</span>(<span class="fu">proc.time</span>() <span class="sc">-</span> ptm_i, <span class="dv">3</span>)[<span class="dv">3</span>], <span class="st">&#39;s.&#39;</span>)</span>
+<span id="cb8-73"><a href="#cb8-73" aria-hidden="true" tabindex="-1"></a>    })</span>
+<span id="cb8-74"><a href="#cb8-74" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb8-75"><a href="#cb8-75" aria-hidden="true" tabindex="-1"></a>  <span class="fu">message</span>(<span class="st">&#39;Chunk time to process: &#39;</span>, <span class="fu">round</span>(<span class="fu">proc.time</span>() <span class="sc">-</span> ptm_k, <span class="dv">3</span>)[<span class="dv">3</span>], <span class="st">&#39;s.&#39;</span>)</span>
+<span id="cb8-76"><a href="#cb8-76" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb8-77"><a href="#cb8-77" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
+</div>
+<div id="loop-over-iucn-species" class="section level3" number="3.4.3">
+<h3><span class="header-section-number">3.4.3</span> Loop over IUCN species</h3>
+<div class="sourceCode" id="cb9"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>iucn_spp_vec <span class="ot">&lt;-</span> spp_vuln_mapped <span class="sc">%&gt;%</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(<span class="fu">str_detect</span>(src, <span class="st">&#39;iucn&#39;</span>)) <span class="sc">%&gt;%</span></span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>  .<span class="sc">$</span>iucn_sid <span class="sc">%&gt;%</span> <span class="fu">unique</span>()</span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>chunk_size <span class="ot">&lt;-</span> <span class="dv">100</span></span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a>n_chunks <span class="ot">&lt;-</span> <span class="fu">ceiling</span>(<span class="fu">length</span>(iucn_spp_vec) <span class="sc">/</span> chunk_size)</span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a>outf_stem <span class="ot">&lt;-</span> <span class="fu">here_anx</span>(<span class="st">&#39;impacts_by_species/impacts_iucn_%s.csv&#39;</span>)</span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span>(k <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>n_chunks) {</span>
+<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a>  <span class="do">### k &lt;- 1</span></span>
+<span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a>  <span class="do">### k &lt;- ceiling(which(iucn_spp_vec == 192271) / 100)</span></span>
+<span id="cb9-12"><a href="#cb9-12" aria-hidden="true" tabindex="-1"></a>  ptm_k <span class="ot">&lt;-</span> <span class="fu">proc.time</span>()</span>
+<span id="cb9-13"><a href="#cb9-13" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb9-14"><a href="#cb9-14" aria-hidden="true" tabindex="-1"></a>  <span class="do">### Chunk out large species-cell dataframe into smaller bits for</span></span>
+<span id="cb9-15"><a href="#cb9-15" aria-hidden="true" tabindex="-1"></a>  <span class="do">### quicker filtering at the species level.</span></span>
+<span id="cb9-16"><a href="#cb9-16" aria-hidden="true" tabindex="-1"></a>  i_min <span class="ot">&lt;-</span> (k<span class="dv">-1</span>) <span class="sc">*</span> chunk_size <span class="sc">+</span> <span class="dv">1</span></span>
+<span id="cb9-17"><a href="#cb9-17" aria-hidden="true" tabindex="-1"></a>  i_max <span class="ot">&lt;-</span> <span class="fu">min</span>(k <span class="sc">*</span> chunk_size, <span class="fu">length</span>(iucn_spp_vec))</span>
+<span id="cb9-18"><a href="#cb9-18" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb9-19"><a href="#cb9-19" aria-hidden="true" tabindex="-1"></a>  chunk_spp_vec <span class="ot">&lt;-</span> iucn_spp_vec[i_min<span class="sc">:</span>i_max]</span>
+<span id="cb9-20"><a href="#cb9-20" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb9-21"><a href="#cb9-21" aria-hidden="true" tabindex="-1"></a>  <span class="do">### check that some of these spp still need to be processed, otherwise</span></span>
+<span id="cb9-22"><a href="#cb9-22" aria-hidden="true" tabindex="-1"></a>  <span class="do">### skip to the next chunk:</span></span>
+<span id="cb9-23"><a href="#cb9-23" aria-hidden="true" tabindex="-1"></a>  chunk_spp_files <span class="ot">&lt;-</span> <span class="fu">sprintf</span>(outf_stem, chunk_spp_vec)</span>
+<span id="cb9-24"><a href="#cb9-24" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span>(<span class="fu">all</span>(<span class="fu">file.exists</span>(chunk_spp_files))) {</span>
+<span id="cb9-25"><a href="#cb9-25" aria-hidden="true" tabindex="-1"></a>    <span class="fu">message</span>(<span class="st">&#39;All spp in chunk &#39;</span>, k, <span class="st">&#39; already have impact files... skipping!&#39;</span>)</span>
+<span id="cb9-26"><a href="#cb9-26" aria-hidden="true" tabindex="-1"></a>    <span class="cf">next</span>()</span>
+<span id="cb9-27"><a href="#cb9-27" aria-hidden="true" tabindex="-1"></a>  } <span class="cf">else</span> {</span>
+<span id="cb9-28"><a href="#cb9-28" aria-hidden="true" tabindex="-1"></a>    chunk_spp_vec <span class="ot">&lt;-</span> chunk_spp_vec[<span class="sc">!</span><span class="fu">file.exists</span>(chunk_spp_files)]</span>
+<span id="cb9-29"><a href="#cb9-29" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb9-30"><a href="#cb9-30" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb9-31"><a href="#cb9-31" aria-hidden="true" tabindex="-1"></a>  tmp <span class="ot">&lt;-</span> parallel<span class="sc">::</span><span class="fu">mclapply</span>(<span class="fu">seq_along</span>(chunk_spp_vec),</span>
+<span id="cb9-32"><a href="#cb9-32" aria-hidden="true" tabindex="-1"></a>                            <span class="at">mc.cores =</span> <span class="dv">34</span>,</span>
+<span id="cb9-33"><a href="#cb9-33" aria-hidden="true" tabindex="-1"></a>                            <span class="at">FUN =</span> <span class="cf">function</span>(i) {</span>
+<span id="cb9-34"><a href="#cb9-34" aria-hidden="true" tabindex="-1"></a>      <span class="do">### i &lt;- 1</span></span>
+<span id="cb9-35"><a href="#cb9-35" aria-hidden="true" tabindex="-1"></a>      <span class="do">### i &lt;- which(chunk_spp_vec == 192271)</span></span>
+<span id="cb9-36"><a href="#cb9-36" aria-hidden="true" tabindex="-1"></a>      ptm_i <span class="ot">&lt;-</span> <span class="fu">proc.time</span>()</span>
+<span id="cb9-37"><a href="#cb9-37" aria-hidden="true" tabindex="-1"></a>      spp <span class="ot">&lt;-</span> chunk_spp_vec[i]</span>
+<span id="cb9-38"><a href="#cb9-38" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb9-39"><a href="#cb9-39" aria-hidden="true" tabindex="-1"></a>      outfile <span class="ot">&lt;-</span> <span class="fu">sprintf</span>(outf_stem, <span class="fu">str_replace_all</span>(spp, <span class="st">&#39; &#39;</span>, <span class="st">&#39;_&#39;</span>))</span>
+<span id="cb9-40"><a href="#cb9-40" aria-hidden="true" tabindex="-1"></a>      </span>
+<span id="cb9-41"><a href="#cb9-41" aria-hidden="true" tabindex="-1"></a>      <span class="cf">if</span>(<span class="fu">file.exists</span>(outfile)) {</span>
+<span id="cb9-42"><a href="#cb9-42" aria-hidden="true" tabindex="-1"></a>        <span class="co"># message(&#39;File &#39;, outfile, &#39; exists... skipping!&#39;)</span></span>
+<span id="cb9-43"><a href="#cb9-43" aria-hidden="true" tabindex="-1"></a>        <span class="fu">return</span>()</span>
+<span id="cb9-44"><a href="#cb9-44" aria-hidden="true" tabindex="-1"></a>      }</span>
+<span id="cb9-45"><a href="#cb9-45" aria-hidden="true" tabindex="-1"></a>      </span>
+<span id="cb9-46"><a href="#cb9-46" aria-hidden="true" tabindex="-1"></a>      <span class="fu">message</span>(i, <span class="st">&#39; of &#39;</span>, <span class="fu">length</span>(chunk_spp_vec), <span class="st">&#39;, chunk &#39;</span>, k, <span class="st">&#39; of &#39;</span>, n_chunks, </span>
+<span id="cb9-47"><a href="#cb9-47" aria-hidden="true" tabindex="-1"></a>              <span class="st">&#39;: processing impacts on IUCN &#39;</span>, spp <span class="sc">%&gt;%</span> <span class="fu">unique</span>(), <span class="st">&#39;...&#39;</span>)</span>
+<span id="cb9-48"><a href="#cb9-48" aria-hidden="true" tabindex="-1"></a>      </span>
+<span id="cb9-49"><a href="#cb9-49" aria-hidden="true" tabindex="-1"></a>      spp_iucn_vuln <span class="ot">&lt;-</span> spp_vuln_mapped <span class="sc">%&gt;%</span></span>
+<span id="cb9-50"><a href="#cb9-50" aria-hidden="true" tabindex="-1"></a>        <span class="fu">filter</span>(iucn_sid <span class="sc">==</span> spp) <span class="sc">%&gt;%</span></span>
+<span id="cb9-51"><a href="#cb9-51" aria-hidden="true" tabindex="-1"></a>        <span class="fu">fill_missing_stressors</span>() <span class="sc">%&gt;%</span></span>
+<span id="cb9-52"><a href="#cb9-52" aria-hidden="true" tabindex="-1"></a>        <span class="do">### drop confounding IDs</span></span>
+<span id="cb9-53"><a href="#cb9-53" aria-hidden="true" tabindex="-1"></a>        <span class="fu">select</span>(<span class="sc">-</span>am_sid) <span class="sc">%&gt;%</span></span>
+<span id="cb9-54"><a href="#cb9-54" aria-hidden="true" tabindex="-1"></a>        <span class="fu">distinct</span>() <span class="sc">%&gt;%</span></span>
+<span id="cb9-55"><a href="#cb9-55" aria-hidden="true" tabindex="-1"></a>        <span class="do">### for cases where multiple WoRMS-adjusted spp names assigned to one iucn_sid</span></span>
+<span id="cb9-56"><a href="#cb9-56" aria-hidden="true" tabindex="-1"></a>        <span class="do">### (a few cones and corals, with low to no fishing pressure)</span></span>
+<span id="cb9-57"><a href="#cb9-57" aria-hidden="true" tabindex="-1"></a>        <span class="fu">filter</span>(species <span class="sc">==</span> <span class="fu">first</span>(species))</span>
+<span id="cb9-58"><a href="#cb9-58" aria-hidden="true" tabindex="-1"></a>      </span>
+<span id="cb9-59"><a href="#cb9-59" aria-hidden="true" tabindex="-1"></a>      spp_str_intsx <span class="ot">&lt;-</span> <span class="fu">process_spp_str_intsx</span>(spp_iucn_vuln, str_df) <span class="sc">%&gt;%</span></span>
+<span id="cb9-60"><a href="#cb9-60" aria-hidden="true" tabindex="-1"></a>        oharac<span class="sc">::</span><span class="fu">dt_join</span>(spp_iucn_vuln <span class="sc">%&gt;%</span> <span class="fu">select</span>(vuln, stressor, score), </span>
+<span id="cb9-61"><a href="#cb9-61" aria-hidden="true" tabindex="-1"></a>                        <span class="at">by =</span> <span class="st">&#39;stressor&#39;</span>, <span class="at">type =</span> <span class="st">&#39;left&#39;</span>)</span>
+<span id="cb9-62"><a href="#cb9-62" aria-hidden="true" tabindex="-1"></a>      </span>
+<span id="cb9-63"><a href="#cb9-63" aria-hidden="true" tabindex="-1"></a>      <span class="do">### calc sum of impacts by str and cum over full range and coastal range</span></span>
+<span id="cb9-64"><a href="#cb9-64" aria-hidden="true" tabindex="-1"></a>      imp_full_range <span class="ot">&lt;-</span> <span class="fu">summarize_spp_impact</span>(spp_str_intsx, ocean_a_df) <span class="sc">%&gt;%</span></span>
+<span id="cb9-65"><a href="#cb9-65" aria-hidden="true" tabindex="-1"></a>        <span class="fu">mutate</span>(<span class="at">range =</span> <span class="st">&#39;full&#39;</span>)</span>
+<span id="cb9-66"><a href="#cb9-66" aria-hidden="true" tabindex="-1"></a>      imp_coastal_range <span class="ot">&lt;-</span> <span class="fu">summarize_spp_impact</span>(spp_str_intsx, coastal_a_df) <span class="sc">%&gt;%</span></span>
+<span id="cb9-67"><a href="#cb9-67" aria-hidden="true" tabindex="-1"></a>        <span class="fu">mutate</span>(<span class="at">range =</span> <span class="st">&#39;coastal&#39;</span>)</span>
+<span id="cb9-68"><a href="#cb9-68" aria-hidden="true" tabindex="-1"></a>      </span>
+<span id="cb9-69"><a href="#cb9-69" aria-hidden="true" tabindex="-1"></a>      <span class="do">### bind rows, add total and coastal ranges, and write out</span></span>
+<span id="cb9-70"><a href="#cb9-70" aria-hidden="true" tabindex="-1"></a>      spp_impacts_df <span class="ot">&lt;-</span> <span class="fu">bind_rows</span>(imp_full_range, imp_coastal_range)</span>
+<span id="cb9-71"><a href="#cb9-71" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-72"><a href="#cb9-72" aria-hidden="true" tabindex="-1"></a>      <span class="fu">write_csv</span>(spp_impacts_df, outfile)</span>
+<span id="cb9-73"><a href="#cb9-73" aria-hidden="true" tabindex="-1"></a>      </span>
+<span id="cb9-74"><a href="#cb9-74" aria-hidden="true" tabindex="-1"></a>      <span class="fu">message</span>(i, <span class="st">&#39; of &#39;</span>, <span class="fu">length</span>(chunk_spp_vec), <span class="st">&#39;, chunk &#39;</span>, k, <span class="st">&#39; of &#39;</span>, n_chunks, </span>
+<span id="cb9-75"><a href="#cb9-75" aria-hidden="true" tabindex="-1"></a>              <span class="st">&#39;: processed impacts on &#39;</span>, spp,</span>
+<span id="cb9-76"><a href="#cb9-76" aria-hidden="true" tabindex="-1"></a>              <span class="st">&#39;... elapsed time: &#39;</span>, <span class="fu">round</span>(<span class="fu">proc.time</span>() <span class="sc">-</span> ptm_i, <span class="dv">3</span>)[<span class="dv">3</span>], <span class="st">&#39;s.&#39;</span>)</span>
+<span id="cb9-77"><a href="#cb9-77" aria-hidden="true" tabindex="-1"></a>    })</span>
+<span id="cb9-78"><a href="#cb9-78" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb9-79"><a href="#cb9-79" aria-hidden="true" tabindex="-1"></a>  <span class="fu">message</span>(<span class="st">&#39;Chunk time to process: &#39;</span>, <span class="fu">round</span>(<span class="fu">proc.time</span>() <span class="sc">-</span> ptm_k, <span class="dv">3</span>)[<span class="dv">3</span>], <span class="st">&#39;s.&#39;</span>)</span>
+<span id="cb9-80"><a href="#cb9-80" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb9-81"><a href="#cb9-81" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
+</div>
 </div>
 </div>
 

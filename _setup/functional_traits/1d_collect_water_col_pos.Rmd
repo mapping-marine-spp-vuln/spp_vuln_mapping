@@ -157,7 +157,7 @@ depth_df <- depth_vuln_score %>%
               mutate(source = 'fishbase')) %>%
   gather(value, bool, benthic, pelagic, reef) %>%
   filter(bool == TRUE) %>%
-  select(species, value, source) %>%
+  select(species, value, source, taxon) %>%
   mutate(genus = str_extract(species, '[a-z]+(?= ?)')) %>%
   distinct()
   
@@ -184,6 +184,9 @@ results_df <- depth_df %>%
   bind_rows(depth_gaps) %>%
   mutate(x = TRUE) %>%
   spread(value, x) %>%
+  ### Coerce mammals, birds, and reptiles to be pelagic, indicating presence above
+  ### the bottom - no air breathing creature is truly benthic!
+  mutate(pelagic = ifelse(taxon %in% c('seabirds', 'marine_mammals', 'reptiles'), TRUE, pelagic)) %>%
   mutate(value = case_when(benthic & pelagic ~ 'benthopelagic',
                            pelagic ~ 'pelagic',
                            reef ~ 'reef',

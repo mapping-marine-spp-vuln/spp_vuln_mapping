@@ -21,16 +21,16 @@ output:
 knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
 
 library(oharac)
-oharac::setup()
+library(tidyverse)
+library(here)
 source(here('common_fxns.R'))
 library(mice)
-
 
 ```
 
 # Summary
 
-Read in processed grouping traits, then perform MICE separately on various taxonomic groupings.
+Read in processed grouping traits, then perform MICE separately on various taxonomic groupings.  While we have data for generation time and fecundity for many species, they will not be used to assign functional entities, as they are more related to intraspecific interactions than interspecific interactions.  They can, however, be used to help impute missing values from other traits.
 
 * Phyla for inclusion:
     * annelida
@@ -42,7 +42,7 @@ Read in processed grouping traits, then perform MICE separately on various taxon
         * further subdivided to class based on those orders that show up in AquaMaps (including family Conidae in IUCN data)
     * porifera 
 * Classes from phylum Chordata:
-    * actinopterygii (grouped with coelacanthi, as bony fishes)
+    * actinopterygii (grouped with coelacanthi/sarcopterygii, as bony fishes)
         * while there are many many many of these, perhaps include order or family as an additional gapfilling variable, rather than further subdividing the class.
     * elasmobranchii (grouped with holocephali, as cartilaginous fishes)
     * mammalia
@@ -85,7 +85,7 @@ traits_premice_all <- read_csv(here_anx('mice/gp_traits_mice_preimputation.csv')
                         !phylum %in% c('chordata', 'mollusca') & phylum %in% keep_df$phylum ~ phylum)) %>%
   filter(!is.na(gp))
 
-### 124,462 across all spp; 122,906 for kept taxa
+### 124,462 across all spp; 119,219 for kept taxa
 ```
 
 ## Process gapfilling
@@ -104,7 +104,9 @@ For all groups, include all traits, as well as order and family as additional pr
 keep_ranks <- c('order', 'family')
 
 traits_prepped <- traits_premice_all %>%
-  select(log_l, log_f, troph, age_mat, wcol, adult_mob,
+  select(log_l, troph, 
+         log_f, age_mat,
+         wcol, adult_mob,
          all_of(keep_ranks), species, gp, phylum) %>%
   mutate(order   = factor(order, ordered = FALSE),
          family  = factor(family, ordered = FALSE),
@@ -172,9 +174,9 @@ for(p in unique(invert_traits$gp)) {
   message('Processing phylum ', p, '...')
   
   ### set up file for imputed traits (all small enough for Git?)
-  post_impute_f <- sprintf(here('_data/mice_out/gp_traits_%s_mice.csv'), p)
+  post_impute_f <- sprintf(here_anx('mice/mice_out/gp_traits_%s_mice.csv'), p)
   ### .Rdata path for saving the imputation `mids` object
-  impute_object_f <- sprintf(here_anx('mice/gp_traits_%s_mice_results.RData'), p)
+  impute_object_f <- sprintf(here_anx('mice/rdata/gp_traits_%s_mice_results.RData'), p)
   
   if(!file.exists(post_impute_f)) {
     ### unlink(post_impute_f)
@@ -226,7 +228,7 @@ for(p in unique(invert_traits$gp)) {
 
 ```{r compare outputs with and without family as predictor, eval = FALSE, include = FALSE}
 gps <- c('annelida', 'arthropoda', 'cnidaria', 'echinodermata')
-fs <- list.files(here('_data/mice_out'), pattern = paste0(gps, collapse = '|'), full.names = TRUE)
+fs <- list.files(here_anx('mice/mice_out'), pattern = paste0(gps, collapse = '|'), full.names = TRUE)
 df <- lapply(fs, read.csv) %>% 
   setNames(basename(fs)) %>%
   bind_rows(.id = 'f') %>%
@@ -262,9 +264,9 @@ for(cls in unique(mollusc_traits$gp)) {
   message('Processing class ', cls, '...')
   
   ### set up file for imputed traits (all small enough for Git?)
-  post_impute_f <- sprintf(here('_data/mice_out/gp_traits_mollusca_%s_mice.csv'), cls)
+  post_impute_f <- sprintf(here_anx('mice/mice_out/gp_traits_mollusca_%s_mice.csv'), cls)
   ### .Rdata path for saving the imputation `mids` object
-  impute_object_f <- sprintf(here_anx('mice/gp_traits_mollusca_%s_mice_results.RData'), cls)
+  impute_object_f <- sprintf(here_anx('mice/rdata/gp_traits_mollusca_%s_mice_results.RData'), cls)
   
   if(!file.exists(post_impute_f)) {
     ### unlink(post_impute_f)
@@ -318,9 +320,9 @@ for(cls in unique(mollusc_traits$gp)) {
 message('Processing phylum mollusca as a whole... ')
 
 ### set up file for imputed traits (all small enough for Git?)
-post_impute_f <- sprintf(here('_data/mice_out/gp_traits_mollusca_combined_mice.csv'), cls)
+post_impute_f <- sprintf(here_anx('mice/mice_out/gp_traits_mollusca_combined_mice.csv'), cls)
 ### .Rdata path for saving the imputation `mids` object
-impute_object_f <- sprintf(here_anx('mice/gp_traits_mollusca_combined_mice_results.RData'), cls)
+impute_object_f <- sprintf(here_anx('mice/rdata/gp_traits_mollusca_combined_mice_results.RData'), cls)
 
 if(!file.exists(post_impute_f)) {
   ### unlink(post_impute_f)
@@ -382,9 +384,9 @@ for(cls in chordates) {
   message('Processing chordata class ', cls, '...')
   
   ### set up file for imputed traits (all small enough for Git?)
-  post_impute_f <- sprintf(here('_data/mice_out/gp_traits_chordata_%s_mice.csv'), cls)
+  post_impute_f <- sprintf(here_anx('mice/mice_out/gp_traits_chordata_%s_mice.csv'), cls)
   ### .Rdata path for saving the imputation `mids` object
-  impute_object_f <- sprintf(here_anx('mice/gp_traits_chordata_%s_mice_results.RData'), cls)
+  impute_object_f <- sprintf(here_anx('mice/rdata/gp_traits_chordata_%s_mice_results.RData'), cls)
   
   if(!file.exists(post_impute_f)) {
     ### unlink(post_impute_f)
@@ -458,9 +460,9 @@ for(p in phyla_to_rerun) {
   ### p <- phyla_to_rerun[2]
   
   ### set up file for imputed traits (all small enough for Git?)
-  post_impute_f <- sprintf(here('_data/mice_out/order_only/gp_traits_%s_no_fam_mice.csv'), p)
+  post_impute_f <- sprintf(here_anx('mice/mice_out/order_only/gp_traits_%s_no_fam_mice.csv'), p)
   ### .Rdata path for saving the imputation `mids` object
-  impute_object_f <- sprintf(here_anx('mice/gp_traits_%s_no_fam_mice_results.RData'), p)
+  impute_object_f <- sprintf(here_anx('mice/rdata/gp_traits_%s_no_fam_mice_results.RData'), p)
 
   if(!file.exists(post_impute_f)) {
     ### unlink(post_impute_f)
@@ -514,7 +516,7 @@ Read in all the MICE-gapfilled results, check for any remaining gaps (i.e., wher
 ```{r}
 am_spp <- get_am_spp_info()
 
-fs <- list.files(here('_data/mice_out'), pattern = 'gp_traits', full.names = TRUE)
+fs <- list.files(here_anx('mice/mice_out'), pattern = 'gp_traits', full.names = TRUE)
 traits <- c('log_l', 'log_f', 'troph', 'age_mat', 'wcol', 'adult_mob')
 
 
@@ -648,7 +650,7 @@ Of five classes of phylum Cnidaria, only Anthozoa has any data on fecundity and 
 #   select(-file, -gp, -.id, -.imp)
 
 ### order-only MICE doesn't result in any fewer NAs
-# cnidaria_order_df <- read_csv(here('_data/mice_out/order_only/gp_traits_cnidaria_no_fam_mice.csv')) %>%
+# cnidaria_order_df <- read_csv(here_anx('mice/mice_out/order_only/gp_traits_cnidaria_no_fam_mice.csv')) %>%
 #   arrange(species, .id, .imp) %>%
 #   mutate(id = 1:n()) %>%
 #   gather(trait, val_no_fam, all_of(traits)) %>%

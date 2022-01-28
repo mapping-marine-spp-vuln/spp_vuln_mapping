@@ -21,8 +21,10 @@ output:
 knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
 
 library(raster)
+library(tidyverse)
+library(here)
+library(RColorBrewer)
 library(oharac)
-oharac::setup()
 source(here('common_fxns.R'))
 
 ```
@@ -40,7 +42,7 @@ Perform a regression of IUCN extinction risk classification as a function of rel
 
 # Methods
 
-## Read in all species impacts; summarize to CHI
+## Read in species impacts for those spp assessed by IUCN; summarize to CHI
 
 Summarize to cumulative impacts by entire range and by coastal range.
 
@@ -51,6 +53,23 @@ Each file has a row for each stressor-vulnerability match; columns are:
 * `impact_coastal` (dbl): sum across all coastal cells (≤200m) of stressor intensity $\times$ vulnerability $\times$ ocean area
 * `range_tot_km2` (dbl): sum of ocean area of all cells across entire range
 * `range_coastal_km2` (dbl): sum of ocean area of all cells across coastal range
+
+```{r}
+iucn_assessed <- read_csv(here('_data/iucn_spp/iucn_marine_spp_info_2021-3.csv')) %>%
+  select(iucn_sid, cat, cat_score) %>%
+  left_join(read_csv(here('_data/iucn_spp', 'iucn_to_worms_match.csv')), by = 'iucn_sid') %>%
+  mutate(threatened = cat %in% c('vu', 'en', 'cr', 'ex')) %>%
+  select(iucn_sid, iucn_sciname = sciname, sciname = worms_name, cat, cat_score, threatened)
+iucn_mapped <- read_csv(here('_data/iucn_spp/spp_marine_maps_2021-3.csv'))
+
+assessed_in_am <- get_am_spp_info() %>%
+  select(am_sid, am_sciname, sciname, iucn_sid) %>%
+  inner_join(iucn_assessed %>% 
+               select(iucn_sid, cat, threatened) %>% distinct(), 
+             by = 'iucn_sid')
+assessed_in_iucn_maps <- iucn_assessed %>%
+  filter(iucn_sid %in% iucn_mapped$iucn_sid)
+```
 
 ```{r}
 spp_chi_file <- here('int/spp_chi_summary.csv')
@@ -64,7 +83,15 @@ if(!file.exists(spp_chi_file)) {
     setNames(basename(spp_imp_fs)) %>%
     bind_rows(.id = 'f')
   
+  spp_ranges <- spp_imp_df %>%
+    select(f, range_km2, range) %>%
+    distinct() %>%
+    spread(range, range_km2) %>%
+    rename(range_cst_km2 = coastal, range_tot_km2 = full)
   spp_chi_df <- spp_imp_df %>%
+    select(-range_km2) %>%
+    spread(range, impact_tot) %>%
+    rename(impact_tot = full, impact_cst = coastal)
     filter(range_tot_km2 > 0) %>%
     group_by(f) %>%
     summarize(chi_tot = sum(impact_tot),

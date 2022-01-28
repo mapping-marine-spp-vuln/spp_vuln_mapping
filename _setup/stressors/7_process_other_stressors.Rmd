@@ -73,6 +73,14 @@ using population as proxy:
     * Log-transform
 
 ## Organic chemical pollution?
+
+## Microplastics
+
+Using data from van Sebille (2015):
+
+* Van Sebille, E., Wilcox, C., Lebreton, L., Maximenko, N., Hardesty, B. D., Van Franeker, J. A., Eriksen, M., Siegel, D., Galgani, F., & Law, K. L. (2015). A global inventory of small floating plastic debris. Environmental Research Letters, 10(12), 124006.
+* dir: `stressors/microplastics`
+    * file: `vansebille_mass.csv`
         
 
 ## Climate stressors other than SST
@@ -170,10 +178,15 @@ benth_dist_f <- here('_data/stressors_mol/fishing_benthic_dest_2017.tif')
 ### unlink(benth_dist_f)
 
 if(!file.exists(benth_dist_f)) {
-  orig_f <- here_ohi('stressors_2021/_dataprep', 
-                     'fishing_benthic_destructive', 
+  local_f <- here_anx('stressors/fishing',
                      'FishingWatch_annual_effort_destructive_hours_2017.tif')
-  orig_r <- raster(orig_f)
+  if(!file.exists(local_f)) {
+    orig_f <- here_ohi('stressors_2021/_dataprep', 
+                       'fishing_benthic_destructive', 
+                       'FishingWatch_annual_effort_destructive_hours_2017.tif')
+    file.copy(orig_f, local_f)
+  }
+  raw_r <- raster(local_f)
   # class      : RasterLayer 
   # dimensions : 18000, 36000, 6.48e+08  (nrow, ncol, ncell)
   # resolution : 0.01, 0.01  (x, y)
@@ -184,7 +197,7 @@ if(!file.exists(benth_dist_f)) {
   # values     : 0, 1540.895  (min, max)
   
   ### Aggregate (sum for total hours in cell) and convert to intensity - hours per km^2
-  agg_r <- aggregate(orig_r, fact = 10, fun = 'sum', progress = 'text')
+  agg_r <- aggregate(raw_r, fact = 10, fun = 'sum', progress = 'text')
   intensity_r <- agg_r / ocean_area_0.1deg
     
   ### reproject intensity to Mollweide and clip out tiny neg numbers
@@ -213,8 +226,9 @@ hist(r[r > 0], main = 'distribution of non-zero values')
 
 ```
 
+## Land-based stressors
 
-## Direct human impact/habitat destruction using population as proxy
+### Direct human impact/habitat destruction using population as proxy
 
 The data for this is population density or count (on land).  We want an indication of the number of people living within 25 km (or so) of the coast.  To do this, try `raster::focal()`: Calculate focal ("moving window") values for the neighborhood of focal cells using a matrix of weights, perhaps in combination with a function.
 
@@ -229,9 +243,14 @@ pop_f <- here('_data/stressors_mol/direct_human_2020.tif')
 ### unlink(pop_f)
 
 if(!file.exists(pop_f)) {
-  orig_f <- here_ohi(paste('git-annex/globalprep/mar_prs_population/v2020/int/', 
-                           'human_density_2020_mol.tif', sep = '/'))
-  orig_r <- raster(orig_f)
+  local_f <- here_anx('stressors/population',
+                      'human_density_2020_mol.tif')
+  if(file.exists(local_f)) {
+    orig_f <- here_ohi('git-annex/globalprep/mar_prs_population/v2020/int/',
+                       'human_density_2020_mol.tif')
+    file.copy(orig_f, local_f)
+  }
+  raw_r <- raster(orig_f)
   # class      : RasterLayer 
   # dimensions : 19305, 38610, 745366050  (nrow, ncol, ncell)
   # resolution : 934.4789, 934.4789  (x, y)
@@ -241,7 +260,7 @@ if(!file.exists(pop_f)) {
   # names      : human_density_2020_mol 
   # values     : 0, 101691.8  (min, max)
   
-  pop_r <- orig_r
+  pop_r <- raw_r
   values(pop_r)[is.na(values(pop_r))] <- 0
   
   focal_pop_f <- here_anx('stressors/population/pop_focal_25km_radius_1km_mol.tif')
@@ -294,6 +313,92 @@ hist(r[r > 0], main = 'distribution of non-zero values')
 
 ```
 
+### Chemical pollution?
+
+### Microplastic pollution
+
+The .csv contains microplastic mass based on Erik van Sebille's model in 2015.  Columns are longitude degrees 0 to 360, and rows are latitude 90 to -90.  Column 0 and 360 should be the same but do not agree...? set 0 column to be average of 0 and 360 columns.  Align to cell centers, presuming that coords are lower left corner of cell (checked via visual fit of filled cells against known global map).
+
+```{r microplastics}
+microplastics_f <- here('_data/stressors_mol/microplastics_2015.tif')
+### unlink(microplastics_f)
+
+if(!file.exists(microplastics_f)) {
+  data_f <- here_anx('stressors/microplastics',
+                     'vansebillemodel_mass.csv')
+  raw_df <- read_csv(data_f, col_names = FALSE, col_types = cols(.default = 'd')) 
+  
+  check_0_360 <- raw_df %>%
+    select(1, 361)
+  xyz_df <- raw_df %>%
+    setNames(paste0('x', 0:360)) %>%
+    ### fix discontinuity
+    mutate(x0 = (x0 + x360)/2) %>%
+    mutate(lat = 90:-90) %>%
+    ### drop north pole; cells will shift upward by .5 deg
+    filter(lat != 90) %>%
+    gather(lon, microplastic_mass, -lat) %>%
+    mutate(lon = as.numeric(str_remove(lon, 'x'))) %>%
+    select(lon, lat, microplastic_mass) %>%
+    ### align cell centers
+    mutate(lat = lat + 0.5, 
+           lon = lon + 0.5) %>%
+    ### rotate 0 to 360 to become -180 to 180
+    mutate(lon = ifelse(lon > 180, -360 + lon, lon))
+  
+  ### plot to check alignment of cells:
+  # land_sf <- read_sf(here('_spatial/ne_10m_land/ne_10m_land.shp'))
+  # ggplot() +
+  #   geom_raster(data = xyz_df,
+  #               aes(x = lon, y = lat, fill = microplastic_mass),
+  #               na.rm = TRUE) +
+  #   geom_sf(data = land_sf, size = .1, alpha = .5) +
+  #   scale_fill_viridis_c(na.value = NA)
+  
+  plast_r <- rasterFromXYZ(xyz_df, crs = '+init=epsg:4326')
+  
+  ### run one level of focal on this to fill potential gaps
+  focal_mtx <- matrix(1, 3, 3)
+  plas_gf_r <- focal(plast_r, focal_mtx, 
+                     fun = mean, na.rm = TRUE, 
+                     NAonly = TRUE, pad = TRUE,
+                     progress = 'text')
+  ### plot to check alignment of cells:
+  # land_sf <- read_sf(here('_spatial/ne_10m_land/ne_10m_land.shp'))
+  # ggplot() +
+  #   geom_raster(data = as.data.frame(plas_gf_r, xy = TRUE) %>% filter(!is.na(layer)),
+  #               aes(x = x, y = y), fill = 'red',
+  #               na.rm = TRUE) +
+  #   geom_raster(data = as.data.frame(plast_r, xy = TRUE),
+  #               aes(x = x, y = y, fill = microplastic_mass),
+  #               na.rm = TRUE) +
+  #   geom_sf(data = land_sf, size = .1, alpha = .5) +
+  #   scale_fill_viridis_c(na.value = NA)
+
+  
+  ### Reproject to Mollweide 10 km x 10 km
+  plas_gf_mol_r <- plas_gf_r %>%
+    projectRaster(ocean_area_mol) %>%
+    mask(ocean_area_mol)
+    
+  plas_gf_mol_resc_r <- rescale_stressor(plas_gf_mol_r, qtile = .999)
+
+  ### round to drop ludicrous precision then save out
+  values(plas_gf_mol_resc_r) <- round(values(plas_gf_mol_resc_r), 5)
+  writeRaster(plas_gf_mol_resc_r, microplastics_f, overwrite = TRUE)
+  
+}
+
+r <- raster(microplastics_f)
+  
+plot(r, axes = FALSE, 
+     main = 'rescaled microplastic mass')
+
+hist(r[r > 0], main = 'distribution of non-zero values')
+
+```
+
+
 ## Climate stressors other than long-term temperature rise
 
 ### Sea surface temperature extremes
@@ -306,11 +411,15 @@ Analogous to marine heat waves.
 Read in, leave as proportion of weeks exceeding 90th percentile of climatological variance over the reference period (no need for rescale).
 
 ```{r}
-extreme_sst_f <- here_ohi('stressors_2021/_dataprep/SST_past_present/final_extreme', 
+x_sst_local_f <- here_anx('stressors/max_temp', 
                           'sst_exceeds_90quant_2016-2020.tif')
-file.exists(extreme_sst_f)
+if(!file.exists(x_sst_local_f)) {
+  extreme_sst_orig_f <- here_ohi('stressors_2021/_dataprep/SST_past_present/final_extreme', 
+                            'sst_exceeds_90quant_2016-2020.tif')
+  file.copy(extreme_sst_orig_f, x_sst_local_f)
+}
 
-extreme_sst_r <- raster(extreme_sst_f)
+extreme_sst_r <- raster(x_sst_local_f)
 
 compareRaster(extreme_sst_r, ocean_rast)
 
@@ -333,9 +442,13 @@ slr_f <- here('_data/stressors_mol/slr_2019.tif')
 ### unlink(slr_f)
 
 if(!file.exists(slr_f)) {
-  orig_f <- here_ohi(paste('git-annex/globalprep/prs_slr/v2021/int/msla_annual_mean/', 
-                           'msla_annual_2019.tif', sep = '/'))
-  orig_r <- raster(orig_f)
+  local_f <- here_anx('stressors/slr', 'msla_annual_2019.tif')
+  if(!file.exists(local_f)) {
+    orig_f <- here_ohi('git-annex/globalprep/prs_slr/v2021/int/msla_annual_mean/', 
+                             'msla_annual_2019.tif')
+    file.copy(orig_f, local_f)
+  }
+  raw_r <- raster(local_f)
   # class      : RasterLayer 
   # dimensions : 720, 1440, 1036800  (nrow, ncol, ncell)
   # resolution : 0.25, 0.25  (x, y)
@@ -360,11 +473,11 @@ if(!file.exists(slr_f)) {
     }
     focal_mtx[focal_rad + 1, focal_rad + 1] <- 1
   }
-  gf_r <- focal(orig_r, focal_mtx, 
+  gf_r <- focal(raw_r, focal_mtx, 
                 fun = mean, na.rm = TRUE, progress = 'text')
 
   ### replace NA cells in the original with their counterparts in gf_r_only
-  combo <- orig_r
+  combo <- raw_r
   values(combo)[is.na(values(combo))] <- values(gf_r)[is.na(values(combo))]
   
   ### Project to Mollweide 10km and masking to coastal cells
@@ -417,11 +530,14 @@ oa_f <- here('_data/stressors_mol/oa_2020.tif')
 
 if(!file.exists(oa_f)) {
   
-  oa_resc_mol_f <- here_ohi('git-annex/globalprep/prs_oa/v2017/int', 
-                       'annual_avg_moll_rescaled_int',
-                       'oa_resc_int_2020.tif')
-
-  orig_r <- raster(oa_resc_mol_f)
+  oa_resc_mol_local_f <- here_anx('stressors/oa', 'oa_resc_int_2020.tif')
+  if(!file.exists(oa_resc_mol_local_f)) {
+    oa_resc_mol_f <- here_ohi('git-annex/globalprep/prs_oa/v2017/int', 
+                         'annual_avg_moll_rescaled_int',
+                         'oa_resc_int_2020.tif')
+    file.copy(oa_resc_mol_f, oa_resc_mol_local_f)
+  }
+  raw_r <- raster(oa_resc_mol_f)
   # class      : RasterLayer 
   # dimensions : 341, 332, 113212  (nrow, ncol, ncell)
   # resolution : 112000, 54700  (x, y)
@@ -432,7 +548,7 @@ if(!file.exists(oa_f)) {
   # values     : 0, 1  (min, max)
   
   ### project to 10 km
-  oa_r <- projectRaster(orig_r, ocean_rast, progress = 'text')
+  oa_r <- projectRaster(raw_r, ocean_rast, progress = 'text')
   oa_masked <- mask(oa_r, ocean_rast)
   
   ### round to drop ludicrous precision then save out
@@ -461,9 +577,13 @@ uv_f <- here('_data/stressors_mol/uv_2020.tif')
 ### unlink(uv_f)
 
 if(!file.exists(uv_f)) {
-  orig_f <- here_ohi(paste('git-annex/globalprep/prs_uv/v2021/int/rescaled', 
-                           'annual_diff_2016_2020_rescaled.tif', sep = '/'))
-  orig_r <- raster(orig_f)
+  local_f <- here_anx('stressors/uv', 'annual_diff_2016_2020_rescaled.tif')
+  if(!file.exists(local_f)) {
+    orig_f <- here_ohi('git-annex/globalprep/prs_uv/v2021/int/rescaled', 
+                       'annual_diff_2016_2020_rescaled.tif')
+    file.copy(orig_f, local_f)
+  }
+  raw_r <- raster(local_f)
   # class      : RasterLayer 
   # dimensions : 180, 360, 64800  (nrow, ncol, ncell)
   # resolution : 1, 1  (x, y)
@@ -474,7 +594,7 @@ if(!file.exists(uv_f)) {
   # values     : 0, 1  (min, max)
   
   ### No need to aggregate - native res much greater than analysis res
-  uv_r <- projectRaster(orig_r, ocean_rast, progress = 'text')
+  uv_r <- projectRaster(raw_r, ocean_rast, progress = 'text')
   uv_r <- mask(uv_r, ocean_rast)
   
   ### round to drop ludicrous precision then save out
@@ -513,7 +633,7 @@ light_f <- here('_data/stressors_mol/light_2018.tif')
 ### unlink(light_f)
 
 if(!file.exists(light_f)) {
-  light_fs <- list.files(here_ohi('spp_vuln/spp_vuln_mapping/stressors/light'),
+  light_fs <- list.files(here_anx('stressors/light'),
                          full.names = TRUE)
   light_stack <- stack(light_fs)
   # class      : RasterLayer 

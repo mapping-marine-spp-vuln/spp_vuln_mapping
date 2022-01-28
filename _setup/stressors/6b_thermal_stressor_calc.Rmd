@@ -75,23 +75,31 @@ plot(mean_T_rast, axes = FALSE, main = 'Mean annual T, °C')
 
 For AquaMaps read from their envelope data (using `get_am_spp_envelopes()` helper function); for IUCN, read from results of script `6a_thermal_tolerances_estimate_iucn.Rmd`.
 
+Here we are calculating for all AquaMaps and IUCN maps, regardless of whether there is overlap or the number of occur_cells is too low.  We can always ignore those maps later.
+
 ```{r get thermal envelopes}
 am_spp_info <- get_am_spp_info()
-
-iucn_spp_info <- read_csv(here('_data/iucn_spp', 'iucn_marine_spp_info_2021-3.csv'))
 
 am_T_env <- get_am_spp_envelopes() %>%
   filter(param == 'temp' & dist %in% c('max', 'pref_max')) %>%
   spread(dist, value) %>%
   left_join(am_spp_info, by = 'am_sid') %>%
-  filter(occur_cells >= 10) %>%
-  select(am_sid, sciname, T_max_a = max, T_max_p = pref_max) %>%
-  left_join(iucn_spp_info %>% select(iucn_sid, sciname), by = 'sciname')
+  select(am_sid, sciname, T_max_a = max, T_max_p = pref_max)
 
-iucn_T_env <- read_csv(here('_setup/stressors/int/iucn_spp_thermal_env.csv')) %>%
-  left_join(iucn_spp_info, by = 'iucn_sid') %>%
-  filter(!sciname %in% am_T_env$sciname) %>%
-  select(iucn_sid, sciname, T_max_a, T_max_p)
+iucn_spp_info <- read_csv(here('_data/iucn_spp', 'iucn_to_worms_match.csv'))
+iucn_maps <- read_csv(here('_data/iucn_spp/spp_marine_maps_2021-3.csv'))
+iucn_derived_T_envs <- read_csv(here('_setup/stressors/int/iucn_spp_thermal_env.csv')) %>%
+  select(iucn_sid, iucn_tmaxa = T_max_a, iucn_tmaxp = T_max_p)
+
+iucn_T_env <- iucn_spp_info %>%
+  filter(iucn_sid %in% iucn_maps$iucn_sid) %>%
+  ### first try to join AquaMaps temp profiles
+  left_join(am_T_env, by = c('worms_name' = 'sciname')) %>%
+  left_join(iucn_derived_T_envs, by = 'iucn_sid') %>%
+  mutate(T_max_a = ifelse(is.na(T_max_a), iucn_tmaxa, T_max_a),
+         T_max_p = ifelse(is.na(T_max_p), iucn_tmaxp, T_max_p)) %>%
+  select(iucn_sid, sciname, T_max_a, T_max_p) %>%
+  filter(!is.na(T_max_a) & !is.na(T_max_p))
 
 T_env_all <- bind_rows(am_T_env, iucn_T_env)
 
@@ -162,7 +170,7 @@ T_env_to_process <- T_env_rounded %>%
 ```
 
 ```{r define helper functions}
-calc_T_max_prs <- function(abs, pref, rast = mean_T_rast){
+calc_T_max_prs <- function(abs, pref, rast = mean_T_rast) {
   #t0 <- Sys.time()
   pressure <- (1/(abs - pref))*(rast - pref)
   pressure[pressure < 0] <- 0
@@ -196,7 +204,7 @@ get_spp_map <- function(map_f) {
 ```{r process em all}
 
 out_fstem <- here_anx('stressors/max_temp/%s_spp_max_temp_%s.csv')
-# unlink(list.files(dirname(out_fstem), full.names = TRUE))
+# zxcv <- list.files(dirname(out_fstem), pattern = 'iucn_', full.names = TRUE)
 # list.files(dirname(out_fstem)) %>% n_distinct()
 
 ptm <- proc.time()
@@ -264,8 +272,10 @@ for(i in 1:nrow(gps_df)) {
         distinct()
       
       ### to check results:
-      # spp_range <- map_to_mol(spp_map, by = 'cell_id', which = 'cell_id'); plot(spp_range, col = 'black')
-      # spp_str <- map_to_mol(spp_temp_df, by = 'cell_id', which = 'therm_prs'); plot(spp_str)
+      # spp_range <- map_to_mol(spp_map, by = 'cell_id', which = 'cell_id')
+      # plot(spp_range, col = 'black')
+      # spp_str <- map_to_mol(spp_temp_df, by = 'cell_id', which = 'therm_prs')
+      # plot(spp_str)
       
       ### write out to file
       write_csv(spp_temp_df, out_f)
@@ -292,10 +302,11 @@ for(i in 1:nrow(spp_envs)) {
   spp <- spp_envs$sciname[i]
   src <- spp_envs$src[i]
   id  <- spp_envs$id[i]
+  id_lbl <- ifelse(src == 'iucn', paste('iucn', id), 'aquamaps')
   tmax_a <- spp_envs$T_max_a[i]
   tmax_p <- spp_envs$T_max_p[i]
   
-  cells <- read_csv(sprintf(out_fstem, src, id)) %>%
+  cells <- read_csv(sprintf(out_fstem, src, id), show_col_types = FALSE) %>%
     distinct()
   r <- map_to_mol(cells, which = 'therm_prs')
   map_df <- as.data.frame(r, xy = TRUE) %>%
@@ -307,7 +318,7 @@ for(i in 1:nrow(spp_envs)) {
     geom_sf(data = land_poly, size = .1, color = 'grey50', fill = 'grey90') +
     theme_void() +
     labs(fill = 'Pressure',
-         title = sprintf('%s: T_max_p = %s°C, T_max_a = %s°C', spp, tmax_p, tmax_a))
+         title = sprintf('%s (%s): T_max_p = %s°C, T_max_a = %s°C', spp, id_lbl, tmax_p, tmax_a))
     
   print(p)
 }

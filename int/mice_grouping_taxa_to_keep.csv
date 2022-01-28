@@ -40,8 +40,10 @@ chordata,actinopterygii,batrachoidiformes,actinopterygii
 chordata,actinopterygii,lampriformes,actinopterygii
 chordata,elasmobranchii,rajiformes,elasmobranchii
 chordata,elasmobranchii,torpediniformes,elasmobranchii
+chordata,sarcopterygii,coelacanthiformes,actinopterygii
 chordata,actinopterygii,acipenseriformes,actinopterygii
 chordata,myxini,myxiniformes,myxini
+chordata,cephalaspidomorphi,petromyzontiformes,myxini
 chordata,actinopterygii,notacanthiformes,actinopterygii
 chordata,actinopterygii,cyprinodontiformes,actinopterygii
 chordata,actinopterygii,polymixiiformes,actinopterygii

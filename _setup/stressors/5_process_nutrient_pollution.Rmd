@@ -305,29 +305,19 @@ N_rast <- mask(N_rast, ocean_rast)
 plot(N_rast, axes = FALSE, 
      main = 'N pollution total: tonnes per 100 km^2 cell')
 
-log_N <- log10(N_rast)[N_rast > 0]
-hist(log_N, main = 'distribution of log_10(N) non-zero values')
-
 ### Rescale
-quantile(values(N_rast), c(0.9, 0.95, 0.99, 0.999, 1.0), na.rm = TRUE) %>%
-  knitr::kable()
+# quantile(values(N_rast), c(0.9, 0.95, 0.99, 0.999, 1.0), na.rm = TRUE) %>%
+#   knitr::kable()
 #          90%          95%          99%        99.9%         100% 
 # 0.000000e+00 1.826932e-09 8.550333e+00 4.923464e+02 4.948126e+05 
 
-N_rast_rescale <- rescale_stressor(N_rast, qtile = .999)
+N_rast_rescale <- log_plus(N_rast) %>%
+  rescale_stressor(qtile = .999)
 plot(N_rast_rescale, axes = FALSE, 
      main = 'N pollution rescaled')
 
 x <- values(N_rast_rescale)[values(N_rast_rescale) > 0]
 hist(x, main = 'distribution of rescaled non-zero values (raw)')
-
-### explore effect of log transforming then rescaling:
-# log_N_rescale <- rescale_stressor(log_plus(N_rast), qtile = .999)
-# y <- values(log_N_rescale)[values(log_N_rescale) > 0]
-# hist(y, main = 'distribution of logged then rescaled non-zero values')
-
-
-hist(log10(x), main = 'distribution of rescaled non-zero values (log10 transformed)')
 
 writeRaster(N_rast_rescale, here('_data/stressors_mol/nutrient_2020.tif'), 
             overwrite = TRUE)
