@@ -38,6 +38,12 @@ Compare the relative CHI across species ranges (by stressor and for full range v
 
 Perform a regression of IUCN extinction risk classification as a function of relative overall CHI and overall range, and then do the same for coastal.
 
+Some refs used for learning random forest etc:
+
+* parameter tuning (mtry parameter): https://machinelearningmastery.com/tune-machine-learning-algorithms-in-r/
+* understanding kappa: https://stats.stackexchange.com/questions/82162/cohens-kappa-in-plain-english
+
+
 # Data
 
 * Species impact scores from script 5
@@ -150,15 +156,9 @@ iucn_impacts_df <- read_csv(spp_chi_file) %>%
   mutate(iucn_sid = ifelse(is.na(iucn_sid), -1, iucn_sid)) %>%
   inner_join(assessed_df, by = c('sciname', 'iucn_sid', 'map_src')) %>%
   mutate(iucn_fct = toupper(cat),
-         iucn_fct = factor(iucn_fct, levels = c('LC', 'NT', 'VU', 'EN', 'CR', 'EX')))
-
-check_df <- iucn_impacts_df %>%
-  select(sciname, iucn_sid, map_src) %>%
-  distinct() %>%
-  group_by(sciname) %>%
-  summarize(n = n(),
-            map_src = paste(unique(map_src), collapse = ';'))
-  
+         iucn_fct = factor(iucn_fct, levels = c('LC', 'NT', 'VU', 'EN', 'CR', 'EX'))) %>%
+  select(-iucn_sid, -map_src) %>%
+  arrange(stressor, vuln)
 ```
 
 ## Set up dataframe for coastal impacts and full range impacts
@@ -203,124 +203,119 @@ cst_impacts_df %>% select(tx, threatened) %>% table()
 
 ``` {r}
 spp_cst_imp_df <- cst_impacts_df %>%
-  filter(tx == 'aves') %>%
+  filter(tx == 'mammalia') %>%
   select(-sciname, -phylum, -class, -tx)
 
+calc_rand_forest <- function(df) {
+
+  # set.seed(51)
+  
+  # smp <- caTools::sample.split(spp_cst_imp_df$threatened, SplitRatio = .8)
+  # spp_train <- subset(spp_cst_imp_df, smp == TRUE)
+  # spp_test  <- subset(spp_cst_imp_df, smp == FALSE)
+  spp_train <- spp_cst_imp_df
+  n_preds <- ncol(spp_train) - 1
+  
+  ### regress threatened status against all predictors
+  f1 <- threatened ~ .
+  
+  ### set up train control for 10x-repeated 10-fold cross-validation
+  tr_ctrl <- trainControl(method = 'repeatedcv', number = 10, repeats = 10)
+  ### set up a tunegrid to step by three, up to all included predictors
+  tunegrid <- data.frame(.mtry = c(seq(2, n_preds, 3), n_preds) %>% unique())
+  
+  system.time({
+    chi_thr_mdl <- train(form = f1,
+                         data = spp_train,
+                         method = 'rf',
+                         tuneGrid = tunegrid,
+                         trControl = tr_ctrl)
+  }) 
+  
+  print(chi_thr_mdl)
+  
+  pred_importance <- varImp(chi_thr_mdl)
+  plot(pred_importance)
+}
+```
+
+```{r}
+library(Boruta)
+set.seed(111)
+boruta_spp_train <- Boruta(f1, data = spp_train, doTrace = 2)
+print(boruta_spp_train)
+
+# Boruta performed 99 iterations in 3.417672 secs.
+#  9 attributes confirmed important: benth_str_2020, bycatch_pelagic_2017, cumulative,
+# direct_human_2020, fishing_benthic_dest_2017 and 4 more;
+#  6 attributes confirmed unimportant: biomass_removal, bycatch_benthic_2017, light_2018, oa_2020,
+# sst_extremes_2020 and 1 more;
+#  2 tentative attributes left: nutrient_2020, shipping_large_2021;
+
+boruta_spp <- TentativeRoughFix(boruta_spp_train)
+print(boruta_spp)
+
+getSelectedAttributes(boruta_spp, withTentative = F)
+
+##  [1] "age"      "default"  "housing"  "loan"     "contact"  "day"     
+##  [7] "month"    "duration" "campaign" "pdays"    "previous" "poutcome"
+
+bank_df <- attStats(boruta_spp)
+print(bank_df)
+```
+
+``` {r}
+boruta_cst_imp_df <- spp_cst_imp_df %>%
+  select(threatened, all_of(getSelectedAttributes(boruta_spp, withTentative = F)))
 
 set.seed(51)
 
 # smp <- caTools::sample.split(spp_cst_imp_df$threatened, SplitRatio = .8)
 # spp_train <- subset(spp_cst_imp_df, smp == TRUE)
 # spp_test  <- subset(spp_cst_imp_df, smp == FALSE)
-spp_train <- spp_cst_imp_df
+boruta_train <- boruta_cst_imp_df
+n_preds <- ncol(boruta_train) - 1
 
+### regress threatened status against all predictors
 f1 <- threatened ~ .
 
+### set up train control for 10x-repeated 10-fold cross-validation
 tr_ctrl <- trainControl(method = 'repeatedcv', number = 10, repeats = 10)
-### set up a tunegrid to include all cols, and step by 3
-tunegrid <- data.frame(.mtry = seq(ncol(spp_train) - 1, 2, -4) %>% sort())
+### set up a tunegrid to step by three, up to all included predictors
+tunegrid <- data.frame(.mtry = c(seq(2, n_preds, 3), n_preds) %>% unique())
 
 system.time({
-  chi_thr_mdl <- train(form = f1,
-                       data = spp_train,
+  boruta_chi_thr_mdl <- train(form = f1,
+                       data = boruta_train,
                        method = 'rf',
                        tuneGrid = tunegrid,
                        trControl = tr_ctrl)
 }) 
-### for 96 spp, 5 folds, 10 repeats, about 6 seconds; 
-### * 13 s for 10 folds; 25 for 20 folds - linear in folds
-### * 11 s for 20 repeats; 22 sec for 40 reps - linear in repeats
-print(chi_thr_mdl)
-# Random Forest 
-# 
-# 96 samples
-# 14 predictors
-#  2 classes: 'FALSE', 'TRUE' 
-# 
-# No pre-processing
-# Resampling: Cross-Validated (5 fold, repeated 10 times) 
-# Summary of sample sizes: 78, 76, 77, 76, 77, 77, ... 
-# Resampling results across tuning parameters:
-# 
-#   mtry  Accuracy   Kappa    
-#    2    0.6803275  0.2770932
-#    8    0.6899825  0.3193594
-#   14    0.6993041  0.3446987
-# 
-# Accuracy was used to select the optimal model using the largest value.
-# The final value used for the model was mtry = 14.
 
-# chi_thr_pred <- predict(chi_thr_mdl, newdata = spp_test[-1])
-# 
-# conf_mtx <- spp_test %>%
-#   mutate(pred = chi_thr_pred)
-# 
-# accuracy_test <- conf_mtx %>%
-#   summarize(accuracy = sum(pred == threatened) / n()) %>%
-#   pull(accuracy)
-# exp_acc_test <- conf_mtx %>%
-#   summarize(true_ground  = sum(threatened == TRUE),
-#             true_pred    = sum(pred == TRUE),
-#             false_ground = sum(threatened == FALSE),
-#             false_pred   = sum(pred == FALSE),
-#             exp_acc = (true_ground * true_pred + false_ground * false_pred) / n()^2) %>%
-#   pull(exp_acc)
-# kappa_test <- (accuracy_test - exp_acc_test) / (1 - exp_acc_test)
-#   
-# table(conf_mtx %>% select(threatened, pred))
+print(boruta_chi_thr_mdl)
 
+pred_importance <- varImp(boruta_chi_thr_mdl)
+plot(pred_importance)
 ```
 
-### Tuning mtry
+### direction of effect
 
-``` {r}
-x <- spp_train[, -1]
-y <- spp_train[, 1]
-# Create model with default paramters
-control <- trainControl(method = 'repeatedcv', number = 10, repeats = 3)
-seed <- 7
-metric <- 'Accuracy'
-set.seed(seed)
-mtry <- sqrt(ncol(x)) %>% floor()
-tunegrid <- expand.grid(.mtry = mtry)
-rf_default <- train(f1, data = spp_train, method = 'rf', 
-                    metric = metric, tuneGrid = tunegrid, trControl = control)
-print(rf_default)
-# Random Forest 
-# 
-# 96 samples
-# 14 predictors
-#  2 classes: 'FALSE', 'TRUE' 
-# 
-# No pre-processing
-# Resampling: Cross-Validated (10 fold, repeated 3 times) 
-# Summary of sample sizes: 86, 86, 86, 87, 86, 86, ... 
-# Resampling results:
-# 
-#   Accuracy   Kappa    
-#   0.6825926  0.2963921
-# 
-# Tuning parameter 'mtry' was held constant at a value of 3
+based on https://stackoverflow.com/questions/64388396/random-forest-variable-importance-and-direction-of-correlation-for-binomial-resp
+
+```{r}
+nx <- names(boruta_train)
+nx <- nx[-which(nx == "threatened")]
+res <- NULL
+for(i in 1:length(nx)){
+  p1 <- predict(boruta_chi_thr_mdl, newdata=boruta_train, type="prob")
+  df2 <- boruta_train
+  df2[[nx[i]]] <- df2[[nx[i]]] + sd(df2[[nx[i]]])
+  p2 <- predict(boruta_chi_thr_mdl, newdata=df2, type="prob")
+  diff <- (p2-p1)[,2]
+  res <- rbind(res, c(mean(diff), sd(diff)))
+}
+colnames(res) <- c("effect", "sd")
+rownames(res) <- nx
+res
 ```
 
-``` {r}
-# Random Search
-control <- trainControl(method = 'repeatedcv', number = 7, repeats = 3, search = 'random')
-set.seed(seed)
-mtry <- sqrt(ncol(x))
-rf_random <- train(f1, data = spp_train, method='rf', 
-                   metric = metric, tuneLength = 8, trControl = control)
-print(rf_random)
-plot(rf_random)
-```
-
-``` {r}
-# Grid search
-control <- trainControl(method = 'repeatedcv', number = 10, repeats = 3, search = 'grid')
-set.seed(seed)
-tunegrid <- expand.grid(.mtry = c(1:17))
-rf_gridsearch <- train(f1, data = spp_train, method = 'rf', 
-                       metric = metric, tuneGrid = tunegrid, trControl = control)
-print(rf_gridsearch)
-plot(rf_gridsearch)
-```
