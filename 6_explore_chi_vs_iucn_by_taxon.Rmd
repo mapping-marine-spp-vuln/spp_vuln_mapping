@@ -1,0 +1,400 @@
+---
+title: "Compare cumulative impacts per species to IUCN status"
+author: "*Compiled on `r date()` by `r Sys.info()['user']`*"
+output: 
+  html_document:
+    code_folding: hide
+    toc: true
+    toc_depth: 3
+    toc_float: yes
+    number_sections: true
+    theme: cerulean
+    highlight: haddock
+    includes: 
+      in_header: '~/github/src/templates/ohara_hdr.html'
+  pdf_document:
+    toc: true
+---
+
+``` {r setup, echo = TRUE, message = FALSE, warning = FALSE}
+
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
+
+library(raster)
+library(tidyverse)
+library(here)
+library(RColorBrewer)
+library(oharac)
+library(caret)
+source(here('common_fxns.R'))
+
+```
+
+# Summary
+
+Calculate the cumulative impact across each species range (total and coastal-only).  Relative CHI will be the total CHI (summed across all cells and all stressors) normalized by the total range (total and coastal-only).  The relative CHI is effectively the average CHI per km^2^ across the species' range.
+
+Perform a regression of IUCN extinction risk classification as a function of relative overall CHI and overall range, and then do the same for coastal.
+
+# Data
+
+* Species impact scores from script 5
+* IUCN extinction risk scores from IUCN
+
+# Methods
+
+## Read in species impacts for those spp assessed by IUCN; summarize to CHI
+
+Summarize to cumulative impacts by entire range and by coastal range.
+
+Each file has a row for each stressor-vulnerability match; columns are:
+
+* `str_vuln` (chr): name of stressor/vuln combo, as <str>-<vuln>
+* `impact_tot` (dbl): sum across all cells of stressor intensity $\times$ vulnerability $\times$ ocean area
+* `impact_coastal` (dbl): sum across all coastal cells (≤200m) of stressor intensity $\times$ vulnerability $\times$ ocean area
+* `range_tot_km2` (dbl): sum of ocean area of all cells across entire range
+* `range_coastal_km2` (dbl): sum of ocean area of all cells across coastal range
+
+
+```{r}
+spp_chi_file <- here_anx('int/spp_chi_summary.csv')
+
+if(!file.exists(spp_chi_file)) {
+  spp_imp_fs <- list.files(here_anx('impacts_by_species'), 
+                           pattern = '^impacts_.+.csv', full.names = TRUE)
+  
+  spp_imp_raw_df <- parallel::mclapply(spp_imp_fs, mc.cores = 40,
+                                       read_csv, show_col_types = FALSE) %>%
+    setNames(basename(spp_imp_fs)) %>%
+    bind_rows(.id = 'f')
+  
+  spp_ranges <- spp_imp_raw_df %>%
+    select(f, range_km2, range) %>%
+    distinct() %>%
+    spread(range, range_km2) %>%
+    rename(range_cst_km2 = coastal, range_tot_km2 = full)
+  
+  spp_impacts_df <- spp_imp_raw_df %>%
+    select(f, vuln, stressor, impact_tot, range) %>%
+    spread(range, impact_tot) %>%
+    rename(impact_tot = full, impact_cst = coastal)
+    
+  spp_cv_df <- spp_imp_raw_df %>%
+    select(f, vuln, stressor, impact_cv, range) %>%
+    spread(range, impact_cv) %>%
+    rename(impact_cv_tot = full, impact_cv_cst = coastal)
+
+  spp_impacts_npp_df <- spp_imp_raw_df %>%
+    select(f, vuln, stressor, impact_npp_tot, range) %>%
+    spread(range, impact_npp_tot) %>%
+    rename(impact_npp_tot = full, impact_npp_cst = coastal)
+    
+  spp_npp_cv_df <- spp_imp_raw_df %>%
+    select(f, vuln, stressor, impact_npp_cv, range) %>%
+    spread(range, impact_npp_cv) %>%
+    rename(impact_npp_cv_tot = full, impact_npp_cv_cst = coastal)
+
+  iucn_worms_lookup <- read_csv(here('_data/iucn_spp', 'iucn_to_worms_match.csv'))
+
+  spp_imp_cv_df <- full_join(spp_impacts_df, spp_cv_df, 
+                             by = c('f', 'vuln', 'stressor')) %>%
+    full_join(spp_impacts_npp_df, by = c('f', 'vuln', 'stressor')) %>%
+    full_join(spp_npp_cv_df, by = c('f', 'vuln', 'stressor')) %>%
+    left_join(spp_ranges, by = 'f') %>%
+    ### extract species and map info from filename
+    mutate(map_src = str_extract(f, '_iucn_|_am_') %>% str_remove_all('_'),
+           iucn_sid = str_extract(f, '[0-9]+') %>% as.integer(),
+           spp_from_f = str_remove_all(f, 'impacts_(am|iucn)_|.csv')) %>%
+    left_join(iucn_worms_lookup, by = 'iucn_sid') %>%
+    mutate(sciname = ifelse(is.na(worms_name), 
+                            str_replace_all(spp_from_f, '_', ' '),
+                            worms_name)) %>%
+    select(sciname, iucn_sid, map_src, vuln, stressor, 
+           impact_cst, impact_tot, impact_cv_cst, impact_cv_tot,
+           impact_npp_cst, impact_npp_tot, impact_npp_cv_cst, impact_npp_cv_tot,
+           range_cst_km2, range_tot_km2) %>%
+    distinct() %>%
+    filter(range_tot_km2 > 0 & !is.na(impact_tot))
+    
+  write_csv(spp_imp_cv_df, spp_chi_file)
+}
+```
+
+### Assemble IUCN Red List categories for species in IUCN maps and AquaMaps maps
+
+``` {r}
+iucn_worms_lookup <- read_csv(here('_data/iucn_spp', 'iucn_to_worms_match.csv'),
+                              show_col_types = FALSE)
+
+iucn_assessed <- read_csv(here('_data/iucn_spp/iucn_marine_spp_info_2021-3.csv'),
+                              show_col_types = FALSE) %>%
+  select(iucn_sid, cat, cat_score) %>%
+  left_join(iucn_worms_lookup, by = 'iucn_sid') %>%
+  mutate(threatened = case_when(cat == 'dd' ~ NA,
+                                cat %in% c('lc', 'nt') ~ FALSE,
+                                TRUE ~ TRUE),
+         atrisk     = case_when(cat == 'dd' ~ NA,
+                                cat %in% c('lc') ~ FALSE,
+                                TRUE ~ TRUE)) %>%
+  select(iucn_sid, iucn_sciname = sciname, sciname = worms_name, cat, cat_score, threatened, atrisk)
+iucn_mapped <- read_csv(here('_data/iucn_spp/spp_marine_maps_2021-3.csv'),
+                              show_col_types = FALSE)
+
+assessed_in_am <- get_am_spp_info() %>%
+  select(am_sid, am_sciname, sciname, iucn_sid) %>%
+  inner_join(iucn_assessed %>% 
+               select(iucn_sid, cat, threatened, atrisk) %>% distinct(), 
+             by = 'iucn_sid') %>%
+  select(sciname, cat, threatened, atrisk) %>%
+  distinct() %>%
+  mutate(map_src = 'am',
+         iucn_sid = -1)
+
+assessed_in_iucn_maps <- iucn_assessed %>%
+  filter(iucn_sid %in% iucn_mapped$iucn_sid) %>%
+  select(sciname, iucn_sid, cat, threatened, atrisk) %>%
+  distinct() %>%
+  mutate(map_src = 'iucn')
+
+assessed_df <- bind_rows(assessed_in_am, assessed_in_iucn_maps)
+
+```
+
+### Combine IUCN categories with impacts
+
+``` {r}
+iucn_impacts_df <- read_csv(spp_chi_file,
+                            show_col_types = FALSE) %>%
+  mutate(iucn_sid = ifelse(is.na(iucn_sid), -1, iucn_sid)) %>%
+  inner_join(assessed_df, by = c('sciname', 'iucn_sid', 'map_src')) %>%
+  mutate(iucn_fct = toupper(cat),
+         iucn_fct = factor(iucn_fct, levels = c('LC', 'NT', 'VU', 'EN', 'CR', 'EX', 'DD')))
+
+check_df <- iucn_impacts_df %>%
+  select(sciname, iucn_sid, map_src) %>%
+  distinct() %>%
+  group_by(sciname) %>%
+  summarize(n = n(),
+            map_src = paste(map_src, collapse = ';'))
+
+
+spp_chi_iucn_clean <- iucn_impacts_df %>%
+  filter(stressor == 'cumulative') %>%
+  mutate(chi_rel_tot = impact_tot / range_tot_km2,
+         chi_rel_cst = impact_cst / range_cst_km2,
+         chi_npp_tot = impact_npp_tot / range_tot_km2,
+         chi_npp_cst = impact_npp_cst / range_cst_km2) %>%
+  filter(!is.na(threatened))
+```
+
+## Try some simple tests
+
+### examine CHI by range
+
+```{r}
+ggplot(spp_chi_iucn_clean, aes(x = range_tot_km2, y = impact_tot)) +
+  geom_point(aes(color = iucn_fct)) +
+  geom_abline(slope = 1, intercept = 0, color = 'red', size = .5) +
+  # scale_y_log10() +
+  theme_minimal()
+
+```
+
+Technically possible for species to have higher total impacts than range, e.g., if high vulnerability (near 1) to multiple very intense stressor (near 1) across most of its range.
+
+Questions:
+
+* Are the spp near the 1:1 line due to cumulative effects, or dominated by a single stressor?  
+* there seem to be a few "clusters" of slopes...
+
+## Binomial logistic regression
+
+Perform a binomial logistic regression of threatened status (threatened/not threatened) as a function of mean cumulative impact and range.  Set up data frame to include a `threatened` column, where LC and NT are `FALSE` and VU, EN, and CR are `TRUE`.  Include range as linear rescale (0-1) and square root of range, for both overall range and coastal-only range.
+
+### Prob of threatened = TRUE as function of CHI and range
+
+```{r}
+taxa_df <- assemble_worms() %>%
+  mutate(taxon = ifelse(phylum == 'chordata' | class == 'cephalopoda', class, phylum)) %>%
+  select(species, taxon, phylum, class)
+
+chi_threatened_valid <- spp_chi_iucn_clean %>%
+  left_join(taxa_df, by = c('sciname' = 'species')) %>%
+  filter(!is.na(threatened)) %>%
+  mutate(inv_log_r_tot  = 1/log(range_tot_km2),
+         inv_log_r_cst  = 1/log(range_cst_km2),
+         inv_sqrt_r_tot = 1/sqrt(range_tot_km2),
+         inv_sqrt_r_cst = 1/sqrt(range_cst_km2)) %>%
+  mutate(qtile_r = ntile(range_tot_km2, n = 4))
+
+```
+
+``` {r}
+taxa <- chi_threatened_valid$taxon %>% unique() %>% sort()
+
+results <- data.frame()
+
+frms <- c(atrisk ~ chi_npp_tot + impact_npp_cv_tot + inv_log_r_tot,
+          atrisk ~ chi_npp_cst + impact_npp_cv_cst + inv_log_r_cst,
+          atrisk ~ chi_rel_tot + impact_cv_tot + inv_log_r_tot,
+          atrisk ~ chi_rel_tot + impact_cv_tot + inv_log_r_tot,
+          atrisk ~ chi_rel_tot + inv_log_r_tot,
+          atrisk ~ chi_rel_tot + impact_cv_tot,
+          atrisk ~ chi_rel_tot,
+          atrisk ~ chi_rel_cst + impact_cv_cst + inv_log_r_cst,
+          atrisk ~ chi_rel_cst + inv_log_r_cst,
+          atrisk ~ chi_rel_cst + impact_cv_cst,
+          atrisk ~ chi_rel_cst)
+
+for(t in taxa) { ### t <- taxa[8]
+  chi_tx_df <- chi_threatened_valid %>%
+    filter(taxon == t) # %>% filter(cat != 'lc')
+  
+  blr_list <- lapply(frms,
+                     FUN = function(f) {
+                       mdl <- glm(f, 
+                                  data = chi_tx_df,
+                                  family = 'binomial') %>%
+                         broom::tidy() %>% mutate(formula = deparse(f))
+                     })
+  
+  df <- bind_rows(blr_list) %>%
+    mutate(taxon = t)
+  
+  results <- bind_rows(results, df)
+}
+
+
+x <- results %>%
+  filter(term != '(Intercept)')
+
+
+mdl <- glm(atrisk ~ chi_npp_cst + impact_npp_cv_cst + inv_log_r_cst, 
+           data = chi_threatened_valid %>% filter(taxon == 'reptilia'),
+           family = 'binomial')
+summary(mdl)
+```
+
+
+### Try PCA on indiv stressors then BLR
+
+PCA can eliminate multicollinearity among variables.
+
+```{r spread stressors function}
+spread_stressors <- function(df) {
+  pca_ready_df <- df %>%
+    select(sciname, iucn_sid, stressor, imp_rel_tot, threatened, inv_log_r_tot) %>%
+    group_by(stressor) %>%
+    ### identify and drop any all-zero-stressor 
+    filter(!all(imp_rel_tot == 0)) %>%
+    ungroup() %>%
+    spread(stressor, imp_rel_tot) %>%
+    mutate(across(where(is.numeric), .fns = ~ ifelse(is.na(.x), 0, .x)))
+  return(pca_ready_df)
+}
+
+prep_for_glm <- function(df, pca_thresh = 0.95) {
+  pca_out <- df %>%
+    select(-sciname, -iucn_sid, -threatened, -inv_log_r_tot) %>%
+    # scale() %>% ### values already between 0-1; scale may lose vulnerability magnitude
+    prcomp()
+  ### summary(pca_out)
+
+  ### Identify the PC number where the threshold is first met
+  cum_var <- ((pca_out$sdev)^2 / sum((pca_out$sdev)^2)) %>% cumsum()
+  n_pcs <- which(cum_var > pca_thresh)[1]
+  message('Threshold of ', pca_thresh, ' results in ', n_pcs, ' principal components...')
+  
+  pca_results_df <- data.frame(df %>%
+                                 select(threatened, inv_log_r_tot), 
+                               pca_out$x[ , 1:n_pcs]) %>%
+    mutate(threatened = factor(threatened))
+  return(pca_results_df)
+}
+```
+
+#### model accuracy by taxon
+
+```{r}
+spp_impacts_iucn_clean <- iucn_impacts_df %>%
+  filter(stressor != 'cumulative') %>%
+  mutate(imp_rel_tot = impact_tot / range_tot_km2,
+         imp_rel_cst = impact_cst / range_cst_km2) %>%
+  filter(!is.na(threatened))
+
+impacts_threatened_valid <- spp_impacts_iucn_clean %>%
+  left_join(taxa_df, by = c('sciname' = 'species')) %>%
+  filter(!is.na(threatened)) %>%
+  mutate(inv_log_r_tot  = 1/log(range_tot_km2),
+         inv_log_r_cst  = 1/log(range_cst_km2)) %>%
+  select(sciname, iucn_sid, vuln, stressor, threatened, imp_rel_tot, taxon, inv_log_r_tot) %>%
+  distinct()
+
+taxa <- impacts_threatened_valid$taxon %>% unique() %>% sort()
+
+results_df <- data.frame()
+
+for(t in taxa) { ### t <- taxa[8]
+  message('Processing ', t, '...')
+  imp_tx_df <- impacts_threatened_valid %>%
+    filter(taxon == t) # %>% filter(cat != 'lc')
+  
+  pct_thr <- sum(imp_tx_df$threatened) / nrow(imp_tx_df)
+  zero_rule <- max(pct_thr, 1 - pct_thr)
+  
+  ### 
+  imp_tx_info <- spread_stressors(imp_tx_df)
+  
+  imp_tx_pca_df <- prep_for_glm(imp_tx_info)
+
+  tr_ctrl <- trainControl(method = 'repeatedcv', number = 10, repeats = 10)
+  ### train the model
+  mdl1 <- train(threatened ~ ., 
+                data = imp_tx_pca_df,
+                method = 'glm', family = 'binomial',
+                trControl = tr_ctrl)
+  tx_results_df <- data.frame(taxon = t,
+                              n_spp = nrow(imp_tx_df),
+                              pct_thr = pct_thr,
+                              n_pcs = ncol(imp_tx_pca_df) - 2,
+                              accuracy = mdl1$results$Accuracy,
+                              kappa    = mdl1$results$Kappa,
+                              zero_rl  = zero_rule) %>%
+    mutate(kappa_0 = (accuracy - zero_rl) / (1 - zero_rl))
+
+  results_df <- bind_rows(results_df, tx_results_df)
+}
+
+knitr::kable(results_df %>% arrange(-kappa_0), digits = 4)
+```
+
+#### across all spp simultaneously
+
+```{r try blr across all taxa}
+pct_thr <- sum(impacts_threatened_valid$threatened) / nrow(impacts_threatened_valid)
+zero_rule <- max(pct_thr, 1 - pct_thr)
+
+### 
+imp_all_info <- spread_stressors(impacts_threatened_valid)
+
+imp_all_pca_df <- prep_for_glm(imp_all_info)
+
+tr_ctrl <- trainControl(method = 'repeatedcv', number = 10, repeats = 10)
+### train the model
+mdl2 <- train(threatened ~ ., 
+              data = imp_all_pca_df,
+              method = 'glm', family = 'binomial',
+              trControl = tr_ctrl)
+all_results_df <- data.frame(taxon = 'all taxa',
+                            pct_thr = pct_thr,
+                            n_pcs = ncol(imp_tx_pca_df) - 2,
+                            accuracy = mdl2$results$Accuracy,
+                            kappa    = mdl2$results$Kappa,
+                            zero_rl  = zero_rule) %>%
+  mutate(kappa_0 = (accuracy - zero_rl) / (1 - zero_rl))
+
+knitr::kable(all_results_df, digits = 4)
+
+```
+
+

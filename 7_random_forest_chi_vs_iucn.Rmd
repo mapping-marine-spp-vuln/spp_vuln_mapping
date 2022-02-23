@@ -1,0 +1,544 @@
+---
+title: "Compare cumulative impacts per species to IUCN status"
+author: "*Compiled on `r date()` by `r Sys.info()['user']`*"
+output: 
+  html_document:
+    code_folding: hide
+    toc: true
+    toc_depth: 3
+    toc_float: yes
+    number_sections: true
+    theme: cerulean
+    highlight: haddock
+    includes: 
+      in_header: '~/github/src/templates/ohara_hdr.html'
+  pdf_document:
+    toc: true
+---
+
+``` {r setup, echo = TRUE, message = FALSE, warning = FALSE}
+
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
+
+library(raster)
+library(tidyverse)
+library(here)
+library(RColorBrewer)
+library(oharac)
+source(here('common_fxns.R'))
+
+library(caret)
+library(randomForest)
+library(Boruta)
+
+
+```
+
+# Summary
+
+Compare the relative CHI across species ranges (by stressor and for full range vs. coastal-only range) to spp IUCN Red List threatened status.  The relative impact is effectively the average impact per km^2^ across the species' range.
+
+Perform a regression of IUCN extinction risk classification as a function of relative overall CHI and overall range, and then do the same for coastal.
+
+Some refs used for learning random forest etc:
+
+* parameter tuning (mtry parameter): https://machinelearningmastery.com/tune-machine-learning-algorithms-in-r/
+* understanding kappa: https://stats.stackexchange.com/questions/82162/cohens-kappa-in-plain-english
+
+
+# Data
+
+* Species impact scores from script 5
+* IUCN extinction risk scores from IUCN
+
+# Methods
+
+## Read in species impacts for those spp assessed by IUCN; summarize to CHI
+
+Summarize to cumulative impacts by entire range and by coastal range.
+
+Each file has a row for each stressor-vulnerability match; columns are:
+
+* `str_vuln` (chr): name of stressor/vuln combo, as <str>-<vuln>
+* `impact_tot` (dbl): sum across all cells of stressor intensity $\times$ vulnerability $\times$ ocean area
+* `impact_coastal` (dbl): sum across all coastal cells (≤200m) of stressor intensity $\times$ vulnerability $\times$ ocean area
+* `range_tot_km2` (dbl): sum of ocean area of all cells across entire range
+* `range_coastal_km2` (dbl): sum of ocean area of all cells across coastal range
+
+
+```{r}
+spp_chi_file <- here_anx('int/spp_chi_summary.csv')
+
+if(!file.exists(spp_chi_file)) {
+  spp_imp_fs <- list.files(here_anx('impacts_by_species'), 
+                           pattern = '^impacts_.+.csv', full.names = TRUE)
+  
+  spp_imp_df <- parallel::mclapply(spp_imp_fs, mc.cores = 40,
+                                   read_csv, show_col_types = FALSE) %>%
+    setNames(basename(spp_imp_fs)) %>%
+    bind_rows(.id = 'f')
+  
+  spp_ranges <- spp_imp_df %>%
+    select(f, range_km2, range) %>%
+    distinct() %>%
+    spread(range, range_km2) %>%
+    rename(range_cst_km2 = coastal, range_tot_km2 = full)
+  
+  iucn_worms_lookup <- read_csv(here('_data/iucn_spp', 'iucn_to_worms_match.csv'))
+
+  spp_impacts_df <- spp_imp_df %>%
+    select(-range_km2) %>%
+    spread(range, impact_tot) %>%
+    rename(impact_tot = full, impact_cst = coastal) %>%
+    left_join(spp_ranges, by = 'f') %>%
+    ### extract species and map info from filename
+    mutate(map_src = str_extract(f, '_iucn_|_am_') %>% str_remove_all('_'),
+           iucn_sid = str_extract(f, '[0-9]+') %>% as.integer(),
+           spp_from_f = str_remove_all(f, 'impacts_(am|iucn)_|.csv')) %>%
+    left_join(iucn_worms_lookup, by = 'iucn_sid') %>%
+    mutate(sciname = ifelse(is.na(worms_name), 
+                            str_replace_all(spp_from_f, '_', ' '),
+                            worms_name)) %>%
+    select('sciname', 'iucn_sid', 'map_src', 'vuln', 'stressor', 
+           'impact_cst', 'impact_tot', 'range_cst_km2', 'range_tot_km2') %>%
+    distinct() %>%
+    filter(range_tot_km2 > 0 & !is.na(impact_tot))
+    
+  write_csv(spp_impacts_df, spp_chi_file)
+}
+```
+
+### Assemble IUCN Red List categories for species in IUCN maps and AquaMaps maps
+
+``` {r}
+
+worms_taxa <- assemble_worms() %>%
+  select(sciname = species, phylum, class, order) %>%
+  distinct()
+
+iucn_worms_lookup <- read_csv(here('_data/iucn_spp', 'iucn_to_worms_match.csv'))
+
+iucn_assessed <- read_csv(here('_data/iucn_spp/iucn_marine_spp_info_2021-3.csv')) %>%
+  select(iucn_sid, cat, cat_score) %>%
+  left_join(iucn_worms_lookup, by = 'iucn_sid') %>%
+  mutate(threatened = cat %in% c('vu', 'en', 'cr', 'ex'),
+         atrisk     = cat %in% c('nt', 'vu', 'en', 'cr', 'ex')) %>%
+  select(iucn_sid, iucn_sciname = sciname, sciname = worms_name, cat, cat_score, threatened, atrisk)
+iucn_mapped <- read_csv(here('_data/iucn_spp/spp_marine_maps_2021-3.csv'))
+
+assessed_in_am <- get_am_spp_info() %>%
+  select(am_sid, am_sciname, sciname, iucn_sid) %>%
+  inner_join(iucn_assessed %>% 
+               select(iucn_sid, cat, threatened, atrisk) %>% distinct(), 
+             by = 'iucn_sid') %>%
+  select(sciname, cat, threatened, atrisk) %>%
+  distinct() %>%
+  mutate(map_src = 'am',
+         iucn_sid = -1)
+
+assessed_in_iucn_maps <- iucn_assessed %>%
+  filter(iucn_sid %in% iucn_mapped$iucn_sid) %>%
+  select(sciname, iucn_sid, cat, threatened, atrisk) %>%
+  distinct() %>%
+  mutate(map_src = 'iucn')
+
+assessed_df <- bind_rows(assessed_in_am, assessed_in_iucn_maps) %>%
+  group_by(sciname) %>%
+  filter(n() == 1 | map_src == 'iucn') %>%
+  left_join(worms_taxa, by = 'sciname') %>%
+  filter(cat != 'dd') %>%
+  filter(!is.na(class))
+
+```
+
+```{r}
+mapped_df <- get_am_spp_info() %>%
+  select(am_sid, am_sciname, sciname, iucn_sid, iucn_code) %>%
+  left_join(iucn_assessed %>% 
+               select(iucn_sid, cat, threatened, atrisk) %>% distinct(), 
+             by = c('iucn_sid')) %>%
+  bind_rows(assessed_in_iucn_maps) %>%
+  group_by(sciname) %>%
+  filter(n() == 1 | map_src == 'iucn') %>%
+  left_join(worms_taxa, by = 'sciname') %>%
+  mutate(tx = case_when(phylum == 'chordata' ~ class,
+                        class %in% c('cephalopoda', 'malacostraca') ~ class,
+                        TRUE ~ phylum))
+
+mapped_spp_summary <- mapped_df %>%
+  select(iucn_sid, sciname, cat, iucn_code, threatened, tx) %>%
+  mutate(status = case_when(threatened        ~ 'threatened',
+                            !threatened       ~ 'not threatened',
+                            cat == 'dd'       ~ 'data deficient',
+                            iucn_code %in% c('cr', 'en', 'ex', 'vu') ~ 'threatened',
+                            iucn_code %in% c('lc', 'nt', 'lr/cd', 'lr/lc', 'lr/nt') ~ 'not threatened',
+                            iucn_code == 'dd' ~ 'data deficient',
+                            iucn_code == 'n.e.' ~ 'not evaluated',
+                            TRUE ~ 'not evaluated')) %>%
+  distinct() %>%
+  group_by(tx, status) %>%
+  summarize(n_spp = n())
+```
+
+### Combine IUCN categories with impacts
+
+``` {r}
+iucn_impacts_df <- read_csv(spp_chi_file) %>%
+  mutate(iucn_sid = ifelse(is.na(iucn_sid), -1, iucn_sid)) %>%
+  inner_join(assessed_df, by = c('sciname', 'iucn_sid', 'map_src')) %>%
+  mutate(iucn_fct = toupper(cat),
+         iucn_fct = factor(iucn_fct, levels = c('LC', 'NT', 'VU', 'EN', 'CR', 'EX'))) %>%
+  select(-iucn_sid, -map_src) %>%
+  arrange(stressor, vuln)
+```
+
+## Set up dataframe for coastal impacts and full range impacts
+
+Calculate coastal impacts by vulnerability category - for categories like bycatch and habitat loss that map to multiple stressor layers, sum the impacts for all sources prior to calculating relative impact.
+
+Alternately, what if we go stressor layer by stressor layer?
+
+```{r vectors and counts per taxon}
+phl_vec <- c('arthropoda', 'chordata', 'cnidaria', 'echinodermata', 'mollusca')
+cls_vec <- c('actinopterygii', 'anthozoa', 'aves', 'bivalvia', 
+             'cephalopoda', 'echinoidea', 'elasmobranchii', 'gastropoda', 
+             'holothuroidea', 'malacostraca', 'mammalia', 'myxini', 'reptilia')
+
+taxon_gps <- iucn_impacts_df %>%
+  select(phylum, class) %>%
+  distinct() %>%
+  mutate(tx = case_when(phylum == 'chordata' ~ class,
+                        class %in% c('cephalopoda', 'malacostraca') ~ class,
+                        TRUE ~ phylum))
+```
+
+```{r}
+cst_impacts_df <- iucn_impacts_df %>%
+  group_by(sciname, stressor, range_cst_km2, threatened, phylum, class, order) %>%
+  summarize(imp_sum = sum(impact_cst), .groups = 'drop') %>%
+  filter(range_cst_km2 > 0) %>%
+  mutate(rel_impact = imp_sum / range_cst_km2,
+         inv_ln_range = 1/log(range_cst_km2),
+         threatened = factor(threatened)) %>%
+  select(-range_cst_km2, -imp_sum) %>%
+  pivot_wider(names_from = stressor, values_from = rel_impact, values_fill = 0) %>%
+  left_join(taxon_gps, by = c('phylum', 'class')) %>%
+  distinct()
+
+full_range_impacts_df <- iucn_impacts_df %>%
+  group_by(sciname, stressor, range_tot_km2, threatened, phylum, class, order) %>%
+  summarize(imp_sum = sum(impact_tot), .groups = 'drop') %>%
+  filter(range_tot_km2 > 0) %>%
+  mutate(rel_impact = imp_sum / range_tot_km2,
+         inv_ln_range = 1/log(range_tot_km2),
+         threatened = factor(threatened)) %>%
+  select(-range_tot_km2, -imp_sum) %>%
+  pivot_wider(names_from = stressor, values_from = rel_impact, values_fill = 0) %>%
+  left_join(taxon_gps, by = c('phylum', 'class')) %>%
+  distinct()
+```
+
+Subset species impacts by taxonomic group.  Rather than set aside a test for post-RF, run a repeated k-fold cross validation on each entire taxon.  Use a typical default of 10 folds, and 10 repeats, per https://machinelearningmastery.com/repeated-k-fold-cross-validation-with-python.
+
+#### Species inclusion: coastal only
+
+``` {r}
+cst_impacts_df %>% select(tx, threatened) %>% table()
+```
+
+#### Species inclusion: full range
+
+``` {r}
+full_range_impacts_df %>% select(tx, threatened) %>% table()
+```
+
+### Function to calculate random forest results
+
+#### Boruta to identify important attributes
+
+Function to use Boruta algorithm to identify important attributes for a given dataframe and regression formula, and rough-fix any tentatively important variables.  Returns a vector of verified important attributes (stressor names).
+
+```{r}
+get_important_vars <- function(df, formula) {
+  
+  boruta_train <- Boruta(formula = formula, data = df) %>%
+    TentativeRoughFix()
+  # print(boruta_train)
+  
+  strs_selected <- getSelectedAttributes(boruta_train, withTentative = F)
+  
+  message('Identified ', length(strs_selected), ' important attributes:\n  ', paste0(strs_selected, collapse = ';'))
+  # bank_df <- attStats(boruta_spp)
+  # print(bank_df)
+  return(strs_selected)
+}
+```
+
+#### Iterate to estimate marginal effect
+
+based on https://stackoverflow.com/questions/64388396/random-forest-variable-importance-and-direction-of-correlation-for-binomial-resp
+
+```{r}
+calc_direction <- function(df, mdl) {
+  ### df <- spp_train
+  att_names <- names(df %>% select(-threatened))
+
+  res <- data.frame()
+  for(i in 1:length(att_names)){ ### i <- 1
+    
+    att <- att_names[i]
+    ### predict based on original data
+    p1 <- predict(mdl, newdata = df, type = "prob")
+    
+    ### predict based on original data with one column increased by 1 sd
+    df2 <- df
+    df2[[att]] <- df2[[att]] + sd(df2[[att]])
+    p2 <- predict(mdl, newdata = df2, type = "prob")
+    
+    ### find the difference
+    diff <- (p2 - p1)[, 2]
+    res_tmp <- data.frame(att,
+                          mean_effect = mean(diff), 
+                          sd_effect   = sd(diff))
+    res <- bind_rows(res, res_tmp)
+  }
+  
+  return(res)
+}
+
+```
+
+For a given dataframe, set up the training parameters according to number of included columns (minus one, which is threatened status T/F).  Try several mtry values; identify mtry with highest accuracy and kappa.  Bind to that, the importance of each variable.
+
+Return a dataframe of: best mtry, accuracy, and kappa; then relative importance of each included variable.
+``` {r}
+calc_rand_forest <- function(df) {
+
+  ### regress threatened status against all predictors
+  form1 <- threatened ~ .
+
+  message('Applying Boruta algorithm to identify important attributes...')
+  strs_selected <- get_important_vars(formula = form1, df = df)
+  
+  spp_train <- df %>%
+    ### in case no important predictor vars, at least include range
+    select(threatened, inv_ln_range, all_of(strs_selected))
+  n_preds <- ncol(spp_train) - 1
+  
+  ### set up train control for n-repeated k-fold cross-validation
+  k <- 10; repeats <- 10
+  message('Setting up repeated ', k, '-fold cross validation with ', repeats, ' repeats...')
+  tr_ctrl <- trainControl(method = 'repeatedcv', number = k, repeats = repeats)
+  ### set up a tunegrid to step by three, up to all included predictors
+  tunegrid <- data.frame(.mtry = c(seq(min(n_preds, 2), n_preds, 3), n_preds) %>% unique())
+
+  # system.time({
+    mdl <- train(form = form1,
+                 data = spp_train,
+                 method = 'rf',
+                 tuneGrid = tunegrid,
+                 trControl = tr_ctrl)
+  # })
+  
+  rf_out <- mdl$results %>%
+    janitor::clean_names() %>%
+    filter(accuracy == max(accuracy)) %>%
+    filter(kappa == max(kappa)) %>%
+      ### sometimes identical accuracy for different mtry - in which case,
+      ### select the one with better kappa (sequential, not simultaneous)
+    mutate(acc_exp = (accuracy - kappa) / (1 - kappa))
+  
+  message('Calculating attribute importance...')
+  pred_importance <- varImp(mdl)$importance %>%
+    rename(importance = Overall) %>%
+    mutate(stressor = row.names(.)) %>%
+    mutate(stressor = str_remove(stressor, '_[0-9]{4}'))
+  
+  message('Calculating attribute effect direction...')
+  effect_dir <- calc_direction(spp_train, mdl) %>%
+    mutate(att = str_remove(att, '_[0-9]{4}'))
+  
+  out_df <- cbind(rf_out, pred_importance) %>%
+    full_join(effect_dir, by = c('stressor' = 'att'))
+  
+  return(out_df)
+}
+```
+
+### Iterate over taxa: coastal only
+
+```{r}
+taxa <- taxon_gps$tx %>% unique() %>% sort()
+set.seed(42)
+
+tmp <- parallel::mclapply(taxa, mc.cores = 11,
+          FUN = function(taxon) { ### taxon <- taxa[8]
+            tmp_f <- sprintf(here('tmp/rand_forest_results_coastal_%s.csv'), taxon)
+            if(!file.exists(tmp_f)) {
+              ### set.seed(151)
+              df <- cst_impacts_df %>%
+                filter(tx == taxon) %>%
+                select(-sciname, -phylum, -class, -tx, -where(is.character))
+              
+              rf_results <- calc_rand_forest(df) %>%
+                mutate(taxon = taxon)
+              write_csv(rf_results, tmp_f)
+            }
+          })
+
+rf_result_fs <- list.files(here('tmp'), pattern = 'rand_forest_results_coastal', full.names = TRUE)
+rf_results_coastal <- lapply(rf_result_fs, FUN = read_csv, show_col_types = FALSE) %>%
+  bind_rows() %>%
+  mutate()
+
+DT::datatable(rf_results_coastal)
+
+write_csv(rf_results_coastal, here('_output/iucn_prediction_rf_results_coastal.csv'))
+```
+
+
+### Iterate over taxa: full range
+
+```{r}
+taxa <- taxon_gps$tx %>% unique() %>% sort()
+
+tmp <- parallel::mclapply(taxa, mc.cores = 11,
+          FUN = function(taxon) { ### taxon <- taxa[7]
+            tmp_f <- sprintf(here('tmp/rand_forest_results_full_range_%s.csv'), taxon)
+            if(!file.exists(tmp_f)) {
+              df <- full_range_impacts_df %>%
+                filter(tx == taxon) %>%
+                select(-sciname, -phylum, -class, -order, -tx, -where(is.character))
+  
+              rf_results <- calc_rand_forest(df) %>%
+                mutate(taxon = taxon)
+              write_csv(rf_results, tmp_f)
+            }
+          })
+
+rf_result_fs <- list.files(here('tmp'), pattern = 'rand_forest_results_full_range', full.names = TRUE)
+rf_results_full_range <- lapply(rf_result_fs, FUN = read_csv, show_col_types = FALSE) %>%
+  bind_rows()
+
+DT::datatable(rf_results_full_range)
+
+write_csv(rf_results_full_range, here('_output/iucn_prediction_rf_results_full_range.csv'))
+
+```
+
+## Visualize results
+
+```{r}
+status_lvls <- c('not evaluated', 'data deficient',  'threatened', 'not threatened')
+spp_inclusion <- mapped_spp_summary %>%
+  filter(tx %in% taxon_gps$tx) %>%
+  group_by(tx) %>%
+  complete(status = status_lvls, fill = list(n_spp = 0)) %>%
+  mutate(n_tot = sum(n_spp),
+         pct = n_spp / n_tot,
+         status = factor(status, levels = status_lvls)) %>%
+  ungroup() %>%
+  arrange(status, pct) %>%
+  mutate(tx = fct_inorder(tx))
+
+ggplot(spp_inclusion, aes(y = tx)) +
+  geom_col(aes(x = pct, fill = status), alpha = .8) +
+  scale_fill_manual(values = c('grey75', 'grey90', 'magenta2', 'darkgreen')) +
+  geom_text(data = spp_inclusion %>% select(tx, n_tot) %>% distinct(),
+            x = 1.01, aes(label = paste0('n = ', n_tot)),
+            hjust = 0) +
+  scale_x_continuous(limits = c(0, 1.2), expand = c(0, 0)) +
+  theme_minimal() +
+  theme(axis.title = element_blank(),
+        panel.grid = element_blank())
+```
+
+```{r}
+cst_rf_results <- read_csv(here('_output/iucn_prediction_rf_results_coastal.csv'))
+
+cst_nums <- cst_impacts_df %>%
+  group_by(tx) %>%
+  summarize(n_spp = n(),
+            pct_thr = round(100 * sum(threatened == TRUE) / n_spp, 2)) %>%
+  ungroup()
+
+cst_imp_sum <- cst_rf_results %>%
+  select(accuracy, kappa, acc_exp, taxon) %>%
+  mutate(taxon = fct_reorder(taxon, kappa)) %>%
+  distinct() %>%
+  gather(stat, value, accuracy, kappa, acc_exp)
+
+cst_nums <- cst_impacts_df %>%
+  group_by(tx) %>%
+  summarize(n_spp = n(),
+            n_thr = sum(threatened == TRUE)) %>%
+  ungroup() %>%
+  mutate(n_spp = sprintf('n_tot = %s', n_spp),
+         n_thr = sprintf('n_thr = %s', n_thr)) %>%
+  left_join(cst_imp_sum %>% 
+              group_by(taxon) %>%
+              filter(value == max(value)) %>%
+              mutate(stat == 'accuracy'),
+            by = c('tx' = 'taxon'))
+
+ggplot(cst_imp_sum, aes(x = taxon, y = value, fill = stat)) +
+  geom_col(position = 'dodge') +
+  geom_text(data = cst_nums, aes(x = tx, y = value, label = n_spp),
+            color = 'black',
+            hjust = 0, vjust = 0, nudge_x = .05, nudge_y = .01) +
+  geom_text(data = cst_nums, aes(x = tx, y = value, label = n_thr),
+            color = 'black',
+            hjust = 0, vjust = 1, nudge_x = -.05, nudge_y = .01) +
+  scale_fill_viridis_d() +
+  scale_y_continuous(limits = c(-.06, 1.2), breaks = (0:4)/4, expand = c(0, 0)) +
+  coord_flip() +
+  theme_minimal() +
+  theme(axis.title = element_blank(),
+        panel.grid.minor = element_blank()) +
+  labs(title = 'Predictive ability of RF using impacts on coastal range')
+```
+
+```{r}
+full_rf_results <- read_csv(here('_output/iucn_prediction_rf_results_full_range.csv'))
+
+full_nums <- full_range_impacts_df %>%
+  group_by(tx) %>%
+  summarize(n_spp = n(),
+            pct_thr = round(100 * sum(threatened == TRUE) / n_spp, 2)) %>%
+  ungroup()
+
+full_imp_sum <- full_rf_results %>%
+  select(accuracy, kappa, acc_exp, taxon) %>%
+  mutate(taxon = fct_reorder(taxon, kappa)) %>%
+  distinct() %>%
+  gather(stat, value, accuracy, kappa, acc_exp)
+
+full_nums <- full_range_impacts_df %>%
+  group_by(tx) %>%
+  summarize(n_spp = n(),
+            n_thr = sum(threatened == TRUE)) %>%
+  ungroup() %>%
+  mutate(n_spp = sprintf('n_tot = %s', n_spp),
+         n_thr = sprintf('n_thr = %s', n_thr)) %>%
+  left_join(full_imp_sum %>% 
+              group_by(taxon) %>%
+              filter(value == max(value)) %>%
+              mutate(stat == 'accuracy'),
+            by = c('tx' = 'taxon'))
+
+ggplot(full_imp_sum, aes(x = taxon, y = value, fill = stat)) +
+  geom_col(position = 'dodge') +
+  geom_text(data = full_nums, aes(x = tx, y = value, label = n_spp),
+            color = 'black',
+            hjust = 0, vjust = 0, nudge_x = .05, nudge_y = .01) +
+  geom_text(data = full_nums, aes(x = tx, y = value, label = n_thr),
+            color = 'black',
+            hjust = 0, vjust = 1, nudge_x = -.05, nudge_y = .01) +
+  scale_fill_viridis_d() +
+  scale_y_continuous(limits = c(-.06, 1.2), breaks = (0:4)/4, expand = c(0, 0)) +
+  coord_flip() +
+  theme_minimal() +
+  theme(axis.title = element_blank(),
+        panel.grid.minor = element_blank()) +
+  labs(title = 'Predictive ability of RF using impacts on full range')
+```
