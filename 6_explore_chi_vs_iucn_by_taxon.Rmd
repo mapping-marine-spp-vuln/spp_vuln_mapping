@@ -74,6 +74,16 @@ if(!file.exists(spp_chi_file)) {
     spread(range, range_km2) %>%
     rename(range_cst_km2 = coastal, range_tot_km2 = full)
   
+  spp_intensity_df <- spp_imp_raw_df %>%
+    select(f, vuln, stressor, intensity_tot, range) %>%
+    spread(range, intensity_tot) %>%
+    rename(intensity_tot = full, intensity_cst = coastal)
+    
+  spp_intens_cv_df <- spp_imp_raw_df %>%
+    select(f, vuln, stressor, intensity_cv, range) %>%
+    spread(range, intensity_cv) %>%
+    rename(intensity_cv_tot = full, intensity_cv_cst = coastal)
+
   spp_impacts_df <- spp_imp_raw_df %>%
     select(f, vuln, stressor, impact_tot, range) %>%
     spread(range, impact_tot) %>%
@@ -100,6 +110,8 @@ if(!file.exists(spp_chi_file)) {
                              by = c('f', 'vuln', 'stressor')) %>%
     full_join(spp_impacts_npp_df, by = c('f', 'vuln', 'stressor')) %>%
     full_join(spp_npp_cv_df, by = c('f', 'vuln', 'stressor')) %>%
+    full_join(spp_intensity_df, by = c('f', 'vuln', 'stressor')) %>%
+    full_join(spp_intens_cv_df, by = c('f', 'vuln', 'stressor')) %>%
     left_join(spp_ranges, by = 'f') %>%
     ### extract species and map info from filename
     mutate(map_src = str_extract(f, '_iucn_|_am_') %>% str_remove_all('_'),
@@ -111,7 +123,10 @@ if(!file.exists(spp_chi_file)) {
                             worms_name)) %>%
     select(sciname, iucn_sid, map_src, vuln, stressor, 
            impact_cst, impact_tot, impact_cv_cst, impact_cv_tot,
-           impact_npp_cst, impact_npp_tot, impact_npp_cv_cst, impact_npp_cv_tot,
+           impact_npp_cst, impact_npp_tot, 
+           impact_npp_cv_cst, impact_npp_cv_tot,
+           intensity_cst, intensity_tot, 
+           intensity_cv_cst, intensity_cv_tot,
            range_cst_km2, range_tot_km2) %>%
     distinct() %>%
     filter(range_tot_km2 > 0 & !is.na(impact_tot))
