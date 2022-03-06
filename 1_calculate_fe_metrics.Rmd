@@ -1,13 +1,15 @@
 ---
 title: "Calculate functional diversity metrics"
 author: "Casey O'Hara"
-date: "7/25/2021"
-output: html_document
+date: "3/5/22"
+output: 
+  html_document:
+    code_folding: hide
 editor_options: 
   chunk_output_type: console
 ---
 
-```{r setup, include=FALSE}
+```{r setup, include = TRUE, message = FALSE, warning = FALSE}
 knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE, 
                       fig.height = 4, fig.width = 7)
 
@@ -26,13 +28,19 @@ Using functional entities defined in a prior script based on a suite of categori
 
 # Methods
 
-## Check inclusion
+## Summarize functional entity membership per cell across IUCN and AquaMaps
 
-## Identify AquaMaps species included in Functional Entity calculations
+Included species are:
+
+* coded for functional entity membership
+* mapped in one (or both) of the species distribution mapsets
+* not necessarily part of the trait-based vulnerability set
+
+### Identify species included in Functional Entity calculations
 
 ```{r}
 
-spp_fe <- read_csv(here('_output/func_entities/species_fe.csv')) %>%
+spp_fe <- read_csv(here('_output/func_entities/species_fe.csv'), show_col_types = FALSE) %>%
   select(species) %>%
   mutate(fe = TRUE) %>%
   distinct()
@@ -41,7 +49,7 @@ spp_am <- get_am_spp_info()  %>%
   select(species = sciname) %>%
   mutate(am_mapped = TRUE) %>%
   distinct()
-spp_iucn <- read_csv(here('_data/iucn_spp/iucn_to_worms_match.csv')) %>%
+spp_iucn <- read_csv(here('_data/iucn_spp/iucn_to_worms_match.csv'), show_col_types = FALSE) %>%
   rename(species = worms_name, iucn_mapped = mapped)
 
 spp_vuln <- get_spp_vuln() %>%
@@ -64,7 +72,7 @@ spp_for_fe_metrics <- all_spp %>%
   ### names in WoRMS
   filter(worms) %>%
   ### only those spp in vulnerability project?
-  filter(vuln) %>%
+  # filter(vuln) %>%
   ### mapped in AquaMaps and/or IUCN
   filter(am_mapped | iucn_mapped) %>%
   ### functional traits available
@@ -81,53 +89,157 @@ spp_for_fe_metrics <- all_spp %>%
 # table(am_check %>% filter(kingdom == 'animalia') %>% select(class, kingdom))
 ```
 
-## Load data
+### Load species ranges and summarize to functional entities per cell
 
-```{r load data}
+Here we use the IUCN species range maps rasterized to 10 km Mollweide, and AquaMaps species distributions reprojected to 10 km Mollweide.  Priority: IUCN species maps, then AquaMaps with occur_cells ≥ 10.
 
-fe_metrics_file <- here('_output/func_entities', 'fe_metrics.csv')
-# unlink(fe_metrics_file)
-if(!file.exists(fe_metrics_file)) {
-  spp_fe <- read_csv(here('_output/func_entities/species_fe.csv'))
-  am_spp_cells <- get_am_spp_cells()
-  am_spp_info  <- get_am_spp_info() %>%
-    select(-species, species = sciname) %>%
-    filter(kingdom == 'animalia') %>%
-    filter(occur_cells >= 10)
+Read in functional entity assignments and join to spatial ranges.  Per cell per FE, calculate the number of species (separately for IUCN species and AquaMaps species) for later calculation into functional richness, redundancy, vulnerability.
+
+```{r summarize iucn species fe by cell}
+
+iucn_fe_summary_file <- here_anx('func_entities', 'fe_cell_summary_iucn.csv')
+# unlink(iucn_fe_summary_file)
+if(!file.exists(iucn_fe_summary_file)) {
+  
+  spp_fe <- read_csv(here('_output/func_entities/species_fe.csv'), show_col_types = FALSE)
+  
+  iucn_to_map <- spp_for_fe_metrics %>%
+    left_join(spp_fe, by = 'species') %>%
+    filter(iucn_mapped) %>%
+    select(fe_id, iucn_sid) %>%
+    distinct() %>%
+    arrange(iucn_sid)
+  
+  iucn_map_fstem <- here_anx('spp_maps_mol', 'iucn_spp_mol_%s.csv')
+  iucn_map_fs <- sprintf(iucn_map_fstem, iucn_to_map$iucn_sid)
+
+  message('Assembling IUCN species maps and binding FEs...')
+  iucn_maps <- parallel::mclapply(iucn_map_fs, mc.cores = 40, 
+                  FUN = function(f) {
+                    data.table::fread(f) %>%
+                      filter(presence != 5) %>% 
+                      select(-presence)
+                  }) %>%
+    setNames(iucn_to_map$fe_id) %>%
+    bind_rows(.id = 'fe_id') %>%
+    mutate(fe_id = as.integer(fe_id))
+  
+  iucn_fes <- iucn_to_map$fe_id %>% unique() %>% sort()
+  
+  ### summarize was having a hard time with this massive df, so
+  ### try breaking it down by FE and parallel processing it
+  message('Summarizing IUCN Functional Richness map...')
+  iucn_fe_summary <- parallel::mclapply(iucn_fes, mc.cores = 4,
+                        FUN = function(fe) { ### fe <- iucn_fes[1]
+                          df <- iucn_maps %>%
+                            filter(fe_id == fe)
+                          message('Processing fe = ', fe, '... ', nrow(df), ' species-cell combos')
+                          df_out <- df %>%
+                            group_by(cell_id) %>%
+                            summarize(n_spp_fe = n(),
+                                      fe_id = fe,
+                                      .groups = 'drop')
+                          return(df_out)
+                        }) %>%
+    bind_rows() %>%
+    mutate(src = 'iucn')
+  
+  rm('iucn_maps')
+  
+  write_csv(iucn_fe_summary, iucn_fe_summary_file)
 }
+
 ```
 
+```{r summarize am species fe by cell}
 
+am_fe_summary_file <- here_anx('func_entities', 'fe_cell_summary_am.csv')
+# unlink(am_fe_summary_file)
+if(!file.exists(am_fe_summary_file)) {
+  
+  spp_fe <- read_csv(here('_output/func_entities/species_fe.csv'), show_col_types = FALSE)
+  
+  am_to_map <- spp_for_fe_metrics %>%
+    left_join(spp_fe, by = 'species') %>%
+    filter(am_mapped) %>%
+    filter(!iucn_mapped | is.na(iucn_mapped)) %>%
+    select(fe_id, species) %>%
+    distinct() %>%
+    arrange(species)
+  
+  am_map_fstem <- here_anx('spp_maps_mol', 'am_spp_mol_%s.csv')
+  am_map_fs <- sprintf(am_map_fstem, str_replace_all(am_to_map$species, ' ', '_'))
+  
+  message('Assembling Aquamaps species maps and binding FEs...')
+  am_maps <- parallel::mclapply(am_map_fs, mc.cores = 40, 
+                  FUN = function(f) {
+                    data.table::fread(f) %>%
+                      filter(prob >= 0.5) %>% 
+                      select(-prob)
+                  }) %>%
+    setNames(am_to_map$fe_id) %>%
+    bind_rows(.id = 'fe_id') %>%
+    mutate(fe_id = as.integer(fe_id))
+  
+  am_fes <- am_to_map$fe_id %>% unique() %>% sort()
+  
+  ### summarize was having a hard time with this massive df, so
+  ### try breaking it down by FE and parallel processing it
+  message('Summarizing Aquamaps Functional Richness map...')
 
-Then filter the species-cell lookup to just those species, for better performance.
+  # am_fe_summary <- parallel::mclapply(am_fes, mc.cores = 2,
+  am_fe_summary <- lapply(am_fes, ### for memory issues, just use a single core... ugh
+                        FUN = function(fe) { ### fe <- am_fes[1]
+                          df <- am_maps %>%
+                            filter(fe_id == fe)
+                          message('Processing fe = ', fe, '... ', nrow(df), ' species-cell combos')
+                          df_out <- df %>%
+                            group_by(cell_id) %>%
+                            summarize(n_spp_fe = n(),
+                                      fe_id = fe,
+                                      .groups = 'drop')
+                          return(df_out)
+                        }) %>%
+    bind_rows() %>%
+    mutate(src = 'am')
+  
+  rm('am_maps')
+  
+  write_csv(am_fe_summary, am_fe_summary_file)
+}
 
-```{r join FEs to aquamaps}
-if(!file.exists(fe_metrics_file)) {
-  am_spp_fe <- inner_join(am_spp_info, spp_fe, by = c('species')) %>%
-    select(am_sid, species, occur_cells, iucn_sid, fe_code, fe_id, n_spp)
-  am_cells_fe <- oharac::dt_join(am_spp_fe, am_spp_cells, by = 'am_sid', type = 'left') %>%
-    select(loiczid, am_sid, fe_code, fe_id, prob)
+```
+
+```{r combine am and iucn summaries}
+tot_fe_summary_file <- here_anx('func_entities/fe_cell_summary_total.csv')
+if(!file.exists(tot_fe_summary_file)) {
+  am_fe_summary   <- data.table::fread(am_fe_summary_file)
+  iucn_fe_summary <- data.table::fread(iucn_fe_summary_file)
   
-  am_spp_nonfe <- am_spp_info %>%
-    filter(!species %in% spp_fe$species)
-  table(am_spp_nonfe$class)
-  worms_spp <- assemble_worms() 
-  am_spp_nonworms <- am_spp_info %>%
-    filter(!species %in% worms_spp$species)
+  fe_sum_maps <- bind_rows(am_fe_summary, iucn_fe_summary) 
   
-  spp_fe_all <- spp_fe %>%
-    left_join(worms_spp, by = 'species')
-  mammals <- am_spp_info %>%
-    filter(class == 'Mammalia') %>%
-    full_join(spp_fe_all %>% filter(class == 'mammalia'), 
-              by = c('species' = 'species')) %>%
-    select(am_sid, species, fe_id) %>%
-    filter(is.na(am_sid) | is.na(fe_id))
+  tot_fes <- fe_sum_maps$fe_id %>% unique() %>% sort()
+
+  tot_fe_summary <- parallel::mclapply(tot_fes, mc.cores = 12,
+                      FUN = function(fe) { ### fe <- tot_fes[1]
+                        message('Summarizing across AM and IUCN for FE #', fe)
+                        df <- fe_sum_maps %>%
+                          filter(fe_id == fe) %>%
+                          group_by(cell_id) %>%
+                          summarize(n_spp_fe = sum(n_spp_fe, na.rm = TRUE),
+                                    fe_id = fe,
+                                    .groups = 'drop')
+                        return(df)
+                      }) %>%
+      bind_rows()
   
+  write_csv(tot_fe_summary, tot_fe_summary_file)
 }
 ```
 
 ## Calculate functional diversity metrics 
+
+Calculate functional diversity metrics from IUCN and AquaMaps summaries of functional entity membership per cell.
 
 This set of calculations replicates the results of Villeger's function but without resorting to a presence/absence matrix, instead just relying on the original AquaMaps species-cell table.
 
@@ -146,50 +258,71 @@ This set of calculations replicates the results of Villeger's function but witho
 
 ```{r calc fe metrics}
 
+fe_metrics_file <- here_anx('func_entities/fe_metrics_per_cell.csv')
 if(!file.exists(fe_metrics_file)) {
   # system.time({
+  fe_sum_total <- data.table::fread(tot_fe_summary_file)
+
+  ### there are 6.5 million cells.  Chop into 500k instances and mclapply to summarize
+  # cell_id_vec <- 1:ncell(raster::raster(here('_spatial/ocean_area_mol.tif')))
+  chunk_size <- 500000
+  n_chunks <- ceiling(ncell(raster::raster(here('_spatial/ocean_area_mol.tif'))) / chunk_size)
+  # system.time({
+    message('Calculating species richness map...')
+    nspp_df <- parallel::mclapply(1:n_chunks, mc.cores = n_chunks,
+                  FUN = function(n) { ### n <- 1
+                    cell_id_min <- (n - 1) * chunk_size + 1
+                    cell_id_max <- n * chunk_size
+                    nspp_sum <- fe_sum_total %>%
+                      filter(between(cell_id, cell_id_min, cell_id_max)) %>%
+                      group_by(cell_id) %>%
+                      summarize(n_spp = sum(n_spp_fe, na.rm = TRUE),
+                                n_fe  = n_distinct(fe_id),
+                                .groups = 'drop')
+                    }) %>%
+      bind_rows()
+  # }) ### 30 sec
   
-    am_cells_fe_thresh <- am_cells_fe %>%
-      filter(prob >= .4) %>%
-      select(-prob) %>%
-      distinct()
-    
-    # system.time({
-      nspp_df <- am_cells_fe_thresh %>%
-        group_by(loiczid) %>%
-        summarize(n_spp = n_distinct(am_sid),
-                  n_fe  = n_distinct(fe_code),
-                  .groups = 'drop')
-    # }) ### 17 seconds
-    
-    ### this one is a bit slow:
-    # system.time({
-      nspp_fe_df <- am_cells_fe_thresh %>%
-        group_by(loiczid, fe_code) %>%
-        summarize(nspp_fe = n(), .groups = 'drop')
-          ### using n() instead of n_distinct(); if no dupes
-          ### in am_sid/loiczid/fe_code then should be fine.
-    # }) ### 175 seconds
-    
-    # system.time({
-      f_vuln_df <- nspp_fe_df %>%
-        left_join(nspp_df, by = 'loiczid') %>%
-        group_by(loiczid) %>%
-        summarize(n_fe = first(n_fe), n_spp = first(n_spp),
-                  f_vuln = sum(nspp_fe == 1) / n_fe, 
-                  f_wvuln = mean(0.5^(nspp_fe-1)),
-                  f_red  = mean(nspp_fe),
-                  .groups = 'drop')
-      f_overred_df <- nspp_fe_df %>%
-        left_join(f_vuln_df) %>%
-        mutate(f_over = ifelse(nspp_fe > f_red, nspp_fe - f_red, 0)) %>%
-        group_by(loiczid) %>% 
-        summarize(f_overred = sum(f_over) / sum(nspp_fe),
-                  .groups = 'drop')
+  # system.time({
+    message('Calculating functional vulnerability map...')
+    f_vuln_df <- parallel::mclapply(1:n_chunks, mc.cores = n_chunks,
+                FUN = function(n) { ### n <- 1
+                  cell_id_min <- (n - 1) * chunk_size + 1
+                  cell_id_max <- n * chunk_size
+                  f_vuln <- fe_sum_total %>%
+                    filter(between(cell_id, cell_id_min, cell_id_max)) %>%
+                    oharac::dt_join(nspp_df, by = 'cell_id', type = 'left') %>%
+                    group_by(cell_id) %>%
+                    summarize(n_fe = first(n_fe), n_spp = first(n_spp),
+                              f_vuln  = sum(n_spp_fe == 1) / n_fe, 
+                              f_wvuln = mean(0.5^(n_spp_fe - 1)),
+                              f_red   = mean(n_spp_fe),
+                              .groups = 'drop')
+                }) %>%
+      bind_rows()
+  # }) ### 30 sec
+
+  # system.time({
+    message('Calculating functional overredundancy map...')
+    f_overred_df <- parallel::mclapply(1:n_chunks, mc.cores = n_chunks,
+                FUN = function(n) { ### n <- 1
+                  cell_id_min <- (n - 1) * chunk_size + 1
+                  cell_id_max <- n * chunk_size
+                  f_overred <- fe_sum_total %>%
+                    filter(between(cell_id, cell_id_min, cell_id_max)) %>%
+                    oharac::dt_join(f_vuln_df, by = 'cell_id', type = 'left') %>%
+                    mutate(f_over = ifelse(n_spp_fe > f_red, n_spp_fe - f_red, 0)) %>%
+                    group_by(cell_id) %>%
+                    summarize(f_overred = sum(f_over) / sum(n_spp_fe),
+                              .groups = 'drop')
+                }) %>%
+      bind_rows()
     # }) ### 7 sec
     
+    message('Combining functional diversity metrics maps...')
+
     fe_metrics_df <- f_vuln_df %>%
-      full_join(f_overred_df, by = 'loiczid') %>%
+      oharac::dt_join(f_overred_df, by = 'cell_id', type = 'full') %>%
       mutate(across(where(is.numeric), .fns = ~round(.x, 6)))
       ### rounding to 6 dec places saves a lot of storage for tifs
   # })
@@ -207,14 +340,14 @@ if(!file.exists(fe_metrics_file)) {
 Create and save rasters of functional diversity metrics
 
 ```{r create rasts}
-fe_metrics_df <- read_csv(fe_metrics_file)
+fe_metrics_df <- data.table::fread(fe_metrics_file)
 
-n_spp_rast  <- map_to_hcaf(fe_metrics_df, which = 'n_spp')
-n_fe_rast   <- map_to_hcaf(fe_metrics_df, which = 'n_fe')
-f_vuln_rast <- map_to_hcaf(fe_metrics_df, which = 'f_vuln')
-f_wvuln_rast <- map_to_hcaf(fe_metrics_df, which = 'f_wvuln')
-f_red_rast  <- map_to_hcaf(fe_metrics_df, which = 'f_red')
-f_overred_rast <- map_to_hcaf(fe_metrics_df, which = 'f_overred')
+n_spp_rast   <- map_to_mol(fe_metrics_df, which = 'n_spp')
+n_fe_rast    <- map_to_mol(fe_metrics_df, which = 'n_fe')
+f_vuln_rast  <- map_to_mol(fe_metrics_df, which = 'f_vuln')
+f_wvuln_rast <- map_to_mol(fe_metrics_df, which = 'f_wvuln')
+f_red_rast   <- map_to_mol(fe_metrics_df, which = 'f_red')
+f_overred_rast <- map_to_mol(fe_metrics_df, which = 'f_overred')
 
 writeRaster(n_spp_rast,   here('_output/func_entities/n_spp.tif'),   
             overwrite = TRUE)
@@ -232,7 +365,7 @@ writeRaster(f_overred_rast, here('_output/func_entities/f_overred.tif'),
 
 Examine distributions of each raster.
 
-```{r histograms}
+```{r histograms, echo = FALSE}
 hist(n_spp_rast)
 hist(n_fe_rast)
 hist(f_vuln_rast)
@@ -243,7 +376,7 @@ hist(f_overred_rast)
 
 Plot each raster.
 
-```{r plot rasters}
+```{r plot rasters, echo = FALSE}
 plot_map <- function(r, main) {
   var_name <- sym(names(r))
   r_df <- as.data.frame(r, xy = TRUE)

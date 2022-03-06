@@ -427,6 +427,7 @@ if(!file.exists(chord_file)) {
   chord_rf_results <- calc_rand_forest(chordata_df, outfile = mdl_outfile)
   write_csv(chord_rf_results, chord_file)
 }
+
 chord_rf_results <- read_csv(chord_file, show_col_types = FALSE)
 DT::datatable(chord_rf_results)
 
@@ -539,7 +540,11 @@ ggplot(tot_intens_sum, aes(x = taxon, y = value, fill = stat)) +
 
 ```
 
-```{r, eval = TRUE}
+### Chordata specifically
+
+The saved RF model built on all Chordata simultaneously, with class as a predictor along with mean stressor intensity across range and inverse log(range), used to predict threatened status for all vertebrates:
+
+```{r check all-chordata model accuracy, eval = TRUE}
 
 chordata_mdl <- sprintf(mdl_out_fstem, 'chordata_by_class', 'tot_range')
 load(chordata_mdl) ### as rf_thr_v_intensity_chordata_by_class_tot_range
@@ -550,35 +555,41 @@ chordata_df <- tot_intens_df %>%
   mutate(class = factor(class))
 
 chord_preds <- chordata_df %>%
-  mutate(thr_pred = predict(rf_thr_v_intensity_chordata_by_class_tot_range)) %>%
+  mutate(thr_pred = predict(rf_thr_v_intensity_chordata_by_class_tot_range, data = .[, -1])) %>%
   group_by(class) %>%
   summarize(n_correct = sum(thr_pred == threatened),
+            n_total = n(),
             pct_correct = n_correct / n(),
+            pct_threatened = sum(threatened == TRUE) / n(),
+            zero_rule = max(pct_threatened, 1 - pct_threatened),
             acc_exp = (sum(threatened == TRUE) / n())^2 + (sum(threatened == FALSE) / n())^2,
             kappa = (pct_correct - acc_exp) / (1 - acc_exp))
+
+knitr::kable(chord_preds, digits = 3)
+```
+
+Those results look amazing, but something is clearly not right in there, since the cross-validation results show more like .93.
+
+``` {r plot chordata results}
 
 chord_rf_results <- read_csv(chord_file, show_col_types = FALSE)
 
 tot_intens_sum <- chord_rf_results %>%
-  select(accuracy, kappa, acc_exp, taxon) %>%
-  mutate(taxon = fct_reorder(taxon, kappa)) %>%
+  select(accuracy, kappa, acc_exp) %>%
   distinct() %>%
-  gather(stat, value, accuracy, kappa, acc_exp)
+  gather(stat, value, accuracy, kappa, acc_exp) %>%
+  drop_na() %>%
+  mutate(tx = 'all chordata')
 
 tot_nums <- tot_intens_df %>%
-  group_by(tx) %>%
   summarize(n_spp = n(),
             n_thr = sum(threatened == TRUE)) %>%
-  ungroup() %>%
   mutate(n_spp = sprintf('n_tot = %s', n_spp),
          n_thr = sprintf('n_thr = %s', n_thr)) %>%
-  left_join(tot_intens_sum %>% 
-              group_by(taxon) %>%
-              filter(value == max(value)) %>%
-              mutate(stat == 'accuracy'),
-            by = c('tx' = 'taxon'))
+  data.frame(tot_intens_sum, .) %>%
+  filter(value == max(value))
 
-ggplot(tot_intens_sum, aes(x = taxon, y = value, fill = stat)) +
+ggplot(tot_intens_sum, aes(x = tx, y = value, fill = stat)) +
   geom_col(position = 'dodge') +
   geom_text(data = tot_nums, aes(x = tx, y = value, label = n_spp),
             color = 'black',
@@ -592,7 +603,9 @@ ggplot(tot_intens_sum, aes(x = taxon, y = value, fill = stat)) +
   theme_minimal() +
   theme(axis.title = element_blank(),
         panel.grid.minor = element_blank()) +
-  labs(title = 'Predictive ability of RF using intensity on total range')
+  labs(title = 'Predictive ability of RF using intensity on total range', 
+       subtitle = 'Across all Chordata suimultaneously with class as predictor')
 
 
 ```
+
