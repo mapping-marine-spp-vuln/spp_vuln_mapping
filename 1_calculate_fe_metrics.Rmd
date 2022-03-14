@@ -17,7 +17,6 @@ library(raster)
 library(sf)
 library(tidyverse)
 library(here)
-library(RColorBrewer)
 library(oharac)
 source(here('common_fxns.R'))
 ```
@@ -384,7 +383,7 @@ plot_map <- function(r, main) {
   var_lim  <- c(min(0, minValue(r)), max(1, maxValue(r)))
   ggplot(r_df, aes(x, y, fill = !!var_name)) +
     geom_raster() +
-    scale_fill_viridis_c(limits = var_lim) +
+    scale_fill_viridis_c(limits = var_lim, na.value = 'grey90') +
     coord_sf() +
     theme_void() +
     labs(title = main)
