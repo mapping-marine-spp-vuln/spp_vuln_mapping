@@ -21,7 +21,8 @@ output:
 knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
 
 library(oharac)
-oharac::setup()
+library(tidyverse)
+library(here)
 source(here('common_fxns.R'))
 
 ```
@@ -64,8 +65,9 @@ __Trophic level__:
 
 
 ```{r}
-fe_traits <- read_csv(here('_data/grouping_traits_post_imputation.csv')) %>%
-  mutate(len = exp(log_l), fec = exp(log_f),
+fe_traits <- read_csv(here('_data/grouping_traits_miced_and_gapfilled.csv')) %>%
+  mutate(len = exp(log_l), 
+         # fec = exp(log_f),
          len = case_when(len <= 1.5 ~ 'vsm',
                          len <= 5   ~ 'sm',
                          len <= 15  ~ 'med',
@@ -90,6 +92,8 @@ table(fe_traits$mob)
 table(fe_traits$col)
 
 ```
+
+
 
 ## Assign to functional entities
 
@@ -155,14 +159,14 @@ fe_out_df <- fe_df %>%
   select(species, fe_code, n_spp = n) %>%
   mutate(fe_id = as.integer(fe_code))
 
-write_csv(fe_out_df, here('_output/func_entities/species_fe.csv'))
+write_csv(fe_out_df, here('_output/func_entities/fe_species.csv'))
 
 fe_traits_df <- fe_df %>%
   select(fe_code, n_spp = n, mob, # fec, gen, 
          trp, len, wcol) %>%
   distinct()
 
-write_csv(fe_traits_df, here('_output/func_entities/fe_traits.csv'))
+write_csv(fe_traits_df, here('_output/func_entities/fe_trait_codes.csv'))
 
 ```
 
