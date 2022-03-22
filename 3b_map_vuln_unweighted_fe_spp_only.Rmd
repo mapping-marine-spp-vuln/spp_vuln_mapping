@@ -1,5 +1,5 @@
 ---
-title: "Map vulnerability"
+title: "Map vulnerability, unweighted, including only FE spp"
 author: "*Compiled on `r date()` by `r Sys.info()['user']`*"
 output: 
   html_document:
@@ -42,7 +42,7 @@ Apply vulnerability scores to mapped species.  Map out vulnerability to each str
 
 ## Unweighted, by species
 
-Read in AquaMaps and IUCN maps and vulnerability scores.  AquaMaps maps will exclude species with fewer than 10 occurrence cells, and will use a probability threshold of 0.5.  Here, we can include all species in the intersection of (mapped $\cap$ trait-based vulnerability) without worrying about functional entity membership.
+Read in AquaMaps and IUCN maps and vulnerability scores.  AquaMaps maps will exclude species with fewer than 10 occurrence cells, and will use a probability threshold of 0.5.  Here, we include the same spp as script 3a (mapped $\cap$ trait-based vulnerability $\cap$ functional entity) except without the functional vulnerability weighting.
 
 Iterating over each stressor, calculate cell-by-cell mean (and standard deviation?).
 
@@ -69,10 +69,13 @@ spp_worms <- assemble_worms() %>%
   mutate(worms = TRUE) %>%
   distinct()
 
+spp_fe <- read_csv(here('_output/func_entities/fe_species.csv'), show_col_types = FALSE)
+
 all_spp <- spp_worms %>%
   full_join(spp_vuln, by = 'species') %>%
   full_join(spp_am,   by = 'species') %>%
-  full_join(spp_iucn, by = 'species')
+  full_join(spp_iucn, by = 'species') %>%
+  full_join(spp_fe,   by = 'species')
 
 spp_for_vuln_calc <- all_spp %>%
   ### names in WoRMS
@@ -80,7 +83,9 @@ spp_for_vuln_calc <- all_spp %>%
   ### only those spp in vulnerability project?
   filter(vuln) %>%
   ### mapped in AquaMaps and/or IUCN
-  filter(am_mapped | iucn_mapped)
+  filter(am_mapped | iucn_mapped) %>%
+  ### and with valid FE classification
+  filter(!is.na(fe_id))
 
 ```
 
@@ -98,13 +103,11 @@ taxa <- spp_for_vuln_calc$taxon %>% unique() %>% sort()
 #   group_by(taxon) %>%
 #   summarize(n_spp = n_distinct(species))
 
-out_stem <- here_anx('vuln_maps/vuln_unweighted/vuln_by_str_tx/vuln_tx_%s_%s_%s.tif')
+out_stem <- here_anx('vuln_maps/vuln_unweighted_fe_only/vuln_by_str_tx/vuln_tx_%s_%s_%s.tif')
   ### format will be: taxon, stressor, parameter (mean or sd)
 
-### unlink(list.files(here('_output/vuln_by_spp'), full.names = TRUE))
-
 for(t in taxa) {
-  ### t <- taxa[6]
+  ### t <- taxa[1]
   
   ### check if all taxon-stressor maps are complete
   outf_mean_all_strs <- sprintf(out_stem, t, strs, 'mean')
@@ -260,79 +263,7 @@ iterated_pooled_var <- function(mean_vec, sdev_vec, n_vec, flag = FALSE) {
   }
   return(var_out)
 }
-
-### THIS IS REALLY SLOW!!! Why?
-# iterated_pooled_var <- function(mean_vec, sdev_vec, n_vec, flag = FALSE) {
-#   if(!all.equal(length(mean_vec), length(sdev_vec), length(n_vec))) {
-#     stop('Mean, std dev, and n vectors must all be equal length!')
-#   }
-#   if(length(mean_vec) == 1) {
-#     warning('Only one element - no need for pooled variance!')
-#     return(sdev_vec[1]^2)
-#   }
-#   if(flag) {
-#     message('    ... pooled variance for ', length(mean_vec), ' observations...')
-#   }
-#   var_df <- data.frame(m = mean_vec, s = sdev_vec, n = n_vec)
-#   iter_ct <- 1
-#   while(nrow(var_df) > 1) {
-#     if(flag) {
-#       message('  ... processing iteration ', iter_ct, '...')
-#     }
-#     iter_ct <- iter_ct + 1
-#     ### divide vectors into two-element chunks
-#     n_chunks <- ceiling(nrow(var_df) / 2)
-#     var_df <- var_df %>%
-#       mutate(i = rep(1:n_chunks, length.out = n()))
-#     
-#     var_list <- lapply(
-#       1:n_chunks,
-#       FUN = function(j) {
-#         ### j <- 1
-#         df_j <- var_df %>%
-#           filter(i == j)
-#         
-#         if(nrow(df_j) == 1) return(df_j %>% select(-i))
-#         
-#         m_x <- df_j$m[1]; m_y <- df_j$m[2]
-#         n_x <- df_j$n[1]; n_y <- df_j$n[2]
-#         s_x <- df_j$s[1]; s_y <- df_j$s[2]
-#         var_j <- pooled_var(x_bar = m_x, y_bar = m_y, 
-#                             s_x   = s_x, s_y   = s_y,
-#                             n_x   = n_x, n_y   = n_y)
-#     
-#         ### set up values for next iteration
-#         df_out <- data.frame(m = (m_x * n_x + m_y * n_y) / (n_x + n_y),
-#                              s = sqrt(var_j),
-#                              n = n_x + n_y)
-#     })
-#     var_df <- bind_rows(var_list)
-#   }
-#   
-#   var_out <- (var_df$s)^2
-#   return(var_out)
-# }
-
-### test that the function returns the correct variance value
-# set.seed(42)
-# n_vec <- sample(1:20, size = 123, replace = TRUE)
-# x_list <- list()
-# for(x_i in seq_along(n_vec)) { ### x_i <- 1
-#   x_list[[x_i]] <- rnorm(mean = sample(5 * c(1:10), size = 1),
-#                        sd   = sample(.5 * c(1:10), size = 1),
-#                        n = n_vec[x_i])
-# }
-# 
-# ### initialize values for first term
-# mean_vec <- sapply(x_list, mean)
-# sdev_vec <- sapply(x_list, sd)
-# n_vec    <- sapply(x_list, length)
-# 
-# var_out <- iterated_pooled_var_old(mean_vec, sdev_vec, n_vec)
-# 
-# var_check <- var(unlist(x_list))
-# 
-# abs(var_check - var_out) < 1e-10
+### see tests of these in script 2, unweighted vulnerability
 
 ```
 
@@ -437,7 +368,7 @@ tx_v_map_df <- data.frame(f = list.files(dirname(out_stem), full.names = TRUE,
          s = str_extract(basename(f), paste0(strs, collapse = '|')),
          p = str_extract(basename(f), '_mean|_sdev|_nspp') %>% str_remove('_'))
 
-out_stem <- here('_output/vuln_maps_unweighted/vuln_all_spp_%s_%s.tif')
+out_stem <- here('_output/vuln_maps/vuln_maps_unweighted_fe_only/vuln_fe_spp_%s_%s.tif')
   ### format will be: stressor, parameter (mean, sd, nspp)
 
 for(stressor in strs) {
@@ -453,27 +384,28 @@ for(stressor in strs) {
   }
   
   ### Combine mean, sdev, and nspp maps by taxon into one big dataframe
-  message('Processing mean, sd, nspp maps across all species for ', stressor, ' stressor...')
+  message('Processing mean, sd, nspp maps across FE-only species for ', stressor, ' stressor...')
   str_tx_v_df <- tx_v_map_df %>%
     filter(s == stressor)
   big_df <- combine_taxa_maps(str_tx_v_df, stressor)
     
   ### Process nspp_rast only one time (same across all stressors)
-  vuln_nspp_rast_f <- here('_output/nspp_maps/nspp_in_unweighted_vuln_maps.tif')
+  ### note: this should be redundant with nspp_in_fv_weighted_vuln_maps.tif
+  vuln_nspp_rast_f <- here('_output/nspp_maps/nspp_in_unwt_fe_only_vuln_maps.tif')
   if(!file.exists(vuln_nspp_rast_f)) {
-    message('... summarizing species richness map across all taxa...')
+    message('... summarizing species richness map across all taxa, FE-spp only...')
     all_spp_nspp <- big_df %>%
       group_by(cell_id) %>%
       summarize(vuln_nspp = sum(v_nspp))
     rast_nspp <- map_to_mol(all_spp_nspp, which = 'vuln_nspp')
-    message('Creating species richness raster for unweighted vulnerability maps...')
+    message('Creating species richness raster for unweighted vuln maps incl. only FE spp...')
     rast_nspp_vuln <- map_to_mol(vuln_map_df, by = 'cell_id', which = 'n_spp')
     writeRaster(rast_nspp_vuln, vuln_nspp_rast_f, overwrite = TRUE)
   }
   
   ### Process mean raster across taxa
   if(!file.exists(outf_mean)) {
-    message('... summarizing mean vulnerability map across all taxa...')
+    message('... summarizing mean vulnerability map across all taxa, FE spp only...')
     ptm <- proc.time()
     
     all_spp_mean <- process_mean_rasts(big_df)
@@ -488,7 +420,7 @@ for(stressor in strs) {
   
   ### Process standard deviation raster across taxa using pooled var
   if(!file.exists(outf_sdev)) {
-    message('... summarizing standard deviation vulnerability map across all taxa...')
+    message('... summarizing std dev vuln map across all taxa, FE spp only...')
     ### break this into smaller chunks and parallelize over those?
     ptm <- proc.time()
 
@@ -510,9 +442,9 @@ for(stressor in strs) {
 
 ```{r plot vuln by stressor, fig.height = 4, fig.width = 7}
 
-vuln_all_spp_dir <- here('_output/vuln_maps_unweighted')
-mean_fs <- list.files(vuln_all_spp_dir, pattern = '_mean.tif', full.names = TRUE)
-sdev_fs <- list.files(vuln_all_spp_dir, pattern = '_sdev.tif', full.names = TRUE)
+vuln_fe_spp_dir <- here('_output/vuln_maps/vuln_maps_unweighted_fe_only')
+mean_fs <- list.files(vuln_fe_spp_dir, pattern = '_mean.tif', full.names = TRUE)
+sdev_fs <- list.files(vuln_fe_spp_dir, pattern = '_sdev.tif', full.names = TRUE)
 
 focal_strs <- c('biomass_removal', 'bycatch', 
                 'microplastic', 'wildlife_strike',
@@ -522,15 +454,15 @@ focal_strs <- c('biomass_removal', 'bycatch',
 
 for(f in focal_strs) { ### f <- focal_strs[1]
   mean_f <- mean_fs[str_detect(basename(mean_fs), f)]
-  sdev_f <- sdev_fs[str_detect(basename(sdev_fs), f)]
+  # sdev_f <- sdev_fs[str_detect(basename(sdev_fs), f)]
   mean_rast <- raster::raster(mean_f)
-  sdev_rast <- raster::raster(sdev_f)
+  # sdev_rast <- raster::raster(sdev_f)
   # sd_stack   <- raster::stack(sd_fs) %>%
   #   setNames(str_remove(names(.), 'vuln_by_spp_'))
   
   map_cols <- hcl.colors(n = 50)
   
-  plot(mean_rast, zlim = c(0, 1), col = map_cols, main = paste0('Mean vuln: ', f),
+  plot(mean_rast, zlim = c(0, 1), col = map_cols, main = paste0('Mean vuln, FE spp only: ', f),
        legend = FALSE, axes = FALSE)  
   # plot(sdev_rast, zlim = c(0, 1), col = map_cols, main = paste0('SD vuln: ', f),
   #      legend = FALSE, axes = FALSE)
