@@ -180,7 +180,7 @@ for(t in taxa) {
     chunk_size <- 500000
     n_chunks <- ceiling(ncell(raster::raster(here('_spatial/ocean_area_mol.tif'))) / chunk_size)
     # system.time({
-    result_df <- parallel::mclapply(1:n_chunks, mc.cores = 1, ### memory constrained
+    result_df <- parallel::mclapply(1:n_chunks, mc.cores = 5, ### memory constrained
                    FUN = function(n) { ### n <- 1
                      cell_id_min <- (n - 1) * chunk_size + 1
                      cell_id_max <- n * chunk_size
@@ -196,7 +196,7 @@ for(t in taxa) {
                                  n_spp      = n_distinct(species),
                                  .groups = 'drop')
                      }) %>%
-      bind_rows() %>%
+      data.table::rbindlist() %>%
       filter(!is.na(cell_id))
     
     rast_mean <- map_to_mol(result_df, which = 'score_mean')
@@ -397,10 +397,9 @@ for(stressor in strs) {
     all_spp_nspp <- big_df %>%
       group_by(cell_id) %>%
       summarize(vuln_nspp = sum(v_nspp))
-    rast_nspp <- map_to_mol(all_spp_nspp, which = 'vuln_nspp')
     message('Creating species richness raster for unweighted vuln maps incl. only FE spp...')
-    rast_nspp_vuln <- map_to_mol(vuln_map_df, by = 'cell_id', which = 'n_spp')
-    writeRaster(rast_nspp_vuln, vuln_nspp_rast_f, overwrite = TRUE)
+    rast_nspp <- map_to_mol(all_spp_nspp, which = 'vuln_nspp')
+    writeRaster(rast_nspp, vuln_nspp_rast_f, overwrite = TRUE)
   }
   
   ### Process mean raster across taxa
