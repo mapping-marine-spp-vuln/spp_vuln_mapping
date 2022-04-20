@@ -71,7 +71,7 @@ wcol_position <- read_csv(here('_data/traits_grouping/trait_water_col_position.c
 ### Manual adds of shallow spp:
 spp_shallow <- c(133512)
 
-maps_to_rasterize <- read_csv(here('_data/iucn_spp',
+maps_to_rasterize_all <- read_csv(here('_data/iucn_spp',
                                    'spp_marine_maps_2021-3.csv'),
                               col_types = cols('subpop' = 'c')) %>%
   mutate(shp_file = str_replace(dbf_file, 'dbf$', 'shp')) %>%
@@ -97,7 +97,7 @@ maps_done <- list.files(dir_mol_rast, pattern = 'iucn_spp.+.csv') %>%
   str_extract('[0-9]+') %>%
   as.integer()
 
-maps_to_rasterize <- maps_to_rasterize %>%
+maps_to_rasterize <- maps_to_rasterize_all %>%
   filter(!iucn_sid %in% maps_done)
 
 ```
@@ -133,7 +133,7 @@ rasterize_iucn_map <- function(spp_id) {
       ### if invalid geom, fix it
     clip_to_globe() %>%
       ### make sure bounds don't exceed +/- 180
-    smoothr::densify(max_distance = 0.5) %>%
+    smoothr::densify(max_distance = 0.1) %>%
       ### add points at half-degree intervals to ensure smooth transform to Mollweide
     st_transform(crs(rast_base)) %>%
       ### transform to Mollweide 10km x 10km resolution
@@ -212,11 +212,11 @@ for(i in seq_along(shps)) {
 
   ### for resolving geometries on the last few, mclapply seems to fail at 
   ### st_make_valid() - lapply() also seems to fail - try a simple loop!
-  warning('Using series method instead of parallel method!')
-  for(spp_id in spp_ids) {
-    rasterize_iucn_map(spp_id)
-  }
-  # tmp <- parallel::mclapply(spp_ids, mc.cores = 16, FUN = rasterize_iucn_map)
+  # warning('Using series method instead of parallel method!')
+  # for(spp_id in spp_ids) {
+  #   rasterize_iucn_map(spp_id)
+  # }
+  tmp <- parallel::mclapply(spp_ids, mc.cores = 16, FUN = rasterize_iucn_map)
   
 } ### end of for loop over each species group
 
@@ -234,9 +234,49 @@ if(nrow(maps_not_rasterized) > 0) {
 
 ```
 
+```{r check repts and turtles, eval = FALSE, include = FALSE}
+### because the turtle maps were failing with the st_buffer in 
+### fix_turtle_polys, I've removed that - let's check to see whether
+### the maps still look OK
+turt_spp <- maps_to_rasterize_all %>%
+  filter(str_detect(tolower(dbf_file), 'turtle')) 
+
+turt_ids <- turt_spp %>%
+  pull(iucn_sid) %>%
+  sort()
+turt_fs <- sprintf(file.path(dir_mol_rast, 'iucn_spp_mol_%s.csv'), turt_ids)
+turt_map <- parallel::mclapply(turt_fs, mc.cores = 16,
+                          FUN = data.table::fread) %>%
+  setNames(turt_ids) %>%
+  data.table::rbindlist(idcol = 'iucn_sid') 
+
+all_map <- turt_map %>%
+  group_by(cell_id) %>%
+  summarize(n = n())
+plot(all_map %>% map_to_mol(which = 'n'), main = 'all')
+
+caretta_ids <- turt_spp %>%
+  filter(str_detect(sciname, 'Caretta')) %>%
+  pull(iucn_sid)
+caretta_map <- turt_map %>%
+  filter(iucn_sid %in% caretta_ids) %>%
+  group_by(cell_id) %>%
+  summarize(n_pops = n())
+plot(caretta_map %>% map_to_mol(which = 'n_pops'), main = 'caretta caretta')
+
+for(spp in turt_ids) { ### spp <- turt_ids[1]
+  spp_map <- turt_map %>%
+    filter(iucn_sid %in% spp) %>%
+    filter(iucn_sid != 4615 & !iucn_sid %in% caretta_ids)
+  if(nrow(spp_map) == 0) next()
+  plot(spp_map %>% map_to_mol(which = 'presence'), main = spp)
+}
+
+```
+
 ## Make HCAF versions of IUCN spp maps
 
-And save out in one big-ass file like AquaMaps does.
+And save out in one big-ass file like AquaMaps does.  This will be useful for Watson data.
 
 ```{r create hcafs}
 iucn_mol_maps <- list.files(dir_mol_rast, pattern = 'iucn_spp_mol', full.names = TRUE)
@@ -274,8 +314,10 @@ tmp <- parallel::mclapply(iucn_mol_maps, mc.cores = 16,
 tmp_fs <- list.files(dirname(tmp_fstem), pattern = 'iucn_hcaf', full.names = TRUE)
 
 message('Reading in ', length(tmp_fs), ' temp files for species transformed from moll -> hcaf...')
-big_df <- parallel::mclapply(tmp_fs, mc.cores = 16, FUN = read_csv, show_col_types = FALSE) %>%
-  bind_rows()
+big_list <- parallel::mclapply(tmp_fs, mc.cores = 16, FUN = read_csv, show_col_types = FALSE) 
+message('Binding list of temp files...')
+big_df <- big_list %>%
+  data.table::rbindlist()
 
 write_csv(big_df, here_anx('iucn_spp', 'iucn_spp_hcaf.csv'))
 

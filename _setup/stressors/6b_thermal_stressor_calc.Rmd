@@ -24,7 +24,6 @@ library(raster)
 library(sf)
 library(tidyverse)
 library(here)
-library(RColorBrewer)
 library(oharac)
 
 source(here('common_fxns.R'))
@@ -207,6 +206,14 @@ out_fstem <- here_anx('stressors/max_temp/%s_spp_max_temp_%s.csv')
 # zxcv <- list.files(dirname(out_fstem), pattern = 'iucn_', full.names = TRUE)
 # list.files(dirname(out_fstem)) %>% n_distinct()
 
+# turts <- T_env_to_process %>%
+#   filter(str_detect(sciname, 'caretta|dermochelys|eretmochelys|lepidochelys|chelonia')) %>%
+#   filter(src == 'iucn') %>%
+#   pull(id)
+# turt_fs <- sprintf(out_fstem, 'iucn', turts)
+# file.exists(turt_fs)
+# unlink(turt_fs)
+
 ptm <- proc.time()
 
 for(i in 1:nrow(gps_df)) {
@@ -243,7 +250,7 @@ for(i in 1:nrow(gps_df)) {
            FUN = function(j) {
     # for(j in 1:nrow(spp_envs)) { 
       ### j <- 2
-      ### j <- 119
+      ### j <- 1261
       ### get species range map
   
       spp_env <- spp_envs[j, ]
@@ -289,17 +296,19 @@ Elapsed time for processing: `r round(ptm[3], 3)` seconds.
 
 ### Plot example
 
-```{r}
+```{r plot some examples}
 ex_spp <- c('acropora abrotanoides', 'dermochelys coriacea', 'eustomias achirus', 
             'thunnus albacares', 'prionace glauca')
 
 land_poly <- read_sf(here('_spatial/ne_10m_land/ne_10m_land_no_casp.shp')) %>%
   st_transform(crs = '+proj=moll +lon_0=0 +x_0=0 +y_0=0 +datum=WGS84 +units=m +no_defs')
 spp_envs <- T_env_rounded %>%
-  filter(sciname %in% ex_spp)
+  filter(sciname %in% ex_spp) %>%
+  filter(src == 'am')
 for(i in 1:nrow(spp_envs)) {
   ### i <- 1
   spp <- spp_envs$sciname[i]
+  message('Plotting sample map for ', spp, '...')
   src <- spp_envs$src[i]
   id  <- spp_envs$id[i]
   id_lbl <- ifelse(src == 'iucn', paste('iucn', id), 'aquamaps')

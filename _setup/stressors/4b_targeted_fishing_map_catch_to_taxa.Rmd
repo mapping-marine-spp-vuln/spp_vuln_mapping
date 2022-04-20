@@ -292,14 +292,13 @@ map_tx_catch <- function(tx_id, catch_df) {
 }
 ```
 
-Loop over higher-order taxa and generate taxon catch summary files.  For 100039, filter out big species specifically for a more accurate species richness value.  Write out to `stressors/fishing/total_catch_by_taxon_and_cell` in the Mazu annex directory.
+Loop over higher-order taxa and generate taxon catch summary files.  For 100039, filter out big species specifically for a more accurate species richness value.  Write out to `stressors/fishing/1_total_catch_by_tx_cell` in the Mazu annex directory.
 
 ```{r Read in species maps}
 # am_spp_cells <- get_am_spp_cells(occurcells_cut = 0, prob_cut = 0)
 am_spp_cells <- get_am_spp_cells(occurcells_cut = 10, prob_cut = 0.50)
 ### this is the IUCN spp mapped to HCAF:
-iucn_spp_cells <- read_csv(here_anx('iucn_spp', 'iucn_spp_hcaf.csv'),
-                           show_col_types = FALSE)
+iucn_spp_cells <- data.table::fread(here_anx('iucn_spp', 'iucn_spp_hcaf.csv'))
 
 ```
 
@@ -313,7 +312,7 @@ process_higher_taxa <- function(i, tx_high) {
   tx_nm <- tx_high$worms_name[i]
   
   tx_map_fstem <- here_anx('stressors/fishing', 
-                           'total_catch_by_tx_cell/tx_catch_%s_%s.csv')
+                           '1_total_catch_by_tx_cell/tx_catch_%s_%s.csv')
   # unlink(list.files(dirname(tx_map_fstem), full.names = TRUE))
   tx_map_f <- sprintf(tx_map_fstem, tx_id, tx_nm)
   
@@ -381,7 +380,7 @@ build_spp_catch_map <- function(tx_ids, tx_nms) {
   hi_taxa_nms <- tx_nms[tx_ids < 600000]
   
   if(length(hi_taxa_ids) > 0) {
-    fs <- here_anx('stressors/fishing/total_catch_by_tx_cell/tx_catch_%s_%s.csv') %>%
+    fs <- here_anx('stressors/fishing/1_total_catch_by_tx_cell/tx_catch_%s_%s.csv') %>%
       sprintf(hi_taxa_ids, hi_taxa_nms)
     
     taxa_catch <- lapply(fs, read_csv, show_col_types = FALSE) %>%
@@ -440,7 +439,8 @@ process_species_catch <- function(s, spp_vec, spp_map_fstem, source = 'aquamaps'
       distinct()
     
     spp_map <- map_tx_spp_rich(spp_ids, 
-                               am_spp_cells = am_spp_cells, iucn_spp_cells = iucn_spp_cells) %>%
+                               am_spp_cells = am_spp_cells, 
+                               iucn_spp_cells = iucn_spp_cells) %>%
       select(-n_spp)
     
     tx_keys_df <- s_df %>%
@@ -481,7 +481,7 @@ am_spp_vec <- read_csv(here('_setup/stressors/int/watson_maps_lookup.csv')) %>%
   unique() %>% sort()
     ### 17392 spp
 
-am_spp_map_fstem <- here_anx('stressors/fishing/total_catch_by_spp_cell',
+am_spp_map_fstem <- here_anx('stressors/fishing/2_total_catch_by_spp_cell',
                           'am_spp_catch_%s.csv')
 
 x <- list.files(dirname(am_spp_map_fstem), pattern = 'am_spp_catch', full.names = TRUE)
@@ -498,10 +498,12 @@ spp_with_files <- basename(x) %>%
 
 am_spp_vec <- am_spp_vec[!am_spp_vec %in% spp_with_files]
 
-tmp <- parallel::mclapply(am_spp_vec, mc.cores = 12,
-                          FUN = process_species_catch, 
-                          spp_vec = am_spp_vec,
-                          spp_map_fstem = am_spp_map_fstem)
+if(length(am_spp_vec) > 0) {
+  tmp <- parallel::mclapply(am_spp_vec, mc.cores = 12,
+                            FUN = process_species_catch, 
+                            spp_vec = am_spp_vec,
+                            spp_map_fstem = am_spp_map_fstem)
+}
 ```
 
 ``` {r iterate over IUCN species}
@@ -513,10 +515,11 @@ iucn_spp_vec <- read_csv(here('_setup/stressors/int/watson_maps_lookup.csv')) %>
   unique() %>% sort()
     ### 4744 spp
 
-iucn_spp_map_fstem <- here_anx('stressors/fishing/total_catch_by_spp_cell',
+iucn_spp_map_fstem <- here_anx('stressors/fishing/2_total_catch_by_spp_cell',
                           'iucn_spp_catch_%s.csv')
 
-x <- list.files(dirname(iucn_spp_map_fstem), pattern = 'iucn_spp_catch', full.names = TRUE)
+x <- list.files(dirname(iucn_spp_map_fstem), pattern = 'iucn_spp_catch',
+                full.names = TRUE)
 ### unlink(x)
 
 spp_with_files <- basename(x) %>% 
@@ -525,12 +528,13 @@ spp_with_files <- basename(x) %>%
 
 iucn_spp_vec <- iucn_spp_vec[!iucn_spp_vec %in% spp_with_files]
 
-
-tmp <- parallel::mclapply(iucn_spp_vec, mc.cores = 12,
-                          FUN = process_species_catch, 
-                          spp_vec = iucn_spp_vec,
-                          spp_map_fstem = iucn_spp_map_fstem,
-                          source = 'iucn')
+if(length(iucn_spp_vec) > 0) {
+  tmp <- parallel::mclapply(iucn_spp_vec, mc.cores = 12,
+                            FUN = process_species_catch, 
+                            spp_vec = iucn_spp_vec,
+                            spp_map_fstem = iucn_spp_map_fstem,
+                            source = 'iucn')
+}
 
 ```
 

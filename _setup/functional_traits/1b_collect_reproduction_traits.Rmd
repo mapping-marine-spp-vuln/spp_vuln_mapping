@@ -21,9 +21,11 @@ output:
 knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
 
 library(oharac)
-oharac::setup()
+library(tidyverse)
+library(here)
 library(rfishbase)
 source(here('common_fxns.R'))
+source('fb_slb_fxns.R')
 
 ### used for joining and gapfilling
 spp_from_worms <- assemble_worms() ### from common_fxns.R

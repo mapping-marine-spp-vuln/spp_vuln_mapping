@@ -438,7 +438,7 @@ writeRaster(extreme_sst_r, here('_data/stressors_mol/sst_extremes_2020.tif'), ov
 * See OHI processing script for details: `https://github.com/OHI-Science/ohiprep_v2021/blob/gh-pages/globalprep/prs_slr/v2021/slr_layer_prep_v2.Rmd`
 
 ```{r Sea level rise data}
-slr_f <- here('_data/stressors_mol/slr_2019.tif')
+slr_f <- here('_data/stressors_mol/sea_level_rise_2019.tif')
 ### unlink(slr_f)
 
 if(!file.exists(slr_f)) {
@@ -525,7 +525,7 @@ hist(r[r > 0], main = 'distribution of non-zero values')
     * Here, resample to 10 km Mollweide and mask out land
 
 ```{r Ocean acidification data}
-oa_f <- here('_data/stressors_mol/oa_2020.tif')
+oa_f <- here('_data/stressors_mol/ocean_acidification_2020.tif')
 ### unlink(oa_f)
 
 if(!file.exists(oa_f)) {
@@ -573,7 +573,7 @@ hist(r[r > 0], main = 'distribution of non-zero values')
     * file: `annual_diff_2016_2020_rescaled.tif`
 
 ```{r Ultraviolet radiation data}
-uv_f <- here('_data/stressors_mol/uv_2020.tif')
+uv_f <- here('_data/stressors_mol/uv_radiation_2020.tif')
 ### unlink(uv_f)
 
 if(!file.exists(uv_f)) {

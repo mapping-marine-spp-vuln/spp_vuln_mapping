@@ -139,8 +139,8 @@ fix_turtle_polys <- function(shp) {
       fix_fieldnames()
     
     polys_rept_buff <- polys_rept %>%
-      filter(iucn_sid %in% c(3897, 6494, 8005, 4615)) %>%
-      st_buffer(dist = 0.15)
+      filter(iucn_sid %in% c(3897, 6494, 8005, 4615)) # %>%
+      # st_buffer(dist = 0.25) 
     polys_rept_non_buff <- polys_rept %>%
       filter(!iucn_sid %in% c(3897, 6494, 8005, 4615))
     polys_rept_fixed <- rbind(polys_rept_non_buff, polys_rept_buff)

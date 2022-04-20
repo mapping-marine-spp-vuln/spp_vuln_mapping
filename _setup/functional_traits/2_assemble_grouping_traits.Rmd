@@ -21,7 +21,8 @@ output:
 knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
 
 library(oharac)
-oharac::setup()
+library(tidyverse)
+library(here)
 source(here('common_fxns.R'))
 library(mice)
 

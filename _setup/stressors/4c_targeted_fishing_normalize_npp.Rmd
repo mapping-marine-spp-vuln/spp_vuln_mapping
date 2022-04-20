@@ -119,7 +119,7 @@ table(wcol_pos$wcol)
 ### the vast majority of species are not pelagic (92%).  But from script 4b,
 ### the bulk of catch is not benthic.
 
-# catch_fs <- list.files(here_anx('stressors/fishing/total_catch_by_spp_cell'), full.names = TRUE)
+# catch_fs <- list.files(here_anx('stressors/fishing/2_total_catch_by_spp_cell'), full.names = TRUE)
 # 
 # tot_catch_df <- parallel::mclapply(catch_fs, mc.cores = 20,
 #                        FUN = function(f) {
@@ -175,16 +175,53 @@ cell_id_df <- data.frame(loiczid = values(loiczid_mol),
                          ben_npp = values(benth_npp))
 
 ### using ocean area at half deg generated from Natural Earth
-ocean_a_0.5 <- raster(here('_spatial/ocean_area_wgs84_0.5deg.tif'))
-ocean_a_hcaf_df <- data.frame(ocean_a_hcaf = values(ocean_a_0.5),
-                              loiczid = 1:ncell(ocean_a_0.5))
+# ocean_a_0.5 <- raster(here('_spatial/ocean_area_wgs84_0.5deg.tif'))
+# ocean_a_hcaf_df <- data.frame(ocean_a_hcaf = values(ocean_a_0.5),
+#                               loiczid = 1:ncell(ocean_a_0.5))
 ```
 
 ```{r}
+### to match species names with IUCN SIDs for grabbing all rangemaps:
+iucn_spp_match <- read_csv(here('_data/iucn_spp/iucn_to_worms_match.csv')) %>%
+  filter(mapped == TRUE)
+get_spp_rangemap <- function(s, src) {
+  ### s <- 'pristis pristis'
+  rangemap_stem <- here_anx('spp_maps_mol/%s_spp_mol_%s.csv')
+  
+  if(src == 'iucn') { ### collect iucn_sid(s) for IUCN spp filename
+    ids <- iucn_spp_match %>%
+      filter(worms_name == s) %>%
+      pull(iucn_sid)
+    rangemap_f <- sprintf(rangemap_stem, src, ids)
+    
+  } else { ### use spp name for AM filename
+    rangemap_f <- sprintf(rangemap_stem, src, str_replace_all(s, ' ', '_'))
+  }
+  
+  ### filter presence or prob depending on which file type
+  if(length(rangemap_f) > 1) {
+    rangemap <- lapply(rangemap_f, FUN = data.table::fread) %>%
+      data.table::rbindlist()
+  } else {
+    rangemap <- data.table::fread(rangemap_f)
+  }
+  if(src == 'am') {
+    rangemap <- rangemap %>% filter(prob >= 0.50) %>%
+      select(-prob) %>%
+      distinct()
+  } else {
+    rangemap <- rangemap %>% filter(presence != 5) %>%
+      select(-presence) %>%
+      distinct()
+  }
+  return(rangemap)
+}
 
 process_species_to_moll <- function(f) {
-  # f <- spp_hcaf_fs[1]
-  # f <- missing[1]
+  ### 14 30 46 62 78 94
+  # f <- spp_hcaf_fs[14]
+  # f <- spp_hcaf_fs[str_detect(spp_hcaf_fs, 'iucn_')][1]
+  # f <- "/home/shares/ohi/spp_vuln/spp_vuln_mapping/stressors/fishing/2_total_catch_by_spp_cell/am_spp_catch_acanthomenia_arcuata.csv"
   new_f <- str_replace(basename(f), 'spp_catch', 'spp_npp_catch') %>%
     str_replace('.csv', '_mol.csv')
   spp_mol_map_f <- file.path(spp_mol_map_dir, new_f)
@@ -197,23 +234,44 @@ process_species_to_moll <- function(f) {
     
     i <- which(spp_hcaf_fs == f)
     message('Processing NPP-norm spp-total catch map for ', s, 
-            ' (', i, ' of ', length(spp_hcaf_fs), ') based on ', toupper(src), ' spp map...')
+            ' (', i, ' of ', length(spp_hcaf_fs), ') based on ',
+            toupper(src), ' spp map...')
 
-    ### Read in catch per LOICZID cell; convert catch per 0.5° cell to catch per km^2^
-    spp_catch_hcaf <- read_csv(f, show_col_types = FALSE) %>%
-      oharac::dt_join(ocean_a_hcaf_df, by = 'loiczid', type = 'left') %>%
-      mutate(pel_per_km2 = pel_tot_catch / ocean_a_hcaf,
-             ben_per_km2 = ben_tot_catch / ocean_a_hcaf)
+    ### Read in catch per LOICZID cell and species range map; check for missing
+    spp_catch_hcaf <- data.table::fread(f)
+    if(nrow(spp_catch_hcaf) == 1 & spp_catch_hcaf$loiczid == -1) {
+      message('No valid catch map for ', s, ' in ', src, '...')
+      return(NULL)
+    }
+        
+    spp_rangemap <- get_spp_rangemap(s, src)
+    if(nrow(spp_rangemap) == 0) {
+      message('No valid range map for ', s, ' in ', src, '...')
+      return(NULL)
+    }
     
-    ### "Reproject" to Mollweide by joining to LOICZID-cell_id lookup;
-    ### normalize by dividing by log-transformed NPP
+    ### "Reproject" to Mollweide by joining to LOICZID-cell_id lookup
+    ### * calc area of LOICZID cell intersected with spp range
+    ### * distribute total LOICZID catch among mollweide cells,
+    ###   uniformly distributed across area
     spp_catch_mol <- spp_catch_hcaf %>%
       oharac::dt_join(cell_id_df, by = 'loiczid', type = 'left') %>%
-      mutate(pel_sum = pel_per_km2 * ocean_a_mol * 100,
-             ben_sum = ben_per_km2 * ocean_a_mol * 100,
+      ### drop non-range cells:
+      filter(cell_id %in% spp_rangemap$cell_id) %>%
+      ### calc loiczid intersected with range:
+      group_by(loiczid) %>%
+      mutate(ocean_a_hcaf = sum(ocean_a_mol * 100)) %>%
+      ungroup() %>%
+      ### distribute total catch of LOICZID and normalize by NPP
+      mutate(pel_sum = pel_tot_catch / ocean_a_hcaf * ocean_a_mol * 100,
+             ben_sum = ben_tot_catch / ocean_a_hcaf * ocean_a_mol * 100,
              pel_norm = pel_sum / pel_npp,
              ben_norm = ben_sum / ben_npp) %>%
       drop_na()
+    if(nrow(spp_catch_mol) == 0) {
+      warning('No catch/spp range intersection: ', s, ' mapped in ', src, '...')
+      return(NULL)
+    }
     
     out_df <- spp_catch_mol %>%
       dplyr::select(cell_id, 
@@ -228,9 +286,11 @@ process_species_to_moll <- function(f) {
     # message('File ', basename(spp_mol_map_f), ' exists... skipping!')
   }
 }
+```
 
-spp_hcaf_map_dir <- here_anx('stressors/fishing/total_catch_by_spp_cell')
-spp_mol_map_dir  <- here_anx('stressors/fishing/npp_norm_catch_by_spp_moll')
+``` {r}
+spp_hcaf_map_dir <- here_anx('stressors/fishing/2_total_catch_by_spp_cell')
+spp_mol_map_dir  <- here_anx('stressors/fishing/3_npp_norm_catch_by_spp_moll')
 
 spp_hcaf_fs <- list.files(spp_hcaf_map_dir, full.names = TRUE) %>% unique()
 
@@ -241,11 +301,19 @@ spp_hcaf_fs <- list.files(spp_hcaf_map_dir, full.names = TRUE) %>% unique()
 # unlink(y)
 
 ### to run only missing files
-# x <- list.files(spp_mol_map_dir)
-# y <- x %>% str_replace('spp_npp_catch', 'spp_catch') %>% str_replace('_mol.csv', '.csv')
-# z <- file.path(spp_hcaf_map_dir, y)
-# missing <- spp_hcaf_fs[!spp_hcaf_fs %in% z]
+x <- list.files(spp_mol_map_dir)
+y <- x %>% str_replace('spp_npp_catch', 'spp_catch') %>% str_replace('_mol.csv', '.csv')
+z <- file.path(spp_hcaf_map_dir, y)
+spp_hcaf_fs <- spp_hcaf_fs[!spp_hcaf_fs %in% z]
 
-tmp <- parallel::mclapply(spp_hcaf_fs, mc.cores = 16, FUN = process_species_to_moll)
+### to clear all files and rerun:
+# zxcv <- list.files(spp_mol_map_dir, full.names = TRUE)
+# unlink(zxcv)
+
+tmp <- parallel::mclapply(spp_hcaf_fs, mc.cores = 32, FUN = process_species_to_moll)
+### try_check <- sapply(tmp, class) %>% unlist()
+### which(try_check == 'try-error')
+
+### All "missing" files are due to lack of spp map &/or catch map
 ```
 

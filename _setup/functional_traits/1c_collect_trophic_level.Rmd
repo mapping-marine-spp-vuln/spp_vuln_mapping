@@ -21,9 +21,12 @@ output:
 knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
 
 library(oharac)
-oharac::setup()
+library(tidyverse)
+library(here)
 library(rfishbase)
 source(here('common_fxns.R'))
+source('fb_slb_fxns.R')
+
 ```
 
 # Summary
