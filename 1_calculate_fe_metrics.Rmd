@@ -39,7 +39,7 @@ Included species are:
 
 ```{r}
 
-spp_fe <- read_csv(here('_output/func_entities/species_fe.csv'), show_col_types = FALSE) %>%
+spp_fe <- read_csv(here('_output/func_entities/fe_species.csv'), show_col_types = FALSE) %>%
   select(species) %>%
   mutate(fe = TRUE) %>%
   distinct()
@@ -100,7 +100,7 @@ iucn_fe_summary_file <- here_anx('func_entities', 'fe_cell_summary_iucn.csv')
 # unlink(iucn_fe_summary_file)
 if(!file.exists(iucn_fe_summary_file)) {
   
-  spp_fe <- read_csv(here('_output/func_entities/species_fe.csv'), show_col_types = FALSE)
+  spp_fe <- read_csv(here('_output/func_entities/fe_species.csv'), show_col_types = FALSE)
   
   iucn_to_map <- spp_for_fe_metrics %>%
     left_join(spp_fe, by = 'species') %>%
@@ -120,7 +120,7 @@ if(!file.exists(iucn_fe_summary_file)) {
                       select(-presence)
                   }) %>%
     setNames(iucn_to_map$fe_id) %>%
-    bind_rows(.id = 'fe_id') %>%
+    data.table::rbindlist(idcol = 'fe_id') %>%
     mutate(fe_id = as.integer(fe_id))
   
   iucn_fes <- iucn_to_map$fe_id %>% unique() %>% sort()
@@ -140,7 +140,7 @@ if(!file.exists(iucn_fe_summary_file)) {
                                       .groups = 'drop')
                           return(df_out)
                         }) %>%
-    bind_rows() %>%
+    data.table::rbindlist() %>%
     mutate(src = 'iucn')
   
   rm('iucn_maps')
@@ -156,7 +156,7 @@ am_fe_summary_file <- here_anx('func_entities', 'fe_cell_summary_am.csv')
 # unlink(am_fe_summary_file)
 if(!file.exists(am_fe_summary_file)) {
   
-  spp_fe <- read_csv(here('_output/func_entities/species_fe.csv'), show_col_types = FALSE)
+  spp_fe <- read_csv(here('_output/func_entities/fe_species.csv'), show_col_types = FALSE)
   
   am_to_map <- spp_for_fe_metrics %>%
     left_join(spp_fe, by = 'species') %>%
@@ -177,7 +177,7 @@ if(!file.exists(am_fe_summary_file)) {
                       select(-prob)
                   }) %>%
     setNames(am_to_map$fe_id) %>%
-    bind_rows(.id = 'fe_id') %>%
+    data.table::rbindlist(idcol = 'fe_id') %>%
     mutate(fe_id = as.integer(fe_id))
   
   am_fes <- am_to_map$fe_id %>% unique() %>% sort()
@@ -199,7 +199,7 @@ if(!file.exists(am_fe_summary_file)) {
                                       .groups = 'drop')
                           return(df_out)
                         }) %>%
-    bind_rows() %>%
+    data.table::rbindlist() %>%
     mutate(src = 'am')
   
   rm('am_maps')
@@ -211,11 +211,12 @@ if(!file.exists(am_fe_summary_file)) {
 
 ```{r combine am and iucn summaries}
 tot_fe_summary_file <- here_anx('func_entities/fe_cell_summary_total.csv')
+### unlink(tot_fe_summary_file)
 if(!file.exists(tot_fe_summary_file)) {
   am_fe_summary   <- data.table::fread(am_fe_summary_file)
   iucn_fe_summary <- data.table::fread(iucn_fe_summary_file)
   
-  fe_sum_maps <- bind_rows(am_fe_summary, iucn_fe_summary) 
+  fe_sum_maps <- data.table::rbindlist(list(am_fe_summary, iucn_fe_summary))
   
   tot_fes <- fe_sum_maps$fe_id %>% unique() %>% sort()
 
@@ -230,7 +231,7 @@ if(!file.exists(tot_fe_summary_file)) {
                                     .groups = 'drop')
                         return(df)
                       }) %>%
-      bind_rows()
+      data.table::rbindlist()
   
   write_csv(tot_fe_summary, tot_fe_summary_file)
 }
@@ -258,6 +259,7 @@ This set of calculations replicates the results of Villeger's function but witho
 ```{r calc fe metrics}
 
 fe_metrics_file <- here_anx('func_entities/fe_metrics_per_cell.csv')
+### unlink(fe_metrics_file)
 if(!file.exists(fe_metrics_file)) {
   # system.time({
   fe_sum_total <- data.table::fread(tot_fe_summary_file)
@@ -279,7 +281,7 @@ if(!file.exists(fe_metrics_file)) {
                                 n_fe  = n_distinct(fe_id),
                                 .groups = 'drop')
                     }) %>%
-      bind_rows()
+      data.table::rbindlist()
   # }) ### 30 sec
   
   # system.time({
@@ -298,7 +300,7 @@ if(!file.exists(fe_metrics_file)) {
                               f_red   = mean(n_spp_fe),
                               .groups = 'drop')
                 }) %>%
-      bind_rows()
+      data.table::rbindlist()
   # }) ### 30 sec
 
   # system.time({
@@ -315,7 +317,7 @@ if(!file.exists(fe_metrics_file)) {
                     summarize(f_overred = sum(f_over) / sum(n_spp_fe),
                               .groups = 'drop')
                 }) %>%
-      bind_rows()
+      data.table::rbindlist()
     # }) ### 7 sec
     
     message('Combining functional diversity metrics maps...')
@@ -378,7 +380,8 @@ Plot each raster.
 ```{r plot rasters, echo = FALSE}
 plot_map <- function(r, main) {
   var_name <- sym(names(r))
-  r_df <- as.data.frame(r, xy = TRUE)
+  r_df <- as.data.frame(r, xy = TRUE) %>%
+    filter(!is.na(!!var_name))
   ### set fill scale limits based on raster values, from 0 to at least 1
   var_lim  <- c(min(0, minValue(r)), max(1, maxValue(r)))
   ggplot(r_df, aes(x, y, fill = !!var_name)) +

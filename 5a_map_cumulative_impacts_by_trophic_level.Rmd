@@ -1,0 +1,559 @@
+---
+title: "Map cumulative impacts by trophic level"
+author: "*Compiled on `r date()` by `r Sys.info()['user']`*"
+output: 
+  html_document:
+    code_folding: hide
+    toc: true
+    toc_depth: 3
+    toc_float: yes
+    number_sections: true
+    theme: cerulean
+    highlight: haddock
+    includes: 
+      in_header: '~/github/src/templates/ohara_hdr.html'
+  pdf_document:
+    toc: true
+---
+
+``` {r setup, echo = TRUE, message = FALSE, warning = FALSE}
+
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE, fig.height = 3, fig.width = 12)
+
+library(raster)
+library(oharac)
+library(data.table)
+library(tidyverse)
+library(here)
+source(here('common_fxns.R'))
+```
+
+# Summary
+
+Here we try a different workflow to calculate cumulative impacts, applying it to different trophic levels (across all spp in the trophic level).  In this workflow, we don't pre-calculate mean vulnerability, instead calculating impacts on the fly per stressor and per trophic level, saving out as chunks to be joined in a final step.
+
+* For each trophic level:
+    * Read in species ranges associated with that trophic level
+    * For each stressor:
+        * Read in stressor layer 
+            * Note, for non-uniform stressors, i.e., biomass removal, SST rise, and bycatch, this will look a little different
+        * Break species maps into chunks and process:
+            * Calculate functional vulnerability for each FE/species
+            * Join species vulnerability and stressor intensity to spp maps
+            * Calculate unweighted mean/sd across these species
+            * Calculate FV-weighted mean/sd across these spp
+            * Save out as temp file
+        * Read in temp files and save out as stressor impact maps (unweighted and FV-weighted)
+    * Read in all stressor impact maps and combine into cumulative impact maps
+    
+Because we already have the all-spp cumulative impact maps, no need to aggregate to a complete cumulative impact map, except as a check to verify against the maps created previously.
+
+# Data
+
+Everything used in scripts 2a/b, 3a/b, 4a/b/c/d... 
+
+# Methods
+
+## Set up dataframe of species
+
+This includes information on species vulnerability scores, functional entity ID and traits, which species are mapped in which sources.
+
+```{r}
+spp_am <- get_am_spp_info()  %>%
+  filter(occur_cells >= 10) %>%
+  select(species = sciname) %>%
+  mutate(am_mapped = TRUE) %>%
+  distinct()
+
+spp_iucn <- read_csv(here('_data/iucn_spp/iucn_to_worms_match.csv'), show_col_types = FALSE) %>%
+  rename(species = worms_name, iucn_mapped = mapped)
+
+spp_vuln <- get_spp_vuln() %>%
+  rename(v_score = score)
+
+spp_worms <- assemble_worms() %>%
+  select(species) %>%
+  distinct()
+
+spp_fe <- get_fe_traits()
+
+all_spp <- spp_worms %>%
+  left_join(spp_vuln, by = 'species') %>%
+  left_join(spp_am,   by = 'species') %>%
+  left_join(spp_iucn, by = 'species') %>%
+  inner_join(spp_fe, by = 'species')
+
+spp_map_fstem <- here_anx('spp_maps_mol', '%s_spp_mol_%s.csv')
+
+```
+
+This lookup table will be used to assign vulnerability scores to different stressors.
+
+```{r stressors to vulnerability lookup}
+str_vuln_lookup_f <- here('_data/stressor_vulnerability_lookup.csv')
+
+str_vuln_lookup <- read_csv(str_vuln_lookup_f)
+knitr::kable(str_vuln_lookup)
+```
+
+Exposure to stressors `biomass_removal`, `sst_rise`, and `bycatch` are not uniform across all species - these will have to be dealt with separately from the others.
+
+```{r}
+spp_info_df <- all_spp %>%
+  filter(!is.na(v_score)) %>%
+  ### mapped in AquaMaps and/or IUCN
+  filter(am_mapped | iucn_mapped) %>%
+  mutate(src = ifelse(iucn_mapped & !is.na(iucn_mapped), 'iucn', 'am'),
+         id  = ifelse(src == 'iucn', iucn_sid, str_replace_all(species, ' ', '_')),
+         map_f = sprintf(spp_map_fstem, src, id)) %>%
+  distinct() %>%
+  rename(vulnerability = stressor) %>%
+  inner_join(str_vuln_lookup, by = 'vulnerability')
+```
+
+## Set up a lot of functions to process the various steps
+
+```{r helper functions for gathering maps}
+check_tryerror <- function(l) {
+  x <- sapply(l, class) %>% 
+    unlist()
+  return(any(x == 'try-error'))
+}
+
+get_one_map <- function(f) {
+  if(file.exists(f)) {
+    df <- data.table::fread(f)
+    
+    if(str_detect(basename(f), '[0-9]')) {   ### IUCN spp mapped by species ID number
+      df <- df %>% filter(presence != 5) %>% select(-presence)
+    } else {                                 ### not IUCN? then AM
+      df <- df %>% filter(prob >= 0.5) %>% select(-prob)
+    }
+    return(df)
+  } else {
+    warning('No map found for ', basename(f))
+    return(NULL)
+  }
+}
+
+collect_spp_rangemaps <- function(spp_vec, file_vec, parallel = TRUE) {
+  ### give a vector of species names (or IDs) and filenames; 
+  ### default: read in using parallel::mclapply
+  if(parallel == TRUE) {
+    out_maps_list <- parallel::mclapply(file_vec, mc.cores = 40, FUN = get_one_map)
+  } else {
+    out_maps_list <- lapply(file_vec, FUN = get_one_map)
+  }
+  if(check_tryerror(out_maps_list)) {
+    stop('Try-error found when assembling species rangemaps!')
+  }
+  out_maps_df <- out_maps_list %>%
+    setNames(spp_vec) %>%
+    data.table::rbindlist(idcol = 'species') %>%
+    distinct()
+  
+  return(out_maps_df)
+}
+
+collect_stressor_maps <- function(spp_str_info_df) {
+  stressor <- spp_str_info_df$stressor %>% unique()
+  message('Collecting stressor map for ', stressor, '...')
+  
+  if(stressor == 'biomass_removal') {
+    df <- collect_biomass_removal_maps(spp_str_info_df)
+  } else if(stressor == 'bycatch') {
+    df <- collect_bycatch_maps()
+  } else if(stressor == 'sst_rise') {
+    df <- collect_sst_rise_maps(spp_str_info_df)
+  } else {
+    ### uniform-exposure stressor
+    str_map_fs <- list.files(here('_data/stressors_mol'), full.names = TRUE)
+    str_map_f <- str_map_fs[str_detect(str_map_fs, stressor)]
+    if(length(str_map_f) > 1) stop('Multiple stressor maps detected for stressor ', stressor, '!')
+    r <- raster::raster(str_map_f)
+    df <- data.frame(value = values(r),
+                     cell_id = 1:ncell(r)) %>%
+      filter(!is.na(value))
+  }
+  
+  return(df)
+}
+
+collect_sst_rise_maps <- function(spp_str_info_df) {
+  sst_map_stem <- here_anx('stressors/max_temp/%s_spp_max_temp_%s.csv')
+
+  sst_mapfile_df <- spp_str_info_df %>%
+    select(species, am_mapped, iucn_mapped, iucn_sid) %>%
+    distinct() %>%
+    mutate(src = ifelse(iucn_mapped & !is.na(iucn_mapped), 'iucn', 'am'),
+           id  = ifelse(src == 'iucn', iucn_sid, str_replace_all(species, ' ', '_')),
+           map_f = sprintf(sst_map_stem, src, id)) %>%
+    select(species, src, map_f) %>%
+    distinct()
+  sst_stressor_list <- parallel::mclapply(sst_mapfile_df$map_f, mc.cores = 40,
+                    FUN = function(f) {
+                      if(file.exists(f)) {
+                        df <- data.table::fread(f)
+                        return(df)
+                      } else {
+                        return(NULL)
+                      }
+                    })
+  if(check_tryerror(sst_stressor_list)) {
+    stop('Problem in reading thermal stressor maps!')
+  }
+  sst_stressor_df <- sst_stressor_list %>%
+    setNames(sst_mapfile_df$species) %>%
+    purrr::compact() %>%
+    data.table::rbindlist(idcol = 'species') %>%
+    rename(value = therm_prs)
+  return(sst_stressor_df)
+}
+
+collect_biomass_removal_maps <- function(spp_str_info_df) {
+  br_map_stem <- here_anx('stressors/fishing/4_rescaled_catch_by_spp_cell', 
+                          '%s_spp_rescaled_catch_%s.csv')
+
+  br_mapfile_df <- spp_str_info_df %>%
+    select(species, am_mapped, iucn_mapped) %>%
+    distinct() %>%
+    mutate(src = ifelse(iucn_mapped & !is.na(iucn_mapped), 'iucn', 'am'),
+           map_f = sprintf(br_map_stem, src, str_replace_all(species, ' ', '_'))) %>%
+    select(species, src, map_f) %>%
+    distinct()
+  
+  br_stressor_list <- parallel::mclapply(br_mapfile_df$map_f, mc.cores = 40,
+                    FUN = function(f) {
+                      if(file.exists(f)) {
+                        df <- data.table::fread(f) %>%
+                          mutate(rescaled_catch = as.numeric(rescaled_catch))
+                        return(df)
+                      } else { ### not every spp is fished
+                        return(NULL)
+                      }
+                    })
+  if(check_tryerror(br_stressor_list)) {
+    stop('Problem in reading thermal stressor maps!')
+  }
+  message('... binding biomass removal observations...')
+  br_stressor_df <- br_stressor_list %>%
+    setNames(br_mapfile_df$species) %>%
+    purrr::compact() %>%
+    data.table::rbindlist(idcol = 'species') %>%
+    rename(value = rescaled_catch)
+  return(br_stressor_df)
+}
+
+collect_bycatch_maps <- function() {
+  ocean_area_r <- raster(here('_spatial/ocean_area_mol.tif'))
+  benth_bycatch_r <- raster(here('_data/stressors_mol/bycatch_benthic_2017.tif'))
+  pelag_bycatch_r <- raster(here('_data/stressors_mol/bycatch_pelagic_2017.tif'))
+
+  bycatch_df <- data.frame(ben = values(benth_bycatch_r),
+                           pel = values(pelag_bycatch_r),
+                           ocean = values(ocean_area_r),
+                           cell_id = 1:ncell(ocean_area_r)) %>%
+    filter(!is.na(ocean)) %>%
+    select(-ocean) %>%
+    mutate(ben = ifelse(is.na(ben), 0, ben),
+           pel = ifelse(is.na(pel), 0, pel),
+           bp  = (ben + pel) / 2,
+           rf  = (ben + pel) / 2) %>%
+    pivot_longer(names_to = 'wcol', values_to = 'value', cols = -cell_id)
+  
+  return(bycatch_df)
+}
+```
+
+```{r helper functions for calculating functional vulnerability}
+
+calc_fv <- function(n_spp) {
+  k <- n_spp - 1
+  fv <- 0.5^k
+} 
+
+calc_spp_cell_fv <- function(spp_cells, spp_fe) {
+  ### parallelize this across smaller chunks to keep group_by from crashing 
+  ### everything - but not for every cell individually!  
+  ### Set up 1000 different cell groups across the 100k(ish) cells in the chunk
+  ### to divide work between dplyr and parallel...
+  message('Calculating species/cell functional vulnerability...')
+  cell_id_df <- data.frame(cell_id = spp_cells$cell_id %>% unique()) %>%
+    mutate(cell_gp = rep(1:1000, length.out = n()))
+  cell_gps <- cell_id_df$cell_gp %>% unique()
+  
+  message('Joining spp maps to functional entities...')
+  fe_df <- spp_cells %>%
+    oharac::dt_join(spp_fe %>% select(species, fe_id), 
+                    by = 'species', type = 'left')
+
+  ### tertiary works on 3 cores; primary works using 25; this can scale between
+  ### those extremes...
+  n_cores <- ceiling(25 / ceiling((nrow(fe_df) / 8e7)))
+
+  fv_list <- parallel::mclapply(cell_gps, mc.cores = n_cores,
+                FUN = function(gp) { 
+                  ### gp <- 5
+                  message('... calculating FV for group ', gp, ' of ',
+                          length(cell_gps), ' on ', n_cores, ' cores...')
+                  cell_ids <- cell_id_df %>% 
+                    filter(cell_gp == gp) %>% 
+                    .$cell_id
+                  system.time({
+                  x <- fe_df %>%
+                    filter(cell_id %in% cell_ids) %>%
+                    data.table() %>% 
+                    ### data.table syntax for: group_by/mutate (see below)
+                    .[, ':='(n_spp = length(unique(species)),
+                             n_fe  = length(unique(fe_id))),
+                      by = .(cell_id)] %>%
+                    .[, ':='(n_spp_fe = length(unique(species))),
+                      by = .(cell_id, fe_id)] %>%
+                    .[, ':='(fv = calc_fv(n_spp_fe)),
+                      by = .(cell_id, fe_id)]
+                  }) ### with smaller dfs, little difference; with bigger 
+                     ### dfs though, data.table faster
+                  return(x)
+                })
+  if(check_tryerror(fv_list)) {
+    stop('Try-error found when calculating species/cell functional vulnerability!')
+  }
+  fv_df <- data.table::rbindlist(fv_list)
+  return(fv_df)
+}
+```
+
+```{r function for processing impacts}
+
+mc_process_impacts <- function(spp_maps_df, str_map_df, spp_str_info_df) {
+    ### Break into chunks for parallel processing
+    chunk_size <- 100000
+    n_chunks <- ceiling(6.5e6/chunk_size)
+      ### while there are 6.56e6 cells in the raster, the highest ocean cell is 6475924 
+
+    n_cores <- ceiling(24 / ceiling(nrow(spp_maps_df)/2e7))
+    # n_cores <- ceiling(24 / ceiling(9e8/3e7))
+    
+    stressor <- spp_str_info_df$stressor %>% unique()
+    troph_level <- spp_str_info_df$trp %>% unique()
+    spp_vuln_df <- spp_str_info_df %>%
+      select(species, v_score, wcol) %>% 
+        ### keep water col position for joining bycatch
+      distinct()
+    
+    ### if species is in the stressor map dataframe, this is a species-specific
+    ### exposure layer (e.g., biomass removal, sst rise, bycatch).  Set up join
+    ### variables to include species as well as cell_id:
+    if('species' %in% names(str_map_df)) {
+      join_vars <- c('species', 'cell_id')
+    } else if('wcol' %in% names(str_map_df)) {
+      join_vars <- c('wcol', 'cell_id') 
+    } else join_vars <- 'cell_id'
+    
+    # system.time({
+    result_list <- parallel::mclapply(1:n_chunks, mc.cores = n_cores,
+       FUN = function(n) { ### n <- 6
+         cell_id_min <- as.integer((n - 1) * chunk_size + 1)
+         cell_id_max <- as.integer(n * chunk_size)
+         message('Summarizing stressor ', stressor, ' on trophic level ', 
+                 troph_level, ': cells ', cell_id_min, ' - ', cell_id_max, '...')
+         
+         ### filter to chunk cells and calc spp impact.  For biomass removal
+         ### maps, include all cells with a left join (fill NAs with zeros);
+         ### for other maps, use inner join to drop NA cells (because NA applies
+         ### across all species equally)
+         chunk_spp_cells <- spp_maps_df %>%
+           filter(between(cell_id, cell_id_min, cell_id_max)) %>%
+           oharac::dt_join(spp_vuln_df, by = 'species', type = 'left') %>%
+           oharac::dt_join(str_map_df, by = join_vars, 
+                           type = ifelse(stressor == 'biomass_removal', 'left', 'inner')) %>%
+           mutate(value = ifelse(is.na(value), 0, value),
+                  impact = v_score * value) 
+         
+         ### summarize unweighted mean/sdev
+         # system.time({
+         chunk_sum_unwt <- chunk_spp_cells %>%
+           data.table() %>%
+           .[, .(impact_mean_unwt = mean(impact),
+                 impact_sd_unwt   = sd(impact),
+                 n_spp            = length(unique(species))),
+             by = .(cell_id)]
+         ### summarize FV-weighted mean/sdev
+         chunk_sum_fvwt <- chunk_spp_cells %>%
+           data.table() %>%
+           .[, .(impact_mean = mean(impact),
+                 impact_sd   = sd(impact),
+                 fv          = first(fv) %>% round(10)),
+             by = .(cell_id, fe_id)] %>%
+           .[, .(impact_mean_fvwt = Hmisc::wtd.mean(impact_mean, weights = fv),
+                 impact_sd_fvwt   = Hmisc::wtd.var(impact_mean, weights = fv) %>%
+                       sqrt()),
+             by = .(cell_id)]
+         ### bind results and return 'em
+         chunk_sum <- chunk_sum_unwt %>%
+           oharac::dt_join(chunk_sum_fvwt, by = 'cell_id', type = 'left')
+         # }) ### data.table: 27 sec for 5.7e6 obs; tidyverse 34 s...
+            ### probably bigger diffs for more observations
+         return(chunk_sum)
+         })
+  
+    if(check_tryerror(result_list)) {
+      stop('Try error results in mc_process_impacts for stressor ', stressor, '...')
+    }
+  
+    message('Binding cell results for stressor ', stressor, '...')
+    result_df <- result_list %>%
+      data.table::rbindlist() %>%
+      filter(!is.na(cell_id))
+}
+```
+
+## Set up loop over trophic level and stressor
+
+```{r set up trophic vector and stressor vector}
+### not in right order, but need to rework tertiary due to memory constraints
+troph_vec <- c('pri', 'sec', 'apex', 'ter') 
+### map cells: primary:    35e6, ok with 25 cores for FV calc
+###            secondary: 142e6, ok with 25 cores for FV calc
+###            tertiary:  900e6, NOT ok even with two cores
+###            apex:      432e6... not sure
+strs_vec  <- str_vuln_lookup$stressor %>% unique()
+spp_info_df %>% 
+  select(species, trp) %>% 
+  distinct() %>% 
+  mutate(trp = factor(trp, levels = troph_vec)) %>%
+  .$trp %>% table()
+```
+
+```{r big ass loop}
+### Loop over trophic levels
+for(troph in troph_vec) {
+  ### troph <- 'pri'
+  tr_spp <- spp_info_df %>%
+    filter(trp == troph)
+  tr_map_df <- tr_spp %>%
+    select(species, map_f) %>%
+    distinct()
+
+  message('Processing impacts for ', troph, ' trophic level...')
+
+  ### if it exists, spp_maps_df is from a different trophic level...
+  ### remove it here; and if any stressors need to be processed, load
+  ### it inside the stressor loop...
+  rm('spp_maps_df')
+  
+  ### Loop over stressors
+  for(s in strs_vec) { ### s <- strs_vec[3]
+    prms <- c('unwt_mean', 'unwt_sdev', 'nspp', 'fvwt_mean', 'fvwt_sdev')
+    outfile_stem <- here_anx('impact_maps_by_troph/impact_%s_%s_%s.tif')
+      ### stressor, trophic level, parameter
+    outfiles <- sprintf(outfile_stem, s, troph, prms) %>%
+      setNames(prms)
+    ### unlink(outfiles)
+    if(all(file.exists(outfiles))) {
+      message('All files exist for stressor ', s, ' on ', troph, ' trophic level...')
+      next()
+    }
+    
+    ### If not yet loaded for this trophic level, load spp maps
+    if(!exists('spp_maps_df')) {
+      ### This temp file is most important for the problematically large
+      ### tertiary spp group but helps speed up re-runs for all levels
+      tmp_map_file <- sprintf(here('tmp/%s_spp_df.csv'), troph)
+      if(!file.exists(tmp_map_file)) {
+        message('Loading spp maps for ', troph, ' trophic level...')
+        spp_maps_raw <- collect_spp_rangemaps(spp_vec  = tr_map_df$species,
+                                             file_vec = tr_map_df$map_f,
+                                             parallel = TRUE) 
+        spp_maps_df <- spp_maps_raw %>%
+          calc_spp_cell_fv(spp_fe)
+        fwrite(spp_maps_df, tmp_map_file)
+      }
+      message('loading temporary spp map file for ', troph, ' trophic level...')
+      spp_maps_df <- data.table::fread(tmp_map_file)
+    }
+    
+    message('Processing impacts for stressor ', s, ' on ', troph, 
+            ' trophic level...')
+  
+    spp_str_info_df <- tr_spp %>%
+      filter(stressor == s)
+    str_map_df <- collect_stressor_maps(spp_str_info_df)
+    
+    str_impacts_df <- mc_process_impacts(spp_maps_df, str_map_df, spp_str_info_df)
+    
+    message('Creating and saving unweighted mean rasters for stressor ', 
+            s, ' on ', troph, ' trophic level...')
+    rast_mean_unwt <- map_to_mol(str_impacts_df, which = 'impact_mean_unwt')
+    rast_sd_unwt   <- map_to_mol(str_impacts_df, which = 'impact_sd_unwt')
+    rast_nspp      <- map_to_mol(str_impacts_df, which = 'n_spp')
+
+    writeRaster(rast_mean_unwt, outfiles['unwt_mean'], overwrite = TRUE)
+    writeRaster(rast_sd_unwt,   outfiles['unwt_sdev'], overwrite = TRUE)
+    writeRaster(rast_nspp,      outfiles['nspp'], overwrite = TRUE)
+    
+    message('Creating and saving FV-weighted mean rasters for stressor ', 
+            s, ' on ', troph, ' trophic level...')
+    rast_mean_fvwt <- map_to_mol(str_impacts_df, which = 'impact_mean_fvwt')
+    rast_sd_fvwt   <- map_to_mol(str_impacts_df, which = 'impact_sd_fvwt')
+
+    writeRaster(rast_mean_fvwt, outfiles['fvwt_mean'], overwrite = TRUE)
+    writeRaster(rast_sd_fvwt,   outfiles['fvwt_sdev'], overwrite = TRUE)
+  }
+}
+```
+
+* For each trophic level:
+    * Read in species ranges associated with that trophic level
+    * For each stressor:
+        * Read in stressor layer 
+            * Note, for non-uniform stressors, i.e., biomass removal, SST rise, and bycatch, this will look a little different
+        * Break species maps into chunks and process:
+            * Calculate functional vulnerability for each FE/species
+            * Join species vulnerability and stressor intensity to spp maps
+            * Calculate unweighted mean/sd across these species
+            * Calculate FV-weighted mean/sd across these spp
+            * Save out as temp file
+        * Read in temp files and save out as stressor impact maps (unweighted and FV-weighted)
+    * Read in all stressor impact maps and combine into cumulative impact maps
+
+## Check results
+
+For each stressor, read in the mean impact map for all spp and for each trophic group.  Calculate the weighted mean across all trophic groups, and subtract from mean impact across all spp.  If any cells have a significant difference, flag them.
+
+```{r}
+all_mean_fs <- list.files(here('_output/impact_maps/impact_maps_unweighted_fe_only'),
+                         pattern = 'mean.tif', full.names = TRUE)
+nspp_by_str_taxon_fs <- list.files(here_anx('vuln_maps/vuln_unweighted_all/vuln_by_str_tx'),
+                                   pattern = 'nspp.tif', full.names = TRUE)
+troph_mean_fs <- list.files(here_anx('impact_maps_by_troph'), 
+                            pattern = 'unwt_mean.tif', full.names = TRUE)
+troph_nspp_fs <- list.files(here_anx('impact_maps_by_troph'), 
+                            pattern = 'nspp.tif', full.names = TRUE)
+
+for(s in strs_vec) { ### s <- strs_vec[5]
+  all_impact <- all_mean_fs[str_detect(basename(all_mean_fs), s)] %>%
+    raster()
+  all_nspp <- raster(here('_output/nspp_maps/nspp_in_unwt_fe_only_vuln_maps.tif'))
+  troph_mean_stack <- troph_mean_fs[str_detect(basename(troph_mean_fs), s)] %>%
+    stack()
+  troph_nspp_stack <- troph_nspp_fs[str_detect(basename(troph_nspp_fs), s)] %>%
+    stack()
+  troph_nspp_sum <- calc(troph_nspp_stack, sum, na.rm = TRUE) %>%
+    mask(raster(here('_spatial/ocean_area_mol.tif')))
+  x <- troph_nspp_sum - all_nspp
+  
+  troph_mean_sum <- lapply(1:4,
+                           FUN = function(i) {
+                             y <- troph_mean_stack[[i]] * troph_nspp_stack[[i]]
+                           }) %>%
+    stack() %>%
+    calc(sum)
+  troph_mean_impact <- troph_mean_sum / troph_nspp_sum
+
+  z <- all_impact - troph_mean_impact
+  range(z)
+  hist(z, main = s)
+}
+```
+

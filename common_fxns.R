@@ -12,6 +12,87 @@ here_anx <- function(f = '', ...) {
   return(f_anx)
 }
 
+assemble_spp_info_df <- function(fe_only = TRUE) {
+  spp_am <- get_am_spp_info()  %>%
+    filter(occur_cells >= 10) %>%
+    select(species = sciname) %>%
+    mutate(am_mapped = TRUE) %>%
+    distinct()
+  
+  spp_iucn <- read_csv(here('_data/iucn_spp/iucn_to_worms_match.csv'), 
+                       show_col_types = FALSE) %>%
+    rename(species = worms_name, iucn_mapped = mapped)
+  
+  spp_vuln <- get_spp_vuln() %>%
+    rename(v_score = score)
+  
+  spp_worms <- assemble_worms() %>%
+    select(species) %>%
+    distinct()
+  
+  spp_fe <- get_fe_traits()
+  
+  spp_map_fstem <- here_anx('spp_maps_mol', '%s_spp_mol_%s.csv')
+  
+  spp_df <- spp_worms %>%
+    oharac::dt_join(spp_vuln, by = 'species', type = 'left') %>%
+    oharac::dt_join(spp_am,   by = 'species', type = 'left') %>%
+    oharac::dt_join(spp_iucn, by = 'species', type = 'left') %>%
+    oharac::dt_join(spp_fe, by = 'species', 
+                    type = ifelse(fe_only, 'inner', 'left')) %>%
+    filter(!is.na(v_score)) %>%
+    ### mapped in AquaMaps and/or IUCN
+    filter(am_mapped | iucn_mapped) %>%
+    mutate(src = ifelse(iucn_mapped & !is.na(iucn_mapped), 'iucn', 'am'),
+           id  = ifelse(src == 'iucn', iucn_sid, str_replace_all(species, ' ', '_')),
+           map_f = sprintf(spp_map_fstem, src, id)) %>%
+    distinct()
+  
+  return(spp_df)
+}
+
+### Helper functions for gathering species rangemaps
+check_tryerror <- function(l) {
+  x <- sapply(l, class) %>% 
+    unlist()
+  return(any(x == 'try-error'))
+}
+
+get_one_map <- function(f) {
+  if(file.exists(f)) {
+    df <- data.table::fread(f)
+    
+    if(str_detect(basename(f), '[0-9]')) {   ### IUCN spp mapped by species ID number
+      df <- df %>% filter(presence != 5) %>% select(-presence)
+    } else {                                 ### not IUCN? then AM
+      df <- df %>% filter(prob >= 0.5) %>% select(-prob)
+    }
+    return(df)
+  } else {
+    warning('No map found for ', basename(f))
+    return(NULL)
+  }
+}
+
+collect_spp_rangemaps <- function(spp_vec, file_vec, parallel = TRUE) {
+  ### give a vector of species names (or IDs) and filenames; 
+  ### default: read in using parallel::mclapply
+  if(parallel == TRUE) {
+    out_maps_list <- parallel::mclapply(file_vec, mc.cores = 40, FUN = get_one_map)
+  } else {
+    out_maps_list <- lapply(file_vec, FUN = get_one_map)
+  }
+  if(check_tryerror(out_maps_list)) {
+    stop('Try-error found when assembling species rangemaps!')
+  }
+  out_maps_df <- out_maps_list %>%
+    setNames(spp_vec) %>%
+    data.table::rbindlist(idcol = 'species') %>%
+    distinct()
+  
+  return(out_maps_df)
+}
+
 
 #######################################.
 #### Helper functions for AquaMaps ####
@@ -174,263 +255,41 @@ map_to_mol <- function(df, by = 'cell_id', which, xfm = NULL) {
 #####################################################.
 ####   Helper functions for vulnerability data   ####
 #####################################################.
-get_spp_vuln <- function(gapfill = c('family', 'all')[2]) {
-  if(gapfill == 'family') {
-    ### read from pre-filtered gapfill files in Github
-    vuln_tx <- data.table::fread(here('_data/vuln_data/vuln_gapfilled_tx.csv'))
-    vuln_score <- data.table::fread(here('_data/vuln_data/vuln_gapfilled_score.csv')) %>%
-      gather(stressor, score, -vuln_gf_id)
-    vuln_sd <- data.table::fread(here('_data/vuln_data/vuln_gapfilled_sd.csv')) %>%
-      gather(stressor, sd_score, -vuln_gf_id)
-  } else {
-    ### read from unfiltered gapfilled files on Mazu server
-    mazu_dir <- '/home/shares/ohi/spp_vuln/spp_vuln_framework/post_gapfill'
-    vuln_tx <- data.table::fread(file.path(mazu_dir, 'vuln_gapfilled_all_tx.csv'))
-    vuln_score <- data.table::fread(file.path(mazu_dir, 'vuln_gapfilled_all_score.csv')) %>%
-      gather(stressor, score, -vuln_gf_id)
-    vuln_sd <- data.table::fread(file.path(mazu_dir, 'vuln_gapfilled_all_sd.csv')) %>%
-      gather(stressor, sd_score, -vuln_gf_id)
-  }
-  vuln_df <- vuln_tx %>%
-    oharac::dt_join(vuln_score, by = c('vuln_gf_id'), type = 'full') %>%
-    oharac::dt_join(vuln_sd,    by = c('vuln_gf_id', 'stressor'), type = 'full') %>%
-    dplyr::select(-vuln_gf_id) %>%
-    clean_scinames('species') %>%
-    clean_scinames('genus') %>%
-    filter(!is.na(score))
-  return(vuln_df)
+get_spp_traits <- function() {
+  ### this grabs all the traits by species, after downfilling and gapfilling
+  trait_dir <- here_anx('../spp_vuln_framework/2_gapfill_traits')
+  traits_gf_df <- data.table::fread(file.path(trait_dir, 'spp_up_down_gapfill_spp_traits.csv')) %>%
+    full_join(data.table::fread(file.path(trait_dir, 'spp_up_down_gapfill_levels.csv'))) %>%
+    full_join(data.table::fread(file.path(trait_dir, 'spp_up_down_gapfill_traits.csv'))) %>%
+    full_join(data.table::fread(file.path(trait_dir, 'spp_up_down_gapfill_taxa.csv'))) %>%
+    select(-starts_with('gf_'))
+  return(traits_gf_df)
 }
 
-#######################################################.
-#### Helper functions for FishBase and SeaLifeBase ####
-#######################################################.
-get_fb_slb <- function(fxn = species, 
-                       keep_cols = NULL, keep_fxn = contains, 
-                       drop_cols = NULL, drop_fxn = all_of) {
-  fb <- fxn(server = 'fishbase') %>%
-    janitor::clean_names() %>%
-    mutate(db = 'fb')
-  slb <- fxn(server = 'sealifebase') %>%
-    janitor::clean_names() %>%
-    mutate(db = 'slb')
-  if(!is.null(keep_cols)) {
-    fb <- fb %>%
-      dplyr::select(spec_code, species, db, keep_fxn(keep_cols))
-    slb <- slb %>%
-      dplyr::select(spec_code, species, db, keep_fxn(keep_cols))
-  }
-  if(!is.null(drop_cols)) {
-    fb <- fb %>%
-      dplyr::select(-drop_fxn(drop_cols))
-    slb <- slb %>%
-      dplyr::select(-drop_fxn(drop_cols))
-  }
-  ### sometimes class of a column from one server mismatches that of the other.
-  ### This should only be a problem for character vs. numeric - i.e.,
-  ### not a problem for numeric vs. integer
-  cols_check <- data.frame(
-    type_fb = sapply(fb, class),
-    col = names(fb)) %>%
-    inner_join(data.frame(
-      type_slb = sapply(slb, class),
-      col = names(slb))) %>%
-    filter(type_fb != type_slb) %>%
-    filter(type_fb == 'character' | type_slb == 'character')
-  if(nrow(cols_check) > 0) {
-    message('Conflicting column types; coercing all to character:')
-    message(cols_check)
-    fb <- fb %>%
-      mutate(across(all_of(cols_check$col), as.character))
-    slb <- slb %>%
-      mutate(across(all_of(cols_check$col), as.character))
-  }
-  
-  return(bind_rows(fb, slb) %>% mutate(species = tolower(species)))
+get_spp_vuln <- function() {
+  ## to reassemble all scores incl components:
+  vuln_dir <- here_anx('../spp_vuln_framework/3_vuln_score_traits')
+  spp_vuln_scores_all <- data.table::fread(file.path(vuln_dir, 'spp_vuln_from_traits_all_scores.csv')) %>%
+    left_join(data.table::fread(file.path(vuln_dir, 'spp_vuln_from_traits_str.csv')),
+              by = 'vuln_str_id') %>%
+    left_join(data.table::fread(file.path(vuln_dir, 'spp_vuln_from_traits_tx.csv')),
+              by = 'vuln_tx_id') %>%
+    select(-vuln_tx_id, -vuln_str_id) %>%
+    select(species, taxon, stressor, score = vuln)
+  spp_vuln_scores_fixed <- spp_vuln_scores_all %>%
+    mutate(stressor = case_when(stressor == 'oa' ~ 'ocean_acidification',
+                                stressor == 'uv' ~ 'uv_radiation',
+                                stressor == 'slr' ~ 'sea_level_rise',
+                                TRUE ~ stressor))
+  return(spp_vuln_scores_fixed)
 }
 
-###################################################.
-#### function for downstream direct match fill ####
-###################################################.
-
-assign_repr_level <- function(df) {
-  # message('Assigning representative ranks to species-level info...')
-  # repres_fish <- readxl::read_excel(here('_raw/xlsx/fish_traits_add_bp.xlsx'), 
-  #                                   sheet = 'repres_expanded')
-  # write_csv(repres_fish, here('_raw/spp_gp_repres_fish.csv'))
-  repres_fish <- read_csv(here('_raw/spp_gp_repres_fish.csv'), show_col_types = FALSE)
-  # repres_df   <- readxl::read_excel(here('_raw/xlsx/spp_gp_representativeness.xlsx')) %>%
-  #   janitor::clean_names() %>%
-  #   select(taxon, species, repres = representative_rank)
-  # write_csv(repres_df, here('_raw/spp_gp_repres_all_else.csv'))
-  repres_df   <- read_csv(here('_raw/spp_gp_repres_all_else.csv'), show_col_types = FALSE) %>%
-    bind_rows(repres_fish) %>%
-    mutate(species = tolower(species),
-           repres = tolower(repres)) %>%
-    filter(!is.na(repres) & repres != 'species')
-  
-  if(any(c('phylum', 'class', 'order', 'family', 'genus') %in% names(df))) {
-    stop('get rid of taxonomic ranks higher than species!')
-  }
-  spp_all_wide <- assemble_worms(aspect = 'wide')
-  rank_names_long <- assemble_worms(aspect = 'long') %>%
-    select(-spp) %>%
-    distinct()
-  
-  ### create new dataframe including all representative species, with
-  ### spp_gp_new assigned to the representative rank
-  repr_spp <- df %>%
-    inner_join(repres_df, by = c('taxon', 'spp_gp' = 'species')) %>%
-    inner_join(spp_all_wide, by = c('spp_gp' = 'species')) %>%
-    mutate(spp_gp_new = case_when(repres == 'genus'  ~ genus,
-                                  repres == 'family' ~ family,
-                                  repres == 'order'  ~ order,
-                                  repres == 'class'  ~ class,
-                                  TRUE ~ NA_character_)) %>%
-    select(taxon, spp_gp_orig = spp_gp, spp_gp = spp_gp_new,
-           everything()) %>%
-    select(-phylum, -class, -order, -family, -genus) %>%
-    distinct()
-  
-  df_higher <- df %>% 
-    # filter(!spp_gp %in% repres_df$species) %>%
-    left_join(rank_names_long, by = c('spp_gp' = 'name')) %>%
-    rename(repres = rank)
-    
-  df_out <- bind_rows(df_higher, repr_spp) %>%
-    select(-spp_gp_orig) %>%
-    distinct()
-  
-  return(df_out)
+get_fe_traits <- function() {
+  fe_trait_codes <- data.table::fread(here('_output/func_entities/fe_trait_codes.csv'))
+  fe_traits <- data.table::fread(here('_output/func_entities/fe_species.csv')) %>%
+    left_join(fe_trait_codes, by = c('fe_code', 'n_spp')) %>%
+    select(-fe_code, -n_spp)
 }
-
-downfill <- function(df) {
-
-  if(!'repres' %in% names(df)) {
-    df_repres <- assign_repr_level(df)
-  } else {
-    df_repres <- df
-  }
-  spp_all_wide <- assemble_worms(aspect = 'wide')
-
-  ranks <- c('species', 'genus', 'family', 'order', 'class')
-  rank_list <- vector('list', length = length(ranks)) %>%
-    setNames(ranks)
-  
-  for(i in seq_along(ranks)) { ### i <- 4
-    x <- df_repres %>%
-      filter(repres == ranks[i])
-    y <- x %>%
-      inner_join(spp_all_wide, by = c('spp_gp' = ranks[i])) %>%
-      mutate(!!ranks[i] := .data[['spp_gp']])
-    rank_list[[ranks[i]]] <- y
-  }
-  rank_df <- bind_rows(rank_list) %>%
-    distinct() %>%
-    rowwise() %>%
-    mutate(rank_num = which(repres == ranks)) %>%
-    group_by(species) %>%
-    filter(n() == 1 | rank_num == min(rank_num)) %>%
-      ### this drops instances where info for a spp given at spp level, and
-      ###  other info downfilled from above that may conflict w/spp level info
-    ungroup() %>%
-    select(-rank_num)
-  
-  return(rank_df)
-}
-
-##################################################.
-#### function for upstream/downstream gapfill ####
-##################################################.
-gapfill_up_down <- function(df, col) {
-  ### gf_level: 
-  ### 1 = match/species, 2 = genus, 3 = family, 4 = order, 5 = class
-  
-  col_sd   <- paste(col, 'sd', sep = '_')
-  col_nspp <- paste(col, 'nspp', sep = '_')
-  
-  if(!'kingdom' %in% names(df)) df$kingdom <- NA_character_
-  if(!'phylum' %in% names(df)) df$phylum <- NA_character_
-  if(!'db' %in% names(df)) df$db <- 'worms'
-  if(!'spec_code' %in% names(df)) df$spec_code <- NA_real_
-  df_tmp <- df %>%
-    mutate(tmp = .data[[col]])
-  gf_genus <- df_tmp %>%
-    group_by(kingdom, phylum, class, order, family, genus) %>%
-    summarize(across(matches('tmp'),
-                     .fns = list(g_mean = ~mean(.x, na.rm = TRUE),
-                                 g_sd   = ~sd(.x, na.rm = TRUE),
-                                 g_cov  = ~sd(.x, na.rm = TRUE) / mean(.x, na.rm = TRUE),
-                                 g_nspp = ~sum(!is.na(.x))),
-                     na.rm = TRUE, .names = '{.fn}_{.col}'),
-              .groups = 'drop')
-  gf_family <- df_tmp %>%
-    group_by(kingdom, phylum, class, order, family) %>%
-    summarize(across(matches('tmp'),
-                     .fns = list(f_mean = ~mean(.x, na.rm = TRUE),
-                                 f_sd   = ~sd(.x, na.rm = TRUE),
-                                 f_cov  = ~sd(.x, na.rm = TRUE) / mean(.x, na.rm = TRUE),
-                                 f_nspp = ~sum(!is.na(.x))),
-                     na.rm = TRUE, .names = '{.fn}_{.col}'),
-              .groups = 'drop')
-  gf_order <- df_tmp %>%
-    group_by(kingdom, phylum, class, order) %>%
-    summarize(across(matches('tmp'),
-                     .fns = list(o_mean = ~mean(.x, na.rm = TRUE),
-                                 o_sd   = ~sd(.x, na.rm = TRUE),
-                                 o_cov  = ~sd(.x, na.rm = TRUE) / mean(.x, na.rm = TRUE),
-                                 o_nspp = ~sum(!is.na(.x))),
-                     na.rm = TRUE, .names = '{.fn}_{.col}'),
-              .groups = 'drop')
-  gf_class <- df_tmp %>%
-    group_by(kingdom, phylum, class) %>%
-    summarize(across(matches('tmp'),
-                     .fns = list(c_mean = ~mean(.x, na.rm = TRUE),
-                                 c_sd   = ~sd(.x, na.rm = TRUE),
-                                 c_cov  = ~sd(.x, na.rm = TRUE) / mean(.x, na.rm = TRUE),
-                                 c_nspp = ~sum(!is.na(.x))),
-                     na.rm = TRUE, .names = '{.fn}_{.col}'),
-              .groups = 'drop')
-  
-  df_gf_all <- df_tmp %>%
-    left_join(gf_genus) %>%
-    left_join(gf_family) %>%
-    left_join(gf_order) %>%
-    left_join(gf_class) %>%
-    dplyr::select(-all_of(col)) %>%
-    mutate(gf_level = case_when(!is.na(tmp) ~ 1,
-                                !is.na(g_mean_tmp) ~ 2,
-                                !is.na(f_mean_tmp) ~ 3,
-                                !is.na(o_mean_tmp) ~ 4,
-                                !is.na(c_mean_tmp) ~ 5,
-                                TRUE ~ NA_real_)) %>%
-    mutate(value = case_when(gf_level == 1  ~ tmp,
-                             gf_level == 2  ~ g_mean_tmp,
-                             gf_level == 3 ~ f_mean_tmp,
-                             gf_level == 4  ~ o_mean_tmp,
-                             gf_level == 5  ~ c_mean_tmp,
-                             TRUE ~ NA_real_)) %>%
-    mutate(sd = case_when(gf_level == 1  ~ NA_real_,
-                          gf_level == 2  ~ g_sd_tmp,
-                          gf_level == 3 ~ f_sd_tmp,
-                          gf_level == 4  ~ o_sd_tmp,
-                          gf_level == 5  ~ c_sd_tmp,
-                          TRUE ~ NA_real_)) %>%
-    mutate(nspp = case_when(gf_level == 1  ~ NA_integer_,
-                            gf_level == 2  ~ g_nspp_tmp,
-                            gf_level == 3 ~ f_nspp_tmp,
-                            gf_level == 4  ~ o_nspp_tmp,
-                            gf_level == 5  ~ c_nspp_tmp,
-                            TRUE ~ NA_integer_)) %>%
-    ungroup() %>%
-    mutate(trait = col) %>%
-    dplyr::select(db, spec_code, 
-           kingdom, phylum, class, order, family, genus, species, 
-           trait, value, sd, nspp, gf_level) %>%
-    distinct()
-  
-  return(df_gf_all)
-}
-
 
 #####################################################################.
 #### assemble overall species taxonomy from extracted WoRMS data ####
@@ -727,11 +586,6 @@ filter_dupe_spp <- function(df, level = c('all', 'class')[1]) {
 }
 
 
-### Get vulnerability traits by species
-get_vuln_traits <- function() {
-  x <- data.table::fread(here('_data/traits_vulnerability/spp_traits_valid.csv'))
-}
-
 #####################################################.
 ####  Resolve names using WoRMS API fuzzy match  ####
 #####################################################.
@@ -860,3 +714,69 @@ get_qtiles <- function(x) {
   }
   quantile(x, q_vec, na.rm = TRUE)
 }
+
+
+####################################################.
+####         Pooled variance functions          ####
+####################################################.
+
+pooled_var <- function(x_bar, y_bar, s_x, s_y, n_x, n_y) {
+  ### convert std dev to var
+  var_x <- ifelse(is.na(s_x), 0, s_x^2)
+  var_y <- ifelse(is.na(s_y), 0, s_y^2)
+  
+  var_xy_clean <- ((n_x - 1)*var_x + (n_y - 1)*var_y) / (n_x + n_y - 1)
+  var_xy_error <- (n_x * n_y) * (x_bar - y_bar)^2 / ((n_x + n_y)*(n_x + n_y - 1))
+  
+  return(var_xy_clean + var_xy_error)
+}
+
+iterated_pooled_var <- function(mean_vec, sdev_vec, n_vec, flag = FALSE) {
+  if(!all.equal(length(mean_vec), length(sdev_vec), length(n_vec))) {
+    stop('Mean, std dev, and n vectors must all be equal length!')
+  }
+  if(length(mean_vec) == 1) {
+    warning('Only one element - no need for pooled variance!')
+    return(sdev_vec[1]^2)
+  }
+  ### initialize values for first in list
+  mean_x <- mean_vec[1]; s_x <- sdev_vec[1]; n_x <- n_vec[1]
+  for(i in 2:length(mean_vec)) { ## i <- 2
+    if(flag) message('  ... processing iteration ', i - 1, '...')
+    
+    mean_y <- mean_vec[i]
+    s_y    <- sdev_vec[i]
+    n_y    <- n_vec[i]
+    var_out <- pooled_var(x_bar = mean_x, y_bar = mean_y, 
+                          n_x = n_x, n_y = n_y, 
+                          s_x = s_x, s_y = s_y)
+    
+    ### set up values for next iteration
+    mean_x <- (mean_x * n_x + mean_y * n_y) / (n_x + n_y)
+    s_x <- sqrt(var_out)
+    n_x <- n_x + n_y
+  }
+  return(var_out)
+}
+
+### test that the function returns the correct variance value
+# set.seed(42)
+# n_vec <- sample(1:20, size = 123, replace = TRUE)
+# x_list <- list()
+# for(x_i in seq_along(n_vec)) { ### x_i <- 1
+#   x_list[[x_i]] <- rnorm(mean = sample(5 * c(1:10), size = 1),
+#                        sd   = sample(.5 * c(1:10), size = 1),
+#                        n = n_vec[x_i])
+# }
+# 
+# ### initialize values for first term
+# mean_vec <- sapply(x_list, mean)
+# sdev_vec <- sapply(x_list, sd)
+# n_vec    <- sapply(x_list, length)
+# 
+# var_out <- iterated_pooled_var(mean_vec, sdev_vec, n_vec)
+# 
+# var_check <- var(unlist(x_list))
+# 
+# abs(var_check - var_out) < 1e-10
+
