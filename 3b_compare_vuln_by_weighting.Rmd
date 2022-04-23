@@ -30,11 +30,11 @@ source(here('common_fxns.R'))
 
 # Summary
 
-Compare vulnerability results between unweighted means (script 3b) and functional-vulnerability-weighted means (script 3a).
+Compare vulnerability results between unweighted means (script 2) and functional-vulnerability-weighted means (script 3).
 
 # Data
 
-Inputs are mean (and sd?) vulnerability maps from scripts 3a and 3b.
+Inputs are mean (and sd?) vulnerability maps from scripts 2 and 3.
 
 # Methods
 
@@ -57,7 +57,7 @@ squish_rast <- function(r, qtile = .999) {
 
 ```{r plot vuln by stressor, fig.height = 4, fig.width = 7.5}
 
-vuln_unwt_dir <- here('_output/vuln_maps/vuln_maps_unweighted_fe_only')
+vuln_unwt_dir <- here('_output/vuln_maps/vuln_maps_unweighted')
 mean_fs_unwt <- list.files(vuln_unwt_dir, pattern = '_mean.tif', full.names = TRUE)
 # sdev_fs_unwt <- list.files(vuln_unwt_dir, pattern = '_sdev.tif', full.names = TRUE)
 

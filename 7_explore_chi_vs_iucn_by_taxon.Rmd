@@ -295,10 +295,8 @@ Perform a binomial logistic regression of threatened status (threatened/not thre
 
 chi_threatened_valid <- spp_chi_iucn_clean %>%
   filter(!is.na(threatened)) %>%
-  mutate(inv_log_r_tot  = 1/log(range_tot_km2),
-         inv_log_r_cst  = 1/log(range_cst_km2),
-         inv_sqrt_r_tot = 1/sqrt(range_tot_km2),
-         inv_sqrt_r_cst = 1/sqrt(range_cst_km2)) %>%
+  mutate(log_r_tot  = log(range_tot_km2),
+         log_r_cst  = log(range_cst_km2)) %>%
   left_join(spp_fe_traits, by = c('sciname' = 'species'))
 
 ```
@@ -307,7 +305,7 @@ chi_threatened_valid <- spp_chi_iucn_clean %>%
 df_for_blr_chi <- chi_threatened_valid %>%
   select(sciname, taxon, phylum, class, atrisk, threatened, 
          starts_with('impact'), starts_with('chi'), 
-         starts_with('inv_log'), starts_with('range'),
+         starts_with('log'), starts_with('range'),
          mob, len, wcol, trp) %>%
   distinct() %>%
   mutate(qtile_r = ntile(range_tot_km2, n = 5),
@@ -317,40 +315,41 @@ df_for_blr_chi <- chi_threatened_valid %>%
 df_for_blr_chi %>% group_by(qtile_r) %>% summarize(r = max(range_tot_km2))
 
 ### across all spp, coastal ranges
-mdl1 <- glm(threatened ~ chi_npp_cst + impact_npp_cv_cst + inv_log_r_cst, 
+mdl1 <- glm(threatened ~ chi_npp_cst + impact_npp_cv_cst + log_r_cst, 
            data = df_for_blr_chi,
            family = 'binomial')
 summary(mdl1)
 
 ### filter for smaller-ranged spp, coastal ranges
-mdl2 <- glm(threatened ~ chi_npp_cst + impact_npp_cv_cst + inv_log_r_cst, 
-           data = df_for_blr_chi %>% filter(qtile_r == 1),
+mdl2 <- glm(threatened ~ chi_npp_cst + impact_npp_cv_cst + log_r_cst, 
+           data = df_for_blr_chi %>% filter(qtile_r <= 4),
            family = 'binomial')
 summary(mdl2)
 
 ### similar but total ranges
-mdl3 <- glm(threatened ~ chi_npp_tot + impact_npp_cv_tot + inv_log_r_tot, 
-           data = df_for_blr_chi %>% filter(qtile_r == 1),
+mdl3 <- glm(threatened ~ chi_npp_tot + impact_npp_cv_tot + log_r_tot, 
+           data = df_for_blr_chi %>% filter(qtile_r <= 4),
            family = 'binomial')
 summary(mdl3)
+plot(resid(mdl3))
 
 ### total ranges but filtering for even smaller-ranged spp (qtile 1 ends at 148k km^2)
-mdl4 <- glm(threatened ~ chi_npp_tot + impact_npp_cv_tot + inv_log_r_tot, 
+mdl4 <- glm(threatened ~ chi_npp_tot + impact_npp_cv_tot + log_r_tot, 
            data = df_for_blr_chi %>% filter(range_tot_km2 <= 100000),
            family = 'binomial')
 summary(mdl4)
 
 ### NPP-weighted mean CHI, drop CV term, keep smallest 20% ranges
-mdl5 <- glm(threatened ~ chi_npp_tot + inv_log_r_tot, 
+mdl5 <- glm(threatened ~ chi_npp_tot + log_r_tot, 
            data = df_for_blr_chi %>% 
-             filter(qtile_r <= 1),
+             filter(qtile_r == 1),
              # filter(range_tot_km2 <= 100000),
              # filter(range_tot_km2 <= 200000),
            family = 'binomial')
 summary(mdl5)
 
 ### drop CV term, keep smallest 20% ranges, but not NPP-weighted mean CHI
-mdl6 <- glm(threatened ~ chi_rel_tot + inv_log_r_tot, 
+mdl6 <- glm(threatened ~ chi_rel_tot + log_r_tot, 
            data = df_for_blr_chi %>% 
              filter(qtile_r <= 1),
              # filter(range_tot_km2 <= 100000),
@@ -372,8 +371,9 @@ Note that Model 5 includes just the first quintile; but the coefficient on chi_n
 
 ```{r}
 ### NPP-weighted mean CHI, drop CV term, drop highest 20% ranges
-mdl5a <- glm(threatened ~ chi_npp_tot + inv_log_r_tot, 
+mdl5a <- glm(threatened ~ chi_npp_tot + log_r_tot, 
            data = df_for_blr_chi %>% 
+             # filter(phylum != 'chordata'),
              filter(qtile_r <= 4),
              # filter(range_tot_km2 <= 100000),
              # filter(range_tot_km2 <= 200000),
@@ -381,6 +381,7 @@ mdl5a <- glm(threatened ~ chi_npp_tot + inv_log_r_tot,
 summary(mdl5a)
 
 pred_5a <- df_for_blr_chi %>%
+  # filter(phylum != 'chordata') %>%
   filter(qtile_r <= 4) %>%
   mutate(prob_thr = predict(mdl5a, type = 'response')) %>%
   mutate(pred_thr = prob_thr >= .5,

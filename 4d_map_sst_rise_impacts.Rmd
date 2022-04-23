@@ -1,0 +1,613 @@
+---
+title: "Map SST rise impacts"
+author: "*Compiled on `r date()` by `r Sys.info()['user']`*"
+output: 
+  html_document:
+    code_folding: hide
+    toc: true
+    toc_depth: 3
+    toc_float: yes
+    number_sections: true
+    theme: cerulean
+    highlight: haddock
+    includes: 
+      in_header: '~/github/src/templates/ohara_hdr.html'
+  pdf_document:
+    toc: true
+---
+
+``` {r setup, echo = TRUE, message = FALSE, warning = FALSE}
+
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE, fig.height = 4, fig.width = 7)
+
+library(raster)
+library(oharac)
+library(data.table)
+library(tidyverse)
+library(here)
+source(here('common_fxns.R'))
+
+```
+
+# Summary
+
+Because thermal sensitivity to SST rise is based on thermal tolerance of spp, exposure is not identical across all spp in a cell.  The SST rise stressor script (`_setup/stressors/6b_thermal_stressor_calc.Rmd`) generates a stressor map for each species.  The current script reads in the stressor map for each species, multiplies by the spp vulnerability (primarily driven by adaptive capacity) to calculate impact.  These spp-level impacts are then aggregated by:
+
+* unweighted mean impact in each cell across only spp included in functional vulnerability calculations (for better comparison against FV weighting)
+* functional-vulnerability-weighted mean impact in each cell.
+
+# Data
+
+* Vulnerability data from Ecosphere trait-based vulnerability
+* Stressor data from the script noted above - based on AquaMaps thermal tolerances and mean SST maps
+
+# Methods
+
+## Set up spp map source and vulnerability data
+
+Load vulnerability scores and filter to just SST rise stressor.
+
+```{r assemble spp info dataframe}
+spp_info_df <- assemble_spp_info_df(fe_only = TRUE) %>%
+  rename(vulnerability = stressor) %>%
+  filter(vulnerability == 'sst_rise')
+```
+
+
+```{r}
+### These are created in _setup/stressors/6b_thermal_stressor_calc.Rmd
+sst_map_stem <- here_anx('stressors/max_temp/%s_spp_max_temp_%s.csv')
+
+mapfile_df <- spp_info_df %>%
+  mutate(map_f = sprintf(sst_map_stem, src, id)) %>%
+  select(species, src, map_f) %>%
+  distinct()
+```
+
+## Impacts by unweighted mean vulnerability, all species
+
+### Calculate mean thermal impacts per taxon
+
+Loop over each taxon; pull all max temp stressor files for that taxon.  For each species in the taxon, multiply thermal stressor map by the spp vulnerability to identify impact map for that species.  Summarize across the entire taxon to mean, sd, and nspp.
+
+```{r unweighted mean}
+taxa <- spp_info_df$taxon %>% unique() %>% sort()
+
+out_stem <- here_anx('impact_maps_by_taxon/impacts_tx_sst_rise', 
+                     'imp_unwt_sst_rise_%s_%s.tif')
+### zxcv <- list.files(dirname(out_stem), full.names = TRUE)
+### unlink(zxcv)
+for(t in taxa) {
+  ### t <- taxa[10]
+  tx_vuln_df <- spp_info_df %>%
+    filter(taxon == t) %>%
+    select(species, v_score) %>%
+    distinct()
+
+  outf_mean <- sprintf(out_stem, t, 'mean')
+  outf_sdev <- sprintf(out_stem, t, 'sdev')
+  outf_nspp <- sprintf(out_stem, t, 'nspp')
+  if(all(file.exists(outf_mean, outf_sdev))) {
+    message('Rasters exist for taxon ', t, ' for sst rise stressor... skipping!')
+    next()
+  }
+  ### read in all sst thermal stressor maps for this taxon - 
+  tx_mapfiles <- mapfile_df %>%
+    filter(species %in% tx_vuln_df$species) %>%
+    distinct()
+
+  message('Loading thermal stress maps for taxon ', t, '...')
+  tx_maps_list <- parallel::mclapply(
+                    tx_mapfiles$map_f,
+                    mc.cores = 40, 
+                    FUN = function(f) {
+                      if(file.exists(f)) {
+                        df <- data.table::fread(f)
+                        return(df)
+                      } else {
+                        return(data.frame(cell_id = -1, 
+                                          therm_prs = NA))
+                      }
+                    })
+  if(check_tryerror(tx_maps_list)) {
+    message('Something went wrong with loading maps for taxon ', t, '... skipping for now!')
+    next()
+  }
+  message('Binding thermal stress maps for taxon ', t, '...')
+  tx_maps <- tx_maps_list %>%
+    setNames(tx_mapfiles$species) %>%
+    data.table::rbindlist(idcol = 'species')
+  
+  message('Taxon ', t, ' thermal stressor dataframe: ', nrow(tx_maps), 
+          ' cell observations for ', nrow(tx_mapfiles), ' species...')
+  if(any(tx_maps$cell_id == -1)) {
+    n_na <- tx_maps %>%
+      filter(cell_id == -1)
+    message('NOTE: ', nrow(n_na), ' instances of missing thermal pressure maps detected!')
+  }
+  
+  message('Processing mean/sd vulnerability by species in taxon ', t, ' to thermal stressor...')
+
+  ### because failures might occur with summarizing a huge dataset,
+  ### let's break this into chunks by cell_id - there are 6.6e+06 cells total,
+  ### no ocean cells above 6.5e6.
+  chunk_size <- 500000
+  n_chunks <- ceiling(6.5e6 / chunk_size)
+  n_cores <- max(1, floor(n_chunks / ceiling(nrow(tx_maps)/3e7)))
+  # system.time({
+  result_list <- parallel::mclapply(1:n_chunks, mc.cores = n_cores,
+                 FUN = function(n) { ### n <- 6
+                   cell_id_min <- as.integer((n - 1) * chunk_size + 1)
+                   cell_id_max <- as.integer(n * chunk_size)
+                   message('Summarizing thermal stressor on taxon ', t, 
+                           ': cells ', cell_id_min, ' - ', cell_id_max, '...')
+
+                   chunk_sum <- tx_maps %>%
+                     filter(between(cell_id, cell_id_min, cell_id_max)) %>%
+                     oharac::dt_join(tx_vuln_df, by = 'species', type = 'inner') %>%
+                     data.table() %>%
+                     .[, ':='(impact = v_score * therm_prs)] %>%
+                     .[, .(impact_mean = mean(impact),
+                           impact_sd   = sd(impact),
+                           n_spp       = length(unique(species))),
+                       by = .(cell_id)]
+                   })
+
+  if(check_tryerror(result_list)) {
+    message('Something went wrong with calculations for taxon ', t, '... skipping for now!')
+    next()
+  }
+  
+  message('Binding results for taxon ', t, '...')
+  result_df <- result_list %>%
+    data.table::rbindlist() %>%
+    filter(!is.na(cell_id))
+  
+  message('Creating and saving rasters for taxon ', t, '...')
+  rast_mean <- map_to_mol(result_df, which = 'impact_mean')
+  rast_sd   <- map_to_mol(result_df, which = 'impact_sd')
+  rast_nspp <- map_to_mol(result_df, which = 'n_spp')
+
+  writeRaster(rast_mean, outf_mean, overwrite = TRUE)
+  writeRaster(rast_sd,   outf_sdev, overwrite = TRUE)
+  writeRaster(rast_nspp, outf_nspp, overwrite = TRUE)
+}
+```
+
+
+### Summarize mean thermal impacts across all taxa
+
+Combine taxon-level maps using nspp-weighted mean and pooled variance.  Pooled var functions written and tested for script 2a.
+
+```{r moar helper fxns}
+combine_taxa_maps <- function(tx_sst_map_df) {
+  
+  mean_fs <- tx_sst_map_df %>% filter(p == 'mean') %>% .$f
+  sdev_fs <- tx_sst_map_df %>% filter(p == 'sdev') %>% .$f
+  nspp_fs <- tx_sst_map_df %>% filter(p == 'nspp') %>% .$f
+  taxa <- tx_sst_map_df$t %>% unique()
+  
+  message('... loading mean maps across taxa for sst rise...')
+  mean_df <- parallel::mclapply(mean_fs, mc.cores = 24, FUN = r_to_df) %>%
+    setNames(taxa) %>%
+    data.table::rbindlist(idcol = 'taxon') %>%
+    rename(v_mean = val)
+  
+  message('... loading std dev maps across taxa for sst rise...')
+  sdev_df <- parallel::mclapply(sdev_fs, mc.cores = 24, FUN = r_to_df) %>%
+    setNames(taxa) %>%
+    data.table::rbindlist(idcol = 'taxon') %>%
+    rename(v_sdev = val)
+  
+  message('... loading nspp maps across taxa for sst rise...')
+  nspp_df <- parallel::mclapply(nspp_fs, mc.cores = 24, FUN = r_to_df) %>%
+    setNames(taxa) %>%
+    data.table::rbindlist(idcol = 'taxon') %>%
+    rename(v_nspp = val)
+  
+  message('... joining mean, sd, nspp into big-ass dataframe for sst rise...')
+  big_df <- mean_df %>%
+    oharac::dt_join(sdev_df, by = c('taxon', 'cell_id'), type = 'full') %>%
+    oharac::dt_join(nspp_df, by = c('taxon', 'cell_id'), type = 'full')
+  
+  return(big_df)
+}
+
+process_mean_rasts <- function(big_df) {
+  ### Set up for parallel processing
+  cell_id_vec <- big_df$cell_id %>% unique()
+  n_gps <- 25
+  gp_vec <- rep(1:n_gps, length.out = length(cell_id_vec))
+  
+  ### perform parallel processing
+  spp_mean_list <- parallel::mclapply(
+    X = 1:n_gps, mc.cores = 25, 
+    FUN = function(gp) { ### gp <- 1
+      gp_cells <- cell_id_vec[gp_vec == gp]
+      message('...processing ', length(gp_cells), ' cells in group ', gp, '...')
+      gp_out <- big_df %>%
+        filter(cell_id %in% gp_cells) %>%
+        group_by(cell_id) %>%
+        summarize(vuln_mean = (sum(v_mean * v_nspp) / sum(v_nspp)) %>% round(5))
+    })
+  
+  ### gather results
+  spp_mean_df <- data.table::rbindlist(spp_mean_list)
+  return(spp_mean_df)
+}
+
+process_sdev_rasts <- function(big_df) {
+  ### Set up for parallel processing
+  cell_id_vec <- big_df$cell_id %>% unique()
+  n_gps <- 100
+  gp_vec <- rep(1:n_gps, length.out = length(cell_id_vec))
+  
+  ### perform parallel processing
+  all_spp_sdev_list <- parallel::mclapply(
+    X = 1:n_gps, mc.cores = 34, 
+    FUN = function(gp) { ### gp <- round(n_gps / 2)
+      gp_cells <- cell_id_vec[gp_vec == gp]
+      message('...processing ', length(gp_cells), ' cells in group ', gp, ' of ', n_gps, '...')
+      # system.time({
+        gp_sdev_out <- big_df %>%
+          filter(cell_id %in% gp_cells) %>%
+          group_by(cell_id) %>%
+          summarize(vuln_var = iterated_pooled_var(v_mean, v_sdev, v_nspp),
+                    vuln_sdev = sqrt(vuln_var) %>% round(5))
+      # })
+      return(gp_sdev_out)
+    })
+  
+  ### gather results
+  all_spp_sdev <- data.table::rbindlist(all_spp_sdev_list)
+  return(all_spp_sdev)
+}
+
+r_to_df <- function(f) {
+  r <- raster::raster(f)
+  df <- data.frame(val = values(r),
+                   cell_id = 1:ncell(r)) %>%
+    filter(!is.na(val))
+  return(df)
+}
+```
+
+```{r assemble taxon vuln maps to total maps}
+
+tx_sst_map_df <- data.frame(f = list.files(dirname(out_stem), full.names = TRUE)) %>%
+  mutate(t = str_extract(basename(f), paste0(taxa, collapse = '|')),
+         p = str_extract(basename(f), '_mean|_sdev|_nspp') %>% str_remove('_'))
+
+impact_map_stem <- here('_output/impact_maps/impact_maps_unweighted', 
+                        'impact_unwt_sst_rise_%s.tif')
+  ### %s is parameter (mean, sd, nspp)
+
+### check if total stressor maps are complete
+impact_f_mean <- sprintf(impact_map_stem, 'mean')
+impact_f_sdev <- sprintf(impact_map_stem, 'sdev')
+
+if(any(!file.exists(impact_f_mean, impact_f_sdev))) {
+  ### Combine mean, sdev, and nspp maps by taxon into one big dataframe
+  message('Processing mean, sd, nspp maps across all species for sst rise stressor...')
+  big_df <- combine_taxa_maps(tx_sst_map_df)
+}
+
+### check nspp maps
+# nspp_df <- big_df %>%
+#   data.table() %>%
+#   .[, .(nspp = sum(v_nspp)), by = .(cell_id)]
+# rast_nspp <- map_to_mol(nspp_df, which = 'nspp')
+# main_nspp_rast <- raster(here('_output/nspp_maps/nspp_in_unwt_vuln.tif'))
+# compareRaster(rast_nspp, main_nspp_rast, values = TRUE, stopiffalse = TRUE)
+# x <- calc(stack(-rast_nspp, main_nspp_rast), sum, na.rm = TRUE) %>% mask(ocean_a)
+### difference of 1 spp around Caribbean and SW atlantic... ???
+
+### Process mean raster across taxa
+if(!file.exists(impact_f_mean)) {
+  message('... summarizing mean vulnerability map across all taxa...')
+  ptm <- proc.time()
+  
+  all_spp_mean <- process_mean_rasts(big_df)
+  rast_mean <- map_to_mol(all_spp_mean, which = 'vuln_mean')
+
+  message('... elapsed: ', (proc.time() - ptm)[3], ' seconds.  ', 
+          'Writing out mean raster: \n  ',
+          str_replace(impact_f_mean, '/home/ohara/github/', 'GitHub:'))
+
+  writeRaster(rast_mean, impact_f_mean, overwrite = TRUE)
+}
+
+### Process standard deviation raster across taxa using pooled var
+if(!file.exists(impact_f_sdev)) {
+  message('... summarizing standard deviation vulnerability map across all taxa...')
+  ### break this into smaller chunks and parallelize over those?
+  ptm <- proc.time()
+
+  all_spp_sdev <- process_sdev_rasts(big_df)
+  rast_sdev <- map_to_mol(all_spp_sdev, which = 'vuln_sdev')
+  
+  message('... elapsed: ', (proc.time() - ptm)[3], ' seconds.  ',
+          'Writing out std dev raster: \n  ',
+          str_replace(impact_f_sdev, '/home/ohara/github/', 'GitHub:'))
+  
+  writeRaster(rast_sdev, impact_f_sdev, overwrite = TRUE)
+}
+
+```
+
+```{r}
+mean_rast_unwt <- raster(impact_f_mean)
+sdev_rast_unwt <- raster(impact_f_sdev)
+cv_rast_unwt <- sdev_rast_unwt / mean_rast_unwt
+
+map_cols <- hcl.colors(n = 50)
+
+plot(log10(mean_rast_unwt), col = map_cols, 
+     main = 'log_10(Mean) unweighted impact: SST rise (all spp)',
+     legend = TRUE, axes = FALSE)  
+plot(sdev_rast_unwt, col = map_cols, 
+     main = 'CV unweighted weighted impact: SST rise (all spp)',
+     legend = TRUE, axes = FALSE)
+
+```
+
+## Impacts by FV-weighted mean vulnerability
+
+Here we will rely on similar code to that used in script 3a_map_vulnerability_FV_weighted.Rmd.
+
+### Tidy the loop
+
+Because this is a complex process, let's tidy the big `for` loop by breaking out key code as functions.
+
+* `read_truncated_rangemap`: read in all range maps, truncating each one to just those cells in the current chunk.
+* `calc_fv`: Calculate the functional vulnerability for a given functional entity based on the number of spp present.
+* `calc_spp_cell_fv`: For each cell, identify all FEs and calculate the FV of each.  Because grouping by large numbers of groups (e.g, 100000 cells and multiple FEs), for crash-avoidance, this is parallelized. 
+* `bind_maps_list`: for a list of truncated species maps, clean out NULL results and bind rows, keeping cell ID and species name.
+* `calc_chunk_str_sum`: for a dataframe of truncated species maps
+
+```{r helper functions}
+read_truncated_map <- function(f, chunk_start, chunk_end) {
+  if(file.exists(f)) {
+    df <- data.table::fread(f)
+  } else {
+    df <- data.frame()
+  }  
+  if(nrow(df) == 0) {
+    return(NULL) 
+  }else {
+     df <- df %>%
+      filter(between(cell_id, chunk_start, chunk_end)) %>%
+      mutate(map_f = f)
+    return(df)
+  }
+}
+
+bind_maps_list <- function(chunk_maps_list, spp_info_df) {
+  ### NOTE: for some reason, the bind_rows() in here sometimes causes
+  ### unrecoverable errors when knitting, but seems OK when running chunks
+  ### individually... try subbing with data.table::rbindlist 
+  if(check_tryerror(chunk_maps_list)) {
+    stop('Try errors detected in bind_maps_list()!')
+  }
+  chunk_maps_raw <- chunk_maps_list %>%
+    ### drop NULL instances (no spp cells - helps keep things from crashing)
+    purrr::compact() %>% 
+    data.table::rbindlist() 
+  
+  if(nrow(chunk_maps_raw) > 0) {
+    ### if no spp-cell data for this chunk, skip bind and return 0-length df
+    chunk_maps_raw <- chunk_maps_raw %>%
+      oharac::dt_join(spp_info_df, by = 'map_f', type = 'left') %>%
+      select(-map_f, -src) %>%
+      distinct()
+  }
+  return(chunk_maps_raw)
+}
+
+calc_chunk_str_sum <- function(chunk_maps, spp_info_df) {
+  chunk_spp_vuln <- spp_info_df %>%
+    filter(species %in% chunk_maps$species) %>%
+    select(species, v_score) %>%
+    distinct()
+  
+  cell_id_df <- data.frame(cell_id = chunk_maps$cell_id %>% unique()) %>%
+    mutate(cell_gp = rep(1:100, length.out = n()))
+  cell_gps <- cell_id_df$cell_gp %>% unique()
+
+  chunk_spp_str_vuln <- chunk_maps %>%
+    oharac::dt_join(chunk_spp_vuln, by = 'species', type = 'inner') 
+  
+  ### parallelize for speed! balance vectorization with parallel to reduce crashing...
+  chunk_impact_list <- parallel::mclapply(cell_gps, mc.cores = 25,
+          FUN = function(gp) { ### gp <- 41
+            cell_ids <- cell_id_df %>% 
+              filter(cell_gp == gp) %>% 
+              .$cell_id
+            df <- chunk_spp_str_vuln %>%
+              filter(cell_id %in% cell_ids) %>%
+              data.table() %>%
+              .[ , ':='(impact = v_score * therm_prs)] %>%
+              .[ , .(impact_mean = mean(impact),
+                     impact_sd   = sd(impact),
+                     ### super-tiny fv (~ 1e-20) result in Inf var
+                     fv = first(fv) %>% round(10)),
+                 by = .(cell_id, fe_id)] %>%
+              .[ , .(n_fe = length(unique(fe_id)),
+                     fv_wt_mean_impact = Hmisc::wtd.mean(impact_mean, weights = fv),
+                     fv_wt_sd_impact   = sqrt(Hmisc::wtd.var(impact_mean, weights = fv))),
+                 by = .(cell_id)]
+          })
+  if(check_tryerror(chunk_impact_list)) {
+    stop('Try errors detected in calc_chunk_str_sum()!')
+  }
+  chunk_impact_sum_df <- data.table::rbindlist(chunk_impact_list)
+  return(chunk_impact_sum_df)
+}
+
+```
+
+```{r FV weighted impact by species iterating over chunks of cells}
+chunk_size <- 100000
+n_chunks <- ceiling(6.5e6 / chunk_size)
+
+tmp_stem_fv <- here('tmp', 'impact_fv_chunks',
+                    'impact_summary_chunk_%s_to_%s_sst_rise.csv')
+### zxcv <- list.files(dirname(tmp_stem_fv), full.names = TRUE)
+### unlink(zxcv)
+
+for(chunk_i in 1:n_chunks) { 
+  ### chunk_i <- 13
+  ### chunk_i <- 30
+  
+  ### Set up chunk start and end and filenames, check if they 
+  ### already exist for this chunk...
+  chunk_start <- (chunk_i - 1) * chunk_size + 1
+  chunk_end   <- as.integer(chunk_i * chunk_size)
+  chunk_text <- sprintf('chunk %s of %s (cells %s to %s)', 
+                        chunk_i, n_chunks, chunk_start, chunk_end)
+
+  ### check if all chunk-stressor maps are complete
+  tmp_sst_rise_fv <- sprintf(tmp_stem_fv, chunk_start, chunk_end)
+  if(file.exists(tmp_sst_rise_fv)) {
+    message('SST rise stressor summary exists for ', chunk_text, '... skipping!')
+    next()
+  }
+  
+  ### Some chunk maps remain, so continue:
+  ### Load species thermal pressure maps for this chunk, then clean and bind:
+  message('Loading ', nrow(mapfile_df), ' rangemaps cropped for ', chunk_text,  '...')
+  
+  chunk_maps_list <- parallel::mclapply(mapfile_df$map_f, mc.cores = 40, 
+                                        ### f <- mapfile_fe_df$map_f[1]
+                                        FUN = read_truncated_map, 
+                                        chunk_start = chunk_start, chunk_end = chunk_end) 
+  
+  chunk_maps_raw <- bind_maps_list(chunk_maps_list, mapfile_df)
+  
+  ### OK, now we have species and cells for this chunk.  Calculate functional vulnerability!
+  message('... Calculating functional vulnerability metrics for ', nrow(chunk_maps_raw), 
+          ' spp-cells in ', chunk_text, '...')
+  spp_fe <- spp_info_df %>%
+    select(species, fe_id) %>%
+    distinct()
+  chunk_maps <- chunk_maps_raw %>%
+    calc_spp_cell_fv(spp_fe)
+  
+  message('... In ', chunk_text,  ' rangemap dataframe: \n    ', nrow(chunk_maps), 
+          ' cell observations for ', n_distinct(chunk_maps$species), ' species across ',
+          n_distinct(chunk_maps$fe_id), ' functional entities...')
+
+  message('... Processing mean/sd vuln in ', chunk_text, ' to stressor: sst rise...')
+  chunk_str_sum <- calc_chunk_str_sum(chunk_maps, spp_info_df)
+  
+  write_csv(chunk_str_sum, tmp_sst_rise_fv)
+}
+
+```
+
+### Aggregate chunk vulnerability maps to global map
+
+For each stressor, pull in all chunk dataframes, assemble into dataframe, and save out as rasters.
+
+```{r assemble chunk vuln maps to total maps}
+
+chunk_files <- list.files(dirname(tmp_stem_fv), 
+                          pattern = 'impact_summary_chunk', full.names = TRUE)
+
+rast_fv_out_stem <- here('_output/impact_maps/impact_maps_fv_weighted', 
+                         'impact_fv_weighted_sst_rise_%s.tif')
+
+rast_mean_impact_fv_f <- sprintf(rast_fv_out_stem, 'mean')
+rast_sdev_impact_fv_f <- sprintf(rast_fv_out_stem, 'sdev')
+
+if(any(!file.exists(rast_mean_impact_fv_f, rast_sdev_impact_fv_f))) {
+  message('Gathering impact chunk maps for sst rise...')
+  
+  impact_map_df <- parallel::mclapply(chunk_files, mc.cores = 33, 
+                                      FUN = data.table::fread) %>%
+    bind_rows() %>%
+    mutate(fv_wt_mean_impact = round(fv_wt_mean_impact, 5),
+           fv_wt_sd_impact   = round(fv_wt_sd_impact,   5))
+  
+  message('Converting impact maps to rasters for sst rise...')
+  mean_rast_fvwt <- map_to_mol(impact_map_df, which = 'fv_wt_mean_impact')
+  sdev_rast_fvwt <- map_to_mol(impact_map_df, which = 'fv_wt_sd_impact')
+  
+  message('Writing impact rasters for sst rise...')
+  writeRaster(mean_rast_fvwt, rast_mean_impact_fv_f, overwrite = TRUE)
+  writeRaster(sdev_rast_fvwt, rast_sdev_impact_fv_f, overwrite = TRUE)
+  
+  ### n_fe maps match well except one spot:
+  n_fe_rast_main <- raster(here('_output/nspp_maps/n_fe_in_fvwt_vuln.tif'))
+  n_fe_rast_fvwt <- map_to_mol(impact_map_df, which = 'n_fe')
+  x <- stack(n_fe_rast_fvwt, -n_fe_rast_main) %>%
+    calc(sum, na.rm = TRUE)
+  values(x)[values(x)==0] <- NA
+  plot(x)
+  
+  x_df <- data.frame(x = values(x),
+                     cell_id = 1:ncell(x)) %>%
+    filter(!is.na(x))
+  
+}
+```
+
+```{r}
+mean_rast_fvwt <- raster(rast_mean_impact_fv_f)
+sdev_rast_fvwt <- raster(rast_sdev_impact_fv_f)
+cv_rast_fvwt <- sdev_rast_fvwt / mean_rast_fvwt
+
+map_cols <- hcl.colors(n = 50)
+
+plot(log10(mean_rast_fvwt), col = map_cols, 
+     main = 'log_10(Mean) FV-weighted impact: SST rise',
+     legend = TRUE, axes = FALSE)  
+plot(sdev_rast_fvwt, col = map_cols, 
+     main = 'CV FV-weighted weighted impact: SST rise',
+     legend = TRUE, axes = FALSE)
+```
+
+## Difference maps
+
+Loop over several focal stressors.  For each stressor, read in the maps of unweighted mean impact $\bar x$ and fv-weighted mean impact $\bar x_{FV}$.  Calculate difference as proportional difference in FV-weighted mean relative to unweighted mean impact: 
+$$diff = (\bar x_{FV} - \bar x) / \bar x$$
+
+```{r}
+  
+squish_rast <- function(r, qtile = .999) {
+  r_vals <- values(r); r_vals <- r_vals[!is.na(r_vals)]
+  r_zlim <- max(abs(quantile(r_vals, 1 - qtile)), abs(quantile(r_vals, qtile)))
+  values(r)[values(r) > r_zlim] <- r_zlim
+  values(r)[values(r) < -r_zlim] <- -r_zlim
+  
+  return(list(r = r, zlim = r_zlim))
+}
+
+### Set up rasters; trim extreme values
+mean_diff_rast <- (mean_rast_fvwt - mean_rast_unwt) / mean_rast_unwt
+mean_diff_squished <- squish_rast(mean_diff_rast, qtile = .999)
+# cv_diff_rast <- (cv_rast_fvwt - cv_rast_unwt) / cv_rast_unwt
+# cv_r_sq <- squish_rast(cv_diff_rast, qtile = .999)
+
+m_d_mask_0.10 <- m_d_mask_0.25 <- mean_diff_squished$r
+values(m_d_mask_0.10)[values(mean_rast_unwt) < .10 & values(mean_rast_fvwt) < .10] <- NA
+values(m_d_mask_0.25)[values(mean_rast_unwt) < .25 & values(mean_rast_fvwt) < .25] <- NA
+
+message('Plotting difference maps for SST rise...')
+
+### Set up plot for diverging palette, and symmetric z limits around zero
+map_cols <- hcl.colors(palette = 'Red-Green', n = 50, rev = TRUE)
+
+plot(mean_diff_squished$r, col = map_cols, 
+     main = '% Diff in mean vuln: SST rise...',
+     zlim = c(-mean_diff_squished$zlim, mean_diff_squished$zlim), 
+     legend = TRUE, axes = FALSE)  
+plot(m_d_mask_0.10, col = map_cols, 
+     main = '% Diff in mean vuln masked 0.10: SST rise...',
+     zlim = c(-mean_diff_squished$zlim, mean_diff_squished$zlim), 
+     legend = TRUE, axes = FALSE)  
+plot(m_d_mask_0.25, col = map_cols, 
+     main = '% Diff in mean vuln masked 0.25: SST rise...',
+     zlim = c(-mean_diff_squished$zlim, mean_diff_squished$zlim), 
+     legend = TRUE, axes = FALSE)
+```

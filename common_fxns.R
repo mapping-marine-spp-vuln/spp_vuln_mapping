@@ -87,6 +87,7 @@ collect_spp_rangemaps <- function(spp_vec, file_vec, parallel = TRUE) {
   }
   out_maps_df <- out_maps_list %>%
     setNames(spp_vec) %>%
+    purrr::compact() %>%
     data.table::rbindlist(idcol = 'species') %>%
     distinct()
   
@@ -235,7 +236,7 @@ get_mol_rast <- function() {
   return(rast_base)
 }
 
-map_to_mol <- function(df, by = 'cell_id', which, xfm = NULL) {
+map_to_mol <- function(df, by = 'cell_id', which, xfm = NULL, ocean_mask = TRUE) {
   if(!by %in% names(df)) stop('Dataframe needs a valid column for "by" (e.g., cell_id)!')
   if(!which %in% names(df)) stop('Dataframe needs a valid column for "which" (e.g., n_spp)!')
   if(any(is.na(df[[by]]))) stop('Dataframe contains NA values for "by"!')
@@ -248,6 +249,11 @@ map_to_mol <- function(df, by = 'cell_id', which, xfm = NULL) {
   if(!is.null(xfm)) {
     if(class(xfm) != 'function') stop('xfm argument must be a function!')
     out_rast <- xfm(out_rast)
+  }
+  
+  if(ocean_mask) {
+    out_rast <- out_rast %>%
+      mask(raster(here('_spatial/ocean_area_mol.tif')))
   }
   return(out_rast)
 }
@@ -780,3 +786,54 @@ iterated_pooled_var <- function(mean_vec, sdev_vec, n_vec, flag = FALSE) {
 # 
 # abs(var_check - var_out) < 1e-10
 
+####################################################.
+####     Functional vulnerability functions     ####
+####################################################.
+
+calc_fv <- function(n_spp) {
+  k <- n_spp - 1
+  fv <- 0.5^k
+} 
+
+calc_spp_cell_fv <- function(spp_cells, spp_fe) {
+  ### parallelize this across smaller chunks to keep group_by from crashing 
+  ### everything - but not for every cell individually!  
+  ### Set up 1000 different cell groups across the 100k(ish) cells in the chunk
+  ### to divide work between dplyr and parallel...
+  cell_id_df <- data.frame(cell_id = spp_cells$cell_id %>% unique()) %>%
+    mutate(cell_gp = rep(1:250, length.out = n()))
+  cell_gps <- cell_id_df$cell_gp %>% unique()
+  
+  fe_df <- spp_cells %>%
+    oharac::dt_join(spp_fe %>% select(species, fe_id), 
+                    by = 'species', type = 'left')
+  
+  ### use the number of observations to limit the number of cores... more
+  ### observations, fewer cores!
+  n_cores <- ceiling(25 / ceiling((nrow(fe_df) / 8e7)))
+  
+  fv_list <- parallel::mclapply(cell_gps, mc.cores = n_cores,
+                FUN = function(gp) { 
+                  ### gp <- 5
+                  cell_ids <- cell_id_df %>% filter(cell_gp == gp) %>% .$cell_id
+                  
+                  x <- fe_df %>%
+                    filter(cell_id %in% cell_ids) %>%
+                    data.table() %>% 
+                    ### data.table syntax for: group_by/mutate (see below)
+                    .[, ':='(n_spp = length(unique(species)),
+                             n_fe  = length(unique(fe_id))),
+                      by = .(cell_id)] %>%
+                    .[, ':='(n_spp_fe = length(unique(species))),
+                      by = .(cell_id, fe_id)] %>%
+                    .[, ':='(fv = calc_fv(n_spp_fe)),
+                      by = .(cell_id, fe_id)]
+                  
+                  return(x)
+                })
+  if(check_tryerror(fv_list)) {
+    stop('Try-error found when calculating species/cell functional vulnerability!')
+  }
+  fv_df <- data.table::rbindlist(fv_list)
+  return(fv_df)
+}

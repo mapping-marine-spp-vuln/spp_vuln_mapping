@@ -22,6 +22,7 @@ knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE, fig.height 
 
 library(raster)
 library(oharac)
+library(data.table)
 library(tidyverse)
 library(here)
 source(here('common_fxns.R'))
@@ -32,11 +33,8 @@ source(here('common_fxns.R'))
 
 Impacts from targeted biomass removal (as opposed to bycatch) are based on fishing pressure on the targeted species (NPP-weighted catch, scripts 4a-4d in `_setup/stressors`) and the species' vulnerability, based on general adaptive capacity.  Because fishing pressure is specific to each species, we can't merely apply a mean vulnerability and pressure score.  The current script reads in the fishing stressor map for each species, multiplies by the spp vulnerability (primarily driven by adaptive capacity) to calculate impact.  These spp-level impacts are then aggregated by:
 
-* unweighted mean impact in each cell across all spp present
-* unweighted mean impact in each cell across only spp included in functional vulnerability calculations (for better comparison against FV weighting)
+* unweighted mean impact in each cell.
 * functional-vulnerability-weighted mean impact in each cell.
-
-NOTE: since not all species are included in targeted catch, we will need one more step to calculate average across cells.  After calculating the mean and sd across all taxa, we then adjust the mean based on total species richness vs. catch species richness, assuming zero catch for untargeted species, and a pooled SD based on the same idea.
 
 # Data
 
@@ -49,40 +47,10 @@ NOTE: since not all species are included in targeted catch, we will need one mor
 
 Filter to just biomass removal stressor.
 
-```{r}
-spp_am <- get_am_spp_info()  %>%
-  filter(occur_cells >= 10) %>%
-  select(species = sciname) %>%
-  mutate(am_mapped = TRUE) %>%
-  distinct()
-
-spp_iucn <- read_csv(here('_data/iucn_spp/iucn_to_worms_match.csv'), 
-                     show_col_types = FALSE) %>%
-  rename(species = worms_name, iucn_mapped = mapped)
-
-spp_worms <- assemble_worms() %>%
-  select(species) %>%
-  mutate(worms = TRUE) %>%
-  distinct()
-
-spp_vuln <- get_spp_vuln() %>%
-  filter(stressor == 'biomass_removal') %>%
-  select(species, score, taxon) %>%
-  mutate(vuln = TRUE) %>%
-  distinct()
-
-all_spp <- spp_worms %>%
-  full_join(spp_vuln, by = 'species') %>%
-  full_join(spp_am,   by = 'species') %>%
-  full_join(spp_iucn, by = 'species') %>%
-  mutate(iucn_mapped = ifelse(is.na(iucn_mapped), FALSE, iucn_mapped),
-         am_mapped   = ifelse(is.na(am_mapped),   FALSE, am_mapped))
-
-spp_for_imp_calc_all <- all_spp %>%
-  filter(!is.na(score)) %>%
-  ### mapped in AquaMaps and/or IUCN
-  filter(am_mapped | iucn_mapped)
-
+```{r assemble spp info dataframe}
+spp_info_df <- assemble_spp_info_df(fe_only = TRUE) %>%
+  rename(vulnerability = stressor) %>%
+  filter(vulnerability == 'biomass_removal')
 ```
 
 ```{r}
@@ -90,79 +58,38 @@ spp_for_imp_calc_all <- all_spp %>%
 catch_map_stem <- here_anx('stressors/fishing/4_rescaled_catch_by_spp_cell', 
                            '%s_spp_rescaled_catch_%s.csv')
 
-catch_mapfile_df <- spp_for_imp_calc_all %>%
-  select(species, am_mapped, iucn_mapped, iucn_sid) %>%
-  distinct() %>%
-  mutate(src   = ifelse(iucn_mapped, 'iucn', 'am'),
-         spp   = str_replace_all(species, ' ', '_'),
-         map_f = sprintf(catch_map_stem, src, spp)) %>%
-  select(species, src, map_f) %>%
-  distinct() %>%
-  filter(file.exists(map_f))
+range_mapfile_df <- spp_info_df %>%
+  select(species, src, range_map_f = map_f) %>%
+  distinct()
+catch_mapfile_df <- spp_info_df %>%
+  mutate(catch_map_f = sprintf(catch_map_stem, src, id)) %>%
+  select(species, src, catch_map_f) %>%
+  filter(file.exists(catch_map_f)) %>%
+  distinct()
 
-table(catch_mapfile_df$src)
-
-spp_for_imp_calc <- spp_for_imp_calc_all %>%
-  filter(species %in% catch_mapfile_df$species)
-
-check_tryerror <- function(l) {
-  x <- sapply(l, class) %>% 
-    unlist()
-  return(any(x == 'try-error'))
-}
 ```
 
-## Impacts by unweighted mean vulnerability, all species
+## Impacts by unweighted mean vulnerability
 
 ### Calculate mean biomass removal impacts per taxon
 
 Loop over each taxon; pull all max temp stressor files for that taxon.  For each species in the taxon, multiply biomass removal stressor map by the spp vulnerability to identify impact map for that species.  Summarize across the entire taxon to mean, sd, and nspp.
 
-```{r unweighted mean all spp}
-taxa <- spp_for_imp_calc$taxon %>% unique() %>% sort()
-
-out_stem <- here_anx('impact_maps_by_taxon/impacts_tx_biomass_removal', 
-                     'imp_unweighted_biomass_removal_all',
-                     'imp_unweighted_biomass_removal_%s_%s.tif')
-### zxcv <- list.files(dirname(out_stem), full.names = TRUE)
-### unlink(zxcv)
-for(t in taxa) {
-  ### t <- taxa[5]
-  tx_imp_df <- spp_for_imp_calc %>%
-    filter(taxon == t) %>%
-    select(species, score) %>%
-    distinct()
-
-  outf_mean <- sprintf(out_stem, t, 'mean')
-  outf_sdev <- sprintf(out_stem, t, 'sdev')
-  outf_nspp <- sprintf(out_stem, t, 'nspp')
-  if(all(file.exists(outf_mean, outf_sdev, outf_nspp))) {
-    message('Rasters exist for taxon ', t, ' for biomass removal stressor... skipping!')
-    next()
+```{r}
+collect_catch_maps <- function(tx_catch_mapfiles) {
+  if(nrow(tx_catch_mapfiles) == 0) {
+    message('No catch for this taxon!')
+    return(NULL)
   }
-  ### read in all biomass removal stressor maps for this taxon - 
-  tx_catch_mapfiles <- catch_mapfile_df %>%
-    filter(species %in% tx_imp_df$species) %>%
-    distinct()
-
+    ### read in all biomass removal stressor maps for this taxon - 
   message('Loading biomass removal stress maps for taxon ', t, '...')
   tx_catch_maps_list <- parallel::mclapply(
-                    tx_catch_mapfiles$map_f, ### f <- tx_catch_mapfiles$map_f[1]
+                    tx_catch_mapfiles$catch_map_f, ### f <- tx_catch_mapfiles$map_f[1]
                     mc.cores = 40, 
                     FUN = function(f) {
-                      if(file.exists(f)) {
-                        df <- data.table::fread(f)
-                        if(class(df$rescaled_catch) == 'character') {
-                          ### for cols with only sci notation, looks like
-                          ### fread messes up... but also faster than read_csv
-                          ### so just fix those instances where it f's up.
-                          df <- df %>% 
-                            mutate(rescaled_catch = as.numeric(rescaled_catch))
-                        }
-                        return(df)
-                      } else {
-                        return(data.frame())
-                      }
+                      df <- data.table::fread(f) %>% 
+                        mutate(rescaled_catch = as.numeric(rescaled_catch))
+                      return(df)
                     })
   if(check_tryerror(tx_catch_maps_list)) {
     message('Something went wrong with loading maps for taxon ', t, '... skipping for now!')
@@ -173,35 +100,85 @@ for(t in taxa) {
     setNames(tx_catch_mapfiles$species) %>%
     data.table::rbindlist(idcol = 'species')
   
+  return(tx_catch_maps)
+}
+
+```
+
+```{r unweighted mean}
+taxa <- spp_info_df$taxon %>% unique() %>% sort()
+
+out_stem <- here_anx('impact_maps_by_taxon/impacts_tx_biomass_removal', 
+                     'imp_unwt_biomass_removal_%s_%s.tif')
+### zxcv <- list.files(dirname(out_stem), pattern = 'imp_unwt', full.names = TRUE)
+### unlink(zxcv)
+for(t in taxa) {
+  ### t <- taxa[5]
+  tx_imp_df <- spp_info_df %>%
+    filter(taxon == t) %>%
+    select(species, v_score) %>%
+    distinct()
+
+  outf_mean <- sprintf(out_stem, t, 'mean')
+  outf_sdev <- sprintf(out_stem, t, 'sdev')
+  outf_nspp <- sprintf(out_stem, t, 'nspp')
+  if(all(file.exists(outf_mean, outf_sdev))) {
+    message('Rasters exist for taxon ', t, ' for biomass removal stressor... skipping!')
+    next()
+  }
+  ### read in all biomass removal stressor maps for this taxon - 
+  tx_catch_mapfiles <- catch_mapfile_df %>%
+    filter(species %in% tx_imp_df$species) %>%
+    distinct()    
+  tx_catch_maps <- collect_catch_maps(tx_catch_mapfiles)
+  message('Taxon ', t, ' biomass removal stressor dataframe: ', nrow(tx_catch_maps), 
+          ' catch observations for ', nrow(tx_catch_mapfiles), ' species...')
+  
+  ### read in all spp rangemaps for this taxon
+  tx_range_mapfiles <- range_mapfile_df %>%
+    filter(species %in% tx_imp_df$species) %>%
+    distinct()    
+    
+  tx_range_maps <- collect_spp_rangemaps(spp_vec  = tx_range_mapfiles$species, 
+                                         file_vec = tx_range_mapfiles$range_map_f)
   ### tx_catch_maps %>% arrange(-rescaled_catch) %>% head(20)
   
-  message('Taxon ', t, ' biomass removal stressor dataframe: ', nrow(tx_catch_maps), 
-          ' cell observations for ', nrow(tx_catch_mapfiles), ' species...')
+  message('Taxon ', t, ' range map dataframe: ', nrow(tx_range_maps), 
+          ' catch observations for ', nrow(tx_range_mapfiles), ' species...')
   
+  if(is.null(tx_catch_maps)) {
+    ### no catch for this taxon
+    tx_catch_range_maps <- tx_range_maps %>%
+      mutate(rescaled_catch = 0)
+  } else {
+    tx_catch_range_maps <- tx_range_maps %>%
+      oharac::dt_join(tx_catch_maps, by = c('species', 'cell_id'), type = 'left') %>%
+      mutate(rescaled_catch = ifelse(is.na(rescaled_catch), 0, rescaled_catch))
+  }
   message('Processing mean/sd vulnerability by species in taxon ', t, ' to biomass removal stressor...')
 
   ### because failures might occur with summarizing a huge dataset,
   ### let's break this into chunks by cell_id - there are 6.6e+06 cells total
   chunk_size <- 500000
-  n_chunks <- ceiling(ncell(raster::raster(here('_spatial/ocean_area_mol.tif'))) / chunk_size)
+  n_chunks <- ceiling(6.5e6 / chunk_size)
   n_cores <- max(1, floor(n_chunks / ceiling(nrow(tx_catch_maps)/3e7)))
   # system.time({
   result_list <- parallel::mclapply(1:n_chunks, mc.cores = n_cores,
-                 FUN = function(n) { ### n <- 2
+                 FUN = function(n) { ###  n <- 2
                    cell_id_min <- as.integer((n - 1) * chunk_size + 1)
                    cell_id_max <- as.integer(n * chunk_size)
                    message('Summarizing biomass removal stressor on taxon ', t, 
                            ': cells ', cell_id_min, ' - ', cell_id_max, '...')
 
-                   chunk_sum <- tx_catch_maps %>%
+                   chunk_sum <- tx_catch_range_maps %>%
                      filter(between(cell_id, cell_id_min, cell_id_max)) %>%
                      oharac::dt_join(tx_imp_df, by = 'species', type = 'inner') %>%
-                     mutate(impact = score * rescaled_catch) %>%
-                     group_by(cell_id) %>%
-                     summarize(impact_mean = mean(impact),
-                               impact_sd   = sd(impact),
-                               n_spp       = n_distinct(species),
-                               .groups = 'drop')
+                     data.table() %>%
+                     .[ , ':='(impact = v_score * rescaled_catch)] %>%
+                     .[ , .(impact_mean = mean(impact),
+                            impact_sd   = sd(impact),
+                            n_spp       = n_distinct(species)),
+                        by = .(cell_id)]
                    }) 
 
   if(check_tryerror(result_list)) {
@@ -229,50 +206,7 @@ for(t in taxa) {
 
 ### Summarize mean biomass removal impacts across all taxa
 
-Combine taxon-level maps using nspp-weighted mean and pooled variance.  Pooled var functions written and tested for script 2a.
-
-```{r pooled var function and test}
-
-pooled_var <- function(x_bar, y_bar, s_x, s_y, n_x, n_y) {
-  ### convert std dev to var
-  var_x <- ifelse(is.na(s_x), 0, s_x^2)
-  var_y <- ifelse(is.na(s_y), 0, s_y^2)
-
-  var_xy_clean <- ((n_x - 1)*var_x + (n_y - 1)*var_y) / (n_x + n_y - 1)
-  var_xy_error <- (n_x * n_y) * (x_bar - y_bar)^2 / ((n_x + n_y)*(n_x + n_y - 1))
-  
-  return(var_xy_clean + var_xy_error)
-}
-
-iterated_pooled_var <- function(mean_vec, sdev_vec, n_vec, flag = FALSE) {
-  if(!all.equal(length(mean_vec), length(sdev_vec), length(n_vec))) {
-    stop('Mean, std dev, and n vectors must all be equal length!')
-  }
-  if(length(mean_vec) == 1) {
-    warning('Only one element - no need for pooled variance!')
-    return(sdev_vec[1]^2)
-  }
-  ### initialize values for first in list
-  mean_x <- mean_vec[1]; s_x <- sdev_vec[1]; n_x <- n_vec[1]
-  for(i in 2:length(mean_vec)) { ## i <- 2
-    if(flag) message('  ... processing iteration ', i - 1, '...')
-    
-    mean_y <- mean_vec[i]
-    s_y    <- sdev_vec[i]
-    n_y    <- n_vec[i]
-    var_out <- pooled_var(x_bar = mean_x, y_bar = mean_y, 
-                          n_x = n_x, n_y = n_y, 
-                          s_x = s_x, s_y = s_y)
-  
-    ### set up values for next iteration
-    mean_x <- (mean_x * n_x + mean_y * n_y) / (n_x + n_y)
-    s_x <- sqrt(var_out)
-    n_x <- n_x + n_y
-  }
-  return(var_out)
-}
-
-```
+Combine taxon-level maps using nspp-weighted mean and pooled variance.  
 
 ```{r moar helper fxns}
 combine_taxa_maps <- function(tx_sst_map_df) {
@@ -322,8 +256,9 @@ process_mean_rasts <- function(big_df) {
       message('...processing ', length(gp_cells), ' cells in group ', gp, '...')
       gp_out <- big_df %>%
         filter(cell_id %in% gp_cells) %>%
-        group_by(cell_id) %>%
-        summarize(imp_mean = (sum(imp_mean * imp_nspp) / sum(imp_nspp)))
+        data.table() %>%
+        .[ , .(imp_mean = (sum(imp_mean * imp_nspp) / sum(imp_nspp))), 
+           by = .(cell_id)]
     })
   
   ### gather results
@@ -346,9 +281,9 @@ process_sdev_rasts <- function(big_df) {
       # system.time({
         gp_sdev_out <- big_df %>%
           filter(cell_id %in% gp_cells) %>%
-          group_by(cell_id) %>%
-          summarize(imp_var = iterated_pooled_var(imp_mean, imp_sdev, imp_nspp),
-                    imp_sdev = sqrt(imp_var))
+          data.table() %>%
+          .[ , .(imp_sdev = iterated_pooled_var(imp_mean, imp_sdev, imp_nspp) %>% sqrt()),
+             by = .(cell_id)]
       # })
       return(gp_sdev_out)
     })
@@ -370,12 +305,13 @@ r_to_df <- function(f) {
 ```{r assemble taxon impact maps to total maps}
 
 tx_bio_rem_map_df <- data.frame(f = list.files(dirname(out_stem), 
+                                               pattern = 'imp_unwt_biomass_removal',
                                                full.names = TRUE)) %>%
   mutate(t = str_extract(basename(f), paste0(taxa, collapse = '|')),
          p = str_extract(basename(f), '_mean|_sdev|_nspp') %>% str_remove('_'))
 
-impact_map_stem <- here('_output/impact_maps/impact_maps_unweighted_all', 
-                        'impact_unweighted_biomass_removal_%s.tif')
+impact_map_stem <- here('_output/impact_maps/impact_maps_unweighted', 
+                        'impact_unwt_biomass_removal_%s.tif')
   ### %s is parameter (mean, sd, nspp)
 
 ### check if total stressor maps are complete
@@ -384,67 +320,35 @@ impact_f_sdev <- sprintf(impact_map_stem, 'sdev')
 
 if(any(!file.exists(impact_f_mean, impact_f_sdev))) {
   ### Combine mean, sdev, and nspp maps by taxon into one big dataframe
-  message('Processing mean, sd, nspp maps across all species for biomass removal stressor...')
+  message('Processing unweighted mean, sd, nspp maps for biomass removal stressor...')
   big_df <- combine_taxa_maps(tx_bio_rem_map_df)
-  rast_nspp_all <- raster(here('_output/nspp_maps/nspp_in_unweighted_vuln_maps.tif'))
-  catch_spp_nspp <- big_df %>%
-    group_by(cell_id) %>%
-    summarize(imp_nspp = sum(imp_nspp))
-  rast_nspp_catch <- map_to_mol(catch_spp_nspp, which = 'imp_nspp')
+  # rast_nspp_all <- raster(here('_output/nspp_maps/nspp_in_unwt_vuln.tif'))
+  # catch_spp_nspp <- big_df %>%
+  #   data.table() %>%
+  #   .[ , .(imp_nspp = sum(imp_nspp)), by = .(cell_id)]
+  # rast_nspp_catch <- map_to_mol(catch_spp_nspp, which = 'imp_nspp')
+  # compareRaster(rast_nspp_all, rast_nspp_catch, values = TRUE)
 }
 
 ### Process mean raster across taxa
 if(!file.exists(impact_f_mean)) {
   message('... summarizing mean vulnerability map across all taxa...')
-  ptm <- proc.time()
-  
   catch_spp_mean <- process_mean_rasts(big_df)
   rast_mean <- map_to_mol(catch_spp_mean, which = 'imp_mean')
-  
-  message('... elapsed: ', (proc.time() - ptm)[3], ' seconds.  ')
-  
-  message('Rescoring mean based on all spp, rather than just targeted spp...')
-  rast_sum <- rast_mean * rast_nspp_catch
-  values(rast_sum)[is.na(values(rast_sum))] <- 0
-  rast_mean_all <- rast_sum / rast_nspp_all
-
   message('Writing out mean raster: \n  ',
           str_replace(impact_f_mean, '/home/ohara/github/', 'GitHub:'))
-  writeRaster(rast_mean_all, impact_f_mean, overwrite = TRUE)
+  writeRaster(rast_mean, impact_f_mean, overwrite = TRUE)
 }
 
 ### Process standard deviation raster across taxa using pooled var
 if(!file.exists(impact_f_sdev)) {
   message('... summarizing standard deviation vulnerability map across all taxa...')
   ### break this into smaller chunks and parallelize over those?
-  ptm <- proc.time()
-
   catch_spp_sdev <- process_sdev_rasts(big_df)
   rast_sdev <- map_to_mol(catch_spp_sdev, which = 'imp_sdev')
-  
-  message('... elapsed: ', (proc.time() - ptm)[3], ' seconds.  ')
-  
-  message('Rescoring std dev based on all spp, rather than just targeted spp...')
-  rast_mean_all <- raster(impact_f_mean)
-  rast_sum <- rast_mean_all * rast_nspp_all
-  rast_mean_catch <- rast_sum / rast_nspp_catch
-  var_calc_df <- data.frame(cell_id = 1:ncell(rast_mean_catch),
-                            x_bar = values(rast_mean_catch),
-                            y_bar = 0,
-                            s_x   = values(rast_sdev),
-                            s_y   = 0,
-                            n_x   = values(rast_nspp_catch),
-                            n_all = values(rast_nspp_all)) %>%
-    filter(!is.na(x_bar)) %>%
-    mutate(n_y = n_all - n_x) %>%
-    mutate(var = pooled_var(x_bar, y_bar, s_x, s_y, n_x, n_y))
-  all_spp_sdev <- var_calc_df %>%
-    mutate(imp_sdev = sqrt(var))
-  rast_sdev_all <- map_to_mol(all_spp_sdev, which = 'imp_sdev')
-  
   message('Writing out std dev raster: \n  ',
           str_replace(impact_f_sdev, '/home/ohara/github/', 'GitHub:'))
-  writeRaster(rast_sdev_all, impact_f_sdev, overwrite = TRUE)
+  writeRaster(rast_sdev, impact_f_sdev, overwrite = TRUE)
 }
 ```
 
@@ -456,233 +360,10 @@ cv_rast_unwt <- sdev_rast_unwt / mean_rast_unwt
 map_cols <- hcl.colors(n = 50)
 
 plot(log10(mean_rast_unwt), col = map_cols, #zlim = c(0, 1),
-     main = 'log_10(Mean) unweighted impact: biomass removal (all spp)',
+     main = 'log_10(Mean) unweighted impact: biomass removal',
      legend = TRUE, axes = FALSE)  
 plot(cv_rast_unwt, col = map_cols, 
-     main = 'CV unweighted weighted impact: biomass removal (all spp)',
-     legend = TRUE, axes = FALSE)
-
-```
-
-## Impacts by unweighted mean vulnerability, FE species only
-
-### Calculate mean biomass removal impacts per taxon
-
-Loop over each taxon; pull all max temp stressor files for that taxon.  For each species in the taxon, multiply biomass removal stressor map by the spp vulnerability to identify impact map for that species.  Summarize across the entire taxon to mean, sd, and nspp.
-
-```{r unweighted mean FE spp}
-spp_fe <- read_csv(here('_output/func_entities/fe_species.csv'), show_col_types = FALSE)
-
-spp_for_imp_fe_only <- spp_for_imp_calc %>%
-  inner_join(spp_fe, by = 'species')
-  
-taxa <- spp_for_imp_fe_only$taxon %>% unique() %>% sort()
-
-out_stem_fe <- here_anx('impact_maps_by_taxon/impacts_tx_biomass_removal', 
-                        'imp_unweighted_biomass_removal_fe_only',
-                        'imp_unweighted_biomass_removal_fe_%s_%s.tif')
-### zxcv <- list.files(dirname(out_stem_fe), full.names = TRUE)
-### unlink(zxcv)
-for(t in taxa) {
-  ### t <- taxa[5]
-  fe_tx_imp_df <- spp_for_imp_fe_only %>%
-    filter(taxon == t) %>%
-    select(species, score) %>%
-    distinct()
-
-  outf_mean <- sprintf(out_stem_fe, t, 'mean')
-  outf_sdev <- sprintf(out_stem_fe, t, 'sdev')
-  outf_nspp <- sprintf(out_stem_fe, t, 'nspp')
-  if(all(file.exists(outf_mean, outf_sdev, outf_nspp))) {
-    message('Rasters exist for taxon ', t, ' for biomass removal stressor... skipping!')
-    next()
-  }
-  ### read in all biomass removal stressor maps for this taxon - 
-  fe_tx_catch_mapfiles <- catch_mapfile_df %>%
-    filter(species %in% fe_tx_imp_df$species) %>%
-    distinct()
-
-  message('Loading biomass removal stress maps for taxon ', t, '...')
-  fe_tx_catch_maps_list <- parallel::mclapply(
-                    fe_tx_catch_mapfiles$map_f,
-                    mc.cores = 40, 
-                    FUN = function(f) {
-                      if(file.exists(f)) {
-                        df <- data.table::fread(f)
-                        if(class(df$rescaled_catch) == 'character') {
-                          ### for cols with only sci notation, looks like
-                          ### fread messes up... but also faster than read_csv
-                          ### so just fix those instances where it f's up.
-                          df <- df %>% 
-                            mutate(rescaled_catch = as.numeric(rescaled_catch))
-                        }
-                        return(df)
-                      } else {
-                        return(data.frame(cell_id = -1, 
-                                          rescaled_catch = NA))
-                      }
-                    })
-  if(check_tryerror(fe_tx_catch_maps_list)) {
-    message('Something went wrong with loading maps for taxon ', t, '... skipping for now!')
-    next()
-  }
-  message('Binding biomass removal stress maps for taxon ', t, ' FE species...')
-  fe_tx_catch_maps <- fe_tx_catch_maps_list %>%
-    setNames(fe_tx_catch_mapfiles$species) %>%
-    data.table::rbindlist(idcol = 'species')
-  
-  message('Taxon ', t, ' biomass removal stressor dataframe: ', nrow(fe_tx_catch_maps), 
-          ' cell observations for ', n_distinct(fe_tx_catch_mapfiles$species), 
-          ' FE species...')
-  if(any(fe_tx_catch_maps$cell_id == -1)) {
-    n_na <- fe_tx_catch_maps %>%
-      filter(cell_id == -1)
-    message('NOTE: ', nrow(n_na), ' instances of missing biomass removal pressure maps detected!')
-  }
-  
-  message('Processing mean/sd vulnerability by FE species in taxon ', t, ' to biomass removal stressor...')
-
-  ### because failures might occur with summarizing a huge dataset,
-  ### let's break this into chunks by cell_id - there are 6.6e+06 cells total
-  chunk_size <- 500000
-  n_chunks <- ceiling(ncell(raster::raster(here('_spatial/ocean_area_mol.tif'))) / chunk_size)
-  n_cores <- max(1, floor(n_chunks / ceiling(nrow(fe_tx_catch_maps)/3e7)))
-  # system.time({
-  result_list <- parallel::mclapply(1:n_chunks, mc.cores = n_cores,
-                 FUN = function(n) { ### n <- 3
-                   cell_id_min <- as.integer((n - 1) * chunk_size + 1)
-                   cell_id_max <- as.integer(n * chunk_size)
-                   message('Summarizing biomass removal stressor on taxon ', t, 
-                           ': cells ', cell_id_min, ' - ', cell_id_max, '...')
-
-                   chunk_sum <- fe_tx_catch_maps %>%
-                     filter(between(cell_id, cell_id_min, cell_id_max)) %>%
-                     oharac::dt_join(fe_tx_imp_df, by = 'species', type = 'inner') %>%
-                     mutate(impact = score * rescaled_catch) %>%
-                     group_by(cell_id) %>%
-                     summarize(impact_mean = mean(impact),
-                               impact_sd   = sd(impact),
-                               n_spp       = n_distinct(species),
-                               .groups = 'drop')
-                   }) 
-
-  if(check_tryerror(result_list)) {
-    message('Something went wrong with calculations for taxon ', t, '... skipping for now!')
-    next()
-  }
-  
-  message('Binding results for taxon ', t, '...')
-  result_df <- result_list %>%
-    data.table::rbindlist() %>%
-    filter(!is.na(cell_id))
-  
-  message('Creating and saving rasters for taxon ', t, '...')
-  rast_mean <- map_to_mol(result_df, which = 'impact_mean')
-  rast_sd   <- map_to_mol(result_df, which = 'impact_sd')
-  rast_nspp <- map_to_mol(result_df, which = 'n_spp')
-
-  writeRaster(rast_mean, outf_mean, overwrite = TRUE)
-  writeRaster(rast_sd,   outf_sdev, overwrite = TRUE)
-  writeRaster(rast_nspp, outf_nspp, overwrite = TRUE)
-}
-```
-
-
-### Summarize mean biomass removal impacts across all FE taxa
-
-Combine taxon-level maps using nspp-weighted mean and pooled variance.  Pooled var functions written and tested for script 2a.
-
-```{r assemble taxon vuln maps to total maps FE spp only}
-
-fe_tx_sst_map_df <- data.frame(f = list.files(dirname(out_stem_fe), full.names = TRUE)) %>%
-  mutate(t = str_extract(basename(f), paste0(taxa, collapse = '|')),
-         p = str_extract(basename(f), '_mean|_sdev|_nspp') %>% str_remove('_'))
-
-impact_map_stem_fe <- here('_output/impact_maps/impact_maps_unweighted_fe_only', 
-                        'impact_unweighted_fe_only_biomass_removal_%s.tif')
-  ### %s is parameter (mean, sd, nspp)
-
-### check if total stressor maps are complete
-impact_f_mean <- sprintf(impact_map_stem_fe, 'mean')
-impact_f_sdev <- sprintf(impact_map_stem_fe, 'sdev')
-
-### Combine mean, sdev, and nspp maps by taxon into one big dataframe
-if(any(!file.exists(impact_f_mean, impact_f_sdev))) {
-  message('Processing mean, sd, nspp maps across FE species for biomass removal stressor...')
-  big_df_fe <- combine_taxa_maps(fe_tx_sst_map_df)
-  rast_nspp_all <- raster(here('_output/nspp_maps/nspp_in_unwt_fe_only_vuln_maps.tif'))
-  catch_spp_nspp <- big_df_fe %>%
-    group_by(cell_id) %>%
-    summarize(imp_nspp = sum(imp_nspp))
-  rast_nspp_catch <- map_to_mol(catch_spp_nspp, which = 'imp_nspp')
-}
-
-### Process mean raster across taxa
-if(!file.exists(impact_f_mean)) {
-  message('... summarizing mean vulnerability map across FE taxa...')
-  ptm <- proc.time()
-  
-  all_spp_mean <- process_mean_rasts(big_df_fe)
-  rast_mean <- map_to_mol(all_spp_mean, which = 'imp_mean')
-
-  message('... elapsed: ', (proc.time() - ptm)[3], ' seconds.  ')
-  message('Rescoring mean based on all spp, rather than just targeted spp...')
-  rast_sum <- rast_mean * rast_nspp_catch
-  values(rast_sum)[is.na(values(rast_sum))] <- 0
-  rast_mean_all <- rast_sum / rast_nspp_all
-
-  message('Writing out mean raster: \n  ',
-          str_replace(impact_f_mean, '/home/ohara/github/', 'GitHub:'))
-  writeRaster(rast_mean_all, impact_f_mean, overwrite = TRUE)
-}
-
-### Process standard deviation raster across taxa using pooled var
-if(!file.exists(impact_f_sdev)) {
-  message('... summarizing standard deviation vulnerability map across FE taxa...')
-  ### break this into smaller chunks and parallelize over those?
-  ptm <- proc.time()
-
-  catch_spp_sdev <- process_sdev_rasts(big_df_fe)
-  rast_sdev <- map_to_mol(catch_spp_sdev, which = 'imp_sdev')
-  
-  message('... elapsed: ', (proc.time() - ptm)[3], ' seconds.  ')
-  
-  message('Rescoring std dev based on all spp, rather than just targeted spp...')
-  rast_mean_all <- raster(impact_f_mean)
-  rast_sum <- rast_mean_all * rast_nspp_all
-  rast_mean_catch <- rast_sum / rast_nspp_catch
-  var_calc_df <- data.frame(cell_id = 1:ncell(rast_mean_catch),
-                            x_bar = values(rast_mean_catch),
-                            y_bar = 0,
-                            s_x   = values(rast_sdev),
-                            s_y   = 0,
-                            n_x   = values(rast_nspp_catch),
-                            n_all = values(rast_nspp_all)) %>%
-    filter(!is.na(x_bar)) %>%
-    mutate(n_y = n_all - n_x) %>%
-    mutate(var = pooled_var(x_bar, y_bar, s_x, s_y, n_x, n_y))
-  all_spp_sdev <- var_calc_df %>%
-    mutate(imp_sdev = sqrt(var))
-  rast_sdev_all <- map_to_mol(all_spp_sdev, which = 'imp_sdev')
-  
-  message('Writing out std dev raster: \n  ',
-          str_replace(impact_f_sdev, '/home/ohara/github/', 'GitHub:'))
-  writeRaster(rast_sdev_all, impact_f_sdev, overwrite = TRUE)
-}
-```
-
-```{r}
-mean_rast_unwt <- raster(impact_f_mean)
-sdev_rast_unwt <- raster(impact_f_sdev)
-cv_rast_unwt <- sdev_rast_unwt / mean_rast_unwt
-
-map_cols <- hcl.colors(n = 50)
-
-plot(log10(mean_rast_unwt), col = map_cols, #zlim = c(0, 1),
-     main = 'log_10(Mean) unweighted impact: biomass removal (FE spp only)',
-     legend = TRUE, axes = FALSE)  
-plot(cv_rast_unwt, col = map_cols, 
-     main = 'CV unweighted weighted impact: biomass removal (FE spp only)',
+     main = 'CV unweighted weighted impact: biomass removal',
      legend = TRUE, axes = FALSE)
 
 ```
@@ -702,7 +383,6 @@ Because this is a complex process, let's tidy the big `for` loop by breaking out
 * `calc_chunk_str_sum`: for a dataframe of truncated species maps
 
 ```{r helper functions}
-
 read_truncated_rangemap <- function(f, chunk_start, chunk_end) {
   if(file.exists(f)) {
     df <- data.table::fread(f) %>%
@@ -742,20 +422,24 @@ read_truncated_str_map <- function(f, chunk_start, chunk_end) {
   return(df)
 }
 
-bind_maps_list <- function(chunk_maps_list, spp_for_calc) {
+bind_maps_list <- function(chunk_maps_list, spp_for_calc, join_col = 'map_f') {
   ### NOTE: for some reason, the bind_rows() in here sometimes causes
   ### unrecoverable errors when knitting, but seems OK when running chunks
   ### individually... try subbing with data.table::rbindlist 
+  if(check_tryerror(chunk_maps_list)) {
+    stop('Try-errors detected in bind_maps_list()!')
+  }
   chunk_maps_bound <- chunk_maps_list %>%
     ### drop NULL instances (no spp cells - helps keep things from crashing)
     purrr::compact() %>% 
-    data.table::rbindlist() 
+    data.table::rbindlist() %>%
+    rename(!!join_col := map_f)
   
   if(nrow(chunk_maps_bound) > 0) {
     ### if no spp-cell data for this chunk, skip bind and return 0-length df
     chunk_maps_bound <- chunk_maps_bound %>%
-      oharac::dt_join(spp_for_calc, by = 'map_f', type = 'left') %>%
-      select(-map_f, -src) %>%
+      oharac::dt_join(spp_for_calc, by = join_col, type = 'left') %>%
+      select(-all_of(join_col), -src) %>%
       distinct()
   }
   return(chunk_maps_bound)
@@ -764,7 +448,7 @@ bind_maps_list <- function(chunk_maps_list, spp_for_calc) {
 calc_chunk_str_sum <- function(chunk_maps, spp_for_calc) {
   chunk_spp_vuln <- spp_for_calc %>%
     filter(species %in% chunk_maps$species) %>%
-    select(species, score) %>%
+    select(species, v_score) %>%
     distinct()
   
   cell_id_df <- data.frame(cell_id = chunk_maps$cell_id %>% unique()) %>%
@@ -775,7 +459,7 @@ calc_chunk_str_sum <- function(chunk_maps, spp_for_calc) {
   ### so fill NA scores with 0 also (to avoid NA problems)
   chunk_spp_str_vuln <- chunk_maps %>%
     oharac::dt_join(chunk_spp_vuln, by = 'species', type = 'left') %>%
-    mutate(score = ifelse(is.na(score), 0, score))
+    mutate(score = ifelse(is.na(v_score), 0, v_score))
   
   ### parallelize for speed! balance vectorization with parallel to reduce crashing...
   chunk_impact_list <- parallel::mclapply(cell_gps, mc.cores = 25,
@@ -785,91 +469,39 @@ calc_chunk_str_sum <- function(chunk_maps, spp_for_calc) {
               .$cell_id
             df <- chunk_spp_str_vuln %>%
               filter(cell_id %in% cell_ids) %>%
-              mutate(impact = score * rescaled_catch) %>%
-              group_by(cell_id, fe_id) %>%
-              summarize(impact_mean = mean(impact), #,
-                        impact_sd   = sd(impact), #,
-                        n_spp       = n_distinct(species),
-                        ### super-tiny fv (~ 1e-20) result in Inf var
-                        fv = first(fv) %>% round(10),
-                        .groups = 'drop') %>%
-              group_by(cell_id) %>%
-              summarize(n_spp = sum(n_spp),
-                        fv_wt_mean_impact = Hmisc::wtd.mean(impact_mean, weights = fv),
-                        fv_wt_sd_impact   = sqrt(Hmisc::wtd.var(impact_mean, weights = fv)))
+              data.table() %>%
+              .[ , ':='(impact = v_score * rescaled_catch)] %>%
+              .[ , .(impact_mean = mean(impact),
+                     impact_sd   = sd(impact), 
+                     ### super-tiny fv (~ 1e-20) result in Inf var
+                     fv = first(fv) %>% round(10)),
+                 by = .(cell_id, fe_id)] %>%
+              .[ , .(n_fe = length(unique(fe_id)),
+                     fv_wt_mean_impact = Hmisc::wtd.mean(impact_mean, weights = fv),
+                     fv_wt_sd_impact   = sqrt(Hmisc::wtd.var(impact_mean, weights = fv))),
+                 by = .(cell_id)]
           })
+  if(check_tryerror(chunk_impact_list)) {
+    stop('Try-errors in calc_chunk_str_sum()!')
+  }
   chunk_impact_sum_df <- data.table::rbindlist(chunk_impact_list)
   return(chunk_impact_sum_df)
-}
-
-calc_fv <- function(n_spp) {
-  k <- n_spp - 1
-  fv <- 0.5^k
-} 
-
-calc_spp_cell_fv <- function(chunk_maps) {
-  ### parallelize this mf to keep group_by from crashing everything - but not
-  ### for every cell individually!  Set up 1000 different cell groups across 
-  ### the 100k(ish) cells - divide work between dplyr and parallel...
-  cell_id_df <- data.frame(cell_id = chunk_maps$cell_id %>% unique()) %>%
-    mutate(cell_gp = rep(1:100, length.out = n()))
-  cell_gps <- cell_id_df$cell_gp %>% unique()
-  
-  fv_list <- parallel::mclapply(cell_gps, mc.cores = 25,
-                                FUN = function(gp) { 
-                                  ### gp <- 52
-                                  cell_ids <- cell_id_df %>% 
-                                    filter(cell_gp == gp) %>% 
-                                    .$cell_id
-                                  x <- chunk_maps %>%
-                                    filter(cell_id %in% cell_ids) %>%
-                                    group_by(cell_id) %>%
-                                    mutate(n_spp = n_distinct(species),
-                                           n_fes = n_distinct(fe_id)) %>%
-                                    group_by(cell_id, fe_id) %>%
-                                    mutate(n_spp_fe = n_distinct(species),
-                                           fv = calc_fv(n_distinct(species))) %>%
-                                    ungroup()
-                                  return(x)
-                                })
-  fv_df <- data.table::rbindlist(fv_list)
-  return(fv_df)
 }
 ```
 
 ```{r FV weighted impact by species iterating over chunks of cells}
-n_cells <- ncell(raster(here('_spatial/ocean_area_mol.tif')))
 chunk_size <- 100000
-n_chunks <- ceiling(n_cells / chunk_size)
+n_chunks <- ceiling(6.5e6 / chunk_size)
+spp_fe <- spp_info_df %>% select(species, fe_id) %>% distinct()
 
 tmp_stem_fv <- here_anx('impact_maps_by_taxon/impacts_tx_biomass_removal', 
-                        'imp_fv_weighted_biomass_removal_all',
-                        'imp_fv_weighted_biomass_removal_chunk_%s_to_%s.tif')
-### zxcv <- list.files(dirname(tmp_stem_fv), full.names = TRUE)
+                        'imp_fvwt_biomass_removal_chunk_%s_to_%s.tif')
+### zxcv <- list.files(dirname(tmp_stem_fv), pattern = 'imp_fvwt', full.names = TRUE)
 ### unlink(zxcv)
 
-spp_fe <- read_csv(here('_output/func_entities/fe_species.csv'), show_col_types = FALSE)
-
-spp_for_imp_fv_only <- spp_for_imp_calc %>%
-  inner_join(spp_fe, by = 'species')
-
-catch_mapfile_fv_df <- catch_mapfile_df %>%
-  filter(species %in% spp_for_imp_fv_only$species) %>%
-  distinct()
-
-rangemap_stem <- here_anx('spp_maps_mol', '%s_spp_mol_%s.csv')
-range_mapfile_fv_df <- spp_for_imp_calc_all %>%
-  inner_join(spp_fe, by = 'species') %>%
-  mutate(src = ifelse(iucn_mapped, 'iucn', 'am'),
-         map_f = ifelse(src == 'iucn', 
-                        sprintf(rangemap_stem, 'iucn', iucn_sid),
-                        sprintf(rangemap_stem, 'am', str_replace_all(species, ' ', '_')))) %>%
-  select(species, map_f, src, fe_id) %>%
-  distinct()
-
 for(chunk_i in 1:n_chunks) { 
-  ### chunk_i <- 7
-  ### chunk_i <- 63
+  ### chunk_i <- 1
+  ### chunk_i <- 65
   
   ### Set up chunk start and end and filenames; check whether maps 
   ### all stressors for this chunk...
@@ -888,19 +520,22 @@ for(chunk_i in 1:n_chunks) {
   ### If no chunk map, continue:
   ### Load species range and biomass removal pressure maps for this chunk, 
   ### then clean and bind:
-  message('Loading ', nrow(range_mapfile_fv_df), ' rangemaps cropped for ', chunk_text,  '...')
-  chunk_rangemaps_list <- parallel::mclapply(range_mapfile_fv_df$map_f, mc.cores = 30, 
+  message('Loading ', nrow(range_mapfile_df), ' rangemaps cropped for ', chunk_text,  '...')
+  chunk_rangemaps_list <- parallel::mclapply(range_mapfile_df$range_map_f, mc.cores = 40, 
                                         FUN = read_truncated_rangemap, 
                                         chunk_start = chunk_start, chunk_end = chunk_end) 
   chunk_rangemaps_raw <- bind_maps_list(chunk_maps_list = chunk_rangemaps_list, 
-                                        spp_for_calc = range_mapfile_fv_df)
+                                        spp_for_calc = range_mapfile_df,
+                                        join_col = 'range_map_f')
   
-  message('... Loading ', nrow(catch_mapfile_fv_df), ' catch maps cropped for ', chunk_text,  '...')
-  chunk_catch_maps_list <- parallel::mclapply(catch_mapfile_fv_df$map_f, mc.cores = 30, 
+  message('... Loading ', nrow(catch_mapfile_df), ' catch maps cropped for ', 
+          chunk_text,  '...')
+  chunk_catch_maps_list <- parallel::mclapply(catch_mapfile_df$catch_map_f, mc.cores = 40, 
                                         FUN = read_truncated_str_map, 
                                         chunk_start = chunk_start, chunk_end = chunk_end) 
   chunk_catch_maps_raw <- bind_maps_list(chunk_maps_list = chunk_catch_maps_list, 
-                                         spp_for_calc = catch_mapfile_fv_df)
+                                         spp_for_calc = catch_mapfile_df,
+                                         join_col = 'catch_map_f')
   
   ### Some error/edge case checking:
   if(nrow(chunk_catch_maps_raw) > 0 & nrow(chunk_rangemaps_raw) == 0) {
@@ -918,9 +553,12 @@ for(chunk_i in 1:n_chunks) {
     ### no catch, but spp present - summarize here and save out
     message('... No catch found but ', n_distinct(chunk_rangemaps_raw$species),
             ' species found for ', chunk_text, '...')
-    no_catch_df <- chunk_rangemaps_raw %>%
+    range_maps_fv <- calc_spp_cell_fv(spp_cells = chunk_rangemaps_raw,
+                                      spp_fe = spp_fe)
+
+    no_catch_df <- range_maps_fv %>%
       group_by(cell_id) %>%
-      summarize(n_spp = n_distinct(species), 
+      summarize(n_fe = n_distinct(fe_id), 
                 fv_wt_mean_impact = 0, 
                 fv_wt_sd_impact = 0)
     write_csv(no_catch_df, tmp_biomass_removal_fv)
@@ -935,7 +573,8 @@ for(chunk_i in 1:n_chunks) {
   ### OK, now we have species and cells for this chunk.  Calculate functional vulnerability!
   message('... Calculating functional vulnerability metrics for ', nrow(catch_maps_filled), 
           ' spp-cells in \n    ', chunk_text, '...')
-  chunk_maps_fv <- calc_spp_cell_fv(chunk_maps = catch_maps_filled)
+  chunk_maps_fv <- calc_spp_cell_fv(spp_cells = catch_maps_filled,
+                                    spp_fe = spp_fe)
   
   message('... In ', chunk_text,  ' rangemap dataframe: \n    ', nrow(chunk_maps_fv), 
           ' cell observations for ', n_distinct(chunk_maps_fv$species), ' species across ',
@@ -943,7 +582,7 @@ for(chunk_i in 1:n_chunks) {
   
   message('... Processing mean/sd vuln in ', chunk_text, ' to stressor: biomass removal...')
   chunk_str_sum <- calc_chunk_str_sum(chunk_maps = chunk_maps_fv, 
-                                      spp_for_calc = spp_for_imp_fv_only)
+                                      spp_for_calc = spp_info_df)
   
   write_csv(chunk_str_sum, tmp_biomass_removal_fv)
 }
@@ -955,13 +594,8 @@ for(chunk_i in 1:n_chunks) {
 For each stressor, pull in all chunk dataframes, assemble into dataframe, and save out as rasters.
 
 ```{r assemble chunk vuln maps to total maps}
-
-chunk_files <- list.files(dirname(tmp_stem_fv), 
-                          pattern = 'imp_fv_weighted_biomass_removal_chunk', 
-                          full.names = TRUE)
-
 rast_fv_out_stem <- here('_output/impact_maps/impact_maps_fv_weighted', 
-                         'impact_fv_weighted_biomass_removal_%s.tif')
+                         'impact_fvwt_biomass_removal_%s.tif')
 
 rast_mean_impact_fv_f <- sprintf(rast_fv_out_stem, 'mean')
 rast_sdev_impact_fv_f <- sprintf(rast_fv_out_stem, 'sdev')
@@ -969,6 +603,10 @@ rast_sdev_impact_fv_f <- sprintf(rast_fv_out_stem, 'sdev')
 if(any(!file.exists(rast_mean_impact_fv_f, rast_sdev_impact_fv_f))) {
   message('Gathering impact chunk maps for biomass removal...')
   
+  chunk_files <- list.files(dirname(tmp_stem_fv), 
+                            pattern = 'imp_fvwt_biomass_removal_chunk', 
+                            full.names = TRUE)
+
   impact_map_df <- parallel::mclapply(chunk_files, mc.cores = 33, FUN = data.table::fread) %>%
     bind_rows()
   
@@ -979,6 +617,11 @@ if(any(!file.exists(rast_mean_impact_fv_f, rast_sdev_impact_fv_f))) {
   message('Writing impact rasters for biomass removal...')
   writeRaster(mean_rast_fvwt, rast_mean_impact_fv_f, overwrite = TRUE)
   writeRaster(sdev_rast_fvwt, rast_sdev_impact_fv_f, overwrite = TRUE)
+  
+  ### n_fe rast matches with that calculated in the vuln calcs:
+  # n_fe_rast_main <- raster(here('_output/nspp_maps/n_fe_in_fvwt_vuln.tif'))
+  # n_fe_rast_fvwt <- map_to_mol(impact_map_df, by = 'cell_id', which = 'n_fe')
+  # compareRaster(n_fe_rast_main, n_fe_rast_fvwt, values = TRUE)
 }
 ```
 
