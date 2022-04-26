@@ -1,0 +1,225 @@
+---
+title: "Assemble grouping traits and gapfill using genus and family"
+author: "*Compiled on `r date()` by `r Sys.info()['user']`*"
+output: 
+  html_document:
+    code_folding: hide
+    toc: true
+    toc_depth: 3
+    toc_float: yes
+    number_sections: true
+    theme: cerulean
+    highlight: haddock
+    includes: 
+      in_header: '~/github/src/templates/ohara_hdr.html'
+  pdf_document:
+    toc: true
+---
+
+``` {r setup, echo = TRUE, message = FALSE, warning = FALSE}
+
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
+
+library(oharac)
+library(tidyverse)
+library(here)
+source(here('common_fxns.R'))
+source('fb_slb_fxns.R')
+
+```
+
+# Summary
+
+Using the MICE-imputed species trait set, apply a taxonomic gapfill by imputing values for non-included species based on other included species in their genus or family.
+
+# Data
+
+See individual trait scripts.
+
+# Methods
+
+## set up dataset for imputation
+
+Read in the MICE-imputed grouping traits data; bind WoRMS classifications; then filter to just the included taxonomic groups.
+
+```{r}
+worms_spp <- assemble_worms()
+
+### file created in script 4:
+traits_from_mice <- read_csv(here('_data/grouping_traits_post_imputation.csv'),
+                             show_col_types = FALSE) %>%
+  full_join(worms_spp, by = 'species') %>%
+  select(species, adult_mob, wcol, log_l, log_f, age_mat, troph, family, genus)
+
+```
+
+## Process gapfilling
+
+### Adult mobility
+
+```{r need a function to find the mode}
+### R mode() is not what you'd think... found this one here:
+###   https://stackoverflow.com/questions/2547402/how-to-find-the-statistical-mode
+stats_mode <- function(x, na.rm = TRUE) {
+  ux <- unique(x)
+  if(na.rm == TRUE) ux <- ux[!is.na(ux)]
+  ux[which.max(tabulate(match(x, ux)))]
+}
+```
+
+```{r}
+mob_df <- traits_from_mice %>%
+  select(species, family, genus, adult_mob) %>%
+  group_by(genus) %>%
+  mutate(mob_gen = ifelse(is.na(adult_mob), stats_mode(adult_mob), NA)) %>%
+  group_by(family) %>%
+  mutate(mob_fam = ifelse(is.na(adult_mob), stats_mode(adult_mob), NA)) %>%
+  ungroup() %>%
+  mutate(mob_gf_level = case_when(is.na(adult_mob) & is.na(mob_gen) & !is.na(mob_fam) ~ 'family',
+                                  is.na(adult_mob) & !is.na(mob_gen) ~ 'genus',
+                                  !is.na(adult_mob) ~ 'none',
+                                  TRUE ~ NA_character_),
+         adult_mob = case_when(is.na(adult_mob) & is.na(mob_gen) ~ mob_fam,
+                               is.na(adult_mob) & !is.na(mob_gen) ~ mob_gen,
+                               TRUE ~ adult_mob)) %>%
+  select(species, adult_mob, mob_gf_level) %>%
+  filter(!is.na(adult_mob)) %>%
+  distinct()
+```
+
+### Water column position
+
+```{r}
+wcol_df <- traits_from_mice %>%
+  select(species, family, genus, wcol) %>%
+  group_by(genus) %>%
+  mutate(wcol_gen = ifelse(is.na(wcol), stats_mode(wcol), NA)) %>%
+  group_by(family) %>%
+  mutate(wcol_fam = ifelse(is.na(wcol), stats_mode(wcol), NA)) %>%
+  ungroup() %>%
+  mutate(wcol_gf_level = case_when(is.na(wcol) & is.na(wcol_gen) & !is.na(wcol_fam) ~ 'family',
+                                   is.na(wcol) & !is.na(wcol_gen) ~ 'genus',
+                                   !is.na(wcol) ~ 'none',
+                                   TRUE ~ NA_character_),
+         wcol = case_when(is.na(wcol) & is.na(wcol_gen) ~ wcol_fam,
+                          is.na(wcol) & !is.na(wcol_gen) ~ wcol_gen,
+                          TRUE ~ wcol)) %>%
+  select(species, wcol, wcol_gf_level) %>%
+  filter(!is.na(wcol)) %>%
+  distinct()
+```
+
+
+
+### Log Length
+
+```{r}
+log_l_df <- traits_from_mice %>%
+  select(species, family, genus, log_l) %>%
+  group_by(genus) %>%
+  mutate(log_l_gen = ifelse(is.na(log_l), mean(log_l, na.rm = TRUE), NA)) %>%
+  group_by(family) %>%
+  mutate(log_l_fam = ifelse(is.na(log_l), mean(log_l, na.rm = TRUE), NA)) %>%
+  ungroup() %>%
+  mutate(log_l_gf_level = case_when(is.na(log_l) & is.na(log_l_gen) & !is.na(log_l_fam) ~ 'family',
+                                    is.na(log_l) & !is.na(log_l_gen) ~ 'genus',
+                                    !is.na(log_l) ~ 'none',
+                                    TRUE ~ NA_character_),
+         log_l = case_when(is.na(log_l) & is.na(log_l_gen) ~ log_l_fam,
+                           is.na(log_l) & !is.na(log_l_gen) ~ log_l_gen,
+                           TRUE ~ log_l)) %>%
+  select(species, log_l, log_l_gf_level) %>%
+  filter(!is.na(log_l)) %>%
+  distinct()
+```
+
+### Log fecundity
+
+```{r}
+log_f_df <- traits_from_mice %>%
+  select(species, family, genus, log_f) %>%
+  group_by(genus) %>%
+  mutate(log_f_gen = ifelse(is.na(log_f), mean(log_f, na.rm = TRUE), NA)) %>%
+  group_by(family) %>%
+  mutate(log_f_fam = ifelse(is.na(log_f), mean(log_f, na.rm = TRUE), NA)) %>%
+  ungroup() %>%
+  mutate(log_f_gf_level  = case_when(is.na(log_f) & is.na(log_f_gen) & !is.na(log_f_fam) ~ 'family',
+                               is.na(log_f) & !is.na(log_f_gen) ~ 'genus',
+                               !is.na(log_f) ~ 'none',
+                               TRUE ~ NA_character_),
+         log_f      = case_when(is.na(log_f) & is.na(log_f_gen) ~ log_f_fam,
+                               is.na(log_f) & !is.na(log_f_gen) ~ log_f_gen,
+                               TRUE ~ log_f)) %>%
+  select(species, log_f, log_f_gf_level) %>%
+  filter(!is.na(log_f)) %>%
+  distinct()
+```
+
+
+### Age to maturity
+
+```{r}
+age_mat_df <- traits_from_mice %>%
+  select(species, family, genus, age_mat) %>%
+  group_by(genus) %>%
+  mutate(mat_gen = ifelse(is.na(age_mat), mean(age_mat, na.rm = TRUE), NA)) %>%
+  group_by(family) %>%
+  mutate(mat_fam = ifelse(is.na(age_mat), mean(age_mat, na.rm = TRUE), NA)) %>%
+  ungroup() %>%
+  mutate(mat_gf_level = case_when(is.na(age_mat) & is.na(mat_gen) & !is.na(mat_fam) ~ 'family',
+                                  is.na(age_mat) & !is.na(mat_gen) ~ 'genus',
+                                  !is.na(age_mat) ~ 'none',
+                                  TRUE ~ NA_character_),
+         age_mat = case_when(is.na(age_mat) & is.na(mat_gen) ~ mat_fam,
+                             is.na(age_mat) & !is.na(mat_gen) ~ mat_gen,
+                             TRUE ~ age_mat)) %>%
+  select(species, age_mat, mat_gf_level) %>%
+  filter(!is.na(age_mat)) %>%
+  distinct()
+```
+
+
+### Age to maturity
+
+```{r}
+troph_df <- traits_from_mice %>%
+  select(species, family, genus, troph) %>%
+  group_by(genus) %>%
+  mutate(troph_gen = ifelse(is.na(troph), mean(troph, na.rm = TRUE), NA)) %>%
+  group_by(family) %>%
+  mutate(troph_fam = ifelse(is.na(troph), mean(troph, na.rm = TRUE), NA)) %>%
+  ungroup() %>%
+  mutate(troph_gf_level = case_when(is.na(troph) & is.na(troph_gen) & !is.na(troph_fam) ~ 'family',
+                                  is.na(troph) & !is.na(troph_gen) ~ 'genus',
+                                  !is.na(troph) ~ 'none',
+                                  TRUE ~ NA_character_),
+         troph = case_when(is.na(troph) & is.na(troph_gen) ~ troph_fam,
+                             is.na(troph) & !is.na(troph_gen) ~ troph_gen,
+                             TRUE ~ troph)) %>%
+  select(species, troph, troph_gf_level) %>%
+  filter(!is.na(troph)) %>%
+  distinct()
+```
+
+## Combine all and save out
+
+Select mean mobility, mode water column position, mean log(length), mean log(fecundity), mean trophic level, mean age to maturity.  Keep the highest rank of gapfill across all traits (should be pretty much identical)
+
+``` {r}
+traits_ensemble <- mob_df %>%
+  full_join(wcol_df, by = 'species') %>%
+  full_join(log_l_df, by = 'species') %>%
+  full_join(troph_df, by = 'species') %>%
+  # full_join(log_f_df, by = 'species') %>%   ### drop b/c not used in FE
+  # full_join(age_mat_df, by = 'species') %>% ### drop b/c not used in FE
+  gather(trait, gf_rank, ends_with('gf_level')) %>%
+  select(-trait) %>%
+  distinct() %>%
+  mutate(gf_rank = factor(gf_rank, levels = c('none', 'genus', 'family'), ordered = TRUE)) %>%
+  group_by(species) %>%
+  filter(gf_rank == max(gf_rank))
+  
+
+write_csv(traits_ensemble, here('_data/grouping_traits_miced_and_gapfilled.csv'))
+```
+

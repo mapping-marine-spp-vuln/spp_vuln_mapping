@@ -1,0 +1,198 @@
+---
+title: "Assign functional entities from gapfilled traits"
+author: "*Compiled on `r date()` by `r Sys.info()['user']`*"
+output: 
+  html_document:
+    code_folding: hide
+    toc: true
+    toc_depth: 3
+    toc_float: yes
+    number_sections: true
+    theme: cerulean
+    highlight: haddock
+    includes: 
+      in_header: '~/github/src/templates/ohara_hdr.html'
+  pdf_document:
+    toc: true
+---
+
+``` {r setup, echo = TRUE, message = FALSE, warning = FALSE}
+
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
+
+library(oharac)
+library(tidyverse)
+library(here)
+source(here('common_fxns.R'))
+
+```
+
+# Summary
+
+Gather processed and gapfilled traits data.  Assign bins for trait values.  Use trait bins to identify functional entities (FE) per Villeger and others.  Note: reproduction traits, while available, are excluded from assigning the final functional entities.
+
+# Data
+
+Traits from Fishbase/Sealifebase and species vulnerability framework - gapfilled using MICE - from script 1c.
+
+# Methods
+
+## Gather traits
+
+Here we will read in the gapfilled traits set and assign the values into specific bins as appropriate.  Inspired by Sebastien Villeger's code, I will create text codes for each trait/value combo, but with a few more letters so they are a little more comprehensible.
+
+### Set up categories
+
+Adult mobility and water column position are already categorical variables.
+
+* __Adult mobility__: sessile (`ses`), sedentary (`sed`), mobile resident (`mob`), and migratory/nomadic (`mig`)
+* __Water column position__: benthic (`ben`), benthopelagic (`bp`), pelagic (`pel`), reef-associated (`rf`)
+
+__Max body length__ (cm):
+
+* Very small: (0, 1.5]
+* Small: (1.5, 5]
+* Medium: (5, 15]
+* Large: (15, 100]
+* Very large: (100, ...)
+
+__Trophic level__:
+
+* Primary consumer: (1, 2]
+* Secondary consumer: (2, 3]
+* Tertiary consumer: (3, 4]
+* Apex consumer: (4, ...)
+
+
+```{r}
+fe_traits <- read_csv(here('_data/grouping_traits_miced_and_gapfilled.csv')) %>%
+  mutate(len = exp(log_l), 
+         # fec = exp(log_f),
+         len = case_when(len <= 1.5 ~ 'vsm',
+                         len <= 5   ~ 'sm',
+                         len <= 15  ~ 'med',
+                         len <= 100 ~ 'lg',
+                         len > 100  ~ 'vlg',
+                         TRUE ~ NA_character_),
+         len = factor(len, levels = c('vsm', 'sm', 'med', 'lg', 'vlg'))) %>%
+  mutate(trp = case_when(troph <= 2 ~ 'pri',
+                         troph <= 3 ~ 'sec',
+                         troph <= 4 ~ 'ter',
+                         troph > 4  ~ 'apex',
+                         TRUE ~ NA_character_),
+         trp = factor(trp, levels = c('pri', 'sec', 'ter', 'apex'))) %>%
+  select(species, wcol, mob = adult_mob, len, 
+         # fec, gen, 
+         trp) %>%
+  drop_na()
+
+table(fe_traits$len)
+table(fe_traits$trp)
+table(fe_traits$mob)
+table(fe_traits$col)
+
+```
+
+
+
+## Assign to functional entities
+
+Here we will full-join all trait dataframes by species, eliminate any with NA values for any traits, and then collapse the trait values together into a specific functional entity character code (which will also be assigned a numeric FE code).
+
+```{r}
+n_fe_possible <- n_distinct(fe_traits$mob) *
+                 # n_distinct(fe_traits$fec) *
+                 # n_distinct(fe_traits$gen) *
+                 n_distinct(fe_traits$trp) *
+                 n_distinct(fe_traits$len) *
+                 n_distinct(fe_traits$wcol)
+```
+
+Based on the given trait categories, we could see up to `r n_fe_possible` functional entities, though most will not be populated (e.g., not so likely to find a very large apex predator species with a high fecundity and short generation time).
+
+`r knitr::include_graphics(here('figs/alien-main_2.jpeg'))`
+
+### Number of spp included, by phylum/class
+
+``` {r check inclusion}
+worms_spp <- assemble_worms()
+
+incl_spp <- fe_traits %>%
+  left_join(worms_spp) %>%
+  mutate(gp = ifelse(phylum == 'chordata', paste0('chordata:', class), phylum)) %>%
+  group_by(gp) %>%
+  summarize(n_spp = n_distinct(species))
+
+knitr::kable(incl_spp)
+```
+
+
+### assign FE codes
+
+```{r}
+fe_df <- fe_traits %>%
+  mutate(fe_code = sprintf('MOB%s_TRP%s_LEN%s_WCOL%s', mob, trp, len, wcol)) %>%
+  # mutate(fe_code = sprintf('MOB%s_TRP%s_GEN%s_FEC%s_LEN%s_WCOL%s', mob, trp, gen, fec, len, wcol)) %>%
+  group_by(fe_code) %>%
+  mutate(n = n()) %>%
+  ungroup() %>%
+  arrange(desc(n)) %>%
+  mutate(fe_code = fct_inorder(fe_code))
+```
+
+``` {r examine distributions of species across functional entities}
+
+fe_df_summary <- fe_df %>%
+  group_by(fe_code) %>%
+  summarize(n_spp = n_distinct(species)) 
+
+hist(log10(fe_df_summary$n_spp))
+DT::datatable(fe_df_summary)
+
+n_distinct(fe_df$fe_code)
+```
+
+## Write out functional entities
+
+```{r}
+fe_out_df <- fe_df %>%
+  select(species, fe_code, n_spp = n) %>%
+  mutate(fe_id = as.integer(fe_code))
+
+write_csv(fe_out_df, here('_output/func_entities/fe_species.csv'))
+
+fe_traits_df <- fe_df %>%
+  select(fe_code, n_spp = n, mob, # fec, gen, 
+         trp, len, wcol) %>%
+  distinct()
+
+write_csv(fe_traits_df, here('_output/func_entities/fe_trait_codes.csv'))
+
+```
+
+## Examine inclusion across Functional Entities, AquaMaps, and Species Vulnerability
+
+```{r}
+library(ggvenn)
+iucn_maps <- read_csv(here('_data/iucn_spp/spp_marine_maps_2021-3.csv'))
+iucn_spp <- read_csv(here('_data/iucn_spp/iucn_to_worms_match.csv')) %>%
+  filter(iucn_sid %in% iucn_maps$iucn_sid) %>%
+  .$sciname %>% unique()
+am_spp <- get_am_spp_info() %>%
+  filter(occur_cells >= 10) %>%
+  filter(!is.na(sciname)) %>%
+  .$sciname %>% unique()
+
+mapped_spp <- c(am_spp, iucn_spp) %>% unique()
+
+vuln_spp <- get_spp_vuln() %>%
+  .$species %>% unique()
+fe_spp <- fe_out_df$species %>% 
+  unique()
+
+x = list(Mapped = mapped_spp, 
+         Vuln   = vuln_spp,
+         FE     = fe_spp)
+ggvenn(x)
+
+```

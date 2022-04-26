@@ -1,0 +1,550 @@
+---
+title: "Compare cumulative impacts per species to IUCN status"
+author: "*Compiled on `r date()` by `r Sys.info()['user']`*"
+output: 
+  html_document:
+    code_folding: hide
+    toc: true
+    toc_depth: 3
+    toc_float: yes
+    number_sections: true
+    theme: cerulean
+    highlight: haddock
+    includes: 
+      in_header: '~/github/src/templates/ohara_hdr.html'
+  pdf_document:
+    toc: true
+---
+
+``` {r setup, echo = TRUE, message = FALSE, warning = FALSE}
+
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
+
+library(raster)
+library(tidyverse)
+library(here)
+library(RColorBrewer)
+library(oharac)
+library(caret)
+source(here('common_fxns.R'))
+
+```
+
+# Summary
+
+Calculate the cumulative impact across each species range (total and coastal-only).  Relative CHI will be the total CHI (summed across all cells and all stressors) normalized by the total range (total and coastal-only).  The relative CHI is effectively the average CHI per km^2^ across the species' range.
+
+Perform a regression of IUCN extinction risk classification as a function of relative overall CHI and overall range, and then do the same for coastal.
+
+# Data
+
+* Species impact scores from script 6
+* IUCN extinction risk scores from IUCN
+
+# Methods
+
+## Read in species impacts for those spp assessed by IUCN; summarize to CHI
+
+Summarize to cumulative impacts by entire range and by coastal range.
+
+Each file has a row for each stressor-vulnerability match; columns are:
+
+* `str_vuln` (chr): name of stressor/vuln combo, as <str>-<vuln>
+* `impact_tot` (dbl): sum across all cells of stressor intensity $\times$ vulnerability $\times$ ocean area
+* `impact_coastal` (dbl): sum across all coastal cells (≤200m) of stressor intensity $\times$ vulnerability $\times$ ocean area
+* `range_tot_km2` (dbl): sum of ocean area of all cells across entire range
+* `range_coastal_km2` (dbl): sum of ocean area of all cells across coastal range
+
+
+```{r}
+spp_chi_file <- here_anx('int/spp_chi_summary.csv')
+
+if(!file.exists(spp_chi_file)) { ### unlink(spp_chi_file)
+  spp_imp_fs <- list.files(here_anx('impacts_by_species'), 
+                           pattern = '^impacts_.+.csv', full.names = TRUE)
+  
+  spp_imp_raw_df <- parallel::mclapply(spp_imp_fs, mc.cores = 40,
+                                       data.table::fread) %>%
+    setNames(basename(spp_imp_fs)) %>%
+    data.table::rbindlist(idcol = 'f')
+  
+  spp_ranges <- spp_imp_raw_df %>%
+    select(f, range_km2, range) %>%
+    distinct() %>%
+    spread(range, range_km2) %>%
+    rename(range_cst_km2 = coastal, range_tot_km2 = full)
+  
+  spp_intensity_df <- spp_imp_raw_df %>%
+    select(f, vuln, stressor, intensity_tot, range) %>%
+    spread(range, intensity_tot) %>%
+    rename(intensity_tot = full, intensity_cst = coastal)
+    
+  spp_intens_cv_df <- spp_imp_raw_df %>%
+    select(f, vuln, stressor, intensity_cv, range) %>%
+    spread(range, intensity_cv) %>%
+    rename(intensity_cv_tot = full, intensity_cv_cst = coastal)
+
+  spp_impacts_df <- spp_imp_raw_df %>%
+    select(f, vuln, stressor, impact_tot, range) %>%
+    spread(range, impact_tot) %>%
+    rename(impact_tot = full, impact_cst = coastal)
+    
+  spp_cv_df <- spp_imp_raw_df %>%
+    select(f, vuln, stressor, impact_cv, range) %>%
+    spread(range, impact_cv) %>%
+    rename(impact_cv_tot = full, impact_cv_cst = coastal)
+
+  spp_impacts_npp_df <- spp_imp_raw_df %>%
+    select(f, vuln, stressor, impact_npp_tot, range) %>%
+    spread(range, impact_npp_tot) %>%
+    rename(impact_npp_tot = full, impact_npp_cst = coastal)
+    
+  spp_npp_cv_df <- spp_imp_raw_df %>%
+    select(f, vuln, stressor, impact_npp_cv, range) %>%
+    spread(range, impact_npp_cv) %>%
+    rename(impact_npp_cv_tot = full, impact_npp_cv_cst = coastal)
+
+  iucn_worms_lookup <- read_csv(here('_data/iucn_spp', 'iucn_to_worms_match.csv'))
+
+  spp_imp_cv_df <- full_join(spp_impacts_df, spp_cv_df, 
+                             by = c('f', 'vuln', 'stressor')) %>%
+    full_join(spp_impacts_npp_df, by = c('f', 'vuln', 'stressor')) %>%
+    full_join(spp_npp_cv_df, by = c('f', 'vuln', 'stressor')) %>%
+    full_join(spp_intensity_df, by = c('f', 'vuln', 'stressor')) %>%
+    full_join(spp_intens_cv_df, by = c('f', 'vuln', 'stressor')) %>%
+    left_join(spp_ranges, by = 'f') %>%
+    ### extract species and map info from filename
+    mutate(map_src = str_extract(f, '_iucn_|_am_') %>% str_remove_all('_'),
+           iucn_sid = str_extract(f, '[0-9]+') %>% as.integer(),
+           spp_from_f = str_remove_all(f, 'impacts_(am|iucn)_|.csv')) %>%
+    left_join(iucn_worms_lookup, by = 'iucn_sid') %>%
+    mutate(sciname = ifelse(is.na(worms_name), 
+                            str_replace_all(spp_from_f, '_', ' '),
+                            worms_name)) %>%
+    ### append iucn_sid for spp not mapped in IUCN but mapped in AM:
+    left_join(iucn_worms_lookup %>% select(sciname = worms_name, iucn_sid2 = iucn_sid),
+              by = c('sciname')) %>%
+    mutate(iucn_sid = ifelse(is.na(iucn_sid), iucn_sid2, iucn_sid)) %>%
+    select(sciname, iucn_sid, map_src, vuln, stressor, 
+           impact_cst, impact_tot, impact_cv_cst, impact_cv_tot,
+           impact_npp_cst, impact_npp_tot, 
+           impact_npp_cv_cst, impact_npp_cv_tot,
+           intensity_cst, intensity_tot, 
+           intensity_cv_cst, intensity_cv_tot,
+           range_cst_km2, range_tot_km2) %>%
+    distinct() %>%
+    filter(range_tot_km2 > 0 & !is.na(impact_tot))
+    
+  write_csv(spp_imp_cv_df, spp_chi_file)
+}
+```
+
+### Assemble IUCN Red List categories for species in IUCN maps and AquaMaps maps
+
+``` {r}
+iucn_worms_lookup <- read_csv(here('_data/iucn_spp', 'iucn_to_worms_match.csv'),
+                              show_col_types = FALSE)
+
+iucn_assessed <- read_csv(here('_data/iucn_spp/iucn_marine_spp_info_2021-3.csv'),
+                              show_col_types = FALSE) %>%
+  select(iucn_sid, cat, cat_score) %>%
+  left_join(iucn_worms_lookup, by = 'iucn_sid') %>%
+  mutate(threatened = case_when(cat == 'dd' ~ NA,
+                                cat %in% c('lc', 'nt') ~ FALSE,
+                                TRUE ~ TRUE),
+         atrisk     = case_when(cat == 'dd' ~ NA,
+                                cat %in% c('lc') ~ FALSE,
+                                TRUE ~ TRUE)) %>%
+  select(iucn_sid, iucn_sciname = sciname, sciname = worms_name, 
+         cat, cat_score, threatened, atrisk)
+
+```
+
+### Combine IUCN categories with impacts
+
+``` {r}
+iucn_impacts_df <- read_csv(spp_chi_file,
+                            show_col_types = FALSE) %>%
+  inner_join(iucn_assessed, by = c('sciname', 'iucn_sid')) %>%
+  mutate(iucn_fct = toupper(cat),
+         iucn_fct = factor(iucn_fct, levels = c('LC', 'NT', 'VU', 'EN', 'CR', 'EX', 'DD')))
+
+check_df <- iucn_impacts_df %>%
+  select(sciname, iucn_sid, map_src) %>%
+  distinct() %>%
+  janitor::get_dupes(sciname)
+
+spp_taxa <- assemble_worms() %>%
+  select(sciname = species, phylum, class, order, family) %>%
+  distinct() %>%
+  inner_join(get_spp_vuln() %>% 
+             select(sciname = species, taxon) %>% 
+             distinct())
+
+fished_spp <- iucn_impacts_df %>%
+  filter(stressor == 'biomass_removal') %>%
+  mutate(fished = impact_cst > 0 | impact_tot > 0) %>%
+  select(sciname, iucn_sid, fished)
+
+traits <- get_spp_traits()
+
+spp_chi_iucn_clean <- iucn_impacts_df %>%
+  filter(stressor == 'cumulative') %>%
+  mutate(chi_rel_tot = impact_tot / range_tot_km2,
+         chi_rel_cst = impact_cst / range_cst_km2,
+         chi_npp_tot = impact_npp_tot / range_tot_km2,
+         chi_npp_cst = impact_npp_cst / range_cst_km2) %>%
+  filter(!is.na(threatened)) %>%
+  left_join(spp_taxa, by = 'sciname') %>%
+  left_join(fished_spp, by = c('sciname', 'iucn_sid'))
+```
+
+## Try some simple tests
+
+### examine CHI by range
+
+```{r}
+ggplot(spp_chi_iucn_clean, aes(x = range_tot_km2, y = impact_tot)) +
+  geom_point(aes(color = iucn_fct, shape = fished)) +
+  geom_abline(slope = 1, intercept = 0, color = 'red', size = .5) +
+  # scale_y_log10() +
+  theme_minimal() +
+  facet_wrap(~ taxon) +
+  labs(title = 'Cumulative impact by range')
+
+ggplot(spp_chi_iucn_clean %>% filter(taxon == 'fish'),
+       aes(x = range_tot_km2, y = impact_tot)) +
+  geom_point(aes(color = iucn_fct, shape = fished)) +
+  geom_abline(slope = 1, intercept = 0, color = 'red', size = .5) +
+  # scale_y_log10() +
+  theme_minimal() +
+  facet_wrap(~ order) +
+  labs(title = 'Fish vulnerability across orders')
+
+```
+
+Technically possible for species to have higher total impacts than range, e.g., if high vulnerability (near 1) to multiple very intense stressor (near 1) across most of its range.
+
+Questions:
+
+* Are the spp near the 1:1 line due to cumulative effects, or dominated by a single stressor?  
+* there seem to be a few "clusters" of slopes, notably two distinct clusters in fish.
+
+#### examine potential vulnerability clusters
+
+Perhaps the clusters relate to two distinct groupings of vulnerability.  Focusing on fish, examine distribution of vulnerability across all included stressors.
+
+```{r}
+vuln_in_chi <- iucn_impacts_df$vuln %>% unique()
+fish_vuln_in_chi <- get_spp_vuln() %>%
+  filter(taxon == 'fish' & stressor %in% vuln_in_chi)
+
+ggplot(fish_vuln_in_chi, aes(y = stressor, x = score)) +
+  geom_jitter(width = 0.02, alpha = .1) +
+  theme_minimal() +
+  theme(axis.title = element_blank()) +
+  labs(title = 'Fish vulnerability across stressors')
+
+sst_rise_vuln_in_chi <- get_spp_vuln() %>%
+  filter(stressor == 'sst_rise')
+
+ggplot(sst_rise_vuln_in_chi, aes(y = taxon, x = score)) +
+  geom_jitter(width = 0.02, alpha = .1) +
+  theme_minimal() +
+  theme(axis.title = element_blank()) +
+  labs(title = 'SST rise vulnerability across taxa')
+
+fish_impacts_df <- iucn_impacts_df %>%
+  left_join(get_spp_vuln(), by = c('sciname' = 'species', 'vuln' = 'stressor')) %>% 
+  filter(taxon == 'fish')
+
+spp_fe_traits <- get_fe_traits()
+
+ggplot(fish_impacts_df,
+       aes(x = range_tot_km2, y = impact_tot)) +
+  geom_point(aes(color = iucn_fct)) +
+  geom_abline(slope = 1, intercept = 0, color = 'red', size = .5) +
+  # scale_y_log10() +
+  theme_minimal() +
+  facet_wrap(~ stressor) +
+  labs(title = 'Fish impacts across stressors')
+
+ggplot(fish_impacts_df %>%
+         filter(vuln == 'sst_rise') %>%
+         arrange(score),
+       aes(x = range_tot_km2, y = impact_tot)) +
+  geom_point(aes(color = score), alpha = .7) +
+  scale_color_viridis_c() +
+  geom_abline(slope = 1, intercept = 0, color = 'red', size = .5) +
+  # scale_y_log10() +
+  theme_minimal() +
+  labs(title = 'Fish impacts SST rise, color = vulnerability')
+  
+```
+
+From this it appears that the bifurcated impact plots are due to different levels of exposure to SST rise, rather than differential vulnerability to SST rise. This in turn may be due to geographic location - the spp with high SST impacts may be all in the same ocean basin, or similar latitudes, etc.
+
+
+## Binomial logistic regression - CHI
+
+Perform a binomial logistic regression of threatened status (threatened/not threatened) as a function of mean cumulative impact and range.  Set up data frame to include a `threatened` column, where LC and NT are `FALSE` and VU, EN, and CR are `TRUE`.  Include range as inverse log of range, for both overall range and coastal-only range.
+
+### Prob of threatened = TRUE as function of CHI and range
+
+```{r}
+
+chi_threatened_valid <- spp_chi_iucn_clean %>%
+  filter(!is.na(threatened)) %>%
+  mutate(log_r_tot  = log(range_tot_km2),
+         log_r_cst  = log(range_cst_km2)) %>%
+  left_join(spp_fe_traits, by = c('sciname' = 'species'))
+
+```
+
+``` {r}
+df_for_blr_chi <- chi_threatened_valid %>%
+  select(sciname, taxon, phylum, class, atrisk, threatened, 
+         starts_with('impact'), starts_with('chi'), 
+         starts_with('log'), starts_with('range'),
+         mob, len, wcol, trp) %>%
+  distinct() %>%
+  mutate(qtile_r = ntile(range_tot_km2, n = 5),
+         mobile = mob == 'mig',
+         apex = trp == 'apex')
+
+df_for_blr_chi %>% group_by(qtile_r) %>% summarize(r = max(range_tot_km2))
+
+### across all spp, coastal ranges
+mdl1 <- glm(threatened ~ chi_npp_cst + impact_npp_cv_cst + log_r_cst, 
+           data = df_for_blr_chi,
+           family = 'binomial')
+summary(mdl1)
+
+### filter for smaller-ranged spp, coastal ranges
+mdl2 <- glm(threatened ~ chi_npp_cst + impact_npp_cv_cst + log_r_cst, 
+           data = df_for_blr_chi %>% filter(qtile_r <= 4),
+           family = 'binomial')
+summary(mdl2)
+
+### similar but total ranges
+mdl3 <- glm(threatened ~ chi_npp_tot + impact_npp_cv_tot + log_r_tot, 
+           data = df_for_blr_chi %>% filter(qtile_r <= 4),
+           family = 'binomial')
+summary(mdl3)
+plot(resid(mdl3))
+
+### total ranges but filtering for even smaller-ranged spp (qtile 1 ends at 148k km^2)
+mdl4 <- glm(threatened ~ chi_npp_tot + impact_npp_cv_tot + log_r_tot, 
+           data = df_for_blr_chi %>% filter(range_tot_km2 <= 100000),
+           family = 'binomial')
+summary(mdl4)
+
+### NPP-weighted mean CHI, drop CV term, keep smallest 20% ranges
+mdl5 <- glm(threatened ~ chi_npp_tot + log_r_tot, 
+           data = df_for_blr_chi %>% 
+             filter(qtile_r == 1),
+             # filter(range_tot_km2 <= 100000),
+             # filter(range_tot_km2 <= 200000),
+           family = 'binomial')
+summary(mdl5)
+
+### drop CV term, keep smallest 20% ranges, but not NPP-weighted mean CHI
+mdl6 <- glm(threatened ~ chi_rel_tot + log_r_tot, 
+           data = df_for_blr_chi %>% 
+             filter(qtile_r <= 1),
+             # filter(range_tot_km2 <= 100000),
+             # filter(range_tot_km2 <= 200000),
+           family = 'binomial')
+summary(mdl6)
+
+```
+
+Model 5, threatened ~ NPP-weighted mean CHI + inv log range, shows a significant positive correlation of mean CHI with threatened status and inverse log range for small-ranged species.  However, model 6, with just average CHI (unweighted by NPP) shows a stronger negative correlation with CHI, though still positive with inverse log range.
+
+Models 1-4 include a coefficient-of-variance term, which generally shows a significant coefficient, but that may be creating collinearity issues with the mean CHI...?
+
+Logically, the NPP-weighted CHI is the more appropriate comparison, as areas with greater NPP are likely to have greater abundances of spp; therefore impacts on those areas will cause greater problems for the population.
+
+Note that Model 5 includes just the first quintile; but the coefficient on chi_npp_tot remains positive when including the first two, three, four, and all five quintiles, though significance varies (p < .05 for q1, q1-q2-q3, and q1-q2-q3-q4).  Model 6, the coefficient is negative for all bottom-up groupings of range, and the p values are lower.
+
+### Predictive power?
+
+```{r}
+### NPP-weighted mean CHI, drop CV term, drop highest 20% ranges
+mdl5a <- glm(threatened ~ chi_npp_tot + log_r_tot, 
+           data = df_for_blr_chi %>% 
+             # filter(phylum != 'chordata'),
+             filter(qtile_r <= 4),
+             # filter(range_tot_km2 <= 100000),
+             # filter(range_tot_km2 <= 200000),
+           family = 'binomial')
+summary(mdl5a)
+
+pred_5a <- df_for_blr_chi %>%
+  # filter(phylum != 'chordata') %>%
+  filter(qtile_r <= 4) %>%
+  mutate(prob_thr = predict(mdl5a, type = 'response')) %>%
+  mutate(pred_thr = prob_thr >= .5,
+         correct = threatened == pred_thr)
+
+table(pred_5a %>% select(pred_thr, threatened))
+### only predicts 35 spp out of 9000 as threatened - way low
+
+### Proportion correct
+prop_correct <- sum(pred_5a$correct) / nrow(pred_5a)
+# .887
+
+### does it predict better than random guessing given the proportion of
+### threatened being known?
+prop_thr <- sum(pred_5a$threatened) / nrow(pred_5a)
+pred_acc <- prop_thr^2 + (1 - prop_thr)^2
+# .802; better than random guessing even if proportion is known
+
+### does it predict better than the "zero rule"?
+zero_rule <- sum(1 - pred_5a$threatened) / nrow(pred_5a)
+# .888; about the same as choosing the zero rule...
+```
+
+Predictive power of this model is not great; 
+
+
+## Binomial logistic regression - by stressor group
+
+Perform a binomial logistic regression of threatened status (threatened/not threatened) as a function of mean cumulative impact and range.  Set up data frame to include a `threatened` column, where LC and NT are `FALSE` and VU, EN, and CR are `TRUE`.  Include range as linear rescale (0-1) and square root of range, for both overall range and coastal-only range.
+
+### Prob of threatened = TRUE as function of impact categories and range
+
+Use the simple model from model 5 above, threatened ~ npp-weighted impact + inverse log range, stressor by stressor.
+
+```{r}
+strs_climate <- c('ocean_acidification', 'sst_rise', 'sst_extremes',
+                  'uv_radiation', 'sea_level_rise') %>%
+  paste0(collapse = '|')
+strs_fishing <- c('biomass_removal', 'bycatch', 'fishing_benthic_dest') %>%
+  paste0(collapse = '|')
+strs_ocean   <- c('shipping')
+strs_land    <- c('direct_human', 'benth_str', 'nutrient', 
+                  'microplastic', 'light') %>%
+  paste0(collapse = '|')
+  
+str_vuln_combos <- iucn_impacts_df %>%
+  select(stressor, vuln) %>%
+  distinct() %>%
+  filter(stressor != 'cumulative') %>%
+  mutate(str_gp = case_when(str_detect(stressor, strs_climate) ~ 'climate',
+                            str_detect(stressor, strs_fishing) ~ 'fishing',
+                            str_detect(stressor, strs_ocean) ~ 'ocean',
+                            str_detect(stressor, strs_land) ~ 'land',
+                            TRUE ~ 'missing'))
+
+qtile_df <- iucn_impacts_df %>%
+  filter(!is.na(threatened)) %>%
+  select(sciname, threatened, range_tot_km2) %>%
+  distinct() %>%
+  mutate(qtile_r = ntile(range_tot_km2, n = 5))
+
+df_for_blr_gps <- iucn_impacts_df %>%
+  filter(!is.na(threatened)) %>%
+  left_join(spp_taxa, by = c('sciname')) %>%
+  inner_join(str_vuln_combos, by = c('stressor', 'vuln')) %>%
+  select(sciname, taxon, phylum, class, 
+         atrisk, threatened, 
+         stressor, vuln, str_gp,
+         starts_with('impact'), starts_with('range')) %>%
+  mutate(inv_ln_r_cst = 1/log(range_cst_km2),
+         inv_ln_r_tot = 1/log(range_tot_km2)) %>%
+  group_by(sciname, taxon, str_gp) %>%
+  summarize(impact_npp_tot = sum(impact_npp_tot),
+            impact_npp_cst = sum(impact_npp_cst),
+            threatened     = first(threatened),
+            inv_ln_r_tot   = first(inv_ln_r_tot),
+            inv_ln_r_cst   = first(inv_ln_r_cst),
+            .groups = 'drop') %>%
+  complete(str_gp, sciname, fill = list(impact_npp_tot = 0,
+                                        impact_npp_cst = 0)) %>%
+  group_by(sciname) %>%
+  fill(taxon, inv_ln_r_tot, inv_ln_r_cst, threatened, .direction = 'downup') %>%
+  ungroup() %>%
+  left_join(qtile_df, by = c('sciname', 'threatened'))
+
+str_gps <- str_vuln_combos$str_gp %>% unique()
+
+for(s in str_gps) {
+  ### s <- str_gps[1]
+  str_vuln_gp <- str_vuln_combos %>%
+    filter(str_gp == s)
+  
+  df_gp <- df_for_blr_gps %>%
+    filter(str_gp == s)
+  
+  if(s == 'land') {
+    formula_str_vuln <- threatened ~ impact_npp_cst + inv_ln_r_cst  
+  } else {
+    formula_str_vuln <- threatened ~ impact_npp_tot + inv_ln_r_tot
+  }
+  
+  mdl8 <- glm(formula = formula_str_vuln, data = df_gp, family = 'binomial')
+  mdl9 <- glm(formula = formula_str_vuln, 
+              data = df_gp %>% filter(qtile_r <= 2), family = 'binomial')
+  cat('\n\n###################### ', toupper(s), ' ######################')
+  print(knitr::kable(str_vuln_gp))
+  cat('\n#####', toupper(s), 'Full range: #####\n')
+  print(summary(mdl8))
+  cat('\n#####', toupper(s), 'Small range: #####\n')
+  print(summary(mdl9))
+}
+```
+
+### Probability of threatened == TRUE as function of stressor groups and range
+
+```{r}
+df_for_blr_tot <- df_for_blr_gps %>%
+  filter(qtile_r <= 4) %>%
+  select(sciname, taxon, threatened, impact_npp_tot, inv_ln_r_tot, taxon, str_gp) %>%
+  distinct() %>%
+  pivot_wider(names_from = str_gp, values_from = impact_npp_tot) %>%
+  drop_na()
+
+df_for_blr_cst <- df_for_blr_gps %>%
+  filter(qtile_r <= 4) %>%
+  select(sciname, taxon, impact_npp_cst, inv_ln_r_cst, taxon, str_gp, threatened) %>%
+  distinct() %>%
+  pivot_wider(names_from = str_gp, values_from = impact_npp_cst) %>%
+  drop_na()
+
+mdl10 <- glm(formula = threatened ~ land + ocean + fishing + climate + inv_ln_r_tot, 
+             data = df_for_blr_tot, family = 'binomial')
+mdl11 <- glm(formula = threatened ~ land + ocean + fishing + climate + inv_ln_r_cst,  
+             data = df_for_blr_cst, family = 'binomial')
+cat('\n##### By stressor gps, total range: #####\n')
+print(summary(mdl10))
+cat('\n##### By stressor gps, coastal range: #####\n')
+print(summary(mdl11))
+
+
+x <- df_for_blr_cst %>%
+  mutate(prob_thr = predict(mdl11, type = 'response'),
+         pred_thr = prob_thr >= .50)
+table(x %>% select(pred_thr, threatened))
+```
+
+### Does a model of just taxon and range predict better?
+
+```{r}
+mdl12 <- glm(formula = threatened ~ taxon + inv_ln_r_tot, 
+             data = df_for_blr_tot, family = 'binomial')
+mdl13 <- glm(formula = threatened ~ taxon + inv_ln_r_cst,  
+             data = df_for_blr_cst, family = 'binomial')
+cat('\n##### By stressor gps, total range: #####\n')
+print(summary(mdl12))
+cat('\n##### By stressor gps, coastal range: #####\n')
+print(summary(mdl13))
+
+
+xx <- df_for_blr_cst %>%
+  mutate(prob_thr = predict(mdl13, type = 'response'),
+         pred_thr = prob_thr >= .50)
+table(xx %>% select(pred_thr, threatened))
+
+```
+

@@ -1,0 +1,331 @@
+---
+title: 'Process IUCN spp shapes to Mollweide'
+author: "*Compiled on `r date()` by `r Sys.info()['user']`*"
+output: 
+  html_document:
+    code_folding: hide
+    toc: true
+    toc_depth: 3
+    toc_float: yes
+    number_sections: true
+    theme: cerulean
+    highlight: haddock
+    includes: 
+      in_header: '~/github/src/templates/ohara_hdr.html'
+  pdf_document:
+    toc: true
+---
+
+``` {r setup, echo = TRUE, message = FALSE, warning = FALSE}
+
+knitr::opts_chunk$set(fig.width = 6, fig.height = 4, fig.path = 'Figs/',
+                      echo = TRUE, message = FALSE, warning = FALSE)
+
+library(raster)
+source('https://raw.githubusercontent.com/oharac/src/master/R/common.R')  ###
+library(sf)
+
+source(here('common_fxns.R'))
+source('rasterize_fxns.R') ### in same directory as this script
+
+dir_bli <- '/home/shares/ohi/git-annex/globalprep/_raw_data/birdlife_intl/d2021'
+dir_shp <- '/home/shares/ohi/git-annex/globalprep/_raw_data/iucn_spp/d2021-3'
+
+```
+
+# Summary
+
+Using a set of IUCN species range maps, rasterize each species to 10 km x 10 km raster using `fasterize`.  Use `presence` field from shapefile.
+
+Subpopulation polygons must be identified and rasterized separately from the parent polygon; this must be done by sciname and subpop fields since the polygon IDs are based upon the parent ID.
+
+# Data sources
+
+* IUCN species shapefiles:  IUCN. (2021). The IUCN Red List of Threatened Species. Version 2021-3. Retrieved December 2021, from http://www.iucnredlist.org
+* BirdLife International shapefiles: BirdLife International and Handbook of the Birds of the World. (2019). Bird species distribution maps of the world. Version 7.0. Available at http://datazone.birdlife.org/species/requestdis
+* Bathymetry (GEBCO): Sandwell, D. T., Gille, S. T., & Smith, W. H. F. (2002, June). Bathymetry from Space:Oceanography, Geophysics, and Climate. Retrieved from https://www.gebco.net/
+
+# Methods
+
+## Read spp shapes, correct subpop IDs, `fasterize()`, depth clip, save to csv
+
+We will loop over each species in each shapefile and rasterize separately, using `sf` and `fasterize` packages.  
+
+* From the full map list, filter to a single shapefile
+* Load shapefile using `st_read`, and correct subpop IDs from `shp_iucn_sid` to `iucn_sid`
+* Loop over each `iucn_sid` in the shapefile, rasterizing (`fasterize()`) to 10 km^2^ resolution, using "presence" field. 
+    * clip to neritic (<=200 m) and shallow (<=60 m) depth raster if appropriate.  Otherwise mask to bathy raster.  Since bathy raster was created by masking to area raster, cells with any marine presence will be kept but any non-marine cells will be dropped.
+    * Save as .csv, of cell_id and presence
+    * use `mclapply()` to speed this up.
+    
+``` {r set up list of maps to rasterize}
+
+worms_spp_names <- read_csv(here('_data/iucn_spp/iucn_to_worms_match.csv')) %>%
+  select(iucn_sid, worms_name) %>%
+  distinct()
+
+wcol_position <- read_csv(here('_data/traits_grouping/trait_water_col_position.csv')) %>%
+  select(sciname = species, wcol_pos = value) %>%
+  distinct()
+
+### Manual adds of shallow spp:
+spp_shallow <- c(133512)
+
+maps_to_rasterize_all <- read_csv(here('_data/iucn_spp',
+                                   'spp_marine_maps_2021-3.csv'),
+                              col_types = cols('subpop' = 'c')) %>%
+  mutate(shp_file = str_replace(dbf_file, 'dbf$', 'shp')) %>%
+  left_join(worms_spp_names, by = 'iucn_sid') %>%
+  left_join(wcol_position, by = c('worms_name' = 'sciname')) %>%
+  mutate(depth_zone = case_when(str_detect(wcol_pos, 'pelagic')    ~ 'pelagic', 
+                                str_detect(shp_file, 'bli_marine') ~ 'pelagic',
+                                  ### don't clip birds by depth
+                                iucn_sid %in% spp_shallow          ~ '< 20 m',
+                                TRUE                               ~ max_depth))
+
+### rast_base for cell IDs
+ocean_a_mol <- raster(here('_spatial/ocean_area_mol.tif')) 
+rast_base <- ocean_a_mol %>%
+  setValues(1:ncell(.))
+
+### directory for mollweide rasters
+dir_mol_rast <- here_anx('spp_maps_mol')
+
+### If some species already processed, remove from the list to process.
+# maps_to_clear <- list.files(dir_mol_rast, pattern = 'iucn_spp.+.csv', full.names = TRUE); unlink(maps_to_clear)
+maps_done <- list.files(dir_mol_rast, pattern = 'iucn_spp.+.csv') %>%
+  str_extract('[0-9]+') %>%
+  as.integer()
+
+maps_to_rasterize <- maps_to_rasterize_all %>%
+  filter(!iucn_sid %in% maps_done)
+
+```
+
+### Support functions to help in the processing of all these polygons
+
+These are all defined in `rasterize_fxns.R`:
+
+* `fix_fieldnames()` to adjust the shapefile field names so they match up
+* `fix_turtle_polys()` to fix some gaps in turtle polygons before rasterizing
+* `match_to_map()` to keep only the polygon features that still need to be rasterized, rather than keeping the overall shapefile 
+* `clip_to_depth()` to take the resulting raster and mask the result to bathymetric rasters, based on several depth classes, e.g. neritic, shallow
+* `buffer_tiny_polys()` to add a small buffer around extremely small polygons.  Some polygons are too small (e.g. < 100 km^2^, the size of a raster cell) to be picked up by the rasterization process and result in a zero range.  A small buffer will ensure some minimal inclusion for these tiny-ranged species.
+
+```{r define rasterizing function}
+rasterize_iucn_map <- function(spp_id) { 
+  ### spp_id <- spp_ids[1]
+  ### spp_id <- 2467 ### also 8097, 13704, 2478, 2477
+  ### spp_id <- 172416 ### 0-dist buffer to fix invalid geoms results in loss of area
+  
+  ### spp_id <- 192631 ### not POLYGON or MULTIPOLYGON? to fasterize
+  
+  j <- which(spp_id == spp_ids)
+
+  msg_stem <- '%s of %s: Processing %s in %s (group %s of %s)...'
+  message(sprintf(msg_stem, j, length(spp_ids), spp_id, basename(shp), i, length(shps)))
+
+  spp_shp <- polys_match %>%
+    filter(iucn_sid == spp_id)
+  
+  spp_shp_processed <- spp_shp %>%
+    valid_check() %>%
+      ### if invalid geom, fix it
+    clip_to_globe() %>%
+      ### make sure bounds don't exceed +/- 180
+    smoothr::densify(max_distance = 0.1) %>%
+      ### add points at half-degree intervals to ensure smooth transform to Mollweide
+    st_transform(crs(rast_base)) %>%
+      ### transform to Mollweide 10km x 10km resolution
+    buffer_tiny_polys()
+      ### identify tiny polys, buffer to ensure some representation
+  
+  spp_rast <- fasterize::fasterize(spp_shp_processed, rast_base, 
+                                   field = 'presence', fun = 'min')
+  
+  ### clip the rasterized polygons to various depth regimes
+  ### depending on species characteristics
+  spp_rast_clip <- clip_to_depth(spp_rast, depth_zone = unique(spp_shp_processed$depth_zone))
+  
+  # plot(spp_rast, col = 'red'); plot(spp_rast_clip, col = 'green', add = TRUE)
+  
+  ### convert to dataframe and write out as a csv:
+  spp_present <- data.frame(cell_id  = values(rast_base),
+                            presence = values(spp_rast_clip)) %>%
+    filter(!is.na(presence))
+  
+  if(nrow(spp_present) == 0) {
+    message('Species ID ', spp_id, ' resulted in a zero-length dataframe.')
+    spp_present <- data.frame(cell_id = -1, presence = NA)
+  }
+  
+  out_f <- file.path(dir_mol_rast, sprintf('iucn_spp_mol_%s.csv', spp_id))
+  write_csv(spp_present, out_f)
+
+  return(NULL)
+}
+```
+
+
+``` {r rasterize and clip and save to csv}
+
+message('... Maps to process: ', nrow(maps_to_rasterize))
+
+### These will be used as masks for clip_to_depth().  It's cheating
+### to keep these in globalEnv but whatever for now - would be slow to 
+### load them within the function.
+rast_bathy   <- raster(here('_spatial', 'bathy_mol.tif'))
+rast_neritic <- raster(here('_spatial', 'bathy_mol_neritic.tif'))
+rast_shallow <- raster(here('_spatial', 'bathy_mol_shallow.tif'))
+
+################################################################.
+### Loop over each distinct shapefile with species range maps
+################################################################.
+shps <- maps_to_rasterize$shp_file %>% unique()
+
+for(i in seq_along(shps)) {
+  ### i <- 1
+  
+  shp <- shps[i]
+  
+  message(i, ' of ', length(shps), ': reading ', basename(shp), ' from: \n  ', shp)
+
+  if(!str_detect(shp, 'TURTLES')) {
+    ### There's an issue with turtle polys - otherwise just read in the sf
+    polys_all <- read_sf(shp, type = 6) %>%
+      janitor::clean_names() %>%
+      fix_fieldnames()
+  } else {
+    polys_all <- fix_turtle_polys(shp)
+  }
+    
+  polys_match <- match_to_map(polys_all, maps_to_rasterize)
+  
+  ####################################################################.
+  ### In each shapefile, loop over each species ID using mclapply().
+  ####################################################################.
+  
+  spp_ids <- polys_match$iucn_sid %>% 
+    sort() %>% unique()
+
+  message('Processing ', basename(shp), ' with ', length(spp_ids), ' species...')
+
+  ### for resolving geometries on the last few, mclapply seems to fail at 
+  ### st_make_valid() - lapply() also seems to fail - try a simple loop!
+  # warning('Using series method instead of parallel method!')
+  # for(spp_id in spp_ids) {
+  #   rasterize_iucn_map(spp_id)
+  # }
+  tmp <- parallel::mclapply(spp_ids, mc.cores = 16, FUN = rasterize_iucn_map)
+  
+} ### end of for loop over each species group
+
+### test that all are done
+maps_done <- list.files(dir_mol_rast, pattern = 'iucn_spp.+.csv') %>%
+  str_extract('[0-9]+') %>%
+  as.integer()
+
+maps_not_rasterized <- maps_to_rasterize %>%
+  filter(!iucn_sid %in% maps_done)
+
+if(nrow(maps_not_rasterized) > 0) {
+  stop(nrow(maps_not_rasterized), ' maps failed to rasterize!')
+}
+
+```
+
+```{r check repts and turtles, eval = FALSE, include = FALSE}
+### because the turtle maps were failing with the st_buffer in 
+### fix_turtle_polys, I've removed that - let's check to see whether
+### the maps still look OK
+turt_spp <- maps_to_rasterize_all %>%
+  filter(str_detect(tolower(dbf_file), 'turtle')) 
+
+turt_ids <- turt_spp %>%
+  pull(iucn_sid) %>%
+  sort()
+turt_fs <- sprintf(file.path(dir_mol_rast, 'iucn_spp_mol_%s.csv'), turt_ids)
+turt_map <- parallel::mclapply(turt_fs, mc.cores = 16,
+                          FUN = data.table::fread) %>%
+  setNames(turt_ids) %>%
+  data.table::rbindlist(idcol = 'iucn_sid') 
+
+all_map <- turt_map %>%
+  group_by(cell_id) %>%
+  summarize(n = n())
+plot(all_map %>% map_to_mol(which = 'n'), main = 'all')
+
+caretta_ids <- turt_spp %>%
+  filter(str_detect(sciname, 'Caretta')) %>%
+  pull(iucn_sid)
+caretta_map <- turt_map %>%
+  filter(iucn_sid %in% caretta_ids) %>%
+  group_by(cell_id) %>%
+  summarize(n_pops = n())
+plot(caretta_map %>% map_to_mol(which = 'n_pops'), main = 'caretta caretta')
+
+for(spp in turt_ids) { ### spp <- turt_ids[1]
+  spp_map <- turt_map %>%
+    filter(iucn_sid %in% spp) %>%
+    filter(iucn_sid != 4615 & !iucn_sid %in% caretta_ids)
+  if(nrow(spp_map) == 0) next()
+  plot(spp_map %>% map_to_mol(which = 'presence'), main = spp)
+}
+
+```
+
+## Make HCAF versions of IUCN spp maps
+
+And save out in one big-ass file like AquaMaps does.  This will be useful for Watson data.
+
+```{r create hcafs}
+iucn_mol_maps <- list.files(dir_mol_rast, pattern = 'iucn_spp_mol', full.names = TRUE)
+loiczid_rast <- raster(here('_spatial/loiczid_mol.tif'))
+cell_to_loiczid <- data.frame(loiczid = values(loiczid_rast),
+                              cell_id = 1:ncell(loiczid_rast))
+
+tmp_fstem <- here_anx('iucn_spp/tmp/iucn_hcaf_%s.csv')
+### maps_to_clear <- list.files(dirname(tmp_fstem), pattern = 'iucn_hcaf', full.names = TRUE)
+### unlink(maps_to_clear)
+
+iucn_mol_to_hcaf <- function(f) {
+  ### f <- iucn_mol_maps[1]
+  sid <- str_remove_all(basename(f), 'iucn_spp_mol_|.csv')
+  i <- which(f == iucn_mol_maps)
+  tmp_f <- sprintf(tmp_fstem, sid)
+  if(!file.exists(tmp_f)) {
+    message('Converting Moll map to HCAF for spp ', sid, ' (', i, ' of ', length(iucn_mol_maps), ')')
+    x <- read_csv(f, show_col_types = FALSE)
+    y <- x %>%
+      oharac::dt_join(cell_to_loiczid, by = 'cell_id', type = 'left') %>%
+      select(loiczid) %>% 
+      mutate(prob = 1,
+             iucn_sid = as.numeric(sid)) %>% 
+      distinct()
+    write_csv(y, tmp_f)
+  }
+}
+
+### process all Mollweide IUCN maps to HCAF
+tmp <- parallel::mclapply(iucn_mol_maps, mc.cores = 16,
+                          FUN = iucn_mol_to_hcaf)
+
+### read in all of 'em, bind, write out to csv
+tmp_fs <- list.files(dirname(tmp_fstem), pattern = 'iucn_hcaf', full.names = TRUE)
+
+message('Reading in ', length(tmp_fs), ' temp files for species transformed from moll -> hcaf...')
+big_list <- parallel::mclapply(tmp_fs, mc.cores = 16, FUN = read_csv, show_col_types = FALSE) 
+message('Binding list of temp files...')
+big_df <- big_list %>%
+  data.table::rbindlist()
+
+write_csv(big_df, here_anx('iucn_spp', 'iucn_spp_hcaf.csv'))
+
+log10_cells <- big_df %>%
+  group_by(iucn_sid) %>%
+  summarize(n_cells = n_distinct(loiczid)) %>%
+  pull(n_cells) %>% log10()
+
+hist(log10_cells)
+```
+

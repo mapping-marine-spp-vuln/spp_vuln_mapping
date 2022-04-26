@@ -1,0 +1,359 @@
+---
+title: "Examine missingness of grouping traits for MICE"
+author: "*Compiled on `r date()` by `r Sys.info()['user']`*"
+output: 
+  html_document:
+    code_folding: hide
+    toc: true
+    toc_depth: 3
+    toc_float: yes
+    number_sections: true
+    theme: cerulean
+    highlight: haddock
+    includes: 
+      in_header: '~/github/src/templates/ohara_hdr.html'
+  pdf_document:
+    toc: true
+---
+
+``` {r setup, echo = TRUE, message = FALSE, warning = FALSE}
+
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
+
+library(oharac)
+oharac::setup()
+source(here('common_fxns.R'))
+library(mice)
+
+
+```
+
+# Summary
+
+Read in processed traits data as a dataframe.  Identify missingness, overall and by taxonomic grouping, to identify challenges in using MICE for imputation of missing values.
+
+# Data
+
+See individual trait scripts.
+
+# Methods
+
+## Read in and process traits
+
+These initially processed through scripts in `_setup` and pulled together in script `1a_assemble_grouping_traits_mice.html`.  Read in the data and assign factor levels.
+
+```{r}
+
+wcol_levels <- c('rf', 'pel', 'ben', 'bp') ### not ordered
+mob_levels  <- c('ses', 'sed', 'mob', 'mig') ### in order from least to most mobile
+
+### write out traits pre-imputation for reference
+traits_premice_all <- read_csv(here_anx('mice/gp_traits_mice_preimputation.csv')) %>%
+  mutate(wcol      = factor(wcol,      levels = wcol_levels, ordered = FALSE),
+         adult_mob = factor(adult_mob, levels = mob_levels, ordered = TRUE))
+
+var_counts <- traits_premice_all %>%
+  select(-species) %>%
+  mutate(n_nas = rowSums(is.na(.))) %>%
+  group_by(n_nas) %>%
+  summarize(count = n())
+```
+
+Check counts of observations with different numbers of NAs.  Most rows have two or fewer NAs.
+
+``` {r}
+knitr::kable(var_counts)
+```
+
+Check missingness pattern using `mice::md.pattern`.  
+
+``` {r, fig.width = 6}
+md.pattern(traits_premice_all %>% select(-species))
+```
+
+## Examine patterns of missingness
+
+Are the missing values missing completely at random, or at random, or not at random?  Guessing that some variables are not missing at random due to data being available only for certain taxonomic groups, and perhaps we will need to perform MICE separately for certain classes or phyla since the relationships among variables may be quite different.
+
+```{r}
+mice_vars <- c('log_l', 'log_f', 'troph', 'age_mat', 'wcol', 'adult_mob')
+
+### To pull into a long format, var types need to be compatible.  Using factor
+### levels for water col position and adult mobility should still allow us
+### to see problematic patterns...
+test_df <- traits_premice_all %>%
+  mutate(wcol = as.integer(wcol),
+         adult_mob = as.integer(adult_mob))
+
+for(v in mice_vars) { ### v <- mice_vars[1]
+  ### v will iterate over the column with missing values
+  
+  ### if v == 'wcol' skip, since so few missing
+  if(v == 'wcol') next()
+  
+  missing_df <- test_df %>%
+    mutate(missing = is.na(.data[[v]])) 
+  
+  missing_df_long <- missing_df %>%
+    pivot_longer(mice_vars[mice_vars != v], names_to = 'var', values_to = 'val')
+    
+  missing_means <- missing_df_long %>%
+    group_by(missing, var) %>%
+    summarize(mu = mean(val, na.rm = TRUE))
+  
+  p <- ggplot() +
+    geom_histogram(data = missing_df_long, 
+                   aes(x = val, fill = missing),
+                   position = 'dodge', bins = 10) +
+    geom_vline(data = missing_means, aes(xintercept = mu)) +
+    facet_wrap( ~ var, scales = 'free_x') +
+    labs(title = v)
+  print(p)
+}
+```
+
+Most don't actually appear too bad!
+
+It seems reasonable to break out certain taxonomic groups for MICE due to major differences in physiology.  Explore a breakdown by verts (by class) and inverts (by phylum?).  Examine inclusion of species found in AquaMaps (though use MICE on full set regardless of AquaMaps status).
+
+```{r}
+worms_spp <- assemble_worms()
+am_spp <- get_am_spp_info()
+
+worms_premice <- worms_spp %>%
+  dt_join(traits_premice_all, by = 'species', type = 'inner')
+n_distinct(worms_premice$species)
+
+worms_am_premice <- worms_premice %>%
+  filter(species %in% am_spp$sciname)
+n_distinct(worms_am_premice$species)
+```
+
+#### Worms/AquaMaps/traits species counts: by phylum
+
+``` {r}
+
+worms_am_premice %>% 
+  select(phylum, species) %>%
+  distinct() %>%
+  .$phylum %>% table()
+```
+
+#### Worms/AquaMaps/traits species counts: by class for Chordata
+
+``` {r}
+worms_am_premice %>% 
+  filter(phylum == 'chordata') %>%
+  select(class, species) %>%
+  distinct() %>%
+  .$class %>% table()
+```
+
+#### Worms/AquaMaps/traits species counts: by class for Mollusca
+
+Because only ~half the molluscs with grouping traits are represented in AquaMaps (and only conidae in IUCN), drop any orders with fewer than five species in AquaMaps.  This should reduce the computational load.
+
+``` {r}
+n_molluscs_all <- worms_premice %>%
+  filter(phylum == 'mollusca') ### 10232 mollusc spp represented
+
+worms_am_premice %>% 
+  filter(phylum == 'mollusca') %>% ### 4907 represented in AquaMaps; only conus in IUCN
+  select(class, order, species) %>%
+  group_by(class, order) %>%
+  summarize(n_spp = n_distinct(species)) %>%
+  arrange(desc(n_spp))
+```
+
+## Examining missingness by taxonomic group
+
+Consider: 
+
+* Dropping phyla whose traits data and AquaMaps intersection results in fewer than 75 species.  
+    * Most of these are planktonic invertebrates that will not be present in the vulnerability traits data anyway.
+    * Of the remaining, include class or order or family as additional gapfilling variables, rather than further subdividing the phylum.
+    * For Molluscs, which fail in `mice` due to too many possible categorical values at phylum level:
+        * Identify and filter the full trait set to just those orders comprising at least five species.
+  
+* Breaking phylum Chordata down and keeping classes:
+    * actinopterygii (group with coelacanthi)
+        * while there are many many many of these, perhaps include order or family as an additional gapfilling variable, rather than further subdividing the class.
+    * elasmobranchii (group with holocephali)
+    * mammalia
+    * aves (only 13 in the intersection of traits + AquaMaps, but 341 in traits, so MICE should work; others may be in IUCN data as well)
+    * reptilia
+    * myxini (with petromyzonti)
+    * the rest are mostly tunicates or tunicate-adjacent, and won't have vulnerability trait data anyway.
+
+### Species counts by taxon (not just AquaMaps)
+
+MICE gapfilling can use traits from species that don't fall within AquaMaps.  Here's the species counts in the overall traits/WoRMS dataset including those not in AquaMaps (but that may be within IUCN).
+
+```{r}
+
+vert_keep   <- c(actinopterygii = 'actinopterygii',
+                 sarcopterygii  = 'actinopterygii',
+                 coelacanthi    = 'actinopterygii',
+                 elasmobranchii = 'elasmobranchii',
+                 holocephali    = 'elasmobranchii',
+                 mammalia       = 'mammalia', 
+                 aves           = 'aves', 
+                 reptilia       = 'reptilia', 
+                 myxini         = 'myxini',
+                 cephalaspidomorphi = 'myxini',
+                 petromyzonti   = 'myxini')
+invert_keep <- worms_am_premice %>%
+  filter(phylum != 'chordata' & phylum != 'mollusca') %>%
+  group_by(phylum) %>%
+  summarize(n_spp = n_distinct(species)) %>%
+  filter(n_spp >= 75) %>%
+  pull(phylum)
+
+mollusc_keep <- worms_am_premice %>%
+  filter(phylum == 'mollusca') %>%
+  group_by(class, order) %>%
+  summarize(n_spp = n_distinct(species),
+            n_fam = n_distinct(family)) %>%
+  filter(n_spp > 10) %>%
+  pull(order)
+
+keep_df <- am_spp %>%
+  mutate(keep = case_when(class %in% names(vert_keep) ~ TRUE,
+                          phylum %in% invert_keep ~ TRUE,
+                          phylum == 'mollusca' & order %in% mollusc_keep ~ TRUE,
+                          TRUE ~ FALSE)) %>%
+  filter(keep) %>%
+  select(phylum, class, order) %>%
+  distinct() %>%
+  mutate(gp = case_when(phylum == 'chordata' ~ vert_keep[class],
+                        phylum == 'mollusca' ~ order,
+                        TRUE ~ phylum))
+
+write_csv(keep_df, here('int/mice_grouping_taxa_to_keep.csv'))
+```
+
+#### Worms/traits species counts: by phylum, after dropping small phyla
+
+``` {r}
+
+premice_keep <- worms_premice %>%
+  mutate(gp = case_when(phylum == 'chordata' ~ vert_keep[class], 
+                        phylum == 'mollusca' ~ order,
+                        TRUE ~ phylum)) %>%
+  filter(gp %in% keep_df$gp)
+
+premice_keep %>%
+  select(species, phylum) %>%
+  distinct() %>%
+  .$phylum %>% table()
+```
+
+#### Worms/traits species counts: by class for Chordata, after dropping
+
+``` {r}
+premice_keep %>%
+  filter(phylum == 'chordata') %>%
+  select(species, class) %>%
+  distinct() %>%
+  .$class %>% table()
+
+```
+
+#### Worms/traits species counts: by class for Mollusca, after dropping
+
+``` {r}
+premice_keep %>%
+  filter(phylum == 'mollusca') %>%
+  select(species, class) %>%
+  distinct() %>%
+  .$class %>% table()
+
+```
+
+### Missingness by taxon
+
+#### Invertebrate phyla (sans molluscs)
+
+```{r, results = 'asis'}
+invert_traits <- premice_keep %>%
+  filter(phylum %in% invert_keep)
+
+for(p in invert_keep) {
+  ### p <- invert_keep[1]
+  phylum_traits <- invert_traits %>%
+    filter(phylum == p) %>%
+    select(log_l, log_f, troph, age_mat, wcol, adult_mob) 
+  phylum_traits_sum <- phylum_traits %>%
+    mutate(n_nas = rowSums(is.na(.))) %>%
+    group_by(n_nas) %>%
+    summarize(count = n()) %>%
+    mutate(phylum = p)
+
+  cat('\n\n#####', p, '\n\n')
+  print(knitr::kable(phylum_traits_sum))
+  cat('\n\n')
+  md.pattern(phylum_traits)
+
+}
+```
+
+#### Mollusc classes
+
+```{r, results = 'asis'}
+mollusc_traits <- premice_keep %>%
+  filter(phylum == 'mollusca') %>%
+  mutate(order %in% mollusc_keep) %>%
+  mutate(gp = class)
+
+for(c in unique(mollusc_traits$gp)) {
+  ### c <- mollusc_keep[1]
+  class_traits <- mollusc_traits %>%
+    filter(gp == c) %>%
+    select(log_l, log_f, troph, age_mat, wcol, adult_mob) 
+  class_traits_sum <- class_traits %>%
+    mutate(n_nas = rowSums(is.na(.))) %>%
+    group_by(n_nas) %>%
+    summarize(count = n()) %>%
+    mutate(group = c)
+
+  cat('\n\n#####', c, '\n\n')
+  print(knitr::kable(class_traits_sum))
+  cat('\n\n')
+  md.pattern(class_traits)
+
+}
+```
+
+
+
+#### Vertebrate classes
+
+```{r, results = 'asis'}
+vert_traits <- premice_keep %>%
+  mutate(gp = vert_keep[class]) %>%
+  filter(gp %in% vert_keep)
+
+for(g in unique(vert_keep)) {
+  ### g <- vert_keep[1]
+  class_traits <- vert_traits %>%
+    filter(gp == g) %>%
+    select(log_l, log_f, troph, age_mat, wcol, adult_mob) 
+  class_traits_sum <- class_traits %>%
+    mutate(n_nas = rowSums(is.na(.))) %>%
+    group_by(n_nas) %>%
+    summarize(count = n()) %>%
+    mutate(group = g)
+
+  cat('\n\n#####', g, '\n\n')
+  print(knitr::kable(class_traits_sum))
+  cat('\n\n')
+  md.pattern(class_traits)
+
+}
+```
+
+
+
+
+
+

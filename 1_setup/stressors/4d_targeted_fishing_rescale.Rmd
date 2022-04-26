@@ -1,0 +1,352 @@
+---
+title: "Stressors: targeted fishing by species and cell - rescale stressor"
+author: "*Compiled on `r date()` by `r Sys.info()['user']`*"
+output: 
+  html_document:
+    code_folding: show
+    toc: true
+    toc_depth: 1
+    toc_float: yes
+    number_sections: false
+    theme: cerulean
+    highlight: haddock
+    includes: 
+      in_header: '~/github/src/templates/ohara_hdr.html'
+  pdf_document:
+    toc: true
+---
+
+``` {r setup, echo = TRUE, message = FALSE, warning = FALSE}
+
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
+
+library(raster)
+library(oharac) ### remotes::install_github('oharac/oharac')
+  ### includes some helper functions, e.g., dt_join
+library(tidyverse)
+library(here)
+
+source(here('common_fxns.R'))
+source('stressor_fxns.R') ### in same dir as this Rmd
+```
+
+# Summary
+
+Read in rasters (as csvs) of NPP-adjusted fisheries catch per species per cell.  Identify a reference point and rescale stressor layers from 0-1 for each species.
+
+# Data
+
+Data from
+
+* Watson, R.A. and Tidd, A.N. (2018) Mapping nearly a century and a half of global marine fishing: 1869 to 2015. Marine Policy 93, 171-177
+* Watson, R. (2017) A database of global marine commercial, small-scale, illegal and unreported fisheries catch 1950-2014. Nature Scientific Data 4 (170039).
+
+# Methods
+
+* For each species, considering its entire range, identify the 99th percentile of NPP-adjusted total catch. 
+* Take the highest value across all species as the reference point.
+* Normalize all species fishing stressor maps using that reference point and save out.
+
+## Identify reference point
+
+Take each species fishing map, expand out to include unfished cells in the species' range, and then determine the 99%ile of catch for each species.
+
+```{r set up vars}
+watson_maps_lookup <- read_csv(here('_setup/stressors/int/watson_maps_lookup.csv'))
+
+spp_vec <- watson_maps_lookup$spp %>% unique() %>% sort()
+
+npp_catch_dir <- here_anx('stressors/fishing/3_npp_norm_catch_by_spp_moll')
+
+npp_catch_fs <- list.files(npp_catch_dir, full.names = TRUE)
+
+```
+
+``` {r calc ref point by range}
+calc_quantiles_range <- function(f, fstem) {
+  # f <- npp_catch_fs[1]
+  i <- which(f == npp_catch_fs)
+  
+  s_snake <- basename(f) %>% 
+    str_remove_all('.+spp_npp_catch_|_mol.csv')
+  s <- s_snake %>% str_replace_all('_', ' ')
+  src <- basename(f) %>% str_remove_all('_spp_npp_catch.+')
+
+  out_f <- sprintf(fstem, s_snake, src)
+
+  if(!file.exists(out_f)) {
+    message('Processing ', s, ' (', i, ' of ', length(npp_catch_fs), ') based on ', toupper(src), ' rangemaps...')
+    catch_df <- data.table::fread(f)
+    
+    if(src == 'am') {
+      range_df <- data.table::fread(sprintf(here_anx('spp_maps_mol', '%s_spp_mol_%s.csv'), src, s_snake))
+    } else {
+      ### src is IUCN, and file(s) by ID - perhaps multiple IDs for a given spp?
+      iucn_ids <- watson_maps_lookup %>%
+        filter(spp == s) %>%
+        .$iucn_sid %>% unique()
+      range_fs <- sprintf(here_anx('spp_maps_mol', '%s_spp_mol_%s.csv'), src, iucn_ids)
+      range_df <- lapply(range_fs, read_csv, show_col_types = FALSE) %>%
+        bind_rows() %>%
+        distinct()
+    }
+    
+    ### blank vector of spp range (begin with catch = 0)
+    v <- rep(0, times = n_distinct(range_df$cell_id))
+    if(nrow(catch_df) > 0) {
+      ### create vector of total normalized catch
+      npp_catch_sum <- catch_df %>%
+        mutate(tot_norm_catch = ben_norm_catch + pel_norm_catch) %>%
+        .$tot_norm_catch
+      tot_npp_catch <- sum(npp_catch_sum)
+      tot_catch <- sum(catch_df$ben_tot_catch + catch_df$pel_tot_catch)
+      
+      ### overwrite catch values onto catch-relevant spp range
+      v[1:length(npp_catch_sum)] <- npp_catch_sum
+    } else {
+      # v is unchanged, all zeros
+      tot_catch <- 0
+      tot_npp_catch <- 0
+    }
+    z <- quantile(v, c(.50, .9, .95, .99, .999, 1.0))
+    df <- as.matrix(z) %>% t() %>%
+      as.data.frame() %>%
+      mutate(spp = s,
+             source = src,
+             tot_catch = tot_catch,
+             tot_npp_catch = tot_npp_catch)
+    write_csv(df, out_f)
+  }
+}
+```
+
+``` {r}
+
+fishing_ref_f <- here('_setup/stressors/int/fish_npp_catch_ref_point.csv')
+# unlink(fishing_ref_f)
+if(!file.exists(fishing_ref_f)) {
+  
+  ref_tmp_fstem <- here('tmp', 'fishing_str_ref_pts', 'fishing_str_ref_%s_%s.csv')
+  ### zxcv <- list.files(dirname(ref_tmp_fstem), full.names = TRUE)
+  ### unlink(zxcv)
+  
+  tmp <- parallel::mclapply(npp_catch_fs, mc.cores = 16,
+                            FUN = calc_quantiles_range,
+                            fstem = ref_tmp_fstem)
+
+  tmp_fs <- list.files(here('tmp', 'fishing_str_ref_pts'),
+                       pattern = 'fishing_str_ref', full.names = TRUE)
+  # unlink(tmp_fs)
+  fish_qtile_range_df <- parallel::mclapply(tmp_fs, 
+                                            FUN = data.table::fread, 
+                                            mc.cores = 24) %>%
+    data.table::rbindlist() %>%
+    janitor::clean_names() %>%
+    arrange(desc(x99_percent))
+
+  write_csv(fish_qtile_range_df, fishing_ref_f)
+}
+
+qtile_results <- read_csv(fishing_ref_f) %>%
+  group_by(spp) %>%
+  filter(n() == 1 | source == 'iucn') %>%
+    ### pref IUCN for spp with both sources
+  ungroup() %>%
+  arrange(desc(x90_percent))
+knitr::kable(head(qtile_results, 20), digits = 1)
+
+```
+
+
+### Check thresholds vs RAM
+
+```{r}
+ram_assess_f <- here('_setup/stressors/int', 'ram_assess.csv')
+
+if(!file.exists(ram_assess_f)) {
+  ram_mazu <- '/home/shares/ohi/git-annex/globalprep/_raw_data/RAM/d2021/RAMLDB v4.495/R Data'
+  load(file.path(ram_mazu, 'DBdata[asmt][v4.495].RData'))
+  ram_spp <- stock %>%
+    filter(state != 'Deprecated') %>%
+    mutate(across(where(is.character), tolower)) %>%
+    ### 1264 of 1372 spp in both datasets
+    filter(scientificname %in% qtile_results$spp) %>%
+    select(stockid, tsn, spp = scientificname) %>%
+    distinct()
+  
+  ram_ts <- timeseries %>%
+    filter(between(tsyear, 2015, 2017)) %>%
+    mutate(across(where(is.character), tolower)) %>%
+    filter(stockid %in% ram_spp$stockid) %>%
+    filter(!is.na(tsvalue)) %>%
+    left_join(ram_spp, by = 'stockid')
+  
+  bmsy_levels <- c("tbdivtbmgt-calc-dimensionless",
+                   "tbdivtbmgt-dimensionless",
+                   "tbdivtbmsy-calc-dimensionless",
+                   "tbdivtbmsy-dimensionless",
+                   "ssbdivssbmgt-calc-dimensionless",
+                   "ssbdivssbmsy-calc-dimensionless",
+                   "ssbdivssbmsy-dimensionless",
+                   "bdivbmgtpref-dimensionless",
+                   "bdivbmsypref-dimensionless",
+                   "bdivbmgttouse-dimensionless",    
+                   "bdivbmsytouse-dimensionless")
+  ram_ts_bdivbmsy <- ram_ts %>%
+    filter(tsid %in% bmsy_levels) %>%
+    mutate(tsid = factor(tsid, levels = bmsy_levels)) %>%
+    group_by(spp, stockid, tsyear) %>%
+    filter(as.integer(tsid) == max(as.integer(tsid))) %>%
+    summarize(tsvalue = mean(tsvalue),
+              overfished = tsvalue < 1) %>%
+    select(spp, stockid, year = tsyear, overfished) %>%
+    distinct()
+  
+  fmsy_levels <- c("cdivmsy-ratio",
+                   "fdivfmgt-calc-dimensionless",
+                   "fdivfmsy-calc-dimensionless",
+                   "fdivfmsy-dimensionless",
+                   "udivumgtpref-dimensionless",
+                   "udivumsypref-dimensionless",
+                   "udivumgttouse-dimensionless",
+                   "udivumsytouse-dimensionless")
+  ram_ts_fdivfmsy <- ram_ts %>%
+    filter(tsid %in% fmsy_levels) %>%
+    mutate(tsid = factor(tsid, levels = fmsy_levels)) %>%
+    group_by(spp, stockid, tsyear) %>%
+    filter(as.integer(tsid) == max(as.integer(tsid))) %>%
+    summarize(tsvalue = mean(tsvalue),
+              overfishing = tsvalue > 1) %>%
+    select(spp, stockid, year = tsyear, overfishing) %>%
+    distinct()
+
+  ram_assess <- ram_ts_bdivbmsy %>%
+    full_join(ram_ts_fdivfmsy, by = c('spp', 'stockid', 'year'))
+  
+  write_csv(ram_assess, ram_assess_f)
+}
+```
+
+``` {r}
+ram_assess <- read_csv(ram_assess_f)
+
+prop_overfished <- ram_assess %>%
+  group_by(year) %>%
+  summarize(pct_overfished  = sum(overfished,  na.rm = TRUE) / sum(!is.na(overfished)),
+            pct_overfishing = sum(overfishing, na.rm = TRUE) / sum(!is.na(overfishing)))
+
+ref_pt <- max(qtile_results$x90_percent, na.rm = TRUE)
+ref_spp <- qtile_results$spp[which(qtile_results$x90_percent == ref_pt)] %>%
+  str_to_sentence()
+
+ram_assess_over <- ram_assess %>%
+  group_by(spp) %>%
+  summarize(overfished  = ifelse(any(!is.na(overfished)), sum(overfished, na.rm = TRUE) > 0, NA),
+            overfishing = ifelse(any(!is.na(overfishing)), sum(overfishing, na.rm = TRUE) > 0, NA))
+ram_check <- qtile_results %>%
+  inner_join(ram_assess_over, by = 'spp') %>%
+  mutate(over_thresh = x100_percent >= ref_pt)
+
+overfished <- table(ram_check %>% select(overfished, over_thresh))
+overfishing <- table(ram_check %>% select(overfishing, over_thresh))
+# chisq.test(overfished)
+# chisq.test(overfishing)
+```
+
+According to RAM Legacy database, proportion of stocks overfished ($B/B_{msy}$ or similar) and overfishing/overexploited ($F/F_{msy}$ or similar) across 2015-2017 (same years as Watson data):
+
+```{r}
+knitr::kable(prop_overfished, digits = 3)
+```
+
+Overfishing (fishing mortality) seems like the relevant comparison to fishing pressure, rather than overfished (stock status).  Comparing species whose max catch value in a cell exceeds the highest 90%ile reference point (columns) to those species with at least one year/stock combo considered overexploited (rows):
+
+```{r}
+knitr::kable(overfishing)
+```
+
+This threshold seems to avoid calling reasonably exploited stocks overexploited, though it is 50/50 at identifying overexploited stocks.  Performing a $\Chi^2$ test:
+
+```{r}
+chisq.test(overfishing)
+```
+
+Based on this method, the reference point for NPP-adjusted targeted catch is `r round(ref_pt)` tonnes/log(NPP), for species <i>`r ref_spp`</i>.
+
+## Rescale NPP-adjusted targeted catch layers
+
+Using this reference point, rescale NPP-adjusted catch layers for each species, and save out the finalized stressor file for each.
+
+```{r rescale catch}
+rescale_catch <- function(f, ref_pt) {
+  # f <- npp_catch_fs[1]
+  # f <- fs_to_process[1]
+  i <- which(f == fs_to_process)
+  
+  s_snake <- basename(f) %>% 
+    str_remove_all('.+spp_npp_catch_|_mol.csv')
+  s <- s_snake %>% str_replace_all('_', ' ')
+  src <- basename(f) %>% str_remove_all('_spp_npp_catch.+')
+
+  out_f <- sprintf(rescaled_fstem, src, s_snake)
+  if(!file.exists(out_f)) {
+    message('Rescaling catch for ', s, ' (', i, ' of ', length(fs_to_process), 
+            ') based on ', toupper(src), ' range map...')
+    
+    catch_df <- read_csv(f, show_col_types = FALSE)
+    if(nrow(catch_df) == 0) {
+      rescaled_df <- data.frame(cell_id = -1, rescaled_catch = 0)
+    } else {
+      rescaled_df <- catch_df %>%
+        mutate(tot_c = pel_norm_catch + ben_norm_catch,
+               rescaled_catch = ifelse(tot_c < ref_pt, tot_c / ref_pt, 1)) %>%
+        select(cell_id, rescaled_catch)
+    }
+    write_csv(rescaled_df, out_f)
+    
+  } else {
+    # message('... File exists: ', basename(out_f), '... skipping!')
+  }
+}
+```
+
+``` {r}
+
+rescaled_fstem <- here_anx('stressors/fishing/4_rescaled_catch_by_spp_cell',
+                           '%s_spp_rescaled_catch_%s.csv')
+
+rescaled_done <- list.files(dirname(rescaled_fstem), full.names = TRUE)
+### y <- list.files(dirname(rescaled_fstem), full.names = TRUE, pattern = 'am_spp_rescaled_catch')
+### unlink(y)
+done_spp_vec <- basename(rescaled_done) %>% 
+  str_remove_all('spp_rescaled_catch_|.csv')
+
+todo_spp_vec <- basename(npp_catch_fs) %>%
+  str_remove_all('spp_npp_catch_|_mol.csv')
+
+fs_to_process <- npp_catch_fs[!todo_spp_vec %in% done_spp_vec]
+
+tmp <- parallel::mclapply(fs_to_process, mc.cores = 32,
+                          FUN = rescale_catch, ref_pt = ref_pt)
+
+# df <- data.frame(s = spp_vec, f = sprintf(rescaled_fstem, spp_vec)) %>%
+#   mutate(f = str_replace_all(f, ' ', '_'))
+# fs <- list.files(dirname(rescaled_fstem), full.names = TRUE)
+# missing_spp <- df %>%
+#   filter(!f %in% fs) %>%
+#   .$s
+# 
+# tmp <- parallel::mclapply(missing_spp, mc.cores = 24, 
+#                           FUN = rescale_catch, ref_pt = ref_pt)
+
+```
+
+```{r check files}
+fs <- list.files(dirname(rescaled_fstem), full.names = TRUE)
+df <- data.frame(f = basename(fs), fsize = file.size(fs)) %>%
+  arrange(desc(fsize))
+
+knitr::kable(head(df, 10))
+```
+
+

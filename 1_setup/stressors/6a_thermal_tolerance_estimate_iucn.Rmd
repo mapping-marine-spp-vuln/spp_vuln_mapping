@@ -1,0 +1,256 @@
+---
+title: "Estimate thermal tolerance of IUCN species"
+author: "*Compiled on `r date()` by `r Sys.info()['user']`*"
+output: 
+  html_document:
+    code_folding: hide
+    toc: true
+    toc_depth: 3
+    toc_float: yes
+    number_sections: true
+    theme: cerulean
+    highlight: haddock
+    includes: 
+      in_header: '~/github/src/templates/ohara_hdr.html'
+  pdf_document:
+    toc: true
+---
+
+``` {r setup, echo = TRUE, message = FALSE, warning = FALSE}
+
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
+
+library(raster)
+library(sf)
+library(tidyverse)
+library(here)
+library(RColorBrewer)
+library(oharac)
+
+source(here('common_fxns.R'))
+source('stressor_fxns.R') ### in same dir as this Rmd
+
+```
+
+# Summary
+
+Approximate AquaMaps thermal envelope process to estimate thermal envelopes for IUCN spp not in AquaMaps.  Use overlapping species to test how well the estimation process works.
+
+# Data
+
+* IUCN range maps from IUCN Red List, version 2021-3.  These maps have been rasterized to half-degree cells for comparison to the AquaMaps HCAF environmental values.
+* AquaMaps version 2020, specifically the HCAF.
+
+# Methods
+
+To calculate thermal tolerance envelopes, we will base our methods off those noted by AquaMaps: https://www.aquamaps.org/main/AquaMaps_Algorithm_and_Data_Sources.pdf#page=1.
+
+Mean surface and bottom sea temperature at present-day condition are calculated from the variables `SSTAnMean` (sea surface temp annual mean) and `SBTAnMean` (sea bottom temperature annual mean), data originally from: Tyberghein et al. (2012); Assis et al. (2017)
+
+> Absolute and preferred minima and maxima for all environmental factors (predictors), except for depth and sea ice concentration, are computed from the environmental attributes of “good cells” using the following rules:
+>
+> 1. Min<sub>A</sub> = 25th percentile - 1.5 × interquartile or absolute minimum in extracted data (whichever is lesser)
+> 2. Max<sub>A</sub> = 75th percentile + 1.5 × interquartile or absolute maximum in extracted data (whichever is greater)
+> 3. Min<sub>P</sub> = 10th percentile of observed variation in an environmental predictor
+> 4. Max<sub>P</sub> = 90th percentile of observed variation in an environmental predictor
+
+> Additional rules are also applied to prevent the use of nonsensical values or to conform to basic biological concepts. For instance:
+>
+> * If Depth Min<sub>A</sub> ≤ 200 m, envelope computations for sea temperature and salinity are
+based on surface values, and conversely, on bottom values if Depth Min<sub>A</sub> > 200 m.
+> * For all species with Temperature Max<sub>P</sub> ≥25 ºC, Temperature Max<sub>A</sub> is set to Temperature Max<sub>P</sub> + 4.2 ºC. This sets the upper limit for tropical species to around 34 ºC, which is known to be the lethal limit for marine aquarium fishes.
+> * Where Temperature Max<sub>A</sub> ≤ 5 ºC degrees (i.e., polar and deepwater species), the minimum distance between Temperature Min<sub>P</sub> and Temperature Max<sub>P</sub> should be 0.25ºC, and 1 ºC where Temperature Max<sub>A</sub> > 5ºC.
+
+While AquaMaps uses OBIS/GBIF occurrence data to identify cells that define the species environmental preferences, we will cheat and use IUCN range map cells.
+
+## Examine HCAF data
+
+```{r}
+hcaf_df <- get_hcaf_info()
+# names(hcaf_df)
+#  [1] "id"                 "csquare_code"       "loiczid"            "n_limit"            "slimit"            
+#  [6] "w_limit"            "e_limit"            "center_lat"         "center_long"        "cell_area"         
+# [11] "ocean_area"         "p_water"            "clim_zone_code"     "fao_area_m"         "fao_area_in"       
+# [16] "country_main"       "country_second"     "country_third"      "country_sub_main"   "country_sub_second"
+# [21] "country_sub_third"  "eez"                "lme"                "lme_border"         "meow"              
+# [26] "ocean_basin"        "islands_no"         "area0_20"           "area20_40"          "area40_60"         
+# [31] "area60_80"          "area80_100"         "area_below100"      "elevation_min"      "elevation_max"     
+# [36] "elevation_mean"     "elevation_sd"       "depth_min"          "depth_max"          "depth_mean"        
+# [41] "depth_sd"           "sst_an_mean"        "sbt_an_mean"        "salinity_mean"      "salinity_b_mean"   
+# [46] "prim_prod_mean"     "ice_con_ann"        "oxy_mean"           "oxy_b_mean"         "land_dist"         
+# [51] "shelf"              "slope"              "abyssal"            "tidal_range"        "coral"             
+# [56] "estuary"            "seamount"           "mpa"
+
+cell_temp_df <- hcaf_df %>%
+  dplyr::select(loiczid, center_lat, center_long, sst_an_mean, sbt_an_mean)
+
+plot_df <- hcaf_df %>%
+  group_by(center_lat) %>%
+  summarize(mean_sst = mean(sst_an_mean, na.rm = TRUE),
+            mean_sbt = mean(sbt_an_mean, na.rm = TRUE)) %>%
+  gather(zone, temp, mean_sst, mean_sbt)
+
+ggplot(plot_df, aes(x = center_lat, y = temp, color = zone)) +
+  geom_line() +
+  theme_ohara()
+```
+
+## Process IUCN spp thermal tolerances
+
+For each IUCN species, identify which parameter (SST or SBT) should be applied.  Read in the species range map, rasterized to half-degree cells, and use this to generate a vector of temperatures.
+
+Use the basic rules to determine $T_{min}^A$, $T_{min}^P$, $T_{max}^P$, $T_{max}^A$.  Then, refine using the additional rules.  Because we are not extrapolating to new areas, the interquartile range method of calculating absolute max and min is not necessary; simply use the observed max or min according to the IUCN range.
+
+```{r define functions}
+calc_min_a <- function(T_vec) {
+  T_vec <- T_vec[!is.na(T_vec)]
+  ### input: a vector of temperatures
+  t_q <- quantile(T_vec, c(0, 0.05, 0.25, 0.75), na.rm = TRUE)
+  iqr <- t_q['75%'] - t_q['25%']
+  # T_min_a <- min(t_q['25%'] - 1.5 * iqr, t_q['5%'])
+  T_min_a <- t_q['0%']
+  return(T_min_a)
+}
+calc_max_a <- function(T_vec) {
+  ### input: a vector of temperatures
+  t_q <- quantile(T_vec, c(0.25, 0.75, 0.95, 1), na.rm = TRUE)
+  iqr <- t_q['75%'] - t_q['25%']
+  # T_max_a <- max(t_q['75%'] + 1.5 * iqr, t_q['95%'])
+  T_max_a <- t_q['100%']
+  return(T_max_a)
+}
+calc_min_p <- function(T_vec) {
+  ### input: a vector of temperatures
+  T_min_p <- quantile(T_vec, c(0.1), na.rm = TRUE)
+  return(T_min_p)
+}
+calc_max_p <- function(T_vec) {
+  ### input: a vector of temperatures
+  T_max_p <- quantile(T_vec, c(0.9), na.rm = TRUE)
+  return(T_max_p)
+}
+
+adjust_profile <- function(T_df) {
+  ### input: a dataframe of species temperature profiles...
+  ### 
+  ### * For all species with Temperature Max_P ≥25 ºC, Temperature 
+  ###   Max_A is set to Temperature Max_P + 4.2 ºC. This 
+  ###   sets the upper limit for tropical species to around 34 ºC, which is 
+  ###   known to be the lethal limit for marine aquarium fishes.
+  ### * Where Temperature Max_A ≤ 5 ºC degrees (i.e., polar and 
+  ###   deepwater species), the minimum distance between Temperature Min_P and
+  ###   Temperature Max_P should be 0.25ºC, and 1 ºC where Temperature Max_A > 5ºC.
+  ### (does this mean adjust things, or just check? let's just check for now)
+  adj_df <- T_df %>%
+    mutate(T_max_a = ifelse(T_max_p >= 25, T_max_p + 4.2, T_max_a)) %>%
+    mutate(warning = case_when((T_max_a <= 5) & (T_max_p - T_min_p < .25) ~ 'preference temp range too small!',
+                               (T_max_a > 5)  & (T_max_p - T_min_p < 1.0) ~ 'preference temp range too small!',
+                               TRUE ~ 'no worries'))
+  ### Note, the interquartile range thing makes some horrible choices for 
+  ### cosmopolitan species... limit to those seen in AquaMaps.
+  adj2_df <- adj_df %>%
+    mutate(T_max_a = ifelse(T_max_a > 34.33, 34.33, T_max_a),
+           T_min_a = ifelse(T_min_a < -2, -2, T_min_a))
+}
+
+```
+
+### Read in species maps and bind to temperature
+
+```{r}
+
+iucn_spp_therm_env_f <- here('_setup/stressors/int/iucn_spp_thermal_env.csv')
+
+spp_habs <- read_csv(here('_data/iucn_spp/spp_marine_from_api_2021-3.csv'))
+
+deep_spp <- spp_habs %>%
+  filter(max_depth == 'deep oceanic') %>%
+  .$iucn_sid
+
+spp_maps <- data.table::fread(here_anx('iucn_spp/iucn_spp_hcaf.csv')) %>%
+  oharac::dt_join(cell_temp_df, by = 'loiczid', type = 'left') %>%
+  mutate(temp = ifelse(iucn_sid %in% deep_spp, sbt_an_mean, sst_an_mean)) %>%
+  filter(!is.na(loiczid) & !is.na(temp))
+
+spp_therm_envs <- spp_maps %>%
+  group_by(iucn_sid) %>%
+  summarize(T_min_a = calc_min_a(temp),
+            T_min_p = calc_min_p(temp),
+            T_max_p = calc_max_p(temp),
+            T_max_a = calc_max_a(temp),
+            n_cells = n()) %>%
+  adjust_profile()
+
+write_csv(spp_therm_envs, iucn_spp_therm_env_f)
+
+```
+
+## Compare to AquaMaps values
+
+For those species that overlap, compare thermal envs calculated by Aquamaps to those calculated here.
+
+```{r}
+iucn_animal_only <- read_csv(here('_data/iucn_spp/spp_marine_maps_2021-3.csv')) %>%
+  filter(!str_detect(dbf_file, 'SEAGRASSES|MANGROVES')) %>%
+  .$iucn_sid
+
+iucn_therm_check <- read_csv(iucn_spp_therm_env_f) %>%
+  filter(iucn_sid %in% iucn_animal_only) %>%
+  select(iucn_sid, T_min_a:T_max_a, n_cells) %>%
+  mutate(min_swap = T_min_a > T_min_p,
+         max_swap = T_max_p > T_max_a)
+
+iucn_therm_envs <- iucn_therm_check %>%
+  gather(dist, iucn_t, T_min_a:T_max_a)
+
+am_therm_envs <- get_am_spp_envelopes() %>%
+  filter(!is.na(value)) %>%
+  mutate(am_sid = tolower(am_sid)) %>%
+  filter(param == 'temp') %>%
+  left_join(get_am_spp_info(), by = 'am_sid') %>%
+  filter(occur_cells >= 10) %>%
+  filter(kingdom == 'animalia') %>%
+  mutate(dist = case_when(dist == 'min' ~ 'T_min_a',
+                          dist == 'max' ~ 'T_max_a',
+                          dist == 'pref_min' ~ 'T_min_p',
+                          dist == 'pref_max' ~ 'T_max_p',
+                          TRUE ~ 'drop')) %>%
+  select(am_sid, sciname, dist, am_t = value, occur_cells, iucn_sid)
+
+
+am_therm_envs$am_sid %>% n_distinct()
+### 23359 AM spp after occur_cells cut and animalia cut
+
+iucn_not_aquamaps <- iucn_therm_envs %>%
+  filter(!iucn_sid %in% am_therm_envs$iucn_sid) %>%
+  select(iucn_sid) %>%
+  distinct()
+### 3028 spp mapped in IUCN not mapped in AquaMaps
+
+compare_df <- inner_join(iucn_therm_envs, am_therm_envs, by = c('iucn_sid', 'dist')) %>%
+  mutate(diff = iucn_t - am_t,
+         cell_ratio = n_cells / occur_cells) %>%
+  arrange(cell_ratio)
+# compare_df %>% select(iucn_sid) %>% n_distinct()
+### 3518 spp in IUCN and also in AquaMaps after occurcells cut
+
+ggplot(compare_df, aes(x = am_t, y = iucn_t)) +
+  geom_point(alpha = .5) +
+  geom_abline(slope = 1, intercept = 0, color = 'red') +
+  scale_color_viridis_c() +
+  facet_wrap( ~ dist) +
+  labs(x = 'AquaMaps thermal envelope',
+       y = 'IUCN thermal envelope estimate')
+
+am_therm_ranges <- am_therm_envs %>%
+  spread(dist, am_t) %>%
+  mutate(t_range_a = T_max_a - T_min_a,
+         t_range_p = T_max_p - T_min_p,
+         t_min_p_a = T_min_p - T_min_a,
+         t_max_p_a = T_max_a - T_max_p) %>%
+  gather(range_type, value, t_range_a:t_max_p_a)
+ggplot(am_therm_ranges, aes(x = range_type, y = value)) +
+  geom_boxplot()
+
+```
+

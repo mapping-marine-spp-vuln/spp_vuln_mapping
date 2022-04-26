@@ -1,0 +1,99 @@
+---
+title: "Expand taxonomic groups from expert data and AquaMaps"
+author: "*Compiled on `r date()` by `r Sys.info()['user']`*"
+output: 
+  html_document:
+    code_folding: hide
+    toc: true
+    toc_depth: 3
+    toc_float: yes
+    number_sections: true
+    theme: cerulean
+    highlight: haddock
+    includes: 
+      in_header: '~/github/src/templates/ohara_hdr.html'
+  pdf_document:
+    toc: true
+---
+
+``` {r setup, echo = TRUE, message = FALSE, warning = FALSE}
+
+knitr::opts_chunk$set(fig.width = 6, fig.height = 4, fig.path = 'figs/',
+                      echo = TRUE, message = FALSE, warning = FALSE)
+
+library(oharac) ### remotes::install_github('oharac/oharac')
+oharac::setup()
+library(taxize) ### remotes::install_github("ropensci/taxize")
+source(here('common_fxns.R'))
+library(jsonlite)
+
+```
+
+# Summary
+
+Resolve problematic species names in AquaMaps.
+
+# Methods
+
+## Match up AquaMaps names to names in WoRMS taxonomic database.
+
+Ingest the AquaMaps species list.  Remove species with matches already in the WoRMS list.  For the remainder, loop over each name, using the WoRMS REST API to identify the accepted version.  For those that don't match, proceed to fuzzy match.
+
+* `https://www.marinespecies.org/rest/AphiaIDByName/%s?marine_only=true` get ID from name
+* `https://www.marinespecies.org/rest/AphiaRecordsByAphiaIDs?aphiaids[]=%s&aphiaids[]=%s` get record for multiple IDs
+
+```{r identify new spp}
+am_dir <- '/home/shares/ohi/spp_vuln/aquamaps_2021'
+am_spp <- data.table::fread(file.path(am_dir, 'ver10_2019_speciesoccursum_iucn.csv')) %>%
+    janitor::clean_names() %>%
+    rename(am_sid = species_id, iucn_sid = iucn_id, comname = f_bname) %>%
+    mutate(sciname = tolower(paste(genus, species)))
+
+worms_spp <- assemble_worms(am_patch = FALSE)
+
+am_to_check <- am_spp %>%
+  filter(!sciname %in% worms_spp$species) %>%
+  .$sciname %>%
+  unique() %>% sort()
+```
+
+### Use WoRMS REST API to access IDs from names
+
+Using the Name Match endpoint, resolve AquaMaps names to WoRMS names.  Select the valid name and valid AphiaID columns; use `marine_only = FALSE` to catch a few incorrectly coded species... `fuzzy_match` function in `common_fxns.R`
+
+```{r resolve new spp from aquamaps}
+
+aphia_records_csv <- here('_data/worms_taxa/aquamaps_aphia_records.csv')
+
+if(!file.exists(aphia_records_csv)) {
+  
+  chunk_size <- 25
+  n_chunks <- ceiling(length(am_to_check) / chunk_size)
+  record_chunk_stem <- 'tmp/aphia_records_chunk_%s_%s.csv'
+  ### unlink(list.files(here('tmp'), pattern = 'aphia_records_chunk', full.names = TRUE))
+  
+  for(i in 1:n_chunks) { ### i <- 1
+    message('Processing chunk ', i, ' of ', n_chunks)
+    i_start <- (i-1) * chunk_size + 1
+    i_end   <- min(i * chunk_size, length(am_to_check))
+    chunk_csv <- here(sprintf(record_chunk_stem, i_start, i_end))
+    if(file.exists(chunk_csv)) {
+      message('Chunk exists: ', basename(chunk_csv), '... skipping!')
+      next()
+    }
+    spp_vec <- am_to_check[i_start:i_end]
+    chunk_df <- fuzzy_match(spp_vec, marine_only = FALSE)
+    write_csv(chunk_df, chunk_csv)
+  }
+  
+  chunk_fs <- list.files(here('tmp'), pattern = 'aphia_records_chunk', full.name = TRUE)
+  record_df <- parallel::mclapply(chunk_fs, read_csv) %>%
+    bind_rows() %>%
+    distinct()
+  write_csv(record_df, aphia_records_csv)
+}
+
+```
+
+
+With these new species, we can add these to those from the species vulnerability project, and run the `expand_taxa` script to capture any new taxonomic branches.

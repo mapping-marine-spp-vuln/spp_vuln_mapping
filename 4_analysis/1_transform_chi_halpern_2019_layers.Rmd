@@ -1,0 +1,104 @@
+---
+title: "Transform impacts from CHI Halpern et al 2019"
+author: "*Compiled on `r date()` by `r Sys.info()['user']`*"
+output: 
+  html_document:
+    code_folding: hide
+    toc: true
+    toc_depth: 3
+    toc_float: yes
+    number_sections: true
+    theme: cerulean
+    highlight: haddock
+    includes: 
+      in_header: '~/github/src/templates/ohara_hdr.html'
+  pdf_document:
+    toc: true
+---
+
+``` {r setup, echo = TRUE, message = FALSE, warning = FALSE}
+
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE, fig.height = 3, fig.width = 12)
+
+library(raster)
+library(oharac)
+library(data.table)
+library(tidyverse)
+library(here)
+source(here('common_fxns.R'))
+```
+
+# Summary
+
+Gather CHI maps from Halpern et al. 2019, reproject to CRS/res of current analysis.
+
+# Data
+
+All impact layers from Halpern et al. 2019 are available at: https://knb.ecoinformatics.org/view/doi:10.5063/F12B8WBS.  Layers for this script include CHI and individual impacts from the latest year in the assessment (2013).
+
+# Methods
+
+## Load impact rasters; reproject to parameters of current assessment
+
+Read in, aggregate by a factor of 11 (to roughly rescale to 10 km resolution), then reproject to analysis native res.
+
+```{r set up filenames}
+chi_fs_all <- list.files(here_anx('chi_other_studies'), pattern = '.tif', 
+                     recursive = TRUE, full.names = TRUE)
+chi_fs <- chi_fs_all[str_detect(chi_fs_all, 'halpern_2019|rescaled')]
+
+chi_files_df <- data.frame(chi_f = chi_fs) %>%
+  mutate(out_f = basename(chi_f),
+         out_f = ifelse(str_detect(out_f, '_resc'), file.path('stressors', out_f), out_f),
+         out_f = str_replace(out_f, '_2013_rescaled', '_stressor_rescaled'),
+         out_f = str_replace(out_f, '_2013.+.tif', '.tif'),
+         out_f = str_replace(out_f, 'chi', 'cumulative'),
+         out_f = str_replace(out_f, 'demersal', 'dem'),
+         out_f = str_replace(out_f, 'destructive', 'dest'),
+         out_f = str_replace(out_f, 'commercial', 'comm'),
+         out_f = str_replace(out_f, 'light', 'light_pollution'),
+         out_f = str_replace(out_f, 'oa', 'ocean_acidification'),
+         out_f = str_replace(out_f, 'slr', 'sea_level_rise'),
+         out_f = str_replace(out_f, 'sst', 'sst_extremes')) %>%
+  mutate(out_f = here('_data/chi_halpern_2019', out_f))
+```
+
+``` {r process hab chi map}
+ocean_a  <- raster(here('_spatial/ocean_area_mol.tif'))
+
+for(i in seq_along(chi_files_df$out_f)) {
+  ### i <- 1
+  out_f <- chi_files_df$out_f[i]
+  if(file.exists(out_f)) {
+    message('File ', basename(out_f), ' exists... skipping!')
+    next()
+  }
+  chi_f <- chi_files_df$chi_f[i]
+  message('Processing ', chi_f, ' to \n  ', out_f)
+  
+  chi_raw <- raster(chi_f)
+  
+  scale_factor <- round(res(ocean_a) / res(chi_raw))[1]
+  if(scale_factor > 0) {
+    message('  ... aggregating by factor of ', scale_factor, '...')
+    chi_agg <- chi_raw %>% 
+      aggregate(fact = scale_factor, # progress = 'text', 
+                fun = mean, na.rm = TRUE)
+  
+    message('  ... reprojecting to Mollweide 10 km x 10 km...')
+    chi_reproj <- chi_agg %>%
+      projectRaster(ocean_a, # progress = 'text', 
+                    method = 'bilinear')
+  } else {
+    message('  ... No aggregation needed - reprojecting to Mollweide 10 km x 10 km...')
+    chi_reproj <- chi_raw %>%
+      projectRaster(ocean_a, # progress = 'text', 
+                    method = 'ngb')
+    
+  }
+  
+  writeRaster(chi_reproj, out_f, overwrite = TRUE)
+}
+
+```
+
