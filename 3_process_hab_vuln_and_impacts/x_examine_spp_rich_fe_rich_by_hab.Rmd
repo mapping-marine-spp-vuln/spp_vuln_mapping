@@ -1,0 +1,89 @@
+---
+title: "Examine species richness and functional richness by habitat"
+author: "*Compiled on `r date()` by `r Sys.info()['user']`*"
+output: 
+  html_document:
+    code_folding: hide
+    toc: true
+    toc_depth: 3
+    toc_float: yes
+    number_sections: true
+    theme: cerulean
+    highlight: haddock
+    includes: 
+      in_header: '~/github/src/templates/ohara_hdr.html'
+  pdf_document:
+    toc: true
+---
+
+``` {r setup, echo = TRUE, message = FALSE, warning = FALSE}
+
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE, fig.height = 8, fig.width = 8)
+
+library(terra)
+library(oharac)
+library(tidyverse)
+library(here)
+source(here('common_fxns.R'))
+```
+
+# Summary
+
+How do functional richness and vulnerability change with increasing species richness, by habitat?
+
+# Methods
+
+## Gather all the maps
+
+```{r fr-fv-nspp maps}
+nspp_rast <- rast(here('_output/func_entities/n_spp.tif'))
+n_fe_rast <- rast(here('_output/func_entities/n_fe.tif'))
+fv_rast <- rast(here('_output/func_entities/f_wvuln.tif'))
+```
+
+```{r hab maps}
+hab_mapfs <- list.files(here('_data/habitat_maps'), full.names = TRUE)
+hab_maps <- rast(hab_mapfs)
+```
+
+## Bind into a big ol dataframe
+
+```{r}
+df <- data.frame(values(nspp_rast),
+                 values(n_fe_rast),
+                 values(fv_rast),
+                 values(hab_maps),
+                 cell_id = 1:ncell(nspp_rast)) %>%
+  filter(!is.na(n_spp)) %>%
+  gather(key = hab, value = pct_hab, 
+         -n_spp, -n_fe, -f_wvuln, -cell_id) %>%
+  filter(!is.na(pct_hab))
+  
+```
+
+## Plot some stuff
+```{r}
+
+df_sample <- df %>%
+  group_by(hab) %>%
+  slice_sample(n = 2000) %>%
+  ungroup()
+
+ggplot(df_sample, aes(x = n_spp, y = n_fe)) +
+  theme_minimal() +
+  geom_point(alpha = .01) +
+  facet_wrap(~ hab)
+
+ggplot(df_sample, aes(x = n_spp, y = f_wvuln)) +
+  theme_minimal() +
+  geom_point(alpha = .01) +
+  ylim(c(0, 1)) +
+  facet_wrap(~ hab)
+
+ggplot(df_sample, aes(x = n_fe, y = f_wvuln)) +
+  theme_minimal() +
+  geom_point(alpha = .01) +
+  ylim(c(0, 1)) +
+  facet_wrap(~ hab)
+```
+

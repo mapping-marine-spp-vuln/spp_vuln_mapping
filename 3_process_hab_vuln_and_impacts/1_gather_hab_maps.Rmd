@@ -1,5 +1,5 @@
 ---
-title: "Map cumulative impacts"
+title: "Gather habitat maps and process to 10 km Mollweide"
 author: "*Compiled on `r date()` by `r Sys.info()['user']`*"
 output: 
   html_document:
@@ -18,9 +18,10 @@ output:
 
 ``` {r setup, echo = TRUE, message = FALSE, warning = FALSE}
 
-knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE, fig.height = 3, fig.width = 12)
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE, fig.height = 4, fig.width = 6)
 
-library(raster)
+# library(raster)
+library(terra)
 library(oharac)
 library(tidyverse)
 library(here)
@@ -29,183 +30,55 @@ source(here('common_fxns.R'))
 
 # Summary
 
-With impact maps generated for all stressors, means calculated both unweighted and FV-weighted, we can add the impact layers to generate a comprehensive cumulative human impact map.
+Gather habitat maps from Recent Pace of Change project (Halpern et al. 2019), aggregate and reproject to Mollweide 10 km resolution.
 
 # Data
 
-See scripts 2, 3a, and 3b for vulnerability mapping scripts, and scripts 4a-4d for impact calculation scripts.
+Data prepped for Halpern et al. 2019, available from Mazu server.
 
 # Methods
 
-## Calculate CHI: unweighted
+For each CHI native layer (~934m Mollweide):
 
-Sum impacts across all stressor/vulnerability combos.
+* Read in habitat raster of 1 (presence) and NA (absence).
+* Convert NAs to 0 then mask by ocean presence to eliminate land cells.
+* Aggregate by a factor of 11 to approximate 10 km x 10 km, using a mean function - this results in approximate habitat proportional representation in the cell.
+* Reproject the result to the analysis CRS/resolution and write out.
 
-```{r calc chi by unweighted vuln, fig.height = 3, fig.width = 6}
-imp1_fs <- list.files(here('_output/impact_maps/impact_maps_unweighted'),
-                      pattern = 'mean',
-                      full.names = TRUE)
+```{r}
+in_hab_dir <- '/home/shares/ohi/git-annex/impact_acceleration/habitats'
 
-imp1_stack <- stack(imp1_fs)
+hab_fs <- data.frame(raw = list.files(in_hab_dir, pattern = '.tif$', 
+                                      full.names = TRUE)) %>%
+  mutate(reproj = here('_data/habitat_maps', basename(raw)))
 
-ocean_a_rast <- raster(here('_spatial/ocean_area_mol.tif'))
-### Calculate cumulative impacts
-chi_unwt_raw <- calc(imp1_stack, fun = sum, na.rm = TRUE)
-chi_unweighted <- chi_unwt_raw %>%
-  mask(ocean_a_rast, progress = 'text')
+if(any(!file.exists(hab_fs$reproj))) {
+  ocean_rast_chi <- rast(here_anx('_spatial/ocean_chi.tif'))
 
-writeRaster(chi_unweighted, here('_output/impact_maps/chi_unweighted.tif'),
-            overwrite = TRUE)
-
-### plot with ggplot
-chi_unwt_plot <- here('figs/chi_unweighted.png')
-if(!file.exists(chi_unwt_plot)) {
-  ### unlink(chi_unwt_plot)
-  chi_unweighted_df <- chi_unweighted %>%
-    as.data.frame(xy = TRUE) %>%
-    filter(!is.na(layer))
-  
-  fill_lbls <- c(0, .1, .25, .5, 1, round(maxValue(chi_unweighted), 2))
-  
-  p <- ggplot(chi_unweighted_df, aes(x, y, fill = sqrt(layer))) +
-    geom_raster() +
-    scale_fill_viridis_c(labels = fill_lbls, breaks = sqrt(fill_lbls)) +
-    coord_sf() +
-    theme_void() +
-    labs(title = 'CHI by unweighted mean vulnerability',
-         fill  = 'CHI')
-  
-  ggsave(chi_unwt_plot, height = 4, width = 8, dpi = 300)
-}
-knitr::include_graphics(chi_unwt_plot)
-```
-
-## Calculate CHI: FV-weighted
-
-Sum impacts across all stressor/vulnerability combos.
-
-```{r calc chi by fv-weighted vuln, fig.height = 3, fig.width = 6}
-imp2_fs <- list.files(here('_output/impact_maps/impact_maps_fv_weighted'), 
-                      pattern = 'mean',
-                      full.names = TRUE)
-
-imp2_stack <- stack(imp2_fs)
-
-ocean_a_rast <- raster(here('_spatial/ocean_area_mol.tif'))
-### Calculate cumulative impacts
-chi_fv_wt_raw <- calc(imp2_stack, fun = sum, na.rm = TRUE)
-chi_fv_weighted <- chi_fv_wt_raw %>%
-  mask(ocean_a_rast, progress = 'text')
-
-writeRaster(chi_fv_weighted, here('_output/impact_maps/chi_fv_weighted.tif'),
-            overwrite = TRUE)
-
-### plot with ggplot
-chi_fvwt_plot <- here('figs/chi_fv_weighted.png')
-if(!file.exists(chi_fvwt_plot)) {
-  ### unlink(chi_fvwt_plot)
-  chi_fv_weighted_df <- chi_fv_weighted %>%
-    as.data.frame(xy = TRUE) %>%
-    filter(!is.na(layer))
-  
-  fill_lbls <- c(0, .1, .25, .5, 1, round(maxValue(chi_fv_weighted), 2))
-  
-  p <- ggplot(chi_fv_weighted_df, aes(x, y, fill = sqrt(layer))) +
-    geom_raster() +
-    scale_fill_viridis_c(labels = fill_lbls, breaks = sqrt(fill_lbls)) +
-    coord_sf() +
-    theme_void() +
-    labs(title = 'CHI by FV-weighted mean vulnerability',
-         fill = 'CHI')
-  
-  ggsave(chi_fvwt_plot, height = 4, width = 8, dpi = 300)
-}
-knitr::include_graphics(chi_fvwt_plot)
-```
-
-## Plot relative difference in CHI
-
-Difference in CHI calculated from FV-weighted vulnerability relative to unweighted vulnerability (using only spp included in functional entities):
-$$\frac{CHI_{FV} - CHI_{unweighted}}{CHI_{unweighted}} \times 100\%$$
-
-```{r fv weighted vs unweighted, fig.height = 4, fig.width = 7}
-r <- (chi_fv_weighted - chi_unweighted) / chi_unweighted * 100
-r1 <- r[chi_fv_weighted >= .10 | chi_unweighted >= .10]
-r2 <- r[chi_fv_weighted >= .25 | chi_unweighted >= .25]
-r_vals <- values(r); r_vals <- r_vals[!is.na(r_vals)]
-r_zlim <- max(abs(quantile(r_vals, .001)), abs(quantile(r_vals, .999)))
-values(r)[values(r) > r_zlim] <- r_zlim
-values(r)[values(r) < -r_zlim] <- -r_zlim
-
-### set up thresholded rasts as well
-r1 <- r2 <- r
-r1[chi_fv_weighted < .10 & chi_unweighted < .10] <- NA
-values(r1)[values(r1) > r_zlim] <- r_zlim
-values(r1)[values(r1) < -r_zlim] <- -r_zlim
-r2[chi_fv_weighted < .25 & chi_unweighted < .25] <- NA
-values(r2)[values(r2) > r_zlim] <- r_zlim
-values(r2)[values(r2) < -r_zlim] <- -r_zlim
- 
-chi_diff_plot <- here('figs/chi_fv_diff_unwt.png')
-if(!file.exists(chi_diff_plot)) {
-  chi_diff_df <- as.data.frame(r, xy = TRUE) %>%
-    filter(!is.na(layer))
-  
-  map_cols <- hcl.colors(palette = 'Red-Green', n = 15, rev = TRUE)
-
-  p <- ggplot(chi_diff_df, aes(x, y, fill = layer)) +
-      geom_raster() +
-      scale_fill_gradientn(colors = map_cols, 
-                           limits = c(-r_zlim, r_zlim)) +
-      coord_sf() +
-      theme_void() +
-      labs(title = 'CHI difference between FV and unweighted',
-           fill = '%∆CHI')
-    
-  ggsave(chi_diff_plot, height = 4, width = 8, dpi = 300)
+  ### load ocean and coastal rasters at analysis resolution
+  ocean_a_10km <- rast(here('_spatial/ocean_area_mol.tif'))
+  coastal_10km <- rast(here('_spatial/coastal_3nmi_area_mol.tif'))
 }
 
-chi_diff1_plot <- here('figs/chi_fv_diff_unwt_0.10.png')
-if(!file.exists(chi_diff1_plot)) {
-  chi_diff1_df <- as.data.frame(r1, xy = TRUE) %>%
-    filter(!is.na(layer)) 
-  
-  map_cols <- hcl.colors(palette = 'Red-Green', n = 15, rev = TRUE)
+for(i in 1:nrow(hab_fs)) {
+  ### i <- 1
+  in_f  <- hab_fs$raw[i]
+  out_f <- hab_fs$reproj[i]
+  if(file.exists(out_f)) {
+    message('Reprojected habitat map ', basename(out_f), ' exists... skipping!')
+    next()
+  }
+  message('Reading in ', in_f, ' \n  and setting NAs to 0...')
+  r <- rast(in_f)
 
-  p <- ggplot(chi_diff1_df, aes(x, y, fill = layer)) +
-      geom_raster() +
-      scale_fill_gradientn(colors = map_cols, 
-                           limits = c(-r_zlim, r_zlim)) +
-      coord_sf() +
-      theme_void() +
-      labs(title = 'CHI difference between FV and unwt (0.10 threshold)',
-           fill = '%∆CHI')
-    
-  ggsave(chi_diff1_plot, height = 4, width = 8, dpi = 300)
+  message('... Aggregating ', basename(in_f), ' by 11x to ~ 10km resolution...')
+  r_sum <- aggregate(r, fact = 11, fun = sum, na.rm = TRUE, progress = 'text')
+  r_mean <- r_sum / 121
+
+  message('... Projecting ', basename(in_f), ' to 10 km resolution Mollweide...')
+  out_r <- project(r_mean, ocean_a_10km, method = 'ngb')
+
+  writeRaster(out_r, out_f, overwrite = TRUE)
 }
-
-chi_diff2_plot <- here('figs/chi_fv_diff_unwt_0.25.png')
-if(!file.exists(chi_diff2_plot)) {
-  chi_diff2_df <- as.data.frame(r2, xy = TRUE) %>%
-    filter(!is.na(layer))
-  
-  map_cols <- hcl.colors(palette = 'Red-Green', n = 15, rev = TRUE)
-
-  p <- ggplot(chi_diff2_df, aes(x, y, fill = layer)) +
-      geom_raster() +
-      scale_fill_gradientn(colors = map_cols, 
-                           limits = c(-r_zlim, r_zlim)) +
-      coord_sf() +
-      theme_void() +
-      labs(title = 'CHI difference between FV and unweighted (0.25 threshold)',
-           fill = '%∆CHI')
-    
-  ggsave(chi_diff2_plot, height = 4, width = 8, dpi = 300)
-}
-
-knitr::include_graphics(chi_diff_plot)
-knitr::include_graphics(chi_diff1_plot)
-knitr::include_graphics(chi_diff2_plot)
-
 ```
 

@@ -402,33 +402,3 @@ plot_map(log10(f_red_rast) %>% setNames('log10_f_red'),  main = 'log_10(Function
 plot_map(f_overred_rast, main = 'Functional overredundancy')
 ```
 
-## Compare species richness to functional richness
-
-How does this compare to Mouillot 2014 coefficients?
-
-```{r}
-sr_fr_df <- data.frame(nspp = values(n_spp_rast),
-                       n_fe = values(n_fe_rast)) %>%
-  filter(!is.na(nspp)) %>%
-  mutate(log_nspp = log(nspp),
-         log_n_fe = log(n_fe))
-
-plot(n_fe ~ nspp, data = sample_n(sr_fr_df, 1e4))
-
-plot(log_n_fe ~ log_nspp, data = sample_n(sr_fr_df, 1e4))
-
-fe_sr_regr <- lm(log_n_fe ~ log_nspp + 0, data = sr_fr_df)
-summary(fe_sr_regr)
-fe_sr_coef <- fe_sr_regr$coefficients
-
-fe_sr_regr2 <- lm(log_n_fe ~ log_nspp, data = sr_fr_df)
-summary(fe_sr_regr2)
-fe_sr_coef2 <- fe_sr_regr2$coefficients
-
-ggplot(sr_fr_df %>% sample_n(1000), aes(x = log_nspp, y = log_n_fe)) +
-  geom_point(alpha = .2) +
-  geom_abline(slope = fe_sr_coef, color = 'red') +
-  geom_abline(slope = fe_sr_coef2[2], intercept = fe_sr_coef2[1], color = 'blue')
-
-```
-

@@ -1,0 +1,187 @@
+---
+title: "Process habitat vulnerability maps"
+author: "*Compiled on `r date()` by `r Sys.info()['user']`*"
+output: 
+  html_document:
+    code_folding: hide
+    toc: true
+    toc_depth: 3
+    toc_float: yes
+    number_sections: true
+    theme: cerulean
+    highlight: haddock
+    includes: 
+      in_header: '~/github/src/templates/ohara_hdr.html'
+  pdf_document:
+    toc: true
+---
+
+``` {r setup, echo = TRUE, message = FALSE, warning = FALSE}
+
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE, fig.height = 3, fig.width = 6)
+
+library(terra)
+library(oharac)
+library(tidyverse)
+library(here)
+source(here('common_fxns.R'))
+```
+
+# Summary
+
+Collect the habitat maps (proportion of 10km cell taken by that habitat), and for each stressor, multiply the habitat proportions by the habitat vulnerability score.
+
+Take that stack, calculate the mean value across all habitats, and write out.
+
+# Data
+
+Data prepped for Halpern et al. 2019, available from Mazu server.
+
+# Methods
+
+Gather habitat maps at 10 km x 10 km Mollweide, and put into a stack.  Mask to ocean cells only.
+
+```{r}
+hab_map_fs <- list.files(here('_data/habitat_maps'), pattern = '.tif', full.names = TRUE)
+
+ocean_a  <- rast(here('_spatial/ocean_area_mol.tif'))
+
+hab_maps <- rast(hab_map_fs) %>% mask(ocean_a)
+
+
+### can hab maps overlap?
+habs_sum <- sum(hab_maps, na.rm = TRUE)
+### sum maxes out at 4.57, so yes, sum of proportional area can be
+### greater than 1, so overlap is possible
+plot(habs_sum, main = 'Sum of habitat proportional coverage', 
+     range = c(0, minmax(habs_sum)[2]), axes = FALSE,
+     col = hcl.colors(50))
+
+```
+
+Read in habitat vulnerability matrix from impact_acceleration repository.
+
+```{r}
+hab_vuln_on_github <- 'https://raw.githubusercontent.com/OHI-Science/impact_acceleration/master/vulnerability_weighting_matrix.csv'
+hab_vulns <- read_csv(hab_vuln_on_github) %>%
+  janitor::clean_names() %>%
+  slice(-1) %>%                   ### drop descriptive name row
+  mutate(across(-1, as.numeric))  ### convert all but first col (pressure) to numeric
+
+### check that mapped habs are all represented in the vuln data
+# names(hab_maps)[!names(hab_maps) %in% names(hab_vulns)]
+### character(0)
+
+# names(hab_vulns)[!names(hab_vulns) %in% names(hab_maps)]
+### [1] "pressure"    "vent"        "soft_canyon" "hard_canyon"
+```
+
+## Loop over stressors and calc vuln map for each
+
+```{r}
+prs <- hab_vulns$pressure
+habs <- names(hab_maps)
+
+for(p in prs) {
+  ### p <- prs[1]
+  out_fstem <- here('_output/vuln_maps/vuln_maps_habitat/vuln_hab_%s_mean.tif')
+  out_f <- sprintf(out_fstem, p)
+  
+  if(file.exists(out_f)) {
+    message('File ', basename(out_f), ' exists... skipping!')
+    next()
+  }
+  
+  message('Processing habitat-based vuln map for pressure ', p, '...')
+  vuln_vec <- hab_vulns %>%
+    filter(pressure == p) %>%
+    select(all_of(habs)) %>% ### reorders cols to same as habs
+    t() %>%
+    setNames(habs)
+  
+  ### Apply vulnerability scores to each hab layer in turn
+  ### rast() doesn't work on mclapply output for some reason...
+  vuln_maps <- lapply(seq_along(vuln_vec), # mc.cores = length(vuln_vec),
+                      FUN = function(i) { ### i <- 1
+                        h <- names(vuln_vec)[i]
+                        v_map <- hab_maps[h] * vuln_vec[h]
+                        return(v_map)
+                      }) %>%
+    rast() ### convert list of rasters to multilayer raster
+  
+  ### vuln_maps is the proportional area weighted vulnerability of each
+  ### habitat.  Summing those then dividing by habs_sum should result in
+  ### a weighted mean, with weights being the proportional area of each hab:
+  ### sum_h (prop_area_h * vuln_h) / sum_h(prop_area_h)
+  flat_vuln_map <- sum(vuln_maps, na.rm = TRUE) / habs_sum
+  
+  writeRaster(x = flat_vuln_map, filename = out_f, overwrite = TRUE)
+}
+```
+
+## Plot relevant habitat vulnerability maps
+
+"Relevant" meaning we have stressor maps...
+
+### Fishing pressures
+
+```{r}
+prs_of_interest <- c('dem_dest', 'dem_nondest_hb', 'dem_nondest_lb', 
+                     'pel_hb', 'pel_lb', 'art_fish')
+
+map_fstem <- here('_output/vuln_maps/vuln_maps_habitat/vuln_hab_%s_mean.tif')
+
+for(p in prs_of_interest) {
+  p_map <- rast(sprintf(map_fstem, p))
+  plot(p_map, main = p, axes = FALSE,
+       range = c(0, minmax(p_map)[2]), 
+       col = hcl.colors(50))
+}
+```
+
+### Climate pressures
+
+```{r}
+prs_of_interest <- c('sst', 'uv', 'oa', 'slr')
+
+map_fstem <- here('_output/vuln_maps/vuln_maps_habitat/vuln_hab_%s_mean.tif')
+
+for(p in prs_of_interest) {
+  p_map <- rast(sprintf(map_fstem, p))
+  plot(p_map, main = p, axes = FALSE,
+       range = c(0, minmax(p_map)[2]), 
+       col = hcl.colors(50))
+}
+```
+
+### Land-based pressures
+
+```{r}
+prs_of_interest <- c('nutrient', 'light', 'direct_human')
+
+map_fstem <- here('_output/vuln_maps/vuln_maps_habitat/vuln_hab_%s_mean.tif')
+
+for(p in prs_of_interest) {
+  p_map <- rast(sprintf(map_fstem, p))
+  plot(p_map, main = p, axes = FALSE,
+       range = c(0, minmax(p_map)[2]), 
+       col = hcl.colors(50))
+}
+```
+
+### Ocean-based pressures
+
+```{r}
+prs_of_interest <- c('shipping', 'benthic_str')
+
+map_fstem <- here('_output/vuln_maps/vuln_maps_habitat/vuln_hab_%s_mean.tif')
+
+for(p in prs_of_interest) {
+  ### p <- prs_of_interest[1]
+  p_map <- rast(sprintf(map_fstem, p))
+  plot(p_map, main = p, axes = FALSE,
+       range = c(0, minmax(p_map)[2]), 
+       col = hcl.colors(50))
+}
+```
+
