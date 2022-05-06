@@ -9,7 +9,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
 
 
-<meta name="author" content="Compiled on Wed Apr 6 08:31:06 2022 by ohara" />
+<meta name="author" content="Compiled on Wed May 4 20:08:31 2022 by ohara" />
 
 
 <title>Stressors: targeted fishing by species and cell - rescale stressor</title>
@@ -361,7 +361,7 @@ div.tocify {
 
 
 <h1 class="title toc-ignore">Stressors: targeted fishing by species and cell - rescale stressor</h1>
-<h4 class="author"><em>Compiled on Wed Apr 6 08:31:06 2022 by ohara</em></h4>
+<h4 class="author"><em>Compiled on Wed May 4 20:08:31 2022 by ohara</em></h4>
 
 </div>
 
@@ -391,14 +391,15 @@ div.tocify {
 <div id="methods" class="section level1">
 <h1>Methods</h1>
 <ul>
-<li>For each species, considering its entire range, identify the 99th percentile of NPP-adjusted total catch.</li>
-<li>Take the highest value across all species as the reference point.</li>
-<li>Normalize all species fishing stressor maps using that reference point and save out.</li>
+<li>For each species, considering its entire range, identify the various percentiles of NPP-adjusted total catch.</li>
+<li>Examine different threshold options to see what makes most sense as a threshold for rescaling. Here we have chosen the highest value for 90th percentile across all species as a cutoff for overfishing, based on ability to distinguish overfishing on RAM stocks.</li>
+<li>For targeted species whose highest catch value falls below that threshold, normalize to their own 99th percentile.</li>
+<li>Normalize all species fishing stressor maps using that reference system and save out.</li>
 </ul>
 <div id="identify-reference-point" class="section level2">
 <h2>Identify reference point</h2>
-<p>Take each species fishing map, expand out to include unfished cells in the species’ range, and then determine the 99%ile of catch for each species.</p>
-<div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>watson_maps_lookup <span class="ot">&lt;-</span> <span class="fu">read_csv</span>(<span class="fu">here</span>(<span class="st">&#39;_setup/stressors/int/watson_maps_lookup.csv&#39;</span>))</span>
+<p>Take each species fishing map, expand out to include unfished cells in the species’ range, and then determine the various quantiles of catch for each species, to explore potential cutoffs.</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>watson_maps_lookup <span class="ot">&lt;-</span> <span class="fu">read_csv</span>(<span class="fu">here</span>(<span class="st">&#39;1_setup/stressors/int/watson_maps_lookup.csv&#39;</span>))</span>
 <span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>spp_vec <span class="ot">&lt;-</span> watson_maps_lookup<span class="sc">$</span>spp <span class="sc">%&gt;%</span> <span class="fu">unique</span>() <span class="sc">%&gt;%</span> <span class="fu">sort</span>()</span>
 <span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a></span>
@@ -433,31 +434,34 @@ div.tocify {
 <span id="cb3-26"><a href="#cb3-26" aria-hidden="true" tabindex="-1"></a>        <span class="fu">distinct</span>()</span>
 <span id="cb3-27"><a href="#cb3-27" aria-hidden="true" tabindex="-1"></a>    }</span>
 <span id="cb3-28"><a href="#cb3-28" aria-hidden="true" tabindex="-1"></a>    </span>
-<span id="cb3-29"><a href="#cb3-29" aria-hidden="true" tabindex="-1"></a>    v <span class="ot">&lt;-</span> <span class="fu">rep</span>(<span class="dv">0</span>, <span class="at">times =</span> <span class="fu">n_distinct</span>(range_df<span class="sc">$</span>cell_id))</span>
-<span id="cb3-30"><a href="#cb3-30" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span>(<span class="fu">nrow</span>(catch_df) <span class="sc">&gt;</span> <span class="dv">0</span>) {</span>
-<span id="cb3-31"><a href="#cb3-31" aria-hidden="true" tabindex="-1"></a>      catch_sum <span class="ot">&lt;-</span> catch_df <span class="sc">%&gt;%</span></span>
-<span id="cb3-32"><a href="#cb3-32" aria-hidden="true" tabindex="-1"></a>        <span class="fu">mutate</span>(<span class="at">tot_norm_catch =</span> ben_norm_catch <span class="sc">+</span> pel_norm_catch) <span class="sc">%&gt;%</span></span>
-<span id="cb3-33"><a href="#cb3-33" aria-hidden="true" tabindex="-1"></a>        .<span class="sc">$</span>tot_norm_catch</span>
-<span id="cb3-34"><a href="#cb3-34" aria-hidden="true" tabindex="-1"></a>      tot_npp_catch <span class="ot">&lt;-</span> <span class="fu">sum</span>(catch_sum)</span>
-<span id="cb3-35"><a href="#cb3-35" aria-hidden="true" tabindex="-1"></a>      tot_catch <span class="ot">&lt;-</span> <span class="fu">sum</span>(catch_df<span class="sc">$</span>ben_tot_catch <span class="sc">+</span> catch_df<span class="sc">$</span>pel_tot_catch)</span>
-<span id="cb3-36"><a href="#cb3-36" aria-hidden="true" tabindex="-1"></a>      </span>
-<span id="cb3-37"><a href="#cb3-37" aria-hidden="true" tabindex="-1"></a>      v[<span class="dv">1</span><span class="sc">:</span><span class="fu">length</span>(catch_sum)] <span class="ot">&lt;-</span> catch_sum</span>
-<span id="cb3-38"><a href="#cb3-38" aria-hidden="true" tabindex="-1"></a>    } <span class="cf">else</span> {</span>
-<span id="cb3-39"><a href="#cb3-39" aria-hidden="true" tabindex="-1"></a>      <span class="co"># v is unchanged, all zeros</span></span>
-<span id="cb3-40"><a href="#cb3-40" aria-hidden="true" tabindex="-1"></a>      tot_catch <span class="ot">&lt;-</span> <span class="dv">0</span></span>
-<span id="cb3-41"><a href="#cb3-41" aria-hidden="true" tabindex="-1"></a>      tot_npp_catch <span class="ot">&lt;-</span> <span class="dv">0</span></span>
-<span id="cb3-42"><a href="#cb3-42" aria-hidden="true" tabindex="-1"></a>    }</span>
-<span id="cb3-43"><a href="#cb3-43" aria-hidden="true" tabindex="-1"></a>    z <span class="ot">&lt;-</span> <span class="fu">quantile</span>(v, <span class="fu">c</span>(.<span class="dv">50</span>, .<span class="dv">9</span>, .<span class="dv">95</span>, .<span class="dv">99</span>, .<span class="dv">999</span>, <span class="fl">1.0</span>))</span>
-<span id="cb3-44"><a href="#cb3-44" aria-hidden="true" tabindex="-1"></a>    df <span class="ot">&lt;-</span> <span class="fu">as.matrix</span>(z) <span class="sc">%&gt;%</span> <span class="fu">t</span>() <span class="sc">%&gt;%</span></span>
-<span id="cb3-45"><a href="#cb3-45" aria-hidden="true" tabindex="-1"></a>      <span class="fu">as.data.frame</span>() <span class="sc">%&gt;%</span></span>
-<span id="cb3-46"><a href="#cb3-46" aria-hidden="true" tabindex="-1"></a>      <span class="fu">mutate</span>(<span class="at">spp =</span> s,</span>
-<span id="cb3-47"><a href="#cb3-47" aria-hidden="true" tabindex="-1"></a>             <span class="at">source =</span> src,</span>
-<span id="cb3-48"><a href="#cb3-48" aria-hidden="true" tabindex="-1"></a>             <span class="at">tot_catch =</span> tot_catch,</span>
-<span id="cb3-49"><a href="#cb3-49" aria-hidden="true" tabindex="-1"></a>             <span class="at">tot_npp_catch =</span> tot_npp_catch)</span>
-<span id="cb3-50"><a href="#cb3-50" aria-hidden="true" tabindex="-1"></a>    <span class="fu">write_csv</span>(df, out_f)</span>
-<span id="cb3-51"><a href="#cb3-51" aria-hidden="true" tabindex="-1"></a>  }</span>
-<span id="cb3-52"><a href="#cb3-52" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
-<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>fishing_ref_f <span class="ot">&lt;-</span> <span class="fu">here</span>(<span class="st">&#39;_setup/stressors/int/fish_npp_catch_ref_point.csv&#39;</span>)</span>
+<span id="cb3-29"><a href="#cb3-29" aria-hidden="true" tabindex="-1"></a>    <span class="do">### blank vector of spp range (begin with catch = 0)</span></span>
+<span id="cb3-30"><a href="#cb3-30" aria-hidden="true" tabindex="-1"></a>    v <span class="ot">&lt;-</span> <span class="fu">rep</span>(<span class="dv">0</span>, <span class="at">times =</span> <span class="fu">n_distinct</span>(range_df<span class="sc">$</span>cell_id))</span>
+<span id="cb3-31"><a href="#cb3-31" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span>(<span class="fu">nrow</span>(catch_df) <span class="sc">&gt;</span> <span class="dv">0</span>) {</span>
+<span id="cb3-32"><a href="#cb3-32" aria-hidden="true" tabindex="-1"></a>      <span class="do">### create vector of total normalized catch</span></span>
+<span id="cb3-33"><a href="#cb3-33" aria-hidden="true" tabindex="-1"></a>      npp_catch_sum <span class="ot">&lt;-</span> catch_df <span class="sc">%&gt;%</span></span>
+<span id="cb3-34"><a href="#cb3-34" aria-hidden="true" tabindex="-1"></a>        <span class="fu">mutate</span>(<span class="at">tot_norm_catch =</span> ben_norm_catch <span class="sc">+</span> pel_norm_catch) <span class="sc">%&gt;%</span></span>
+<span id="cb3-35"><a href="#cb3-35" aria-hidden="true" tabindex="-1"></a>        .<span class="sc">$</span>tot_norm_catch</span>
+<span id="cb3-36"><a href="#cb3-36" aria-hidden="true" tabindex="-1"></a>      tot_npp_catch <span class="ot">&lt;-</span> <span class="fu">sum</span>(npp_catch_sum)</span>
+<span id="cb3-37"><a href="#cb3-37" aria-hidden="true" tabindex="-1"></a>      tot_catch <span class="ot">&lt;-</span> <span class="fu">sum</span>(catch_df<span class="sc">$</span>ben_tot_catch <span class="sc">+</span> catch_df<span class="sc">$</span>pel_tot_catch)</span>
+<span id="cb3-38"><a href="#cb3-38" aria-hidden="true" tabindex="-1"></a>      </span>
+<span id="cb3-39"><a href="#cb3-39" aria-hidden="true" tabindex="-1"></a>      <span class="do">### overwrite catch values onto catch-relevant spp range</span></span>
+<span id="cb3-40"><a href="#cb3-40" aria-hidden="true" tabindex="-1"></a>      v[<span class="dv">1</span><span class="sc">:</span><span class="fu">length</span>(npp_catch_sum)] <span class="ot">&lt;-</span> npp_catch_sum</span>
+<span id="cb3-41"><a href="#cb3-41" aria-hidden="true" tabindex="-1"></a>    } <span class="cf">else</span> {</span>
+<span id="cb3-42"><a href="#cb3-42" aria-hidden="true" tabindex="-1"></a>      <span class="co"># v is unchanged, all zeros</span></span>
+<span id="cb3-43"><a href="#cb3-43" aria-hidden="true" tabindex="-1"></a>      tot_catch <span class="ot">&lt;-</span> <span class="dv">0</span></span>
+<span id="cb3-44"><a href="#cb3-44" aria-hidden="true" tabindex="-1"></a>      tot_npp_catch <span class="ot">&lt;-</span> <span class="dv">0</span></span>
+<span id="cb3-45"><a href="#cb3-45" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb3-46"><a href="#cb3-46" aria-hidden="true" tabindex="-1"></a>    z <span class="ot">&lt;-</span> <span class="fu">quantile</span>(v, <span class="fu">c</span>(.<span class="dv">50</span>, .<span class="dv">9</span>, .<span class="dv">95</span>, .<span class="dv">99</span>, .<span class="dv">999</span>, <span class="fl">1.0</span>))</span>
+<span id="cb3-47"><a href="#cb3-47" aria-hidden="true" tabindex="-1"></a>    df <span class="ot">&lt;-</span> <span class="fu">as.matrix</span>(z) <span class="sc">%&gt;%</span> <span class="fu">t</span>() <span class="sc">%&gt;%</span></span>
+<span id="cb3-48"><a href="#cb3-48" aria-hidden="true" tabindex="-1"></a>      <span class="fu">as.data.frame</span>() <span class="sc">%&gt;%</span></span>
+<span id="cb3-49"><a href="#cb3-49" aria-hidden="true" tabindex="-1"></a>      <span class="fu">mutate</span>(<span class="at">spp =</span> s,</span>
+<span id="cb3-50"><a href="#cb3-50" aria-hidden="true" tabindex="-1"></a>             <span class="at">source =</span> src,</span>
+<span id="cb3-51"><a href="#cb3-51" aria-hidden="true" tabindex="-1"></a>             <span class="at">tot_catch =</span> tot_catch,</span>
+<span id="cb3-52"><a href="#cb3-52" aria-hidden="true" tabindex="-1"></a>             <span class="at">tot_npp_catch =</span> tot_npp_catch)</span>
+<span id="cb3-53"><a href="#cb3-53" aria-hidden="true" tabindex="-1"></a>    <span class="fu">write_csv</span>(df, out_f)</span>
+<span id="cb3-54"><a href="#cb3-54" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb3-55"><a href="#cb3-55" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
+<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>fishing_ref_f <span class="ot">&lt;-</span> <span class="fu">here</span>(<span class="st">&#39;1_setup/stressors/int/fish_npp_catch_ref_point.csv&#39;</span>)</span>
 <span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="co"># unlink(fishing_ref_f)</span></span>
 <span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span>(<span class="sc">!</span><span class="fu">file.exists</span>(fishing_ref_f)) {</span>
 <span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>  </span>
@@ -761,7 +765,7 @@ div.tocify {
 </table>
 <div id="check-thresholds-vs-ram" class="section level3">
 <h3>Check thresholds vs RAM</h3>
-<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>ram_assess_f <span class="ot">&lt;-</span> <span class="fu">here</span>(<span class="st">&#39;_setup/stressors/int&#39;</span>, <span class="st">&#39;ram_assess.csv&#39;</span>)</span>
+<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>ram_assess_f <span class="ot">&lt;-</span> <span class="fu">here</span>(<span class="st">&#39;1_setup/stressors/int&#39;</span>, <span class="st">&#39;ram_assess.csv&#39;</span>)</span>
 <span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span>(<span class="sc">!</span><span class="fu">file.exists</span>(ram_assess_f)) {</span>
 <span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>  ram_mazu <span class="ot">&lt;-</span> <span class="st">&#39;/home/shares/ohi/git-annex/globalprep/_raw_data/RAM/d2021/RAMLDB v4.495/R Data&#39;</span></span>
@@ -841,7 +845,7 @@ div.tocify {
 <span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarize</span>(<span class="at">overfished  =</span> <span class="fu">ifelse</span>(<span class="fu">any</span>(<span class="sc">!</span><span class="fu">is.na</span>(overfished)), <span class="fu">sum</span>(overfished, <span class="at">na.rm =</span> <span class="cn">TRUE</span>) <span class="sc">&gt;</span> <span class="dv">0</span>, <span class="cn">NA</span>),</span>
 <span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a>            <span class="at">overfishing =</span> <span class="fu">ifelse</span>(<span class="fu">any</span>(<span class="sc">!</span><span class="fu">is.na</span>(overfishing)), <span class="fu">sum</span>(overfishing, <span class="at">na.rm =</span> <span class="cn">TRUE</span>) <span class="sc">&gt;</span> <span class="dv">0</span>, <span class="cn">NA</span>))</span>
 <span id="cb6-16"><a href="#cb6-16" aria-hidden="true" tabindex="-1"></a>ram_check <span class="ot">&lt;-</span> qtile_results <span class="sc">%&gt;%</span></span>
-<span id="cb6-17"><a href="#cb6-17" aria-hidden="true" tabindex="-1"></a>  <span class="fu">left_join</span>(ram_assess_over, <span class="at">by =</span> <span class="st">&#39;spp&#39;</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb6-17"><a href="#cb6-17" aria-hidden="true" tabindex="-1"></a>  <span class="fu">inner_join</span>(ram_assess_over, <span class="at">by =</span> <span class="st">&#39;spp&#39;</span>) <span class="sc">%&gt;%</span></span>
 <span id="cb6-18"><a href="#cb6-18" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">over_thresh =</span> x100_percent <span class="sc">&gt;=</span> ref_pt)</span>
 <span id="cb6-19"><a href="#cb6-19" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb6-20"><a href="#cb6-20" aria-hidden="true" tabindex="-1"></a>overfished <span class="ot">&lt;-</span> <span class="fu">table</span>(ram_check <span class="sc">%&gt;%</span> <span class="fu">select</span>(overfished, over_thresh))</span>
@@ -906,12 +910,18 @@ div.tocify {
 ## 
 ## data:  overfishing
 ## X-squared = 9.6638, df = 1, p-value = 0.001879</code></pre>
-<p>Based on this method, the reference point for NPP-adjusted targeted catch is 2170 tonnes/log(NPP), for species <i>Engraulis ringens</i>.</p>
+<p>Based on this method, the max cutoff reference point for NPP-adjusted targeted catch is $C_{ref} = $2170 tonnes/log(NPP), for species <i>Engraulis ringens</i>. However, for species whose maximum catch falls below this reference point, we will use the 99th percentile of that species’ catch as its own reference point.</p>
+<p><span class="math display">\[\begin{align*}
+  C_{ref}^i = \begin{cases}
+                C_{ref} \text{ when } C_{max}^i \geq C_{ref}\\
+                C_{99%}^i \text{ when } C_{max}^i &lt; C_{ref}
+              \end{cases}
+\end{align*}\]</span></p>
 </div>
 </div>
 <div id="rescale-npp-adjusted-targeted-catch-layers" class="section level2">
 <h2>Rescale NPP-adjusted targeted catch layers</h2>
-<p>Using this reference point, rescale NPP-adjusted catch layers for each species, and save out the finalized stressor file for each.</p>
+<p>Using this reference system, rescale NPP-adjusted catch layers for each species, and save out the finalized stressor file for each.</p>
 <div class="sourceCode" id="cb11"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>rescale_catch <span class="ot">&lt;-</span> <span class="cf">function</span>(f, ref_pt) {</span>
 <span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>  <span class="co"># f &lt;- npp_catch_fs[1]</span></span>
 <span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>  <span class="co"># f &lt;- fs_to_process[1]</span></span>

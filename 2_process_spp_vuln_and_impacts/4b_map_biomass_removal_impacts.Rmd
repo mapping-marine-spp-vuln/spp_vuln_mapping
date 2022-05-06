@@ -20,7 +20,7 @@ output:
 
 knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE, fig.height = 4, fig.width = 7)
 
-library(raster)
+library(terra)
 library(oharac)
 library(data.table)
 library(tidyverse)
@@ -81,19 +81,23 @@ collect_catch_maps <- function(tx_catch_mapfiles) {
     message('No catch for this taxon!')
     return(NULL)
   }
-    ### read in all biomass removal stressor maps for this taxon - 
+    
+  ### read in all biomass removal stressor maps for this taxon - 
   message('Loading biomass removal stress maps for taxon ', t, '...')
   tx_catch_maps_list <- parallel::mclapply(
-                    tx_catch_mapfiles$catch_map_f, ### f <- tx_catch_mapfiles$map_f[1]
-                    mc.cores = 40, 
+                    tx_catch_mapfiles$catch_map_f, ### f <- tx_catch_mapfiles$catch_map_f[27]
+                    mc.cores = 40,
                     FUN = function(f) {
-                      df <- data.table::fread(f) %>% 
-                        mutate(rescaled_catch = as.numeric(rescaled_catch))
+                      df <- data.table::fread(f) 
+                      if(nrow(df) > 0) {
+                        df <- df %>% 
+                          mutate(rescaled_catch = as.numeric(rescaled_catch))
+                      }
                       return(df)
                     })
+
   if(check_tryerror(tx_catch_maps_list)) {
-    message('Something went wrong with loading maps for taxon ', t, '... skipping for now!')
-    next()
+    message('Something went wrong with loading maps for taxon ', t, '!')
   }
   message('Binding biomass removal stress maps for taxon ', t, '...')
   tx_catch_maps <- tx_catch_maps_list %>%
@@ -113,7 +117,7 @@ out_stem <- here_anx('impact_maps_by_taxon/impacts_tx_biomass_removal',
 ### zxcv <- list.files(dirname(out_stem), pattern = 'imp_unwt', full.names = TRUE)
 ### unlink(zxcv)
 for(t in taxa) {
-  ### t <- taxa[5]
+  ### t <- taxa[4]
   tx_imp_df <- spp_info_df %>%
     filter(taxon == t) %>%
     select(species, v_score) %>%
@@ -294,8 +298,8 @@ process_sdev_rasts <- function(big_df) {
 }
 
 r_to_df <- function(f) {
-  r <- raster::raster(f)
-  df <- data.frame(val = values(r),
+  r <- terra::rast(f)
+  df <- data.frame(val = as.vector(values(r)),
                    cell_id = 1:ncell(r)) %>%
     filter(!is.na(val))
   return(df)
@@ -353,8 +357,8 @@ if(!file.exists(impact_f_sdev)) {
 ```
 
 ```{r}
-mean_rast_unwt <- raster(impact_f_mean)
-sdev_rast_unwt <- raster(impact_f_sdev)
+mean_rast_unwt <- rast(impact_f_mean)
+sdev_rast_unwt <- rast(impact_f_sdev)
 cv_rast_unwt <- sdev_rast_unwt / mean_rast_unwt
 
 map_cols <- hcl.colors(n = 50)
@@ -410,8 +414,11 @@ read_truncated_rangemap <- function(f, chunk_start, chunk_end) {
 
 read_truncated_str_map <- function(f, chunk_start, chunk_end) {
   ### f <- catch_mapfile_fv_df$map_f[1000]
-  if(file.exists(f)) {
-    df <- data.table::fread(f) %>%
+  if(!file.exists(f)) return(NULL)
+  
+  df <- data.table::fread(f) 
+  if(nrow(df) > 0) {
+    df <- df %>%
       filter(between(cell_id, chunk_start, chunk_end)) %>%
       mutate(rescaled_catch = as.numeric(rescaled_catch),
              map_f = f)
@@ -626,8 +633,8 @@ if(any(!file.exists(rast_mean_impact_fv_f, rast_sdev_impact_fv_f))) {
 ```
 
 ```{r}
-mean_rast_fvwt <- raster(rast_mean_impact_fv_f)
-sdev_rast_fvwt <- raster(rast_sdev_impact_fv_f)
+mean_rast_fvwt <- rast(rast_mean_impact_fv_f)
+sdev_rast_fvwt <- rast(rast_sdev_impact_fv_f)
 cv_rast_fvwt <- sdev_rast_fvwt / mean_rast_fvwt
 
 map_cols <- hcl.colors(n = 50)
@@ -662,8 +669,8 @@ mean_diff_rast[mean_rast_unwt == 0] <- NA
 mean_diff_squished <- squish_rast(mean_diff_rast, qtile = .999)
 # cv_diff_rast <- (cv_rast_fvwt - cv_rast_unwt) / cv_rast_unwt
 # cv_r_sq <- squish_rast(cv_diff_rast, qtile = .999)
-high_diff_cells <- data.frame(unwt = values(mean_rast_unwt), 
-                              fvwt = values(mean_rast_fvwt),
+high_diff_cells <- data.frame(unwt = as.vector(values(mean_rast_unwt)), 
+                              fvwt = as.vector(values(mean_rast_fvwt)),
                               cell_id = 1:ncell(mean_rast_unwt)) %>%
   filter(!is.na(unwt)) %>%
   mutate(diff = (fvwt - unwt) / unwt) %>%

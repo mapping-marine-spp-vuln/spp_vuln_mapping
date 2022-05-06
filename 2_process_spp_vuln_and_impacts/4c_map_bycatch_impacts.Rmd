@@ -20,7 +20,7 @@ output:
 
 knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE, fig.height = 4, fig.width = 7)
 
-library(raster)
+library(terra)
 library(oharac)
 library(data.table)
 library(tidyverse)
@@ -67,14 +67,14 @@ spp_info_df %>%
 Read in bycatch stressor maps, and create a dataframe of the results.  Assign species to one of three bins based on water column position trait.  Benthopelagic and reef associated spp will take an average of the two bycatch stressor maps.
 
 ```{r}
-benth_rast <- raster(here('_data/stressors_mol/bycatch_benthic_2017.tif'))
-pelag_rast <- raster(here('_data/stressors_mol/bycatch_pelagic_2017.tif'))
+benth_rast <- rast(here('_data/stressors_mol/bycatch_benthic_2017.tif'))
+pelag_rast <- rast(here('_data/stressors_mol/bycatch_pelagic_2017.tif'))
 bp_rast <- (benth_rast + pelag_rast) / 2
 
-bycatch_cells_df <- data.frame(ben = values(benth_rast),
-                         pel = values(pelag_rast),
-                         both    = values(bp_rast),
-                         cell_id = 1:ncell(benth_rast)) %>%
+bycatch_cells_df <- data.frame(ben = as.vector(values(benth_rast)),
+                               pel = as.vector(values(pelag_rast)),
+                               both    = as.vector(values(bp_rast)),
+                               cell_id = 1:ncell(benth_rast)) %>%
   filter(!is.na(ben) | !is.na(pel)) %>%
   pivot_longer(names_to = 'wcol', values_to = 'bycatch', cols = -cell_id)
 ```
@@ -90,7 +90,7 @@ taxa <- spp_info_df$taxon %>% unique() %>% sort()
 
 out_stem <- here_anx('impact_maps_by_taxon/impacts_tx_bycatch', 
                      'imp_unwt_bycatch_%s_%s.tif')
-### zxcv <- list.files(dirname(out_stem), full.names = TRUE)
+### zxcv <- list.files(dirname(out_stem), pattern = 'imp_unwt_bycatch', full.names = TRUE)
 ### unlink(zxcv)
 for(t in taxa) {
   ### t <- taxa[1]
@@ -106,7 +106,7 @@ for(t in taxa) {
   outf_mean <- sprintf(out_stem, t, 'mean')
   outf_sdev <- sprintf(out_stem, t, 'sdev')
   outf_nspp <- sprintf(out_stem, t, 'nspp')
-  if(all(file.exists(outf_mean, outf_sdev, outf_nspp))) {
+  if(all(file.exists(outf_mean, outf_sdev))) {
     message('Rasters exist for taxon ', t, ' for bycatch stressor... skipping!')
     next()
   }
@@ -149,9 +149,7 @@ for(t in taxa) {
          }) 
 
   if(check_tryerror(result_list)) {
-    warning('Something went wrong with calculations for taxon ', t,
-            '... skipping for now!')
-    next()
+    stop('Something went wrong with calculations for taxon ', t, '!')
   }
   
   message('Binding results for taxon ', t, '...')
@@ -187,19 +185,19 @@ combine_taxa_maps <- function(tx_bycatch_map_df) {
   mean_df <- parallel::mclapply(mean_fs, mc.cores = 24, FUN = r_to_df) %>%
     setNames(taxa) %>%
     data.table::rbindlist(idcol = 'taxon') %>%
-    rename(v_mean = val)
+    rename(imp_mean = val)
   
   message('... loading std dev maps across taxa for bycatch...')
   sdev_df <- parallel::mclapply(sdev_fs, mc.cores = 24, FUN = r_to_df) %>%
     setNames(taxa) %>%
     data.table::rbindlist(idcol = 'taxon') %>%
-    rename(v_sdev = val)
+    rename(imp_sdev = val)
   
   message('... loading nspp maps across taxa for bycatch...')
   nspp_df <- parallel::mclapply(nspp_fs, mc.cores = 24, FUN = r_to_df) %>%
     setNames(taxa) %>%
     data.table::rbindlist(idcol = 'taxon') %>%
-    rename(v_nspp = val)
+    rename(imp_nspp = val)
   
   message('... joining mean, sd, nspp into big-ass dataframe for bycatch...')
   big_df <- mean_df %>%
@@ -224,7 +222,7 @@ process_mean_rasts <- function(big_df) {
       gp_out <- big_df %>%
         filter(cell_id %in% gp_cells) %>%
         group_by(cell_id) %>%
-        summarize(vuln_mean = (sum(v_mean * v_nspp) / sum(v_nspp)))
+        summarize(imp_mean = (sum(imp_mean * imp_nspp) / sum(imp_nspp)))
     })
   
   ### gather results
@@ -248,8 +246,8 @@ process_sdev_rasts <- function(big_df) {
         gp_sdev_out <- big_df %>%
           filter(cell_id %in% gp_cells) %>%
           group_by(cell_id) %>%
-          summarize(vuln_var = iterated_pooled_var(v_mean, v_sdev, v_nspp),
-                    vuln_sdev = sqrt(vuln_var))
+          summarize(imp_var = iterated_pooled_var(imp_mean, imp_sdev, imp_nspp),
+                    imp_sdev = sqrt(imp_var))
       # })
       return(gp_sdev_out)
     })
@@ -260,12 +258,13 @@ process_sdev_rasts <- function(big_df) {
 }
 
 r_to_df <- function(f) {
-  r <- raster::raster(f)
-  df <- data.frame(val = values(r),
+  r <- terra::rast(f)
+  df <- data.frame(val = as.vector(values(r)),
                    cell_id = 1:ncell(r)) %>%
     filter(!is.na(val))
   return(df)
 }
+
 ```
 
 ```{r assemble taxon impact maps to total maps}
@@ -291,10 +290,10 @@ if(!all(file.exists(impact_f_mean, impact_f_sdev))) {
 
 ### Process mean raster across taxa
 if(!file.exists(impact_f_mean)) {
-  message('... summarizing mean vulnerability map across all taxa...')
+  message('... summarizing mean impact map across all taxa...')
 
   unwt_mean <- process_mean_rasts(big_df)
-  rast_mean <- map_to_mol(unwt_mean, which = 'vuln_mean')
+  rast_mean <- map_to_mol(unwt_mean, which = 'imp_mean')
 
   message('Writing out mean raster: \n  ',
           str_replace(impact_f_mean, '/home/ohara/github/', 'GitHub:'))
@@ -304,11 +303,11 @@ if(!file.exists(impact_f_mean)) {
 
 ### Process standard deviation raster across taxa using pooled var
 if(!file.exists(impact_f_sdev)) {
-  message('... summarizing standard deviation vulnerability map across all taxa...')
+  message('... summarizing standard deviation impact map across all taxa...')
   ### break this into smaller chunks and parallelize over those?
 
   unwt_sdev <- process_sdev_rasts(big_df)
-  rast_sdev <- map_to_mol(unwt_sdev, which = 'vuln_sdev')
+  rast_sdev <- map_to_mol(unwt_sdev, which = 'imp_sdev')
   
   message('Writing out std dev raster: \n  ',
           str_replace(impact_f_sdev, '/home/ohara/github/', 'GitHub:'))
@@ -317,15 +316,17 @@ if(!file.exists(impact_f_sdev)) {
 }
 
 ### check that nspp adds up correctly
-# unwt_nspp <- big_df %>% group_by(cell_id) %>% summarize(nspp = sum(v_nspp))
+# unwt_nspp <- big_df %>% group_by(cell_id) %>% summarize(nspp = sum(imp_nspp))
 # rast_nspp <- map_to_mol(unwt_nspp, which = 'nspp')
-# main_nspp <- raster(here('_output/nspp_maps/nspp_in_unwt_vuln.tif'))
-# compareRaster(rast_nspp, main_nspp, values = TRUE)
+# main_nspp <- rast(here('_output/nspp_maps/nspp_in_unwt_vuln.tif'))
+# x <- as.vector(values(rast_nspp)); y <- as.vector(values(main_nspp))
+# match <- (is.na(x) & is.na(y)) | x == y
+# all(match)
 ```
 
 ```{r}
-mean_rast_unwt <- raster(impact_f_mean)
-sdev_rast_unwt <- raster(impact_f_sdev)
+mean_rast_unwt <- rast(impact_f_mean)
+sdev_rast_unwt <- rast(impact_f_sdev)
 cv_rast_unwt <- sdev_rast_unwt / mean_rast_unwt
 
 map_cols <- hcl.colors(n = 50)
@@ -458,11 +459,11 @@ spp_fe <- spp_info_df %>%
 
 tmp_stem_fv <- here_anx('impact_maps_by_taxon/impacts_tx_bycatch',
                         'imp_fvwt_summary_chunk_%s_to_%s_bycatch.csv')
-### zxcv <- list.files(dirname(tmp_stem_fv), full.names = TRUE)
+### zxcv <- list.files(dirname(tmp_stem_fv), pattern = 'imp_fvwt_summary_chunk', full.names = TRUE)
 ### unlink(zxcv)
 
 for(chunk_i in 1:n_chunks) { 
-  ### chunk_i <- 2
+  ### chunk_i <- 1
   ### chunk_i <- 64
   
   ### Set up chunk start and end and filenames; check whether maps 
@@ -492,7 +493,8 @@ for(chunk_i in 1:n_chunks) {
   
   ### if result includes no cells, write out empty chunk files
   if(nrow(chunk_maps_raw) == 0) {
-    message('No species X cells found for ', chunk_text, '... writing out empty data.frame...')
+    message('No species X cells found for ', chunk_text, 
+            '... writing out empty data.frame...')
     write_csv(data.frame(), tmp_bycatch_fv)
     next()
   }
@@ -513,7 +515,6 @@ for(chunk_i in 1:n_chunks) {
   
   write_csv(chunk_str_sum, tmp_bycatch_fv)
 }
-
 ```
 
 ### Aggregate chunk vulnerability maps to global map
@@ -548,16 +549,18 @@ if(any(!file.exists(rast_mean_imp_fv_f, rast_sdev_imp_fv_f))) {
   ### check that n_fe adds up correctly
   # n_fe <- impact_map_df %>% data.table() %>% .[ , n_fe := sum(n_fe), by = 'cell_id']
   # rast_n_fe <- map_to_mol(n_fe, which = 'n_fe')
-  # main_n_fe <- raster(here('_output/nspp_maps/n_fe_in_fvwt_vuln.tif'))
-  # compareRaster(rast_n_fe, main_n_fe, values = TRUE)
+  # main_n_fe <- rast(here('_output/nspp_maps/n_fe_in_fvwt_vuln.tif'))
+  # x <- as.vector(values(rast_n_fe)); y <- as.vector(values(main_n_fe))
+  # match <- (is.na(x) & is.na(y)) | x == y
+  # all(match)
 }
 
 
 ```
 
 ```{r}
-mean_rast_fvwt <- raster(rast_mean_imp_fv_f)
-sdev_rast_fvwt <- raster(rast_sdev_imp_fv_f)
+mean_rast_fvwt <- rast(rast_mean_imp_fv_f)
+sdev_rast_fvwt <- rast(rast_sdev_imp_fv_f)
 cv_rast_fvwt <- sdev_rast_fvwt / mean_rast_fvwt
 
 map_cols <- hcl.colors(n = 50)
@@ -593,24 +596,26 @@ mean_diff_squished <- squish_rast(mean_diff_rast, qtile = .999)
 # cv_r_sq <- squish_rast(cv_diff_rast, qtile = .999)
 
 m_d_mask_0.10 <- m_d_mask_0.25 <- mean_diff_squished$r
-values(m_d_mask_0.10)[values(mean_rast_unwt) < .10 & values(mean_rast_fvwt) < .10] <- NA
-values(m_d_mask_0.25)[values(mean_rast_unwt) < .25 & values(mean_rast_fvwt) < .25] <- NA
+values(m_d_mask_0.10)[values(mean_rast_unwt) < .10 | values(mean_rast_fvwt) < .10] <- NA
+values(m_d_mask_0.25)[values(mean_rast_unwt) < .25 | values(mean_rast_fvwt) < .25] <- NA
 
 message('Plotting difference maps for bycatch...')
 
 ### Set up plot for diverging palette, and symmetric z limits around zero
 map_cols <- hcl.colors(palette = 'Red-Green', n = 50, rev = TRUE)
 
+r <- mean_diff_squished$r; z = c(-mean_diff_squished$zlim, mean_diff_squished$zlim)
+
 plot(mean_diff_squished$r, col = map_cols, 
-     main = '% Diff in mean vuln: bycatch...',
-     zlim = c(-mean_diff_squished$zlim, mean_diff_squished$zlim), 
+     main = '% Diff in mean impact: bycatch...',
+     zlim = z, 
      legend = TRUE, axes = FALSE)  
 plot(m_d_mask_0.10, col = map_cols, 
-     main = '% Diff in mean vuln masked 0.10: bycatch...',
-     zlim = c(-mean_diff_squished$zlim, mean_diff_squished$zlim), 
+     main = '% Diff in mean impact masked 0.10: bycatch...',
+     zlim = z, 
      legend = TRUE, axes = FALSE)  
 plot(m_d_mask_0.25, col = map_cols, 
-     main = '% Diff in mean vuln masked 0.25: bycatch...',
-     zlim = c(-mean_diff_squished$zlim, mean_diff_squished$zlim), 
+     main = '% Diff in mean impact masked 0.25: bycatch...',
+     zlim = z, 
      legend = TRUE, axes = FALSE)
 ```
