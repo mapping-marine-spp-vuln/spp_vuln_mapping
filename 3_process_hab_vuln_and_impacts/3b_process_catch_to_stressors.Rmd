@@ -1,0 +1,302 @@
+---
+title: "Process Commercial and Artisanal Fisheries stressors"
+author: "*Compiled on `r date()` by `r Sys.info()['user']`*"
+output: 
+  html_document:
+    code_folding: show
+    toc: true
+    toc_depth: 1
+    toc_float: yes
+    number_sections: false
+    theme: cerulean
+    highlight: haddock
+    includes: 
+      in_header: '~/github/src/templates/ohara_hdr.html'
+pdf_document:
+  toc: true
+---
+
+```{r setup, message=F,warning=F}
+knitr::opts_chunk$set(fig.width = 6, fig.height = 4, message = FALSE, warning = FALSE)
+library(terra)
+library(oharac)
+library(data.table)
+library(tidyverse)
+library(here)
+source(here('common_fxns.R'))
+
+```
+
+This script is a modification to Jamie Afflerbach's script for the Recent Pace of Change project (Halpern et al. 2019), original scripts can be found in https://github.com/OHI-Science/impact_acceleration/tree/master/stressors.
+
+This script combines spatial catch data from [Watson (2017)](https://www.nature.com/articles/sdata201739) with species & gear specific categories defined in [`watson_gear_matching`](https://github.com/OHI-Science/impact_acceleration/blob/master/stressors/comm_fish/watson_gear_matching.Rmd) to create catch rasters for commercial fishing stressors.
+
+# Summary
+
+- Raw catch data is combined with `watson_gear_taxa_assignment.csv` as defined in `3a_fishing_stressors_gear_tyopes.Rmd`
+- Data is summarized by catch type for the combined years 2015-2017, rasterized to half degree cells, and saved as a GeoTIFF.
+
+# Methods
+
+## Load Data
+
+Load raw catch data and the dataset matching gear and taxon to the five stressor categories.
+
+```{r load data}
+watson_dir <- here_anx('../../git-annex/globalprep/_raw_data', 
+                       'IMAS_GlobalFisheriesLandings/d2020')
+
+w_codes_xlsx <- file.path(watson_dir, 'Codes_raw.xlsx')
+# codes_sheets <- readxl::excel_sheets(codes_xlsx)
+w_cell_df <- readxl::read_excel(w_codes_xlsx, sheet = 'Cell') %>%
+  janitor::clean_names() %>%
+  select(-c(x5:x7))
+
+w_gear_df <- readxl::read_excel(w_codes_xlsx, sheet = 'Gear') %>%
+  janitor::clean_names() %>%
+  select(-c(x9:x10))
+w_gear_clean <- w_gear_df %>% 
+  select(fleet_gear_name, f_gear_code) %>% 
+  distinct() %>%
+  mutate(across(where(is.character), tolower))
+
+w_taxa_df <- readxl::read_excel(w_codes_xlsx, sheet = 'Taxa') %>% 
+  janitor::clean_names() %>%
+  select(-c(x8:taxonkey_11), taxonkey = taxonkey_1) %>%
+  mutate(across(where(is.character), tolower))
+
+gear_taxa <- read_csv(here('int/watson_gear_taxa_assignment.csv')) %>%
+  mutate(hb  = (bycatch == 'high'),
+         pel = (type == 'pelagic'),
+         dest = (destruction == 'destructive')) %>%
+  mutate(catch_type = case_when(hb & pel  ~ 'pel_hb',
+                                !hb & pel ~ 'pel_lb',
+                                hb & !pel & !dest  ~ 'dem_nondest_hb',
+                                !hb & !pel & !dest ~ 'dem_nondest_lb',
+                                !pel & dest ~ 'dem_dest')) %>%
+  select(taxon_name, common_name, fleet_gear_name, catch_type) %>%
+  distinct()
+
+```
+
+## Wrangle catch data by catch type
+
+The raw data includes catch for 2015-2017.  Summarize the mean catch per cell per catch type, including artisanal, and save out.
+
+```{r process catch data}
+
+cell_catch_file <- here_anx('stressors/fishing_by_gear/watson_catch_by_cell_and_type.csv')
+
+if(!file.exists(cell_catch_file)) {
+  message('Loading catch df and binding to gear, taxon, catch_type df...')
+  w_catch_df <- readRDS(file.path(watson_dir, 'Catch2015_2019.rds')) %>%
+    janitor::clean_names() %>%
+    oharac::dt_join(w_gear_clean, by = c('f_gear_code'), type = 'left') %>%
+    oharac::dt_join(w_taxa_df, by = 'taxonkey', type = 'left') %>%
+    oharac::dt_join(w_cell_df, by = 'cell', type = 'left') %>%
+    oharac::dt_join(gear_taxa, by = c('taxon_name', 'common_name', 'fleet_gear_name'), 
+                    type = 'left') %>%
+    select(year = i_year, cell_id = cell, area_km2 = ocean_areasqkm, 
+           ends_with('ind'), catch_type)
+  
+  message('Summarizing commercial catch types...')
+  comm_catch_by_type_df <- w_catch_df %>%
+    data.table() %>%
+    .[ , .(tot_catch_cell = sum(reported_ind + iuuind + discards_ind)),
+       by = .(cell_id, catch_type, area_km2)] %>%
+    mutate(tot_catch_km2 = tot_catch_cell / (3 * area_km2))
+  ### the 3 * area_km2 is because we're summing over three years of catch data...
+  
+  message('Summarizing artisanal catch type...')
+  art_catch_df <- w_catch_df %>%
+    data.table() %>%
+    .[ , .(tot_catch_cell = sum(reported_nind + iuunind + discards_nind)),
+       by = .(cell_id, area_km2)] %>%
+    mutate(tot_catch_km2 = tot_catch_cell / (3 * area_km2),
+           catch_type = 'artisanal')
+  
+  cell_catch_df <- bind_rows(comm_catch_by_type_df, art_catch_df)
+  
+  write_csv(cell_catch_df, cell_catch_file)
+}
+
+```
+
+## Map total catch values by catch type
+
+Cell values match LOICZID values from AquaMaps.  Apply catch values to HCAF raster; reproject to Mollweide 10 km resolution.  Check for coastal gaps due to mismatch between Watson data and coastline data, and gapfill these to approximate Jamie's gapfilling methods from RPoC.  Note, some missing coastline values will be legit non-fished areas; if we use a focal() style window of one or two cells this shouldn't distort values too much.  Note that Jamie's analysis seems to have gapfilled at a larger resolution (22.5 km x 22.5 km?), based on half-degree cells reprojected to Mollweide without setting resolution; here we reproject directly to the 10 km analysis resolution.
+
+* Project catch to Mollweide 10 km x 10 km
+* Gapfill missing cells using `focal()` with a 5x5 window to approximate the 22.5 km gapfill from Jamie's method, then mask this to just coastal cells and add back to the unfilled data.
+
+```{r gapfill function}
+gapfill_to_coast <- function(r) {
+  coast_mol <- rast(here('_spatial/coastal_3nmi_area_mol.tif'))
+  ocean_mol <- rast(here('_spatial/ocean_area_mol.tif'))
+
+  r_gf_coast <- r %>%
+    focal(w = 5, fun = mean, na.rm = TRUE, na.policy = 'only') %>%
+    mask(coast_mol)
+  
+  df <- data.frame(x = as.vector(values(r)),
+                   y = as.vector(values(r_gf_coast))) %>%
+    mutate(z = ifelse(is.na(x), y, x),
+           z = ifelse(is.na(z), 0, z))
+  
+  r_out <- r %>%
+    setValues(df$z) %>%
+    mask(ocean_mol)
+  
+  return(r_out)
+}
+```
+
+```{r}
+cell_catch_df <- read_csv(cell_catch_file)
+ocean_mol <- rast(here('_spatial/ocean_area_mol.tif'))
+
+catch_type_vec <- cell_catch_df$catch_type %>% unique() %>% sort()
+
+outf_stem <- here_anx('stressors/fishing_by_gear/fishing_catch_%s.tif')
+for(ct in catch_type_vec) { ### ct <- catch_type_vec[1]
+  
+  outf <- sprintf(outf_stem, ct)
+  if(file.exists(outf)) {
+    message('Total catch map for ', ct, ' already exists... skipping!')
+    next()
+  }
+
+  message('Processing total catch map for ', ct, ' fishing...')
+  catch_type_df <- cell_catch_df %>%
+    filter(catch_type == ct)
+  
+  catch_hcaf <- map_to_hcaf(catch_type_df, by = 'cell_id', which = 'tot_catch_km2')
+  
+  catch_mol <- project(catch_hcaf, ocean_mol, method = 'ngb')
+  
+  catch_mol_gf <- gapfill_to_coast(catch_mol)
+  
+  outf <- sprintf(outf_stem, ct)
+  writeRaster(catch_mol_gf, outf, overwrite = TRUE)
+}
+
+```
+
+### Plot catch intensity (tonnes per km^2^)
+
+```{r}
+catch_map_fs <- list.files(dirname(outf_stem), pattern = 'fishing_catch_.+.tif',
+                           full.names = TRUE)
+### check values:
+# tot_catch1 <- sum(cell_catch_df$tot_catch_cell) / 3 ### avg over 3 years
+# tot_catch_map <- rast(catch_map_fs) * ocean_mol * 100 %>% sum(na.rm = TRUE)
+# tot_catch2 <- sum(values(tot_catch_map), na.rm = TRUE)
+### 124.6e6 vs. 119.1e6, 5% difference...
+
+for(f in catch_map_fs) { ### f <- catch_map_fs[1]
+  r <- rast(f)
+
+  plot(log10(r), col = hcl.colors(n = 50), axes = FALSE, 
+       main = basename(f) %>% str_replace('.tif', ' (log10)'))
+}
+```
+
+## Normalize by NPP
+
+Two NPP layers were created for bycatch and biomass removal stressors for species CHI methods (see script `_setup/3_process_fishing_bycatch.Rmd`), and are located:
+
+* `here_anx('stressors/fishing/npp/log_npp_present_surf_gf_mol.tif')`
+* `here_anx('stressors/fishing/npp/log_npp_present_benth_gf_mol.tif')`
+
+Use surface for pelagics/artisanal and benthic for demersal.
+
+```{r}
+pel_log_npp <- rast(here_anx('stressors/fishing/npp/log_npp_present_surf_gf_mol.tif'))
+dem_log_npp <- rast(here_anx('stressors/fishing/npp/log_npp_present_benth_gf_mol.tif'))
+
+catch_map_fs <- list.files(dirname(outf_stem), pattern = 'fishing_catch_.+.tif',
+                           full.names = TRUE)
+
+for(f in catch_map_fs) { ### f <- catch_map_fs[1]
+  
+  f_out <- str_replace(f, 'fishing_catch_', 'fishing_npp_catch_')
+  if(file.exists(f_out)) {
+    message('Normalized catch layer ', basename(f_out), ' exists... skipping!')
+    next()
+  }
+  
+  if(str_detect(basename(f), 'dem_')) {
+    message('Using demersal NPP for ', basename(f), '...')
+    npp_r <- dem_log_npp
+  } else {
+    message('Using pelagic NPP for ', basename(f), '...')
+    npp_r <- pel_log_npp
+  }
+  r_out <- rast(f) / npp_r
+  writeRaster(r_out, f_out)
+}
+```
+
+### Plot NPP-normalized catch intensity (tonnes per km^2^ per log NPP)
+
+```{r}
+npp_catch_map_fs <- list.files(dirname(outf_stem), pattern = 'fishing_npp_catch_.+.tif',
+                           full.names = TRUE)
+
+for(f in npp_catch_map_fs) { ### f <- npp_catch_map_fs[1]
+  r <- rast(f)
+
+  plot(log10(r), col = hcl.colors(n = 50), axes = FALSE, 
+       main = basename(f) %>% str_replace('.tif', ' (log10)'))
+}
+```
+
+## Normalize and save out stressor layers
+
+For the RPoC project, each layer was normalized by the 99.99%ile across all years for that catch type.  Here, our cell resolution is 11x larger (121x in area), but visual comparison makes it look like 99.99%ile results in the best approximation to the RPoC maps.
+
+```{r}
+npp_catch_map_fs <- list.files(dirname(outf_stem), pattern = 'fishing_npp_catch_.+.tif',
+                           full.names = TRUE)
+
+### initialize a blank dataframe for reference points...
+ref_df <- data.frame()
+
+
+for(f in npp_catch_map_fs) { ### f <- npp_catch_map_fs[4]
+  f_out <- here('_data/chi_halpern_2019/fishing_updated',
+                str_replace(basename(f), '.+catch_', 'fishing_'))
+  r <- rast(f)
+  qtiles <- quantile(values(r) %>% na.omit(), c(.99, .999, .9999))
+  qtile_df <- data.frame(catch_type = str_remove(basename(f_out), '.tif'),
+                         qtile_cut = names(qtiles),
+                         qtile_val = qtiles)
+  ref_df <- bind_rows(ref_df, qtile_df)
+  
+  r_resc <- r / qtiles['99.99%']
+  r_resc[r_resc > 1] <- 1
+  writeRaster(r_resc, f_out, overwrite = TRUE)
+}
+write_csv(ref_df, here('_data/chi_halpern_2019/fishing_updated/ref_points.csv'))
+```
+
+``` {r check against 2019 layers, eval = FALSE, include = FALSE}
+old_rs <- rast(list.files(here('_data/chi_halpern_2019'), pattern = '_fishing.*tif', full.names = TRUE))
+plot(r_resc); plot(old_rs[[3]])
+hist(log(r_resc)); hist(log(old_rs[[3]]))
+```
+
+### Plot normalized fishing pressure (0-1)
+
+```{r}
+stressor_map_fs <- list.files(here('_data/chi_halpern_2019/fishing_updated'),
+                              pattern = 'fishing.+.tif',full.names = TRUE)
+
+for(f in stressor_map_fs) { ### f <- stressor_map_fs[1]
+  r <- rast(f)
+
+  plot(log10(r), col = hcl.colors(n = 50), axes = FALSE, 
+       main = basename(f) %>% str_replace('.tif', ' (log10)'))
+}
+```
+

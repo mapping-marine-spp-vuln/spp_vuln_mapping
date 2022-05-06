@@ -1,0 +1,107 @@
+---
+title: "Map cumulative impacts - habitat method"
+author: "*Compiled on `r date()` by `r Sys.info()['user']`*"
+output: 
+  html_document:
+    code_folding: hide
+    toc: true
+    toc_depth: 3
+    toc_float: yes
+    number_sections: true
+    theme: cerulean
+    highlight: haddock
+    includes: 
+      in_header: '~/github/src/templates/ohara_hdr.html'
+  pdf_document:
+    toc: true
+---
+
+``` {r setup, echo = TRUE, message = FALSE, warning = FALSE}
+
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE, fig.height = 4, fig.width = 7)
+
+library(terra)
+library(oharac)
+library(tidyverse)
+library(here)
+source(here('common_fxns.R'))
+```
+
+# Summary
+
+With habitat-based impact maps generated for all stressors, means calculated from vulnerability across proportional coverage of all habitats in each cell, we can calculate impact layers and summarize to generate a comprehensive cumulative human impact map.
+
+# Data
+
+See script 2_process_hab_vuln_maps.Rmd, and scripts 3a and 3b for updating fishing stressors to match Watson data for 2015-2017 used in the spp-based calculations.  Other stressors are identical to those used for the spp-based calculations.
+
+# Methods
+
+## Calculate impact maps
+
+Gather vulnerability maps and match to stressor maps.  A lookup table of habitat stressor name to stressor file name will facilitate matching layers.
+
+```{r}
+hab_vuln_to_str_df <- tribble(
+  ~vuln_name,       ~ stressor_name,
+  'art_fish',       'fishing_artisanal',
+  'benthic_str',    'benth_str',
+  'dem_dest',       'fishing_dem_dest',
+  'dem_nondest_hb', 'fishing_dem_nondest_hb',
+  'dem_nondest_lb', 'fishing_dem_nondest_lb',
+  'direct_human',   'direct_human',
+  'light',          'light',
+  'nutrient',       'nutrient',
+  'oa',             'ocean_acidification',
+  'pel_hb',         'fishing_pel_hb',
+  'pel_lb',         'fishing_pel_lb',
+  'shipping',       'shipping_large',
+  'slr',            'sea_level_rise',
+  'sst',            'sst_extremes',
+  'uv',             'uv_radiation'
+)
+```
+
+```{r}
+vuln_map_df <- data.frame(v_f = list.files(here('_output/vuln_maps/vuln_maps_habitat'), 
+                                           full.names = TRUE)) %>%
+  mutate(vuln_name = str_remove_all(basename(v_f), 'vuln_hab_|_mean.tif'))
+
+str_map_df <- data.frame(s_f = list.files(c(here('_data/stressors_mol'), 
+                                            here('_data/chi_halpern_2019/fishing_updated')),
+                                          pattern = '.tif', full.names = TRUE)) %>%
+  mutate(stressor_name = str_remove_all(basename(s_f), '_[0-9]{4}|.tif'))
+
+out_fstem <- here('_output/impact_maps/impact_maps_habitat/impact_hab_%s.tif')
+layer_match_df <- hab_vuln_to_str_df %>%
+  inner_join(vuln_map_df, by = 'vuln_name') %>%
+  inner_join(str_map_df,  by = 'stressor_name') %>%
+  mutate(impact_out_f = sprintf(out_fstem, stressor_name))
+
+for(i in 1:nrow(layer_match_df)) {
+  ### i <- 1
+  out_f <- layer_match_df$impact_out_f[i]
+  if(file.exists(out_f)) next()
+  
+  v_r <- rast(layer_match_df$v_f[i])
+  s_r <- rast(layer_match_df$s_f[i])
+  impact_r <- v_r * s_r
+  
+  plot(impact_r, col = hcl.colors(50), main = layer_match_df$stressor_name[i], axes = FALSE)
+  
+  writeRaster(impact_r, out_f, overwrite = TRUE)
+}
+
+```
+
+## Gather to cumulative
+
+```{r}
+chi_map <- rast(layer_match_df$impact_out_f) %>%
+  sum(na.rm = TRUE)
+
+plot(chi_map, col = hcl.colors(50), main = 'CHI habitat based', axes = FALSE)
+writeRaster(chi_map, here('_output/impact_maps/chi_habitat.tif'), overwrite = TRUE)
+```
+
+

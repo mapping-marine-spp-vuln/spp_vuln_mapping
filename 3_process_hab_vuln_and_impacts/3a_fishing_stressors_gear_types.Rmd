@@ -1,0 +1,246 @@
+---
+title: "Assign gear types to stressor categories"
+author: "*Compiled on `r date()` by `r Sys.info()['user']`*"
+output: 
+  html_document:
+    code_folding: show
+    toc: true
+    toc_depth: 1
+    toc_float: yes
+    number_sections: false
+    theme: cerulean
+    highlight: haddock
+    includes: 
+      in_header: '~/github/src/templates/ohara_hdr.html'
+pdf_document:
+  toc: true
+---
+
+This script is a modification to Jamie Afflerbach's script for the Recent Pace of Change project (Halpern et al. 2019), original scripts can be found in https://github.com/OHI-Science/impact_acceleration/tree/master/stressors.
+
+This script assigns gear and species specific data to the raw data from [Watson (2017)](https://www.nature.com/articles/sdata201739) in order to classify catch as either **demersal** or **pelagic**, **destructive** or **nondestructive** and **high** or **low** bycatch. Using the gear classifications laid out in Halpern et al. (2008) Table S4, as well as species information from [FishBase](http://www.fishbase.org/search.php) shared by the [Sea Around Us Project](http://www.seaaroundus.org/) data we were able to assign gear classifications to each record.
+
+# Summary
+
+* Each data file provided by Watson was downloaded from [this website](http://metadata.imas.utas.edu.au/geonetwork/srv/eng/metadata.show?uuid=c1fefb3d-7e37-4171-b9ce-4ce4721bbc78) onto a server held at NCEAS
+* After extracting all unique gear types found in the data, a *gear to category* dataset was created (`watson_gear_to_category.csv`) manually using information from Table S4 in Halpern et al. (2008), and joined to the raw data. This dataset added three new columns to the data; **bycatch** (high or low), **type** (pelagic or demersal), and **destruction** (destructive or nondestructive). 
+* Not every gear type could be assigned a single value for each of these categories so additional information was required.
+* The Sea Around Us Project has a taxon database for all species within their data, which is similar to the species in the Waston databases. The taxon database has information on **Functional Group** for each species, which was used to assign either *pelagic* or *demersal* to species without an assignment from the `watson_gear_to_category.csv` data.
+    * Modification from RPoC methods: Demersal/pelagic assignments can also be gleaned from the FishBase data used to assign functional entities.
+* Remaining catch records with missing or mismatched information were cleaned by hand which is detailed in this script.
+* Final output is a dataset, `taxa_gear_types.csv` that assigns each taxa+gear type to the categories used to create the five fishing stressors.
+
+
+## Setup
+
+```{r setup,message=F,warning=F}
+knitr::opts_chunk$set(fig.width = 6, fig.height = 4, message = FALSE, warning = FALSE)
+library(terra)
+library(oharac)
+library(data.table)
+library(tidyverse)
+library(here)
+source(here('common_fxns.R'))
+
+```
+
+# Get gear types from raw data
+
+Jamie's original script for RPoC (Halpern et al 2019) read in one of the raw data files from Watson (2017).  The data used for RPoC only goes to 2015; for comparison to 2015-2017 used in spp CHI analysis, we will use an updated version of Watson database.
+
+```{r raw_data_files}
+### Jamie's original data for Halpern et al. 2019 looks like this:
+# raw <- read_csv(here_anx('../../git-annex/impact_acceleration/stressors/comm_fish/data/Index.csv'))
+# # A tibble: 6 × 12
+#      ID  Year CountryName TaxonName      CommonName FleetGearName IndReported IndIUU
+#   <dbl> <dbl> <chr>       <chr>          <chr>      <chr>               <dbl>  <dbl>
+# 1     1  1983 Tunisia     Dicentrarchus  European/… Trawl midwat…        61.8   3.93
+# 2     2  1987 Cyprus      Siganus        Rabbitfis… Trap                  0     0   
+# 3     3  2008 Sri Lanka   Euthynnus aff… Kawakawa   Gillnet            4335.  323.  
+# 4     4  2015 Viet Nam    Thunnus albac… Yellowfin… Pole and Lin…      3361.  359.  
+# 5     5  1974 Cuba        Merluccius ga… South Pac… Lines Non-tu…      3051.  781.  
+# 6     6  2014 Falkland Is Merluccius hu… Argentine… Lines Non-tu…      1578.  339.  
+# # … with 4 more variables: IndDiscards <dbl>, NIndReported <dbl>, NIndIUU <dbl>,
+# #   NIndDiscards <dbl>
+
+watson_dir <- here_anx('../../git-annex/globalprep/_raw_data', 
+                       'IMAS_GlobalFisheriesLandings/d2020')
+
+w_codes_xlsx <- file.path(watson_dir, 'Codes_raw.xlsx')
+# codes_sheets <- readxl::excel_sheets(codes_xlsx)
+w_cell_df <- readxl::read_excel(w_codes_xlsx, sheet = 'Cell') %>%
+  janitor::clean_names() %>%
+  select(-c(x5:x7))
+
+w_gear_df <- readxl::read_excel(w_codes_xlsx, sheet = 'Gear') %>%
+  janitor::clean_names() %>%
+  select(-c(x9:x10))
+w_gear_clean <- w_gear_df %>% 
+  select(fleet_gear_name, f_gear_code) %>% 
+  distinct() %>%
+  mutate(across(where(is.character), tolower))
+
+w_taxa_df <- readxl::read_excel(w_codes_xlsx, sheet = 'Taxa') %>% 
+  janitor::clean_names() %>%
+  select(-c(x8:taxonkey_11), taxonkey = taxonkey_1) %>%
+  mutate(across(where(is.character), tolower))
+
+message('Loading catch df and binding to gear and taxon df...')
+w_catch_df <- readRDS(file.path(watson_dir, 'Catch2015_2019.rds')) %>%
+  janitor::clean_names() %>%
+  oharac::dt_join(w_gear_clean, by = c('f_gear_code'), type = 'left') %>%
+  oharac::dt_join(w_taxa_df, by = 'taxonkey', type = 'left') %>%
+  select(year = i_year, cell, ends_with('ind'), 
+         fleet_gear_name, taxon_name, common_name, descript)
+### No distinct() here in case there were legit identical catch values 
+### distinguished by one of the dropped columns...
+
+gear_vec <- w_gear_df$fleet_gear_name %>% unique() %>% sort()
+```
+
+The bycatch, type and destruction information was manually added for each gear type using figure S4 from Halpern (2008).   Here we draw the data directly from the repository for RPoC (`OHI-Science/impact_acceleration`). Some are blank as they may be ambiguous as to whether they are demersal or pelagic.
+
+```{r}
+gear_cat_lookup <- read_csv('https://raw.githubusercontent.com/OHI-Science/impact_acceleration/master/stressors/comm_fish/gear_to_cat.csv') %>%
+  janitor::clean_names() %>%
+  mutate(across(where(is.character), tolower)) %>%
+  ### this fix had been performed later in the script; moving up here:
+  mutate(type = case_when(!is.na(type) ~ type,
+                          str_detect(fleet_gear_name, 'trawl midwater|seine') ~ 'pelagic',
+                          str_detect(fleet_gear_name, 'trawl|trap|dredge') ~ 'demersal',
+                          TRUE ~ NA_character_))
+knitr::kable(gear_cat_lookup)
+```
+
+Ambiguous gear types are:
+
+* Longline non-tuna
+* Line non-tuna
+* Gillnet
+* Other
+
+
+## Assign gear categories to data
+
+Since we are just focusing on assigning gear types to the catch records we can eliminate some of the columns from the raw dataset and select unique records for taxon name, common name, taxon description, and fleet gear name.
+
+```{r}
+gear_taxon_df_raw <- w_catch_df %>%
+  select(taxon_name, common_name, descript, fleet_gear_name) %>%
+  distinct() %>%
+  left_join(gear_cat_lookup, by = c('fleet_gear_name'))
+
+DT::datatable(head(gear_taxon_df_raw, n=50),rownames = F)
+```
+
+# Assign species type categories
+
+Many records need further clarification with regards to type of species (demersal or pelagic) for those ambiguous geartypes.
+
+* Old method: We can use species data from the Sea Around Us Project to assign each species to the categories "demersal" or "pelagic". The `taxon.dat` data provided by SAUP for the OHI 2016 assessment contains information on **Functional Group** which can be used to categorize species.
+* This information is already included in the new Watson data so no need to access SAUP.
+
+> Create new columns that tease out the type of species either demersal or pelagic using `stringr::str_detect`. Here we assign the *pelagic* category to all records which have a Functional Group Description containing: "shark", "ray", "reef", "pelagic", "Krill", and "Cephalopods". We assign the *demersal* category to all records that contain: "Shrimp", "crab", "lobster", "demersal", or "flatfish" in the Functional Group Description.
+>
+> The manual assignment of demersal or pelagic is based on my (Jamie's) knowledge of these organisms. The assignments are fairly obvious except for "Marine animals". For this group I have assigned them to the 'pelagic' category, with the justification that 'pelagic' might be more encompassing than 'demersal'.
+
+The old method seems problematic as there are many demersal sharks, rays, and cephalopods... but let's try it.
+
+```{r}
+pel_descript <- c('shark', 'ray', 'reef', 'pelagic', 'krill', 'cephalopods') 
+dem_descript <- c('shrimp', 'crab', 'lobster', 'demersal', 'flatfish')
+pel_comname  <- c('marlin', 'tuna', 'tuna', 'shark', 'sharks', 
+                  'herring', 'corvina', 'cartilaginous fishes', 'animals',
+                  ### these added by Jamie later in the script, moving up here:
+                  'venus', 'turbot', 'black porgy', 'gurnard', 'perch', 
+                  'herring', 'threadfish', 'needlefish', 'mullet', 'ariomma', 
+                  'silverfish', 'squid', 'larseni', 'bream', 'snipefishes', 
+                  'bonito', 'trout')
+dem_comname  <- c('decapods', 'cucumbers', 'cockles', 'mollusca', 'molluscs', 
+                  'sea stars', 'starfishes', 'lobster', 'urchins',
+                  ### these added by Jamie later in the script, moving up here:
+                  'shell', 'rosefish', 'cockle', 'seacatfish', 'misty', 'warsaw',
+                  'scallop', 'yellowedge', 'sailray', 'flounder', 'dogfish', 
+                  'snowy', 'sculpin', 'cods', 'cod', 'guitarfish', 'squillid', 
+                  'moray', 'lizard')
+
+gear_taxon_df <- gear_taxon_df_raw %>%
+  rename(type_from_gear = type) %>%
+  mutate(type_from_taxa = case_when(str_detect(descript, smash2or(pel_descript)) ~ 'pelagic',
+                                    str_detect(descript, smash2or(dem_descript)) ~ 'demersal',
+                                    str_detect(common_name, smash2or(pel_comname)) ~ 'pelagic',
+                                    str_detect(common_name, smash2or(dem_comname)) ~ 'demersal',
+                                    TRUE ~ NA_character_))
+# gear_taxon_df %>% filter(is.na(type_from_taxa))
+# no missing types!
+
+# DT::datatable(gear_taxon_df, rownames = F)
+```
+
+
+Now we have two different ways of categorizing each species, the first was by gear type and the second by functional group. We need to check and make sure these line up.
+
+```{r}
+gear_taxon_df %>%
+  select(type_from_gear, type_from_taxa) %>%
+  table()
+```
+
+```{r}
+mismatch <- gear_taxon_df %>%
+  filter(!is.na(type_from_gear)) %>%
+  filter(type_from_gear != type_from_taxa) %>%
+  distinct()
+# DT::datatable(mismatch,rownames = F)
+```
+
+There remain `r nrow(mismatch)` cases where we have mismatched types.  Let's examine the total catch for these mismatches compared to total catch for other geartypes, for the same taxon.  The lines non-tuna, longline non-tuna, gillnet, and other are ambiguous from the gear type, so we must use the taxon to classify pelagic vs demersal.  Drop these, and compare distributions of catch for the other gear types, match vs. non-match.
+
+```{r}
+catch_sum_df <- w_catch_df %>%
+  data.table() %>%
+  .[ , .(reported_ind  = sum(reported_ind),
+         iuuind        = sum(iuuind),
+         discards_ind  = sum(discards_ind),
+         reported_nind = sum(reported_nind),
+         iuunind       = sum(iuunind),
+         discards_nind = sum(discards_nind)),
+     by = .(fleet_gear_name, taxon_name, common_name, descript)] 
+
+mismatch_compare <- catch_sum_df %>%
+  left_join(gear_taxon_df, 
+            by = c('fleet_gear_name', 'taxon_name', 'common_name', 'descript')) %>%
+  filter(!is.na(type_from_gear)) %>% ### drop gillnet, non-tuna lines, and other
+  mutate(mismatch = type_from_gear != type_from_taxa) %>%
+  group_by(taxon_name, common_name, descript, type_from_gear, type_from_taxa, mismatch) %>%
+  summarize(across(ends_with('ind'), sum)) %>%
+  gather(catch_type, catch, ends_with('ind')) %>%
+  mutate(catch_type = ifelse(str_detect(catch_type, 'nind'), 'art', 'comm')) %>%
+  group_by(taxon_name, common_name, descript, catch_type, type_from_gear, type_from_taxa, mismatch) %>%
+  summarize(tot_catch = sum(catch))
+
+means_df <- mismatch_compare %>%
+  group_by(mismatch, catch_type) %>%
+  summarize(mean_catch = mean(tot_catch),
+            sd_catch   = sd(tot_catch))
+
+ggplot(mismatch_compare, aes(x = tot_catch)) +
+  geom_histogram() +
+  geom_vline(data = means_df, aes(xintercept = mean_catch), color = 'red') +
+  scale_x_log10() +
+  facet_grid(mismatch ~ catch_type)
+
+```
+
+The mismatches in (ideally) unambiguous gear types have about half or less of the catch for the matches...
+
+For unambiguous gear types, assign the "type" to that noted by the gear.  For the others, assign the type based on the taxon.  Summarize taxon, gear type, etc. into the five commercial fishing stressors and write out as .csv. (Artisanal fishing stressor is just non-industrial, and blind to gear type).
+
+```{r}
+gear_tx_out_df <- gear_taxon_df %>%
+  mutate(type = ifelse(is.na(type_from_gear), type_from_taxa, type_from_gear)) %>%
+  select(taxon_name, common_name, fleet_gear_name, bycatch, type, destruction) %>%
+  distinct()
+
+write_csv(gear_tx_out_df, here('int/watson_gear_taxa_assignment.csv'))
+```
