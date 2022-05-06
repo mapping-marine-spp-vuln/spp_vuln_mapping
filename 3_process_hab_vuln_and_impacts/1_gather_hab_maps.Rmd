@@ -48,9 +48,14 @@ For each CHI native layer (~934m Mollweide):
 ```{r}
 in_hab_dir <- '/home/shares/ohi/git-annex/impact_acceleration/habitats'
 
+deprecated <- c('coral_reef', 'seagrass', 'kelp', 'salt_marsh') %>% smash2or()
 hab_fs <- data.frame(raw = list.files(in_hab_dir, pattern = '.tif$', 
                                       full.names = TRUE)) %>%
-  mutate(reproj = here('_data/habitat_maps', basename(raw)))
+  mutate(reproj = ifelse(str_detect(basename(raw), deprecated),
+                         here('_data/habitat_maps/deprecated', 
+                              str_replace(basename(raw), '.tif', '_chi2019.tif')),
+                         here('_data/habitat_maps', basename(raw)))) %>%
+  mutate(filecheck = file.exists(reproj))
 
 if(any(!file.exists(hab_fs$reproj))) {
   ocean_rast_chi <- rast(here_anx('_spatial/ocean_chi.tif'))
@@ -68,7 +73,7 @@ for(i in 1:nrow(hab_fs)) {
     message('Reprojected habitat map ', basename(out_f), ' exists... skipping!')
     next()
   }
-  message('Reading in ', in_f, ' \n  and setting NAs to 0...')
+  message('Reading in ', in_f, '...')
   r <- rast(in_f)
 
   message('... Aggregating ', basename(in_f), ' by 11x to ~ 10km resolution...')
@@ -76,7 +81,8 @@ for(i in 1:nrow(hab_fs)) {
   r_mean <- r_sum / 121
 
   message('... Projecting ', basename(in_f), ' to 10 km resolution Mollweide...')
-  out_r <- project(r_mean, ocean_a_10km, method = 'ngb')
+  out_r <- project(r_mean, ocean_a_10km, method = 'near') %>%
+    mask(ocean_a_10km)
 
   writeRaster(out_r, out_f, overwrite = TRUE)
 }

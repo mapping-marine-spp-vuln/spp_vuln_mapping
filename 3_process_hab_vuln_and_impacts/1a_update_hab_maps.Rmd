@@ -1,0 +1,231 @@
+---
+title: "Gather habitat maps and process to 10 km Mollweide"
+author: "*Compiled on `r date()` by `r Sys.info()['user']`*"
+output: 
+  html_document:
+    code_folding: hide
+    toc: true
+    toc_depth: 3
+    toc_float: yes
+    number_sections: true
+    theme: cerulean
+    highlight: haddock
+    includes: 
+      in_header: '~/github/src/templates/ohara_hdr.html'
+  pdf_document:
+    toc: true
+---
+
+``` {r setup, echo = TRUE, message = FALSE, warning = FALSE}
+
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE, fig.height = 4, fig.width = 6)
+
+# library(raster)
+library(terra)
+library(oharac)
+library(data.table)
+library(tidyverse)
+library(here)
+source(here('common_fxns.R'))
+```
+
+``` {r helper function and rasts}
+anx_root <- function(f = '', ...) { 
+  ### create file path to git-annex dir for project
+  f <- paste(f, ..., sep = '/')
+  f <- stringr::str_replace_all(f, '\\/+', '/')
+  f_anx <- sprintf('/home/shares/ohi/git-annex/%s', f)
+  return(f_anx)
+}
+ocean_a_10km <- rast(here('_spatial/ocean_area_mol.tif'))
+```
+
+# Summary
+
+Update certain habitat maps, with newer available data; aggregate and reproject to Mollweide 10 km resolution.
+
+# Data
+
+From Mel, issue: https://github.com/mapping-marine-spp-vuln/issues/issues/26
+
+> The updated coral and seagrass habitat maps are here:
+> 
+> * home/shares/ohi/git-annex/land-based/wastewater/habitat/habitat_rasters/seagrass.tif
+> * home/shares/ohi/git-annex/land-based/wastewater/habitat/habitat_rasters/coral.tif
+> 
+> The methods and description of data are in this issue: [OHI-Science/wastewater_issues#26 (comment)](https://github.com/OHI-Science/wastewater_issues/issues/26#issuecomment-664698472)
+> 
+> If you want simple (and definitely better), I would just use these.
+> 
+> However, there does appear to be even newer data. But they are not yet formatted into raster data. And, there is saltmarsh and kelp data as well.
+> 
+> Here are some paths to potentially newer data:
+> 
+> * coral <- raster("/home/shares/ohi/git-annex/globalprep/hab_coral/v2021/int/py_coral_rast.tif") 
+>     * raster, but I don't think the data are extracted at as high a resolution as I did
+> * kelp <- raster("/home/shares/ohi/git-annex/globalprep/hab_kelp/v2021/int/py_kelp_rast.tif") 
+>     * raster, but I don't think the data are extracted at as high a resolution as I did
+> * saltmarsh <- raster("/home/shares/ohi/git-annex/globalprep/hab_saltmarsh/v2021/int") 
+>     * shapefiles
+> * seagrass <- raster("/home/shares/ohi/git-annex/globalprep/hab_seagrass/v2021/int") 
+>     * shapefiles
+>     * NOTE: v2019/int/py_seagrass_rast.tif does exist! use that!
+
+Coral data citation:
+
+* UNEP-WCMC, WorldFish Centre, WRI, TNC (2018). Global distribution of coral reefs, compiled from multiple sources including the Millennium Coral Reef Mapping Project. Version 4.0, updated by UNEP-WCMC. Includes contributions from IMaRSUSF and IRD (2005), IMaRS-USF (2005) and Spalding et al. (2001). Cambridge (UK): UNEP World Conservation Monitoring Centre. URL: http://data.unepwcmc. org/datasets/1
+
+## Sleuthing for files
+
+(all in `/home/shares/ohi/git-annex/globalprep/`)
+
+* Corals: High res combined coral raster here: 
+    * `hab_coral/v2019/int/combined_coral_pt_py_adjusted_high_res.tif`
+* Seagrasses: High res seagrass rasters here:
+    * `hab_seagrass/v2019/int/pt_seagrass_rast_high_res.tif`
+    * `hab_seagrass/v2019/int/py_seagrass_rast_high_res.tif`
+* Kelp: 934 m raster here:
+    * `hab_kelp/v2021/int/py_kelp_rast.tif`
+* Saltmarsh: 934m raster here:
+    * `hab_saltmarsh/v2019/int/py_saltmarsh_rast.tif`
+
+# Methods
+
+Examine each new source and compare to those from Halpern 2019 habitats.
+
+## Coral reef
+
+Compare updated corals for wastewater project and OHI 2021 to those from Halpern 2019.
+
+```{r corals compare results across methods}
+coral_ww  <- rast(anx_root('land-based/wastewater/habitat/habitat_rasters/coral.tif'))
+coral_ohi <- rast(anx_root('globalprep/hab_coral/v2021/int/py_coral_rast.tif'))
+coral_chi <- rast(here('_data/habitat_maps/deprecated/coral_reef_chi2019.tif'))
+
+res_ww <- res(coral_ww) / 1000
+cover_chi <- sum(values(coral_chi) * 100, na.rm = TRUE)      ### 249595 km^2
+cover_ohi <- sum(values(coral_ohi) * res_ww^2, na.rm = TRUE) ### 149899.6 km^2
+cover_ww  <- sum(values(coral_ww) * res_ww^2, na.rm = TRUE)  ### 269102.7 km^2
+```
+
+Metadata for the UNEP/WCMC states that (per version 3) there should be about 150,000 km^2 of coral cover:
+
+> Ver. 1.3: further minor-scale corrections (spatial shifts reported by users, duplicate polygons) were carried out in April 2014, and were updated online on the 11th February 2015. The total extent (after dissolve) is 150,048 sq km (326,019 polygons). 
+
+The issue noted above for the wastewater corals indicates that the data were first rasterized to 0.5 km then aggregated up to the ~1 km resolution, to better capture instances of coral reefs where the polygon does not intersect the cell center.  However, this aggregation assigned 100% cover for the 934m cell if *any* of the four ~5 km cells included coral cover, resulting in likely overprediction (errors of commission) leading to a nearly 2x the estimated coral coverage.
+
+The OHI 2021 raster goes straight to the 934 m resolution, which would result in missing some cells where polygons don't intersect cell centers, leading to errors of omission (as well as errors of commission where a small polygon overlaps the center but the whole cell gets that value).  However, that method is quite close in total area estimated, probably due to missing some cells while overestimating other cells.
+
+However, the half-km resolution rasters of the coral polygons are available, so we can simply grab that and aggregate it directly.  Including the points rasters greatly inflates the relative area (1.3M km^2^ >> 150,000 km^2^), so those are excluded.
+
+```{r}
+coral_outf <- here('_data/habitat_maps/coral_reef_updated.tif') 
+if(!file.exists(coral_outf)) {
+  coral_hires <- rast(anx_root('globalprep/hab_coral/v2019/int', 
+                               'py_coral_rast_high_res.tif'))
+
+  message('... Aggregating hi res corals by factor of 21x to ~ 10km resolution...')
+    
+  r_sum <- aggregate(coral_hires, fact = 21, fun = sum, na.rm = TRUE)
+  r_mean <- r_sum / (21^2)
+  
+  message('... Projecting updated corals to 10 km resolution Mollweide...')
+  out_r <- project(r_mean, ocean_a_10km, method = 'near') %>%
+    mask(ocean_a_10km) %>%
+    setNames('coral_reef')
+  # sum(!is.na(values(out_r))) ### 22933 cells
+  writeRaster(out_r, coral_outf, overwrite = TRUE)
+}
+
+coral_r <- rast(coral_outf)
+coral_cover <- sum(values(coral_r), na.rm = TRUE) * 100 ### 149410.9 km^2
+```
+
+This method results in `r coral_cover` km^2^ of estimated coral cover, right on the money!
+
+## Seagrasses
+
+Seagrasses also have high res rasters for both points and polygons.  Because of the issue with coral points raster, let's only use the polygons raster.  First let's examine estimated coverage based on the wastewater project, OHI 2019, and CHI.
+
+```{r}
+sg_ww  <- rast(anx_root('land-based/wastewater/habitat/habitat_rasters/seagrass.tif'))
+sg_ohi <- rast(anx_root('globalprep/hab_seagrass/v2019/int/py_seagrass_rast.tif'))
+sg_chi <- rast(here('_data/habitat_maps/deprecated/seagrass_chi2019.tif'))
+
+res_ww <- res(sg_ww) / 1000
+cover_chi <- sum(values(sg_chi) * 100, na.rm = TRUE)      ### 291181.8 km^2
+cover_ohi <- sum(values(sg_ohi) * res_ww^2, na.rm = TRUE) ### 324263.3 km^2
+cover_ww  <- sum(values(sg_ww) * res_ww^2, na.rm = TRUE)  ### 374910.1 km^2
+```
+
+The half-km wastewater method again results in a significantly higher value than the CHI (based on older data) or OHI (based on same data) methods.  
+
+```{r seagrass ensemble}
+sg_outf <- here('_data/habitat_maps/seagrass_updated.tif')
+if(!file.exists(sg_outf)) {
+  sg_hires <- rast(anx_root('globalprep/hab_seagrass/v2019/int/py_seagrass_rast_high_res.tif'))
+  
+  message('... Aggregating hi res seagrass by factor of 21x to ~ 10km resolution...')
+  r_sum <- aggregate(sg_hires, fact = 21, fun = sum, na.rm = TRUE)
+  r_mean <- r_sum / (21^2)
+  
+  message('... Projecting seagrass raster to 10 km resolution Mollweide...')
+  out_r <- project(r_mean, ocean_a_10km, method = 'near') %>%
+    mask(ocean_a_10km) %>%
+    setNames('seagrass')
+  
+  writeRaster(out_r, sg_outf, overwrite = TRUE)
+}
+sg_r <- rast(sg_outf)
+sg_cover <- sum(values(sg_r), na.rm = TRUE) * 100 ### 318924.5 km^2
+```
+
+Again, quite close to the OHI method in total coverage, but that method may balance out gaps in coverage with overestimates of coverage in other cells.
+
+## Kelp forest
+
+This was not calculated for the wastewater project, so let's just use the updated OHI layer.  It is at the 934 m resolution, rather than high res.
+
+```{r kelp}
+kelp_outf <- here('_data/habitat_maps/kelp_updated.tif')
+if(!file.exists(kelp_outf)) {
+  kelp_ohi_raw <- rast(anx_root('globalprep/hab_kelp/v2021/int/py_kelp_rast.tif'))
+  # sum(values(kelp_ohi_raw), na.rm = TRUE) ### 1607511
+  
+  message('... Aggregating kelp raster by 11x to ~ 10km resolution...')
+  r_sum <- aggregate(kelp_ohi_raw, fact = 11, fun = sum, na.rm = TRUE)
+  r_mean <- r_sum / 121
+  
+  message('... Projecting kelp raster to 10 km resolution Mollweide...')
+  out_r <- project(r_mean, ocean_a_10km, method = 'near') %>%
+    mask(ocean_a_10km) %>%
+    setNames('kelp')
+  
+  writeRaster(out_r, kelp_outf, overwrite = TRUE)
+  # sum(values(out_r), na.rm = TRUE) * 100 ### 1385638 km^2 lower due to masking?
+}
+```
+
+## Salt marsh
+
+This was not calculated for the wastewater project, so let's just use the updated OHI layer.
+
+```{r salt marsh}
+sm_outf <- here('_data/habitat_maps/salt_marsh_updated.tif')
+if(!file.exists(sm_outf)) {
+  sm_ohi_raw <- rast(anx_root('globalprep/hab_saltmarsh/v2019/int/py_saltmarsh_rast.tif'))
+  # sum(values(sm_ohi_raw), na.rm = TRUE) ### 1607511
+  
+  message('... Aggregating saltmarsh raster by 11x to ~ 10km resolution...')
+  r_sum <- aggregate(sm_ohi_raw, fact = 11, fun = sum, na.rm = TRUE)
+  r_mean <- r_sum / 121
+  
+  message('... Projecting saltmarsh raster to 10 km resolution Mollweide...')
+  out_r <- project(r_mean, ocean_a_10km, method = 'near') %>%
+    mask(ocean_a_10km) %>%
+    setNames('salt_marsh')
+  
+  writeRaster(out_r, sm_outf, overwrite = TRUE)
+  # sum(values(out_r), na.rm = TRUE) * 100 ### 38706.61 ### low likely due to land masking
+}
+```

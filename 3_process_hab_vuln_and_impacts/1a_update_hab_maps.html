@@ -9,7 +9,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
 
 
-<meta name="author" content="Compiled on Thu May 5 14:41:38 2022 by ohara" />
+<meta name="author" content="Compiled on Thu May 5 14:48:31 2022 by ohara" />
 
 
 <title>Gather habitat maps and process to 10 km Mollweide</title>
@@ -361,7 +361,7 @@ div.tocify {
 
 
 <h1 class="title toc-ignore">Gather habitat maps and process to 10 km Mollweide</h1>
-<h4 class="author"><em>Compiled on Thu May 5 14:41:38 2022 by ohara</em></h4>
+<h4 class="author"><em>Compiled on Thu May 5 14:48:31 2022 by ohara</em></h4>
 
 </div>
 
@@ -371,65 +371,199 @@ div.tocify {
 <span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="co"># library(raster)</span></span>
 <span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(terra)</span>
 <span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(oharac)</span>
-<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tidyverse)</span>
-<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(here)</span>
-<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="fu">source</span>(<span class="fu">here</span>(<span class="st">&#39;common_fxns.R&#39;</span>))</span></code></pre></div>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(data.table)</span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tidyverse)</span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(here)</span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a><span class="fu">source</span>(<span class="fu">here</span>(<span class="st">&#39;common_fxns.R&#39;</span>))</span></code></pre></div>
+<div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>anx_root <span class="ot">&lt;-</span> <span class="cf">function</span>(<span class="at">f =</span> <span class="st">&#39;&#39;</span>, ...) { </span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>  <span class="do">### create file path to git-annex dir for project</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>  f <span class="ot">&lt;-</span> <span class="fu">paste</span>(f, ..., <span class="at">sep =</span> <span class="st">&#39;/&#39;</span>)</span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>  f <span class="ot">&lt;-</span> stringr<span class="sc">::</span><span class="fu">str_replace_all</span>(f, <span class="st">&#39;</span><span class="sc">\\</span><span class="st">/+&#39;</span>, <span class="st">&#39;/&#39;</span>)</span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>  f_anx <span class="ot">&lt;-</span> <span class="fu">sprintf</span>(<span class="st">&#39;/home/shares/ohi/git-annex/%s&#39;</span>, f)</span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">return</span>(f_anx)</span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>ocean_a_10km <span class="ot">&lt;-</span> <span class="fu">rast</span>(<span class="fu">here</span>(<span class="st">&#39;_spatial/ocean_area_mol.tif&#39;</span>))</span></code></pre></div>
 <div id="summary" class="section level1" number="1">
 <h1><span class="header-section-number">1</span> Summary</h1>
-<p>Gather habitat maps from Recent Pace of Change project (Halpern et al. 2019), aggregate and reproject to Mollweide 10 km resolution.</p>
+<p>Update certain habitat maps, with newer available data; aggregate and reproject to Mollweide 10 km resolution.</p>
 </div>
 <div id="data" class="section level1" number="2">
 <h1><span class="header-section-number">2</span> Data</h1>
-<p>Data prepped for Halpern et al. 2019, available from Mazu server.</p>
+<p>From Mel, issue: <a href="https://github.com/mapping-marine-spp-vuln/issues/issues/26" class="uri">https://github.com/mapping-marine-spp-vuln/issues/issues/26</a></p>
+<blockquote>
+<p>The updated coral and seagrass habitat maps are here:</p>
+<ul>
+<li>home/shares/ohi/git-annex/land-based/wastewater/habitat/habitat_rasters/seagrass.tif</li>
+<li>home/shares/ohi/git-annex/land-based/wastewater/habitat/habitat_rasters/coral.tif</li>
+</ul>
+<p>The methods and description of data are in this issue: <a href="https://github.com/OHI-Science/wastewater_issues/issues/26#issuecomment-664698472">OHI-Science/wastewater_issues#26 (comment)</a></p>
+<p>If you want simple (and definitely better), I would just use these.</p>
+<p>However, there does appear to be even newer data. But they are not yet formatted into raster data. And, there is saltmarsh and kelp data as well.</p>
+<p>Here are some paths to potentially newer data:</p>
+<ul>
+<li>coral &lt;- raster(“/home/shares/ohi/git-annex/globalprep/hab_coral/v2021/int/py_coral_rast.tif”)
+<ul>
+<li>raster, but I don’t think the data are extracted at as high a resolution as I did</li>
+</ul></li>
+<li>kelp &lt;- raster(“/home/shares/ohi/git-annex/globalprep/hab_kelp/v2021/int/py_kelp_rast.tif”)
+<ul>
+<li>raster, but I don’t think the data are extracted at as high a resolution as I did</li>
+</ul></li>
+<li>saltmarsh &lt;- raster(“/home/shares/ohi/git-annex/globalprep/hab_saltmarsh/v2021/int”)
+<ul>
+<li>shapefiles</li>
+</ul></li>
+<li>seagrass &lt;- raster(“/home/shares/ohi/git-annex/globalprep/hab_seagrass/v2021/int”)
+<ul>
+<li>shapefiles</li>
+<li>NOTE: v2019/int/py_seagrass_rast.tif does exist! use that!</li>
+</ul></li>
+</ul>
+</blockquote>
+<p>Coral data citation:</p>
+<ul>
+<li>UNEP-WCMC, WorldFish Centre, WRI, TNC (2018). Global distribution of coral reefs, compiled from multiple sources including the Millennium Coral Reef Mapping Project. Version 4.0, updated by UNEP-WCMC. Includes contributions from IMaRSUSF and IRD (2005), IMaRS-USF (2005) and Spalding et al. (2001). Cambridge (UK): UNEP World Conservation Monitoring Centre. URL: <a href="http://data.unepwcmc" class="uri">http://data.unepwcmc</a>. org/datasets/1</li>
+</ul>
+<div id="sleuthing-for-files" class="section level2" number="2.1">
+<h2><span class="header-section-number">2.1</span> Sleuthing for files</h2>
+<p>(all in <code>/home/shares/ohi/git-annex/globalprep/</code>)</p>
+<ul>
+<li>Corals: High res combined coral raster here:
+<ul>
+<li><code>hab_coral/v2019/int/combined_coral_pt_py_adjusted_high_res.tif</code></li>
+</ul></li>
+<li>Seagrasses: High res seagrass rasters here:
+<ul>
+<li><code>hab_seagrass/v2019/int/pt_seagrass_rast_high_res.tif</code></li>
+<li><code>hab_seagrass/v2019/int/py_seagrass_rast_high_res.tif</code></li>
+</ul></li>
+<li>Kelp: 934 m raster here:
+<ul>
+<li><code>hab_kelp/v2021/int/py_kelp_rast.tif</code></li>
+</ul></li>
+<li>Saltmarsh: 934m raster here:
+<ul>
+<li><code>hab_saltmarsh/v2019/int/py_saltmarsh_rast.tif</code></li>
+</ul></li>
+</ul>
+</div>
 </div>
 <div id="methods" class="section level1" number="3">
 <h1><span class="header-section-number">3</span> Methods</h1>
-<p>For each CHI native layer (~934m Mollweide):</p>
-<ul>
-<li>Read in habitat raster of 1 (presence) and NA (absence).</li>
-<li>Convert NAs to 0 then mask by ocean presence to eliminate land cells.</li>
-<li>Aggregate by a factor of 11 to approximate 10 km x 10 km, using a mean function - this results in approximate habitat proportional representation in the cell.</li>
-<li>Reproject the result to the analysis CRS/resolution and write out.</li>
-</ul>
-<div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>in_hab_dir <span class="ot">&lt;-</span> <span class="st">&#39;/home/shares/ohi/git-annex/impact_acceleration/habitats&#39;</span></span>
-<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>deprecated <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">&#39;coral_reef&#39;</span>, <span class="st">&#39;seagrass&#39;</span>, <span class="st">&#39;kelp&#39;</span>, <span class="st">&#39;salt_marsh&#39;</span>) <span class="sc">%&gt;%</span> <span class="fu">smash2or</span>()</span>
-<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>hab_fs <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(<span class="at">raw =</span> <span class="fu">list.files</span>(in_hab_dir, <span class="at">pattern =</span> <span class="st">&#39;.tif$&#39;</span>, </span>
-<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>                                      <span class="at">full.names =</span> <span class="cn">TRUE</span>)) <span class="sc">%&gt;%</span></span>
-<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">reproj =</span> <span class="fu">ifelse</span>(<span class="fu">str_detect</span>(<span class="fu">basename</span>(raw), deprecated),</span>
-<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>                         <span class="fu">here</span>(<span class="st">&#39;_data/habitat_maps/deprecated&#39;</span>, <span class="fu">str_replace</span>(<span class="fu">basename</span>(raw), <span class="st">&#39;.tif&#39;</span>, <span class="st">&#39;_chi2019.tif&#39;</span>)),</span>
-<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>                         <span class="fu">here</span>(<span class="st">&#39;_data/habitat_maps&#39;</span>, <span class="fu">basename</span>(raw)))) <span class="sc">%&gt;%</span></span>
-<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">filecheck =</span> <span class="fu">file.exists</span>(reproj))</span>
-<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span>(<span class="fu">any</span>(<span class="sc">!</span><span class="fu">file.exists</span>(hab_fs<span class="sc">$</span>reproj))) {</span>
-<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a>  ocean_rast_chi <span class="ot">&lt;-</span> <span class="fu">rast</span>(<span class="fu">here_anx</span>(<span class="st">&#39;_spatial/ocean_chi.tif&#39;</span>))</span>
-<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a>  <span class="do">### load ocean and coastal rasters at analysis resolution</span></span>
-<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a>  ocean_a_10km <span class="ot">&lt;-</span> <span class="fu">rast</span>(<span class="fu">here</span>(<span class="st">&#39;_spatial/ocean_area_mol.tif&#39;</span>))</span>
-<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a>  coastal_10km <span class="ot">&lt;-</span> <span class="fu">rast</span>(<span class="fu">here</span>(<span class="st">&#39;_spatial/coastal_3nmi_area_mol.tif&#39;</span>))</span>
-<span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb2-18"><a href="#cb2-18" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-19"><a href="#cb2-19" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span><span class="fu">nrow</span>(hab_fs)) {</span>
-<span id="cb2-20"><a href="#cb2-20" aria-hidden="true" tabindex="-1"></a>  <span class="do">### i &lt;- 1</span></span>
-<span id="cb2-21"><a href="#cb2-21" aria-hidden="true" tabindex="-1"></a>  in_f  <span class="ot">&lt;-</span> hab_fs<span class="sc">$</span>raw[i]</span>
-<span id="cb2-22"><a href="#cb2-22" aria-hidden="true" tabindex="-1"></a>  out_f <span class="ot">&lt;-</span> hab_fs<span class="sc">$</span>reproj[i]</span>
-<span id="cb2-23"><a href="#cb2-23" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span>(<span class="fu">file.exists</span>(out_f)) {</span>
-<span id="cb2-24"><a href="#cb2-24" aria-hidden="true" tabindex="-1"></a>    <span class="fu">message</span>(<span class="st">&#39;Reprojected habitat map &#39;</span>, <span class="fu">basename</span>(out_f), <span class="st">&#39; exists... skipping!&#39;</span>)</span>
-<span id="cb2-25"><a href="#cb2-25" aria-hidden="true" tabindex="-1"></a>    <span class="cf">next</span>()</span>
-<span id="cb2-26"><a href="#cb2-26" aria-hidden="true" tabindex="-1"></a>  }</span>
-<span id="cb2-27"><a href="#cb2-27" aria-hidden="true" tabindex="-1"></a>  <span class="fu">message</span>(<span class="st">&#39;Reading in &#39;</span>, in_f, <span class="st">&#39;...&#39;</span>)</span>
-<span id="cb2-28"><a href="#cb2-28" aria-hidden="true" tabindex="-1"></a>  r <span class="ot">&lt;-</span> <span class="fu">rast</span>(in_f)</span>
-<span id="cb2-29"><a href="#cb2-29" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-30"><a href="#cb2-30" aria-hidden="true" tabindex="-1"></a>  <span class="fu">message</span>(<span class="st">&#39;... Aggregating &#39;</span>, <span class="fu">basename</span>(in_f), <span class="st">&#39; by 11x to ~ 10km resolution...&#39;</span>)</span>
-<span id="cb2-31"><a href="#cb2-31" aria-hidden="true" tabindex="-1"></a>  r_sum <span class="ot">&lt;-</span> <span class="fu">aggregate</span>(r, <span class="at">fact =</span> <span class="dv">11</span>, <span class="at">fun =</span> sum, <span class="at">na.rm =</span> <span class="cn">TRUE</span>, <span class="at">progress =</span> <span class="st">&#39;text&#39;</span>)</span>
-<span id="cb2-32"><a href="#cb2-32" aria-hidden="true" tabindex="-1"></a>  r_mean <span class="ot">&lt;-</span> r_sum <span class="sc">/</span> <span class="dv">121</span></span>
-<span id="cb2-33"><a href="#cb2-33" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-34"><a href="#cb2-34" aria-hidden="true" tabindex="-1"></a>  <span class="fu">message</span>(<span class="st">&#39;... Projecting &#39;</span>, <span class="fu">basename</span>(in_f), <span class="st">&#39; to 10 km resolution Mollweide...&#39;</span>)</span>
-<span id="cb2-35"><a href="#cb2-35" aria-hidden="true" tabindex="-1"></a>  out_r <span class="ot">&lt;-</span> <span class="fu">project</span>(r_mean, ocean_a_10km, <span class="at">method =</span> <span class="st">&#39;near&#39;</span>) <span class="sc">%&gt;%</span></span>
-<span id="cb2-36"><a href="#cb2-36" aria-hidden="true" tabindex="-1"></a>    <span class="fu">mask</span>(ocean_a_10km)</span>
-<span id="cb2-37"><a href="#cb2-37" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-38"><a href="#cb2-38" aria-hidden="true" tabindex="-1"></a>  <span class="fu">writeRaster</span>(out_r, out_f, <span class="at">overwrite =</span> <span class="cn">TRUE</span>)</span>
-<span id="cb2-39"><a href="#cb2-39" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
+<p>Examine each new source and compare to those from Halpern 2019 habitats.</p>
+<div id="coral-reef" class="section level2" number="3.1">
+<h2><span class="header-section-number">3.1</span> Coral reef</h2>
+<p>Compare updated corals for wastewater project and OHI 2021 to those from Halpern 2019.</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>coral_ww  <span class="ot">&lt;-</span> <span class="fu">rast</span>(<span class="fu">anx_root</span>(<span class="st">&#39;land-based/wastewater/habitat/habitat_rasters/coral.tif&#39;</span>))</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>coral_ohi <span class="ot">&lt;-</span> <span class="fu">rast</span>(<span class="fu">anx_root</span>(<span class="st">&#39;globalprep/hab_coral/v2021/int/py_coral_rast.tif&#39;</span>))</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>coral_chi <span class="ot">&lt;-</span> <span class="fu">rast</span>(<span class="fu">here</span>(<span class="st">&#39;_data/habitat_maps/deprecated/coral_reef_chi2019.tif&#39;</span>))</span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>res_ww <span class="ot">&lt;-</span> <span class="fu">res</span>(coral_ww) <span class="sc">/</span> <span class="dv">1000</span></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>cover_chi <span class="ot">&lt;-</span> <span class="fu">sum</span>(<span class="fu">values</span>(coral_chi) <span class="sc">*</span> <span class="dv">100</span>, <span class="at">na.rm =</span> <span class="cn">TRUE</span>)      <span class="do">### 249595 km^2</span></span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>cover_ohi <span class="ot">&lt;-</span> <span class="fu">sum</span>(<span class="fu">values</span>(coral_ohi) <span class="sc">*</span> res_ww<span class="sc">^</span><span class="dv">2</span>, <span class="at">na.rm =</span> <span class="cn">TRUE</span>) <span class="do">### 149899.6 km^2</span></span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>cover_ww  <span class="ot">&lt;-</span> <span class="fu">sum</span>(<span class="fu">values</span>(coral_ww) <span class="sc">*</span> res_ww<span class="sc">^</span><span class="dv">2</span>, <span class="at">na.rm =</span> <span class="cn">TRUE</span>)  <span class="do">### 269102.7 km^2</span></span></code></pre></div>
+<p>Metadata for the UNEP/WCMC states that (per version 3) there should be about 150,000 km^2 of coral cover:</p>
+<blockquote>
+<p>Ver. 1.3: further minor-scale corrections (spatial shifts reported by users, duplicate polygons) were carried out in April 2014, and were updated online on the 11th February 2015. The total extent (after dissolve) is 150,048 sq km (326,019 polygons).</p>
+</blockquote>
+<p>The issue noted above for the wastewater corals indicates that the data were first rasterized to 0.5 km then aggregated up to the ~1 km resolution, to better capture instances of coral reefs where the polygon does not intersect the cell center. However, this aggregation assigned 100% cover for the 934m cell if <em>any</em> of the four ~5 km cells included coral cover, resulting in likely overprediction (errors of commission) leading to a nearly 2x the estimated coral coverage.</p>
+<p>The OHI 2021 raster goes straight to the 934 m resolution, which would result in missing some cells where polygons don’t intersect cell centers, leading to errors of omission (as well as errors of commission where a small polygon overlaps the center but the whole cell gets that value). However, that method is quite close in total area estimated, probably due to missing some cells while overestimating other cells.</p>
+<p>However, the half-km resolution rasters of the coral polygons are available, so we can simply grab that and aggregate it directly. Including the points rasters greatly inflates the relative area (1.3M km<sup>2</sup> &gt;&gt; 150,000 km<sup>2</sup>), so those are excluded.</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>coral_outf <span class="ot">&lt;-</span> <span class="fu">here</span>(<span class="st">&#39;_data/habitat_maps/coral_reef_updated.tif&#39;</span>) </span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span>(<span class="sc">!</span><span class="fu">file.exists</span>(coral_outf)) {</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>  coral_hires <span class="ot">&lt;-</span> <span class="fu">rast</span>(<span class="fu">anx_root</span>(<span class="st">&#39;globalprep/hab_coral/v2019/int&#39;</span>, </span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>                               <span class="st">&#39;py_coral_rast_high_res.tif&#39;</span>))</span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">message</span>(<span class="st">&#39;... Aggregating hi res corals by factor of 21x to ~ 10km resolution...&#39;</span>)</span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a>  r_sum <span class="ot">&lt;-</span> <span class="fu">aggregate</span>(coral_hires, <span class="at">fact =</span> <span class="dv">21</span>, <span class="at">fun =</span> sum, <span class="at">na.rm =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a>  r_mean <span class="ot">&lt;-</span> r_sum <span class="sc">/</span> (<span class="dv">21</span><span class="sc">^</span><span class="dv">2</span>)</span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">message</span>(<span class="st">&#39;... Projecting updated corals to 10 km resolution Mollweide...&#39;</span>)</span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a>  out_r <span class="ot">&lt;-</span> <span class="fu">project</span>(r_mean, ocean_a_10km, <span class="at">method =</span> <span class="st">&#39;near&#39;</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a>    <span class="fu">mask</span>(ocean_a_10km) <span class="sc">%&gt;%</span></span>
+<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a>    <span class="fu">setNames</span>(<span class="st">&#39;coral_reef&#39;</span>)</span>
+<span id="cb4-15"><a href="#cb4-15" aria-hidden="true" tabindex="-1"></a>  <span class="co"># sum(!is.na(values(out_r))) </span><span class="al">###</span><span class="co"> 22933 cells</span></span>
+<span id="cb4-16"><a href="#cb4-16" aria-hidden="true" tabindex="-1"></a>  <span class="fu">writeRaster</span>(out_r, coral_outf, <span class="at">overwrite =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb4-17"><a href="#cb4-17" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb4-18"><a href="#cb4-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-19"><a href="#cb4-19" aria-hidden="true" tabindex="-1"></a>coral_r <span class="ot">&lt;-</span> <span class="fu">rast</span>(coral_outf)</span>
+<span id="cb4-20"><a href="#cb4-20" aria-hidden="true" tabindex="-1"></a>coral_cover <span class="ot">&lt;-</span> <span class="fu">sum</span>(<span class="fu">values</span>(coral_r), <span class="at">na.rm =</span> <span class="cn">TRUE</span>) <span class="sc">*</span> <span class="dv">100</span> <span class="do">### 149410.9 km^2</span></span></code></pre></div>
+<p>This method results in 1.4941088^{5} km<sup>2</sup> of estimated coral cover, right on the money!</p>
+</div>
+<div id="seagrasses" class="section level2" number="3.2">
+<h2><span class="header-section-number">3.2</span> Seagrasses</h2>
+<p>Seagrasses also have high res rasters for both points and polygons. Because of the issue with coral points raster, let’s only use the polygons raster. First let’s examine estimated coverage based on the wastewater project, OHI 2019, and CHI.</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>sg_ww  <span class="ot">&lt;-</span> <span class="fu">rast</span>(<span class="fu">anx_root</span>(<span class="st">&#39;land-based/wastewater/habitat/habitat_rasters/seagrass.tif&#39;</span>))</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>sg_ohi <span class="ot">&lt;-</span> <span class="fu">rast</span>(<span class="fu">anx_root</span>(<span class="st">&#39;globalprep/hab_seagrass/v2019/int/py_seagrass_rast.tif&#39;</span>))</span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>sg_chi <span class="ot">&lt;-</span> <span class="fu">rast</span>(<span class="fu">here</span>(<span class="st">&#39;_data/habitat_maps/deprecated/seagrass_chi2019.tif&#39;</span>))</span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>res_ww <span class="ot">&lt;-</span> <span class="fu">res</span>(sg_ww) <span class="sc">/</span> <span class="dv">1000</span></span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>cover_chi <span class="ot">&lt;-</span> <span class="fu">sum</span>(<span class="fu">values</span>(sg_chi) <span class="sc">*</span> <span class="dv">100</span>, <span class="at">na.rm =</span> <span class="cn">TRUE</span>)      <span class="do">### 291181.8 km^2</span></span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>cover_ohi <span class="ot">&lt;-</span> <span class="fu">sum</span>(<span class="fu">values</span>(sg_ohi) <span class="sc">*</span> res_ww<span class="sc">^</span><span class="dv">2</span>, <span class="at">na.rm =</span> <span class="cn">TRUE</span>) <span class="do">### 324263.3 km^2</span></span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>cover_ww  <span class="ot">&lt;-</span> <span class="fu">sum</span>(<span class="fu">values</span>(sg_ww) <span class="sc">*</span> res_ww<span class="sc">^</span><span class="dv">2</span>, <span class="at">na.rm =</span> <span class="cn">TRUE</span>)  <span class="do">### 374910.1 km^2</span></span></code></pre></div>
+<p>The half-km wastewater method again results in a significantly higher value than the CHI (based on older data) or OHI (based on same data) methods.</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>sg_outf <span class="ot">&lt;-</span> <span class="fu">here</span>(<span class="st">&#39;_data/habitat_maps/seagrass_updated.tif&#39;</span>)</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span>(<span class="sc">!</span><span class="fu">file.exists</span>(sg_outf)) {</span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>  sg_hires <span class="ot">&lt;-</span> <span class="fu">rast</span>(<span class="fu">anx_root</span>(<span class="st">&#39;globalprep/hab_seagrass/v2019/int/py_seagrass_rast_high_res.tif&#39;</span>))</span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">message</span>(<span class="st">&#39;... Aggregating hi res seagrass by factor of 21x to ~ 10km resolution...&#39;</span>)</span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>  r_sum <span class="ot">&lt;-</span> <span class="fu">aggregate</span>(sg_hires, <span class="at">fact =</span> <span class="dv">21</span>, <span class="at">fun =</span> sum, <span class="at">na.rm =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>  r_mean <span class="ot">&lt;-</span> r_sum <span class="sc">/</span> (<span class="dv">21</span><span class="sc">^</span><span class="dv">2</span>)</span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">message</span>(<span class="st">&#39;... Projecting seagrass raster to 10 km resolution Mollweide...&#39;</span>)</span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a>  out_r <span class="ot">&lt;-</span> <span class="fu">project</span>(r_mean, ocean_a_10km, <span class="at">method =</span> <span class="st">&#39;near&#39;</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a>    <span class="fu">mask</span>(ocean_a_10km) <span class="sc">%&gt;%</span></span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a>    <span class="fu">setNames</span>(<span class="st">&#39;seagrass&#39;</span>)</span>
+<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a>  <span class="fu">writeRaster</span>(out_r, sg_outf, <span class="at">overwrite =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb6-16"><a href="#cb6-16" aria-hidden="true" tabindex="-1"></a>sg_r <span class="ot">&lt;-</span> <span class="fu">rast</span>(sg_outf)</span>
+<span id="cb6-17"><a href="#cb6-17" aria-hidden="true" tabindex="-1"></a>sg_cover <span class="ot">&lt;-</span> <span class="fu">sum</span>(<span class="fu">values</span>(sg_r), <span class="at">na.rm =</span> <span class="cn">TRUE</span>) <span class="sc">*</span> <span class="dv">100</span> <span class="do">### 318924.5 km^2</span></span></code></pre></div>
+<p>Again, quite close to the OHI method in total coverage, but that method may balance out gaps in coverage with overestimates of coverage in other cells.</p>
+</div>
+<div id="kelp-forest" class="section level2" number="3.3">
+<h2><span class="header-section-number">3.3</span> Kelp forest</h2>
+<p>This was not calculated for the wastewater project, so let’s just use the updated OHI layer. It is at the 934 m resolution, rather than high res.</p>
+<div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>kelp_outf <span class="ot">&lt;-</span> <span class="fu">here</span>(<span class="st">&#39;_data/habitat_maps/kelp_updated.tif&#39;</span>)</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span>(<span class="sc">!</span><span class="fu">file.exists</span>(kelp_outf)) {</span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>  kelp_ohi_raw <span class="ot">&lt;-</span> <span class="fu">rast</span>(<span class="fu">anx_root</span>(<span class="st">&#39;globalprep/hab_kelp/v2021/int/py_kelp_rast.tif&#39;</span>))</span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>  <span class="co"># sum(values(kelp_ohi_raw), na.rm = TRUE) </span><span class="al">###</span><span class="co"> 1607511</span></span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">message</span>(<span class="st">&#39;... Aggregating kelp raster by 11x to ~ 10km resolution...&#39;</span>)</span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>  r_sum <span class="ot">&lt;-</span> <span class="fu">aggregate</span>(kelp_ohi_raw, <span class="at">fact =</span> <span class="dv">11</span>, <span class="at">fun =</span> sum, <span class="at">na.rm =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>  r_mean <span class="ot">&lt;-</span> r_sum <span class="sc">/</span> <span class="dv">121</span></span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">message</span>(<span class="st">&#39;... Projecting kelp raster to 10 km resolution Mollweide...&#39;</span>)</span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a>  out_r <span class="ot">&lt;-</span> <span class="fu">project</span>(r_mean, ocean_a_10km, <span class="at">method =</span> <span class="st">&#39;near&#39;</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a>    <span class="fu">mask</span>(ocean_a_10km) <span class="sc">%&gt;%</span></span>
+<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a>    <span class="fu">setNames</span>(<span class="st">&#39;kelp&#39;</span>)</span>
+<span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb7-15"><a href="#cb7-15" aria-hidden="true" tabindex="-1"></a>  <span class="fu">writeRaster</span>(out_r, kelp_outf, <span class="at">overwrite =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb7-16"><a href="#cb7-16" aria-hidden="true" tabindex="-1"></a>  <span class="co"># sum(values(out_r), na.rm = TRUE) * 100 </span><span class="al">###</span><span class="co"> 1385638 km^2 lower due to masking?</span></span>
+<span id="cb7-17"><a href="#cb7-17" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
+</div>
+<div id="salt-marsh" class="section level2" number="3.4">
+<h2><span class="header-section-number">3.4</span> Salt marsh</h2>
+<p>This was not calculated for the wastewater project, so let’s just use the updated OHI layer.</p>
+<div class="sourceCode" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>sm_outf <span class="ot">&lt;-</span> <span class="fu">here</span>(<span class="st">&#39;_data/habitat_maps/salt_marsh_updated.tif&#39;</span>)</span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span>(<span class="sc">!</span><span class="fu">file.exists</span>(sm_outf)) {</span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>  sm_ohi_raw <span class="ot">&lt;-</span> <span class="fu">rast</span>(<span class="fu">anx_root</span>(<span class="st">&#39;globalprep/hab_saltmarsh/v2019/int/py_saltmarsh_rast.tif&#39;</span>))</span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>  <span class="co"># sum(values(sm_ohi_raw), na.rm = TRUE) </span><span class="al">###</span><span class="co"> 1607511</span></span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">message</span>(<span class="st">&#39;... Aggregating saltmarsh raster by 11x to ~ 10km resolution...&#39;</span>)</span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a>  r_sum <span class="ot">&lt;-</span> <span class="fu">aggregate</span>(sm_ohi_raw, <span class="at">fact =</span> <span class="dv">11</span>, <span class="at">fun =</span> sum, <span class="at">na.rm =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a>  r_mean <span class="ot">&lt;-</span> r_sum <span class="sc">/</span> <span class="dv">121</span></span>
+<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">message</span>(<span class="st">&#39;... Projecting saltmarsh raster to 10 km resolution Mollweide...&#39;</span>)</span>
+<span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a>  out_r <span class="ot">&lt;-</span> <span class="fu">project</span>(r_mean, ocean_a_10km, <span class="at">method =</span> <span class="st">&#39;near&#39;</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb8-12"><a href="#cb8-12" aria-hidden="true" tabindex="-1"></a>    <span class="fu">mask</span>(ocean_a_10km) <span class="sc">%&gt;%</span></span>
+<span id="cb8-13"><a href="#cb8-13" aria-hidden="true" tabindex="-1"></a>    <span class="fu">setNames</span>(<span class="st">&#39;salt_marsh&#39;</span>)</span>
+<span id="cb8-14"><a href="#cb8-14" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb8-15"><a href="#cb8-15" aria-hidden="true" tabindex="-1"></a>  <span class="fu">writeRaster</span>(out_r, sm_outf, <span class="at">overwrite =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb8-16"><a href="#cb8-16" aria-hidden="true" tabindex="-1"></a>  <span class="co"># sum(values(out_r), na.rm = TRUE) * 100 </span><span class="al">###</span><span class="co"> 38706.61 </span><span class="al">###</span><span class="co"> low likely due to land masking</span></span>
+<span id="cb8-17"><a href="#cb8-17" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
+</div>
 </div>
 
 
