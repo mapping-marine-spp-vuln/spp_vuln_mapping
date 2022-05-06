@@ -12,7 +12,12 @@ here_anx <- function(f = '', ...) {
   return(f_anx)
 }
 
-assemble_spp_info_df <- function(fe_only = TRUE) {
+smash2or <- function(x, sep = ' ') {
+  ### collapse to OR string
+  paste(x, sep = sep, collapse = '|')
+}
+
+assemble_spp_info_df <- function(fe_only = TRUE, vuln_only = TRUE) {
   spp_am <- get_am_spp_info()  %>%
     filter(occur_cells >= 10) %>%
     select(species = sciname) %>%
@@ -40,7 +45,7 @@ assemble_spp_info_df <- function(fe_only = TRUE) {
     oharac::dt_join(spp_iucn, by = 'species', type = 'left') %>%
     oharac::dt_join(spp_fe, by = 'species', 
                     type = ifelse(fe_only, 'inner', 'left')) %>%
-    filter(!is.na(v_score)) %>%
+    filter(!is.na(v_score) | !vuln_only) %>%
     ### mapped in AquaMaps and/or IUCN
     filter(am_mapped | iucn_mapped) %>%
     mutate(src = ifelse(iucn_mapped & !is.na(iucn_mapped), 'iucn', 'am'),
@@ -62,9 +67,10 @@ get_one_map <- function(f) {
   if(file.exists(f)) {
     df <- data.table::fread(f)
     
-    if(str_detect(basename(f), '[0-9]')) {   ### IUCN spp mapped by species ID number
+    if('presence' %in% names(df)) {   ### IUCN spp map with presence col
       df <- df %>% filter(presence != 5) %>% select(-presence)
-    } else {                                 ### not IUCN? then AM
+    }
+    if('prob' %in% names(df)) {
       df <- df %>% filter(prob >= 0.5) %>% select(-prob)
     }
     return(df)
@@ -74,9 +80,11 @@ get_one_map <- function(f) {
   }
 }
 
-collect_spp_rangemaps <- function(spp_vec, file_vec, parallel = TRUE) {
+collect_spp_rangemaps <- function(spp_vec, file_vec, idcol = 'species', parallel = TRUE) {
   ### give a vector of species names (or IDs) and filenames; 
   ### default: read in using parallel::mclapply
+  message('Collecting ', n_distinct(file_vec), ' maps for ', 
+          n_distinct(spp_vec), ' species...')
   if(parallel == TRUE) {
     out_maps_list <- parallel::mclapply(file_vec, mc.cores = 40, FUN = get_one_map)
   } else {
@@ -85,10 +93,11 @@ collect_spp_rangemaps <- function(spp_vec, file_vec, parallel = TRUE) {
   if(check_tryerror(out_maps_list)) {
     stop('Try-error found when assembling species rangemaps!')
   }
+  message('... Binding maps...')
   out_maps_df <- out_maps_list %>%
     setNames(spp_vec) %>%
     purrr::compact() %>%
-    data.table::rbindlist(idcol = 'species') %>%
+    data.table::rbindlist(idcol = idcol) %>%
     distinct()
   
   return(out_maps_df)
@@ -168,25 +177,32 @@ get_hcaf_info <- function() {
 }
 
 get_hcaf_rast <- function() {
-  rast_base <- raster::raster(ext = raster::extent(c(-180, 180, -90, 90)), 
-                              resolution = 0.5, crs = '+init=epsg:4326') %>%
-    raster::setValues(1:raster::ncell(.))
+  rast_base <- terra::rast(ext(c(-180, 180, -90, 90)), 
+                           resolution = 0.5, crs = '+init=epsg:4326') %>%
+    terra::setValues(1:terra::ncell(.))
   return(rast_base)
 }
 
-map_to_hcaf <- function(df, by = 'loiczid', which, xfm = NULL) {
+map_to_hcaf <- function(df, by = 'loiczid', which, xfm = NULL, ocean_mask = FALSE) {
   if(!by %in% names(df)) stop('Dataframe needs a valid column for "by" (e.g., loiczid)!')
   if(!which %in% names(df)) stop('Dataframe needs a valid column for "which" (e.g., n_spp)!')
   if(any(is.na(df[[by]]))) stop('Dataframe contains NA values for "by"!')
   
-  r_base <- get_hcaf_rast()
+  out_rast <- get_hcaf_rast()
   
-  out_rast <- raster::subs(x = r_base, y = df, 
-                           by = by, which = which)
-  
+  df1 <- data.frame(cell_id = 1:ncell(out_rast)) %>%
+    rename(!!by := cell_id) %>%
+    dt_join(df, by = by, type = 'left')
+  values(out_rast) <- df1[[which]]
+
   if(!is.null(xfm)) {
     if(class(xfm) != 'function') stop('xfm argument must be a function!')
     out_rast <- xfm(out_rast)
+  }
+
+  if(ocean_mask) {
+    out_rast <- out_rast %>%
+      terra::mask(terra::rast(here('_spatial/ocean_area_wgs84_0.5deg.tif')))
   }
   return(out_rast)
 }
@@ -231,8 +247,8 @@ get_am_spp_cells <- function(occurcells_cut = 0, prob_cut = 0) {
 ###############################################.
 
 get_mol_rast <- function() {
-  rast_base <- raster::raster(here('_spatial/ocean_area_mol.tif')) %>%
-    raster::setValues(1:raster::ncell(.))
+  rast_base <- terra::rast(here('_spatial/ocean_area_mol.tif')) %>%
+    terra::setValues(1:terra::ncell(.))
   return(rast_base)
 }
 
@@ -241,11 +257,18 @@ map_to_mol <- function(df, by = 'cell_id', which, xfm = NULL, ocean_mask = TRUE)
   if(!which %in% names(df)) stop('Dataframe needs a valid column for "which" (e.g., n_spp)!')
   if(any(is.na(df[[by]]))) stop('Dataframe contains NA values for "by"!')
   
-  r_base <- get_mol_rast()
+  ### Instead of raster::subs (which is pretty slow), just make a 
+  ### vector of all the new values by joining the dataframe to a
+  ### new dataframe with complete cell_id column, then replace all 
+  ### raster values at once, very fast!
+  out_rast <- get_mol_rast()
+  df1 <- data.frame(cell_id = 1:ncell(out_rast)) %>%
+    dt_join(df, by = 'cell_id', type = 'left')
+  values(out_rast) <- df1[[which]]
   
-  out_rast <- raster::subs(x = r_base, y = df, 
-                           by = by, which = which)
-  
+  ### this keeps the layer name from the base rast... swap with "which"
+  names(out_rast) <- which
+
   if(!is.null(xfm)) {
     if(class(xfm) != 'function') stop('xfm argument must be a function!')
     out_rast <- xfm(out_rast)
@@ -253,10 +276,23 @@ map_to_mol <- function(df, by = 'cell_id', which, xfm = NULL, ocean_mask = TRUE)
   
   if(ocean_mask) {
     out_rast <- out_rast %>%
-      mask(raster(here('_spatial/ocean_area_mol.tif')))
+      terra::mask(terra::rast(here('_spatial/ocean_area_mol.tif')))
   }
   return(out_rast)
 }
+
+# comp_terra <- function(r1, r2, stopiffalse = TRUE) {
+#   ### analogous to compareRaster(values = TRUE) for two
+#   ### terra::SpatRaster objects
+#   val_check <- values(r1) == values(r2)
+#   val_check <- val_check[!is.na(val_check)]
+#   
+#   result <- all(val_check)
+#   if(stopiffalse & !result) {
+#     stop('Not all values are same between ', names(r1), ' and ', names(r2), '!!!')
+#   }
+#   return(result)
+# }
 
 #####################################################.
 ####   Helper functions for vulnerability data   ####

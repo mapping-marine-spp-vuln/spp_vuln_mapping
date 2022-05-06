@@ -50,11 +50,18 @@ Adult mobility and water column position are already categorical variables.
 
 __Max body length__ (cm):
 
-* Very small: (0, 1.5]
-* Small: (1.5, 5]
-* Medium: (5, 15]
-* Large: (15, 100]
-* Very large: (100, ...)
+Use size categories from Mouillot et al. 2014, adding a "tiny" category and "huge" category
+
+* Tiny: (0, 1.5]
+* Very small: (1.5, 7.0]
+* Small: (7, 15]
+* Medium: (15, 30]
+* Medium large: (30, 50]
+* Large: (50, 80]
+* Very large: (80, 150]
+* Huge: (150, ...)
+
+Note: Mouillot et al (2014) use six bins: 0-7, 7-15, 15-30, 30-50, 50-80, and >80.
 
 __Trophic level__:
 
@@ -67,18 +74,20 @@ __Trophic level__:
 ```{r}
 fe_traits <- read_csv(here('_data/grouping_traits_miced_and_gapfilled.csv')) %>%
   mutate(len = exp(log_l), 
-         # fec = exp(log_f),
-         len = case_when(len <= 1.5 ~ 'vsm',
-                         len <= 5   ~ 'sm',
-                         len <= 15  ~ 'med',
-                         len <= 100 ~ 'lg',
-                         len > 100  ~ 'vlg',
+         len = case_when(len <= 1.5 ~ 'tiny',
+                         len <= 7   ~ 'vsm',
+                         len <= 15  ~ 'sm',
+                         len <= 30  ~ 'med',
+                         len <= 50  ~ 'ml',
+                         len <= 80  ~ 'lg',
+                         len <= 150 ~ 'vlg',
+                         len >  150 ~ 'huge',
                          TRUE ~ NA_character_),
-         len = factor(len, levels = c('vsm', 'sm', 'med', 'lg', 'vlg'))) %>%
+         len = factor(len, levels = c('tiny', 'vsm', 'sm', 'med', 'ml', 'lg', 'vlg', 'huge'))) %>%
   mutate(trp = case_when(troph <= 2 ~ 'pri',
                          troph <= 3 ~ 'sec',
                          troph <= 4 ~ 'ter',
-                         troph > 4  ~ 'apex',
+                         troph >  4 ~ 'apex',
                          TRUE ~ NA_character_),
          trp = factor(trp, levels = c('pri', 'sec', 'ter', 'apex'))) %>%
   select(species, wcol, mob = adult_mob, len, 
@@ -90,7 +99,6 @@ table(fe_traits$len)
 table(fe_traits$trp)
 table(fe_traits$mob)
 table(fe_traits$col)
-
 ```
 
 
@@ -101,8 +109,6 @@ Here we will full-join all trait dataframes by species, eliminate any with NA va
 
 ```{r}
 n_fe_possible <- n_distinct(fe_traits$mob) *
-                 # n_distinct(fe_traits$fec) *
-                 # n_distinct(fe_traits$gen) *
                  n_distinct(fe_traits$trp) *
                  n_distinct(fe_traits$len) *
                  n_distinct(fe_traits$wcol)
