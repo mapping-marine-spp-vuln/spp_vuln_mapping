@@ -20,7 +20,6 @@ output:
 
 knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
 
-library(raster)
 library(oharac) ### remotes::install_github('oharac/oharac')
   ### includes some helper functions, e.g., dt_join
 library(tidyverse)
@@ -274,9 +273,9 @@ chisq.test(overfishing)
 
 Based on this method, the max cutoff reference point for NPP-adjusted targeted catch is $C_{ref} = $`r round(ref_pt)` tonnes/log(NPP), for species <i>`r ref_spp`</i>.  However, for species whose 99.9th percentile catch falls below this reference point, we will use the 99.9th percentile of that species' catch as its own reference point.  For catch $C$ for species $i$:
 
-$$C_{ref}^i = \min (C_{ref}, C_{99.9\%}^i)$$
+$$C_{ref}^i = \min (C_{ref}, C_{99\%}^i)$$
  
-By this method, 82 of the highest-fished spp will be subject to the reference cap of $C_{ref} = $`r round(ref_pt)` tonnes/log(NPP).
+By this method, 15 of the highest-fished spp will be subject to the reference cap of $C_{ref} = $`r round(ref_pt)` tonnes/log(NPP).
 
 ## Rescale NPP-adjusted targeted catch layers
 
@@ -324,7 +323,7 @@ reference_df <- data.frame(npp_f = npp_catch_fs) %>%
          rescaled_f = sprintf(rescaled_fstem, source, spp),
          spp_clean = str_replace_all(spp, '_', ' ')) %>%
   left_join(qtile_results, by = c('spp_clean' = 'spp')) %>%
-  mutate(spp_ref_pt = ifelse(x99_9_percent > ref_pt, ref_pt, x99_9_percent),
+  mutate(spp_ref_pt = ifelse(x99_percent > ref_pt, ref_pt, x99_percent),
          ### some spp with no 99.9%ile catch - just use max as ref
          spp_ref_pt = ifelse(spp_ref_pt < 1e-6, x100_percent, spp_ref_pt)) %>%
   select(spp, npp_f, rescaled_f, spp_ref_pt)

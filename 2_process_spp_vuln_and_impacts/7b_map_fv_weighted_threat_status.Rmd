@@ -1,0 +1,372 @@
+---
+title: "Map FV-weighted IUCN threatened status"
+author: "*Compiled on `r date()` by `r Sys.info()['user']`*"
+output: 
+  html_document:
+    code_folding: hide
+    toc: true
+    toc_depth: 3
+    toc_float: yes
+    number_sections: true
+    theme: cerulean
+    highlight: haddock
+    includes: 
+      in_header: '~/github/src/templates/ohara_hdr.html'
+  pdf_document:
+    toc: true
+---
+
+``` {r setup, echo = TRUE, message = FALSE, warning = FALSE}
+
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE, fig.height = 3, fig.width = 12)
+
+library(terra)
+library(oharac)
+library(data.table)
+library(tidyverse)
+library(here)
+source(here('common_fxns.R'))
+```
+
+# Summary
+
+Similar to script 7a except here we use a binary "threatened/non-threatened" status instead of category scores. Apply threatened status (1 = threatened, 0 = non-threatened) to IUCN-assessed spp in this analysis.  Calculate FV-weighted threatened status across all FEs (gapfilling NAs to the mean value for the cell).  Also calculate unweighted for comparison, as well as standard deviations.
+
+# Data
+
+* AquaMaps and IUCN rangemaps
+* IUCN RedList conservation status/extinction risk
+* FishBase/SeaLifeBase and vulnerability framework data for functional entity assignments
+
+# Methods
+
+Read in AquaMaps and IUCN maps and vulnerability scores.  AquaMaps maps will exclude species with fewer than 10 occurrence cells, and will use a probability threshold of 0.5.
+
+To calculate functional vulnerability of species within a cell, we must know all species in that cell (and their FE membership).  But loading in all spp maps simultaneously will likely be too memory intensive.  Because of the number of cells and species, we will break the map into chunks of e.g., 100,000 cells at a time.  For each chunk, we will read in each species map, filtering to the chunk cells only to keep the memory needs down, bind the lookup of species-to-functional entity, calculate functional vulnerability for each FE for each cell.  Then, for that chunk, bind IUCN scores and calculate FV-weighted mean and sd extinction risk.  Then bind rows for all chunks.
+
+## Set up dataframe of species
+
+This includes information on species vulnerability scores, functional entity ID and traits, as well as which species are mapped in which sources (including rangemap filenames).  Convert category score to a 1/0 threatened/non-threatened value.
+
+```{r assemble spp info dataframe}
+iucn_risk <- read_csv(here('_data/iucn_spp/iucn_marine_spp_info_2021-3.csv')) %>%
+  select(iucn_sid, threatened = cat_score) %>%
+  filter(!is.na(threatened)) %>%
+  mutate(threatened = ifelse(threatened <= 0.2, 0, 1))
+spp_info_df <- assemble_spp_info_df(fe_only = TRUE) %>%
+  select(species, iucn_sid, sciname, fe_id, src, id, map_f) %>%
+  distinct() %>%
+  left_join(iucn_risk, by = 'iucn_sid')
+```
+
+## Set up functions to process the various steps
+
+To calc functional vulnerability, we need to know ALL species in each cell (and their FE membership).  So we will process maps in chunks, collecting all spp but cropping down their range to just those cells in the chunk.
+
+```{r}
+
+read_truncated_rangemap <- function(f, chunk_start, chunk_end) {
+  ### f <- spp_map_fs$map_f[13]
+
+  ### Identify the source from filename (for filtering by presence or prob)
+  src <- ifelse(str_detect(basename(f), 'iucn_spp_mol'), 'iucn', 'am')
+  df <- data.table::fread(f) %>%
+    filter(between(cell_id, chunk_start, chunk_end)) %>%
+    mutate(map_f = f)
+  if(src == 'iucn') {
+    df <- df %>%
+      filter(presence != 5) %>% 
+      select(-presence)
+  } else {
+    df <- df %>%
+      filter(prob >= .5) %>%
+      select(-prob)
+  }
+  if(nrow(df) == 0) return(NULL) else return(df)
+}
+
+bind_maps_list <- function(chunk_maps_list, spp_map_fs) {
+  if(check_tryerror(chunk_maps_list)) {
+    stop('Try-error found when binding truncated maps list!')
+  }
+
+  chunk_maps_raw <- chunk_maps_list %>%
+    ### drop NULL instances (no spp cells - helps keep things from crashing)
+    purrr::compact() %>% 
+    data.table::rbindlist() 
+  
+  if(nrow(chunk_maps_raw) > 0) {
+    ### if no spp-cell data for this chunk, skip bind and return 0-length df
+    chunk_maps_raw <- chunk_maps_raw %>%
+      oharac::dt_join(spp_map_fs, by = 'map_f', type = 'left') %>%
+      select(-map_f) %>%
+      distinct()
+  }
+  return(chunk_maps_raw)
+}
+```
+
+Functional vulnerability for a functional entity will be calculated based on the number of species $N_{spp}$ in the FE:
+
+$$FV_{FE} = \frac{1}{2^{N_{spp}-1}}$$
+
+#### Note on mean and sd:
+
+Here, we are calculating the FV-weighted mean (and sd) extinction risk across all spp/FEs in a cell.  The unit of analysis is a functional entity, and weighted not by the number of species in each FE but rather by the functional vulnerability of that FE.  We will simply report the FV-weighted mean extinction risk across all FEs in the cell, and standard deviation of FV-weighted mean across all FEs.
+
+Because here we have replaced a linear extinction risk score (LC = 0, NT = 0.2, ... CR = 0.8, EX = 1.0) with a binary threatened status (1 = threatened, 0 = not threatened), but still as numeric, then the mean is just the proportion of spp classified as threatened.  The function can be identical to that in script 7a.
+
+```{r function for processing extinction risk}
+
+mc_process_threat_chunk <- function(spp_maps_df, spp_info_df) {
+
+  chunk_spp_scores <- spp_info_df %>%
+    filter(species %in% chunk_maps$species) %>%
+    group_by(species) %>%
+    summarize(threatened = mean(threatened, na.rm = TRUE))
+  
+  cell_id_df <- data.frame(cell_id = chunk_maps$cell_id %>% unique()) %>%
+    mutate(cell_gp = rep(1:100, length.out = n()))
+  cell_gps <- cell_id_df$cell_gp %>% unique()
+
+  chunk_spp_threat_maps <- chunk_maps %>%
+    oharac::dt_join(chunk_spp_scores, by = 'species', type = 'inner') 
+  
+  ### parallelize for speed! balance vectorization with parallel to reduce crashing...
+  chunk_risk_sum_list <- parallel::mclapply(cell_gps, mc.cores = 25,
+          FUN = function(gp) { ### gp <- 1
+            cell_ids <- cell_id_df %>% filter(cell_gp == gp) %>% .$cell_id
+            
+            df_unwt <- chunk_spp_threat_maps %>%
+              filter(cell_id %in% cell_ids) %>%
+              data.table() %>%
+              ### impute NAs using mean across all spp in cell
+              .[ , threatened := ifelse(is.na(threatened), mean(threatened, na.rm = TRUE), threatened),
+                 by = .(cell_id)] %>%
+              ### Summarize unweighted mean and sd across all spp; na.rm unnecessary
+              .[ , .(unwt_mean_thr = mean(threatened),
+                     unwt_sdev_thr = sd(threatened)),
+                 by = .(cell_id)] 
+            
+            df <- chunk_spp_threat_maps %>%
+              filter(cell_id %in% cell_ids) %>%
+              data.table() %>%
+              ### impute NAs using mean across all spp in cell
+              .[ , threatened := ifelse(is.na(threatened), mean(threatened, na.rm = TRUE), threatened),
+                 by = .(cell_id)] %>%
+              ### summarize mean per cell and FE
+              .[ , .(score_mean = mean(threatened),
+                     score_sd   = sd(threatened),
+                     ### super-tiny fv (~ 1e-20) result in Inf var
+                     fv = first(fv) %>% round(10)),
+                 by = .(cell_id, fe_id)] %>%
+              ### summarize FV-weighted mean across all FEs
+              .[ , .(n_fe = n_distinct(fe_id),
+                     fv_mean = mean(fv),
+                     fvwt_mean_thr = Hmisc::wtd.mean(score_mean,     weights = fv),
+                     fvwt_sdev_thr = Hmisc::wtd.var(score_mean, weights = fv) %>%
+                                         sqrt() %>% round(10)),
+                 by = .(cell_id)] %>%
+              ### bind unweighted df
+              dt_join(df_unwt, by = 'cell_id', type = 'full')
+          })
+  if(check_tryerror(chunk_risk_sum_list)) {
+    stop('Try error results in mc_process_risk_chunk...')
+  }
+  chunk_risk_sum_df <- data.table::rbindlist(chunk_risk_sum_list)
+  return(chunk_risk_sum_df)
+}
+```
+
+## Set up loop over chunks of cells
+
+For each chunk of cells, save out temp files of threatened status metrics - fv-weighted mean, fv-weighted sd, number of functional entities, mean functional vulnerability across FEs - to be combined later.
+
+```{r big ass loop}
+
+spp_map_fs <- spp_info_df %>%
+  select(species, map_f) %>%
+  distinct() 
+spp_fe <- spp_info_df %>%
+  select(species, fe_id) %>%
+  distinct()
+
+chunk_size <- 100000
+n_chunks <- ceiling(6.5e6 / chunk_size)
+
+tmp_stem <- here('tmp/ext_risk_fe_wt_chunks/threatened_status_summary_chunk_%s_to_%s.csv')
+  ### format will be: chunk start, chunk end
+### zxcv <- list.files(dirname(tmp_stem), pattern = 'threatened_status_', full.names = TRUE)
+### unlink(zxcv)
+
+for(chunk_i in 1:n_chunks) { 
+  ### chunk_i <- 2
+  ### chunk_i <- 30
+  
+  ### Set up chunk start and end and filenames; check whether maps 
+  ### all stressors for this chunk...
+  chunk_start <- (chunk_i - 1) * chunk_size + 1
+  chunk_end   <- as.integer(chunk_i * chunk_size)
+  chunk_text  <- sprintf('chunk %s of %s (cells %s to %s)', 
+                         chunk_i, n_chunks, chunk_start, chunk_end)
+
+  ### check if all chunk-stressor maps are complete
+  tmp_f <- sprintf(tmp_stem, chunk_start, chunk_end)
+  if(file.exists(tmp_f)) {
+    message('Threatened status summaries exist for ', chunk_text, '... skipping!')
+    next()
+  }
+  
+  ### Passed the test - therefore, some chunk maps remain, so continue:
+  ### Load species rangemaps for this chunk, then clean and bind:
+  message('Loading ', nrow(spp_map_fs), ' rangemaps cropped for ', chunk_text,  '...')
+  
+  chunk_maps_list <- parallel::mclapply(spp_map_fs$map_f, mc.cores = 40, 
+                                        FUN = read_truncated_rangemap, 
+                                        chunk_start = chunk_start, chunk_end = chunk_end) 
+  
+  chunk_maps_raw <- bind_maps_list(chunk_maps_list, spp_map_fs)
+  
+  ### OK, now we have species and cells for this chunk.  Calculate functional vulnerability!
+  message('Calculating functional vulnerability metrics for ', nrow(chunk_maps_raw), 
+          ' spp-cells in ', chunk_text, '...')
+  chunk_maps <- chunk_maps_raw %>%
+    calc_spp_cell_fv(spp_fe)
+  
+  message('In ', chunk_text,  ' rangemap dataframe: \n    ', nrow(chunk_maps), 
+          ' cell observations for ', n_distinct(chunk_maps$species), ' species across ',
+          n_distinct(chunk_maps$fe_id), ' functional entities...')
+
+
+  ### For this chunk, summarize FV-weighted mean and sd
+  message('Processing mean/sd extinction risk in ', chunk_text, '...')
+  chunk_risk_sum <- mc_process_threat_chunk(chunk_maps, spp_info_df)
+  
+  write_csv(chunk_risk_sum, tmp_f)
+}
+
+```
+
+### Aggregate temp maps to all species
+
+Gather all the temp files, and loop over vulnerabilities to combine into a single map; then convert to raster and save out for FV-weighted mean, FV-weighted sd, and number of functional entities.
+
+```{r assemble chunk maps to total maps}
+chunk_sum_df <- data.frame(f = list.files(dirname(tmp_stem), full.names = TRUE,
+                                          pattern = 'threatened_status_summary_chunk'))
+
+fvmean_out_file <- here('_output/risk_maps/thr_status_fvwt_mean.tif')
+fvsdev_out_file <- here('_output/risk_maps/thr_status_fvwt_sdev.tif')
+unmean_out_file <- here('_output/risk_maps/thr_status_unwt_mean.tif')
+unsdev_out_file <- here('_output/risk_maps/thr_status_unwt_sdev.tif')
+
+### Combine mean, sdev, and n_fe maps by taxon into one big dataframe
+message('Processing mean, sd maps across all species for threatened status...')
+
+stats_list <- parallel::mclapply(chunk_sum_df$f, mc.cores = 33, 
+                                 FUN = read_csv, show_col_types = FALSE)
+if(check_tryerror(stats_list)) {
+  stop('Encountered try-error in reading FV-weighted vuln summary files...')
+}
+stats_df <- stats_list %>%
+  data.table::rbindlist()
+
+fvmean_rast <- map_to_mol(stats_df, which = 'fvwt_mean_thr')
+fvsdev_rast <- map_to_mol(stats_df, which = 'fvwt_sdev_thr')
+unmean_rast <- map_to_mol(stats_df, which = 'unwt_mean_thr')
+unsdev_rast <- map_to_mol(stats_df, which = 'unwt_sdev_thr')
+
+writeRaster(fvmean_rast, fvmean_out_file, overwrite = TRUE)
+writeRaster(fvsdev_rast, fvsdev_out_file, overwrite = TRUE)
+writeRaster(unmean_rast, unmean_out_file, overwrite = TRUE)
+writeRaster(unsdev_rast, unsdev_out_file, overwrite = TRUE)
+
+### Check that # of FEs match with other parts of analysis
+# n_fe_rast_main <- rast(here('_output/nspp_maps/n_fe_in_fvwt_vuln.tif'))
+# n_fe_rast_fvwt <- map_to_mol(stats_df, which = 'n_fe')
+# x <- as.vector(values(n_fe_rast_fvwt)); y <- as.vector(values(n_fe_rast_main))
+# match <- (is.na(x) & is.na(y)) | x == y
+# all(match)
+
+```
+
+
+## Plot maps
+
+```{r plot maps, fig.height = 4, fig.width = 7}
+diff_map <- (fvmean_rast - unmean_rast) / unmean_rast
+
+fvmean_df <- as.data.frame(fvmean_rast, xy = TRUE)
+eqmean_df <- as.data.frame(unmean_rast, xy = TRUE)
+diff_df <- as.data.frame(diff_map, xy = TRUE) %>%
+  setNames(c('x', 'y', 'diff'))
+
+ggplot(fvmean_df, aes(x, y, fill = fvwt_mean_thr)) +
+  geom_raster() +
+  scale_fill_viridis_c() +
+  theme_void() +
+  coord_sf() +
+  labs(title = 'FV-weighted proportion (mean) IUCN threatened')
+ggplot(eqmean_df, aes(x, y, fill = unwt_mean_thr)) +
+  geom_raster() +
+  scale_fill_viridis_c() +
+  theme_void() +
+  coord_sf() +
+  labs(title = 'Equal-weighted proportion (mean)  IUCN threatened')
+
+div_col_vec <- hcl.colors(n = 3, palette = 'Red-Green')
+ggplot(diff_df, aes(x, y, fill = diff)) +
+  geom_raster() +
+  scale_fill_gradient2(low = div_col_vec[3],
+                       mid = div_col_vec[2],
+                       high = div_col_vec[1],
+                       midpoint = 0) +
+  theme_void() +
+  coord_sf() +
+  labs(title = '% diff FV vs Eq-Weighted Mean IUCN threatened')
+
+```
+
+
+## Check that gapfilling is conservative
+
+Since only about half the included species have non-DD IUCN extinction risk assessments, we above filled NAs using an unweighted mean of risk category across all assessed spp in the cell, then use the gapfilled values to compute FV-weighted mean and sd.  Intuitively, this should provide a downward-biased FV-weighted threatened status, in that the gapfilled values should be less than the FV-weighted mean.
+
+Let's try this by sampling from the overall species list, for cells of different species richnesses: 10, 100, 1000.  For each cell richness, iteratively sample, including at least one NA occurrence (otherwise discard and redraw).  Assign FEs randomly as integers from 1 to sqrt(richness).  Calculate the gapfill value, then report that along with the FV-weighted mean after gapfilling.
+```{r}
+rich_vec <- c(20, 100, 1000)
+
+sims <- 10000
+for(r in rich_vec) {
+  raw_df <- data.frame(i = rep(1:sims, each = r)) %>%
+    mutate(cat = sample(spp_info_df$threatened, size = n(), replace = TRUE)) %>%
+    group_by(i) %>%
+    mutate(spp = 1:n(),
+           gf = mean(cat, na.rm = TRUE),
+           n_gf = sum(is.na(cat)),
+           cat_gf = ifelse(is.na(cat), gf, cat),
+           fe_id = sample(1:sqrt(r), size = n(), replace = TRUE)) %>%
+    filter(max(cat_gf) > min(cat_gf)) %>%
+    ungroup()
+  
+  fv_df <- raw_df %>%
+    data.table() %>%
+    .[ , .(gf = first(gf),
+           n_gf = first(n_gf),
+           fv = calc_fv(length(unique(spp))),
+           mean_cat = mean(cat_gf),
+           sd_cat = sd(cat_gf)),
+       by = .(i, fe_id)] %>%
+    .[ , .(gf = first(gf),
+           n_gf = first(n_gf),
+           fvmean_cat = Hmisc::wtd.mean(mean_cat, weights = fv),
+           fvsdev_cat = Hmisc::wtd.var(mean_cat, weights = fv) %>% sqrt()),
+       by = 'i'] %>%
+    .[ , diff := fvmean_cat - gf]
+  
+  
+  hist(fv_df$diff, breaks = 50, main = r)
+  print(mean(fv_df$diff))
+  print(sd(fv_df$diff))
+}
+```

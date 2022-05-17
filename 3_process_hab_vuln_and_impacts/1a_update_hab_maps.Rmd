@@ -121,8 +121,7 @@ However, the half-km resolution rasters of the coral polygons are available, so 
 ```{r}
 coral_outf <- here('_data/habitat_maps/coral_reef_updated.tif') 
 if(!file.exists(coral_outf)) {
-  coral_hires <- rast(anx_root('globalprep/hab_coral/v2019/int', 
-                               'py_coral_rast_high_res.tif'))
+  coral_hires <- rast(anx_root('globalprep/hab_coral/v2019/int', 'py_coral_rast_high_res.tif'))
 
   message('... Aggregating hi res corals by factor of 21x to ~ 10km resolution...')
     

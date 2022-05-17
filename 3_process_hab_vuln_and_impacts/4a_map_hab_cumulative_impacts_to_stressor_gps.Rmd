@@ -1,0 +1,106 @@
+---
+title: "Map cumulative impacts to stressor groups - habitat method"
+author: "*Compiled on `r date()` by `r Sys.info()['user']`*"
+output: 
+  html_document:
+    code_folding: hide
+    toc: true
+    toc_depth: 3
+    toc_float: yes
+    number_sections: true
+    theme: cerulean
+    highlight: haddock
+    includes: 
+      in_header: '~/github/src/templates/ohara_hdr.html'
+  pdf_document:
+    toc: true
+---
+
+``` {r setup, echo = TRUE, message = FALSE, warning = FALSE}
+
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE, fig.height = 4, fig.width = 7)
+
+library(terra)
+library(oharac)
+library(tidyverse)
+library(here)
+source(here('common_fxns.R'))
+```
+
+# Summary
+
+With habitat-based impact maps generated for all stressors, means calculated from vulnerability across proportional coverage of all habitats in each cell, we can calculate impact layers and summarize to generate a comprehensive cumulative human impact map.
+
+# Data
+
+See script 2_process_hab_vuln_maps.Rmd, and scripts 3a and 3b for updating fishing stressors to match Watson data for 2015-2017 used in the spp-based calculations.  Other stressors are identical to those used for the spp-based calculations.
+
+# Methods
+
+## Calculate impact maps
+
+Gather vulnerability maps and match to stressor maps.  A lookup table of habitat stressor name to stressor file name and group name will facilitate matching layers.
+
+```{r}
+hab_stressor_df <- tribble(
+  ~vuln_name,       ~ stressor_name,          ~ stressor_group,
+  'art_fish',       'fishing_artisanal',      'fishing',
+  'benthic_str',    'benth_str',              'ocean_based',
+  'dem_dest',       'fishing_dem_dest',       'fishing',
+  'dem_nondest_hb', 'fishing_dem_nondest_hb', 'fishing',
+  'dem_nondest_lb', 'fishing_dem_nondest_lb', 'fishing',
+  'direct_human',   'direct_human',           'land_based',
+  'light',          'light',                  'land_based',
+  'nutrient',       'nutrient',               'land_based',
+  'oa',             'ocean_acidification',    'climate',
+  'pel_hb',         'fishing_pel_hb',         'fishing',
+  'pel_lb',         'fishing_pel_lb',         'fishing',
+  'shipping',       'shipping_large',         'ocean_based',
+  'slr',            'sea_level_rise',         'climate',
+  'sst',            'sst_extremes',           'climate',
+  'uv',             'uv_radiation',           'climate'
+)
+```
+
+## Gather impact maps to cumulative, by group
+
+Habitat impact maps created in script `4_map_hab_cumulative_impacts.Rmd.`
+
+```{r}
+ocean_a <- rast(here('_spatial/ocean_area_mol.tif'))
+
+impact_fs <- list.files(here('_output/impact_maps/impact_maps_habitat'),
+                        pattern = 'impact_hab_.+.tif', full.names = TRUE)
+impact_stack <- rast(impact_fs) %>%
+  setNames(basename(impact_fs) %>% str_remove_all('impact_hab_|.tif'))
+
+stressor_gps <- hab_stressor_df$stressor_group %>% unique()
+
+hab_outfile_stem <- here('_output/impact_maps/cumulative_maps/habitat_group_chi_%s.tif')
+
+for(s in stressor_gps) {
+  ### s <- stressor_gps[1]
+  outfile <- sprintf(hab_outfile_stem, s)
+  if(!file.exists(outfile)) {
+    strs_in_gp <- hab_stressor_df %>%
+      filter(stressor_group == s) %>%
+      .$stressor_name
+    group_chi <- impact_stack[[strs_in_gp]] %>%
+      sum(na.rm = TRUE) %>%
+      mask(ocean_a) %>%
+      setNames(sprintf('%s_chi_hab', s))
+    writeRaster(group_chi, outfile)
+  }
+}
+```
+
+```{r}
+for(s in stressor_gps) {
+  ### s <- stressor_gps[1]
+  f <- sprintf(hab_outfile_stem, s)
+  r <- rast(f)
+  plot(log10(r), col = hcl.colors(50), 
+       main = paste0('Log_10(impact): ', s, ' stressors, habitat-based'),
+       axes = FALSE)
+}
+```

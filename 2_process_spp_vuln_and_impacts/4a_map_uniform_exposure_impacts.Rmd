@@ -42,27 +42,7 @@ See scripts 2, 3a, and 3b for vulnerability mapping scripts.
 ## Determine stressor and vulnerability matchups
 
 ```{r stressors to vulnerability lookup}
-str_vuln_lookup_f <- here('_data/stressor_vulnerability_lookup.csv')
-if(!file.exists(str_vuln_lookup_f)) {
-  str_vuln_lookup <- tribble(
-    ~stressor,              ~vulnerability,
-     'biomass_removal',      'biomass_removal', # not uniform exposure
-     'sst_rise',             'sst_rise',        # not uniform exposure
-     'bycatch',              'bycatch',         # not uniform exposure
-     'sst_extremes',         'marine_heat_waves',
-     'ocean_acidification',  'ocean_acidification',
-     'sea_level_rise',       'sea_level_rise',
-     'uv_radiation',         'uv_radiation',
-     'fishing_benthic_dest', 'habitat_loss_degradation',
-     'benth_str',            'habitat_loss_degradation',
-     'direct_human',         'habitat_loss_degradation',
-     'shipping_large',       'wildlife_strike',
-     'light',                'light_pollution',
-     'nutrient',             'eutrophication_nutrient_pollution',
-     'microplastics',        'plastic_pollution_microplastic'
-    )
-  write_csv(str_vuln_lookup, str_vuln_lookup_f)
-}
+str_vuln_lookup_f <- here('_raw/stressor_vulnerability_lookup.csv')
 
 str_vuln_lookup_raw <- read_csv(str_vuln_lookup_f)
 knitr::kable(str_vuln_lookup_raw)

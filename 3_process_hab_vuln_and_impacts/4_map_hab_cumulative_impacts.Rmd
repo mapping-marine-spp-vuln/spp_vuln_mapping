@@ -97,11 +97,14 @@ for(i in 1:nrow(layer_match_df)) {
 ## Gather to cumulative
 
 ```{r}
+ocean_a <- rast(here('_spatial/ocean_area_mol.tif'))
 chi_map <- rast(layer_match_df$impact_out_f) %>%
-  sum(na.rm = TRUE)
+  sum(na.rm = TRUE) %>%
+  mask(ocean_a) %>%
+  setNames('chi_hab')
 
 plot(chi_map, col = hcl.colors(50), main = 'CHI habitat based', axes = FALSE)
-writeRaster(chi_map, here('_output/impact_maps/chi_habitat.tif'), overwrite = TRUE)
+writeRaster(chi_map, here('_output/impact_maps/cumulative_maps/chi_habitat.tif'), overwrite = TRUE)
 ```
 
 

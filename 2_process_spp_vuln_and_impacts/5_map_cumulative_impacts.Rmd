@@ -49,12 +49,6 @@ imp1_fs <- list.files(here('_output/impact_maps/impact_maps_unweighted'),
 imp1_stack <- rast(imp1_fs) %>%
   setNames(str_remove_all(basename(imp1_fs), '.+unwt_|_x_.+|_mean.tif'))
 
-mean_str_unwt <- sapply(imp1_stack, FUN = function(r) mean(values(r), na.rm = TRUE)) %>%
-  setNames(names(imp1_stack))
-mean_str_unwt_nonzero <- sapply(imp1_stack, FUN = function(r) {
-    mean(values(r)[values(r) > 0], na.rm = TRUE)
-  }) %>%
-  setNames(names(imp1_stack))
 
 ```
 
@@ -66,7 +60,7 @@ chi_unweighted <- chi_unwt_raw %>%
   mask(ocean_a_rast) %>%
   setNames('chi_unwt')
 
-writeRaster(chi_unweighted, here('_output/impact_maps/chi_unweighted.tif'),
+writeRaster(chi_unweighted, here('_output/impact_maps/cumulative_maps/chi_unweighted.tif'),
             overwrite = TRUE)
 
 ```
@@ -107,26 +101,6 @@ imp2_fs <- list.files(here('_output/impact_maps/impact_maps_fv_weighted'),
 imp2_stack <- rast(imp2_fs) %>%
   setNames(str_remove_all(basename(imp2_fs), '.+fvwt_|_x_.+|_mean.tif'))
 
-mean_str_fvwt <- sapply(imp2_stack, FUN = function(r) mean(values(r), na.rm = TRUE)) %>%
-  setNames(names(imp2_stack))
-mean_str_fvwt_nonzero <- sapply(imp2_stack, FUN = function(r) {
-    mean(values(r)[values(r) > 0], na.rm = TRUE)
-  }) %>%
-  setNames(names(imp2_stack))
-pct_nonzero <- sapply(imp2_stack, FUN = function(r) {
-    sum(values(r) > 0, na.rm = TRUE) / sum(!is.na(values(r)))
-  }) %>%
-  setNames(names(imp2_stack))
-
-mean_str_df <- data.frame(stressor = names(imp1_stack)) %>%
-  mutate(mean_impact_fvwt = mean_str_fvwt[stressor],
-         mean_impact_fvwt_nonzero = mean_str_fvwt_nonzero[stressor],
-         mean_impact_unwt = mean_str_unwt[stressor],
-         mean_impact_unwt_nonzero = mean_str_unwt_nonzero[stressor],
-         pct_nonzero = pct_nonzero[stressor]) %>%
-  arrange(desc(mean_impact_fvwt))
-knitr::kable(mean_str_df)
-
 ```
 
 ```{r}
@@ -138,7 +112,7 @@ chi_fv_weighted <- chi_fv_wt_raw %>%
   mask(ocean_a_rast) %>%
   setNames('chi_fvwt')
 
-writeRaster(chi_fv_weighted, here('_output/impact_maps/chi_fv_weighted.tif'),
+writeRaster(chi_fv_weighted, here('_output/impact_maps/cumulative_maps/chi_fv_weighted.tif'),
             overwrite = TRUE)
 
 ```
@@ -248,3 +222,31 @@ knitr::include_graphics(chi_diff2_plot)
 
 ```
 
+## Table of mean values per stressor
+
+In and outside of neritic zone.
+
+``` {r}
+neritic_rast <- rast(here('_spatial/bathy_mol_neritic.tif'))
+mean_str_unwt <- sapply(imp1_stack, 
+                        FUN = function(r) mean(values(r), na.rm = TRUE)) %>%
+  setNames(names(imp1_stack))
+mean_str_unwt_coastal <- sapply(imp1_stack %>% mask(neritic_rast), 
+                                FUN = function(r) mean(values(r), na.rm = TRUE)) %>%
+  setNames(names(imp1_stack))
+
+mean_str_fvwt <- sapply(imp2_stack, 
+                        FUN = function(r) mean(values(r), na.rm = TRUE)) %>%
+  setNames(names(imp2_stack))
+mean_str_fvwt_coastal <- sapply(imp2_stack %>% mask(neritic_rast), 
+                                FUN = function(r) mean(values(r), na.rm = TRUE)) %>%
+  setNames(names(imp2_stack))
+
+mean_str_df <- data.frame(stressor = names(imp1_stack)) %>%
+  mutate(mean_impact_fvwt = mean_str_fvwt[stressor],
+         mean_impact_fvwt_nonzero = mean_str_fvwt_coastal[stressor],
+         mean_impact_unwt = mean_str_unwt[stressor],
+         mean_impact_unwt_nonzero = mean_str_unwt_coastal[stressor]) %>%
+  arrange(desc(mean_impact_fvwt))
+knitr::kable(mean_str_df)
+```
