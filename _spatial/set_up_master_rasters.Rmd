@@ -282,14 +282,14 @@ plot(eez_rast_ocean, main = 'EEZ raster 10 km^2 Mollweide projection')
 
 ## MEOW raster
 
-Using the MEOW shapefile, we will include all the shapes at the province level and then mask out land using the area raster (for consistency).
+Using the MEOW shapefile, we will include all the shapes at the region and province level and then mask out land using the area raster (for consistency).
 
-``` {r set up MEOW raster}
+``` {r set up MEOW rgns raster}
 
-meow_rast_file <- here('_spatial', 'meow_mol.tif')
+meow_rgn_rast_file <- here('_spatial', 'meow_rgns_mol.tif')
 
-if(!file.exists(meow_rast_file)) {
-  meow_sf <- read_sf(here('_spatial/rgns/meow_rgns.shp'))
+if(!file.exists(meow_rgn_rast_file)) {
+  meow_sf <- read_sf(here('_spatial/meow_rgns/meow_rgns.shp'))
 
   ocean_moll_10km <- raster(ocean_10km_file)
 
@@ -306,12 +306,43 @@ if(!file.exists(meow_rast_file)) {
   meow_rast <- meow_rast %>%
     mask(ocean_moll_10km)
     
-  writeRaster(meow_rast, meow_rast_file, overwrite = TRUE)
+  writeRaster(meow_rast, meow_rgn_rast_file, overwrite = TRUE)
 }
  
-meow_rast <- raster::raster(meow_rast_file)
+meow_rgn_rast <- raster::raster(meow_rgn_rast_file)
 
-plot(meow_rast, main = 'MEOW raster 10 km^2 Mollweide')
+plot(meow_rgn_rast, main = 'MEOW ecoregions raster 10 km^2 Mollweide')
+
+```
+
+``` {r set up MEOW provinces raster}
+
+meow_prov_rast_file <- here('_spatial', 'meow_prov_mol.tif')
+
+if(!file.exists(meow_prov_rast_file)) {
+  meow_sf <- read_sf(here('_spatial/meow_rgns/meow_rgns.shp'))
+
+  ocean_moll_10km <- raster(ocean_10km_file)
+
+  meow_sf_moll <- meow_sf %>%
+    smoothr::densify(max_distance = 0.1) %>%
+    select(PROV_CODE, geometry) %>%
+    st_transform(crs(ocean_moll_10km))
+  
+  # plot(meow_sf_moll)
+  
+  meow_rast <- fasterize::fasterize(meow_sf_moll, ocean_moll_10km, 
+                                   field = 'PROV_CODE', fun = 'min')
+  
+  meow_rast <- meow_rast %>%
+    mask(ocean_moll_10km)
+    
+  writeRaster(meow_rast, meow_prov_rast_file, overwrite = TRUE)
+}
+ 
+meow_prov_rast <- raster::raster(meow_prov_rast_file)
+
+plot(meow_prov_rast, main = 'MEOW provinces raster 10 km^2 Mollweide')
 
 ```
 
