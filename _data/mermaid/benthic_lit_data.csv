@@ -1,0 +1,36 @@
+project,country,site,latitude,longitude,sample_date,hard_coral_lit,soft_coral_lit
+Kenya MACMON 2016-17,Kenya,Kanamai (Mradi),-3.94166,39.7823,2018-01-16,29.26,0
+WCS Mozambique Coral Reef Monitoring,Mozambique,Barreira Vermelha North,-26.02,32.9,2009-03-20,58.21,2.06
+WCS Mozambique Coral Reef Monitoring,Mozambique,Barreira Vermelha South,-26.0548,32.8928,2009-03-21,47.57,4.26
+WCS Mozambique Coral Reef Monitoring,Mozambique,Kisirwa Nkunga,-10.9953,40.69282,2008-10-15,41.96,13.03
+WCS Mozambique Coral Reef Monitoring,Mozambique,Light House Point,-10.994,40.71142,2008-10-14,21.66,2.39
+WCS Mozambique Coral Reef Monitoring,Mozambique,Londo 2,-12.93,40.51,2008-10-19,59.49,1.03
+WCS Mozambique Coral Reef Monitoring,Mozambique,Londo 2,-12.93,40.51,2008-10-19,40.96,0
+WCS Mozambique Coral Reef Monitoring,Mozambique,Londo baobab,-12.9197,40.4999,2008-10-18,58.2,0.34
+WCS Mozambique Coral Reef Monitoring,Mozambique,Panga panga,-11.0257,40.63589,2008-10-12,46.14,6.67
+WCS Mozambique Coral Reef Monitoring,Mozambique,Panga Panga Point 1,-11.0093,40.6099,2008-10-13,47.94,3.22
+WCS Mozambique Coral Reef Monitoring,Mozambique,Pemba Shallows,-12.961389,40.559167,2008-10-11,23.21,0
+WCS Mozambique Coral Reef Monitoring,Mozambique,Ponta Torres,-26.08,32.96,2009-03-16,46.64,0
+Tanzania Vibrant Oceans 2019,Tanzania,Bongoyo 1,-6.6965,39.2587,2019-10-23,33.6,0.74
+Tanzania Vibrant Oceans 2019,Tanzania,Bongoyo 2,-6.69964,39.26326,2019-10-25,43.18,3.08
+Tanzania Vibrant Oceans 2019,Tanzania,Changuu,-6.1176,39.1692,2019-09-17,65.13,4.75
+Tanzania Vibrant Oceans 2019,Tanzania,Chapwani,-6.066944444,39.11,2019-09-19,66.47,14.48
+Tanzania Vibrant Oceans 2019,Tanzania,Chumbe 1(house),-6.27928,39.17436,2019-09-25,47.91,3.28
+Tanzania Vibrant Oceans 2019,Tanzania,Chumbe 2 (rock),-6.276986111,39.17425833,2019-09-27,32.6,5.89
+Tanzania Vibrant Oceans 2019,Tanzania,Chumbe 2 (rock),-6.276986111,39.17425833,2019-12-27,38.56,0
+Tanzania Vibrant Oceans 2019,Tanzania,Fuguni,-5.26773,39.12693,2019-12-05,5.98,2.53
+Tanzania Vibrant Oceans 2019,Tanzania,Makome,-5.27985,39.11589,2019-12-05,55.17,1.62
+Tanzania Vibrant Oceans 2019,Tanzania,Makome Temp,-5.2811,39.11554,2019-12-05,55.85,0
+Tanzania Vibrant Oceans 2019,Tanzania,Makome Temp,-5.2811,39.11554,2019-12-05,55.45,0
+Tanzania Vibrant Oceans 2019,Tanzania,Mbudya 1,-6.65323,39.24397,2019-10-21,46.15,0
+Tanzania Vibrant Oceans 2019,Tanzania,Mbudya 2,-6.66104,39.2485,2019-10-24,38.2,0.66
+Tanzania Vibrant Oceans 2019,Tanzania,Taa,-5.3031,39.0982,2019-12-05,31.03,4.02
+Tanzania Vibrant Oceans 2019,Tanzania,Taa,-5.3031,39.0982,2019-12-06,38.42,7.35
+Community Reef Survey Soariaka AMP 2021,Madagascar,Ambalany,-22.50302,43.25049,2021-05-26,5.57,0
+Community Reef Survey Soariaka AMP 2021,Madagascar,Antsalova,-22.70814,43.31852,2021-05-03,7.28,0
+Community Reef Survey Soariaka AMP 2021,Madagascar,Antsalova,-22.70814,43.31852,2021-06-03,2.05,0
+Community Reef Survey Soariaka AMP 2021,Madagascar,Antsoritse,-22.63018,43.27105,2021-05-02,8.14,0
+Community Reef Survey Soariaka AMP 2021,Madagascar,Belamera,-22.58763,43.25821,2021-05-01,12.54,0.89
+Community Reef Survey Soariaka AMP 2021,Madagascar,Fanampela,-22.48778,43.24931,2021-05-27,1.81,0.82
+Community Reef Survey Soariaka AMP 2021,Madagascar,Fanampela,-22.48778,43.24931,2021-05-28,3.17,1.98
+Community Reef Survey Soariaka AMP 2021,Madagascar,Nanohofa,-22.56225,43.25959,2021-05-29,9.05,0.29

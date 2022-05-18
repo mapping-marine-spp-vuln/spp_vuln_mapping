@@ -1,0 +1,1412 @@
+project,country,site,latitude,longitude,sample_date,biomass_kgha_avg
+sindutghe Murex,Indonesia,house reef murex,1.457637,124.7621943,2021-09-23,50.9
+Gwa Island,Myanmar,Gwa North East,17.575701673226035,94.51817035675047,2019-12-14,548.39
+Gwa Island,Myanmar,Gwa North East 1,17.578739364090563,94.51741933822632,2019-12-14,134.69
+Gwa Island,Myanmar,Gwa North West,17.575936917101938,94.51489806175232,2019-12-16,185.77
+Gwa Island,Myanmar,Gwa South East,17.570393262690985,94.51992988586426,2019-12-15,142.01
+Gwa Island,Myanmar,Gwa South West,17.572111609161805,94.51529502868652,2019-12-16,303.22
+Minut 2016 - Test,Indonesia,Tanah Putih 1,1.73635,124.96785,2016-02-24,136.19
+Taka Bonerate 2015,Indonesia,Ampalas Barat,-6.92243,121.28002,2015-04-22,235.64
+Taka Bonerate 2015,Indonesia,Ampalas Timur,-6.922428002581,121.280015995725,2015-04-22,637.46
+Taka Bonerate 2015,Indonesia,Belang-Belang,-6.39778,121.09569,2015-04-12,365.47
+Taka Bonerate 2015,Indonesia,Bungin Kamase,-6.938359989,121.000066,2015-04-20,596.78
+Taka Bonerate 2015,Indonesia,Bungin Laloh,-6.81948,121.28083,2015-04-23,575.96
+Taka Bonerate 2015,Indonesia,Jinato Barat,-6.77289,120.96176,2015-04-17,264.51
+Taka Bonerate 2015,Indonesia,Lantigiang Barat Daya,-6.70882,120.95501,2015-04-16,390.13
+Taka Bonerate 2015,Indonesia,Lantigiang Utara,-6.69546,120.96014,2015-04-16,275.95
+Taka Bonerate 2015,Indonesia,Latondu Kecil 1,-6.54816,120.92637,2015-04-09,486.1
+Taka Bonerate 2015,Indonesia,Latondu Kecil 2,-6.523467014,120.930956,2015-04-09,952.98
+Taka Bonerate 2015,Indonesia,Latondu Kecil 3,-6.49715,120.94196,2015-04-09,391.65
+Taka Bonerate 2015,Indonesia,Latondu Timur,-6.499,121.0013,2015-04-08,205.68
+Taka Bonerate 2015,Indonesia,Latondu Utara,-6.490058005,120.99794,2015-04-08,481.89
+Taka Bonerate 2015,Indonesia,Pasitalu Barat,-7.05258,121.06151,2015-04-20,459.55
+Taka Bonerate 2015,Indonesia,Pasitalu Tengah,-7.064357009,121.090362,2015-04-21,453.17
+Taka Bonerate 2015,Indonesia,Pasitalu Timur,-7.07844,121.11573,2015-04-21,277.26
+Taka Bonerate 2015,Indonesia,Rajuni Besar,-6.57093,121.01618,2015-04-14,315.38
+Taka Bonerate 2015,Indonesia,Rajuni Kecil,-6.54722,120.9909,2015-04-14,163.71
+Taka Bonerate 2015,Indonesia,Taka Balalong Timur,-6.848064009,121.157204,2015-04-25,404.49
+Taka Bonerate 2015,Indonesia,Taka Balaloong Utara,-6.81288,121.12989,2015-04-26,670.79
+Taka Bonerate 2015,Indonesia,Taka Balanda,-6.92343,121.30575,2015-04-22,274.62
+Taka Bonerate 2015,Indonesia,Taka Bayang Pogo,-6.92478398792445,121.068763034418,2015-04-19,356.83
+Taka Bonerate 2015,Indonesia,Taka Gantarang 1,-6.44483,121.2271,2015-04-13,360.46
+Taka Bonerate 2015,Indonesia,Taka Gantarang 2,-6.453174027,121.285359,2015-04-13,945.18
+Taka Bonerate 2015,Indonesia,Taka Kayu Bulan Barat,-6.770354966,121.041817,2015-04-18,255.21
+Taka Bonerate 2015,Indonesia,Taka Kayu Bulan Selatan,-6.7748309860000004,121.063497,2015-04-18,325.12
+Taka Bonerate 2015,Indonesia,Taka Kayu Bulan Utara,-6.75829,121.05997,2015-04-18,517.31
+Taka Bonerate 2015,Indonesia,Taka Kumai Barat,-6.87341,121.1457,2015-04-25,381.3
+Taka Bonerate 2015,Indonesia,Taka Kumai Selatan,-6.873409962,121.145699,2015-04-26,364.96
+Taka Bonerate 2015,Indonesia,Taka Kumai Utara,-6.89657704,121.150273,2015-04-25,377.25
+Taka Bonerate 2015,Indonesia,Taka Lamongan,-6.542506004,121.234578,2015-04-11,393.34
+Taka Bonerate 2015,Indonesia,Taka Lasalimu,-6.5849,121.18877,2015-04-07,494.76
+Taka Bonerate 2015,Indonesia,Taka Malori Selatan,-6.89226,121.0464,2015-04-19,657.26
+Taka Bonerate 2015,Indonesia,Taka Malori Utara,-6.891774042,121.044765,2015-04-19,253.26
+Taka Bonerate 2015,Indonesia,Taka Rajuni,-6.6057,121.03266,2015-04-14,459.42
+Taka Bonerate 2015,Indonesia,Taka Sirobe,-6.64884,121.20457,2015-04-07,826.77
+Taka Bonerate 2015,Indonesia,Taka Taburi,-6.843416998,121.286401,2015-04-23,314.16
+Taka Bonerate 2015,Indonesia,Taka Takere,-6.68496,121.20734,2015-04-07,368.97
+Taka Bonerate 2015,Indonesia,Tambuna Besar,-7.01067,121.20885,2015-04-21,771.1
+Taka Bonerate 2015,Indonesia,Tarupa Besar,-6.50876,121.1272,2015-04-12,480.44
+Taka Bonerate 2015,Indonesia,Tarupa Kecil,-6.451674001,121.138145,2015-04-12,1378.5
+Taka Bonerate 2015,Indonesia,Tinabo Besar,-6.56134,121.10214,2015-04-06,787.8
+Taka Bonerate 2015,Indonesia,Tinabo Kecil 1,-6.573907966,121.075189,2015-04-06,385.51
+Taka Bonerate 2015,Indonesia,Tinabo Kecil 2,-6.564304987,121.081806,2015-04-06,535.09
+Taka Bonerate 2015,Indonesia,Tinanja Timur,-6.55469,121.17685,2015-04-11,604.01
+Taka Bonerate 2015,Indonesia,Tinanja Utara,-6.541016959,121.169863,2015-04-11,780.74
+Gwa Sea,Myanmar,Be-in Island (East),17.760572,94.487881,2021-01-25,1289.29
+Gwa Sea,Myanmar,Be-in Island (East),17.760572,94.487881,2021-07-25,1236.46
+Gwa Sea,Myanmar,Be-in Island (North West),17.764286,94.469631,2021-01-26,5927.14
+Gwa Sea,Myanmar,Be-in Island (North West),17.764286,94.469631,2022-01-26,1538.61
+Gwa Sea,Myanmar,Be-in Island (South),17.751119,94.479314,2021-01-26,2963.06
+Gwa Sea,Myanmar,Kunn Thee Pyet,17.550467,94.512672,2021-01-24,5199.94
+Gwa Sea,Myanmar,Kunn Thee Pyet 2,17.545539,94.527939,2021-01-27,2685.73
+Gwa Sea,Myanmar,Kyauk Chon River Mouth,17.483622,94.547561,2021-01-27,3113.33
+Panjang MPA_2019,Indonesia,Kampung Jawa,-8.53256,116.85690999999996,2019-05-02,207.85
+Panjang MPA_2019,Indonesia,Leko Kerbau,-8.42635,116.9253,2019-04-27,169.47
+Panjang MPA_2019,Indonesia,Lepe Putung 1,-8.43566,116.95969,2019-04-27,161.37
+Panjang MPA_2019,Indonesia,Saringgi Barat,-8.41931,116.98032,2019-04-29,165.29
+Panjang MPA_2019,Indonesia,Saringgit Timur,-8.39577,117.04611,2019-05-01,76.54
+Panjang MPA_2019,Indonesia,Tanjung Pasir 1,-8.4505,116.83913000000008,2019-04-27,322.85
+Panjang MPA_2019,Indonesia,Tanjung Pasir 1,-8.4505,116.83913000000008,2019-04-28,154.97
+Panjang MPA_2019,Indonesia,Tanjung Pasir 2,-8.43931,116.86091999999996,2019-04-28,129.65
+Panjang MPA_2019,Indonesia,Teluk Boko,-8.43105,116.88103,2019-05-01,152.23
+Panjang MPA_2019,Indonesia,Teluk Saringit Utara,-8.40667,117.01438000000007,2019-04-29,203.58
+Panjang MPA_2019,Indonesia,Teluk Saringit Utara,-8.40667,117.01438000000007,2019-05-29,31.82
+Panjang MPA_2019,Indonesia,Teluk Soga,-8.52202,116.91280000000006,2019-05-02,103.24
+Panjang MPA_2019,Indonesia,Teluk Tobo,-8.4221,117.01958,2019-05-01,151.8
+Nantha Kyun,Myanmar,Nantha Kyun KNT03,18.054245954735237,94.07989802946751,2021-01-18,702.73
+Nantha Kyun,Myanmar,Nantha Kyun  KNT04,18.063371241821116,94.07769728661816,2021-01-18,784.78
+Nantha Kyun,Myanmar,Nantha Kyun KNT05,18.06996843267254,94.0800261991812,2021-01-19,442.67
+Nantha Kyun,Myanmar,Nantha Kyun KNT06,18.075329189598506,94.08441120450787,2021-01-19,3537.06
+Nantha Kyun,Myanmar,Nantha Kyun KNT07,18.074754682075692,94.1044260744324,2021-01-20,2.14
+Nantha Kyun,Myanmar,Nantha Kyun KNT08,18.067516968052143,94.10039520913308,2021-01-20,3770.84
+Nantha Kyun,Myanmar,Nantha Kyun KNT09,18.05673370482394,94.09710786665352,2021-01-21,6583.24
+Nantha Kyun,Myanmar,Nantha Kyun KNT1,18.0506103942991,94.08499789700517,2021-01-17,573.61
+Nantha Kyun,Myanmar,Nantha Kyun KNT10,18.062633443345945,94.09980945385576,2021-01-21,4599.03
+Nantha Kyun,Myanmar,Nantha Kyun NTK02,18.04917585473585,94.09058445779186,2021-01-17,391.49
+ACEH (Aceh Besar & Weh) 2019,Indonesia,Anoi Hitam,5.825738056,95.37825389,2019-07-18,906.9
+ACEH (Aceh Besar & Weh) 2019,Indonesia,Ba Kopra,5.866863889,95.22823111,2019-07-14,1257.47
+ACEH (Aceh Besar & Weh) 2019,Indonesia,Barat Selako,5.896555556,95.25241667,2019-07-15,1394.11
+ACEH (Aceh Besar & Weh) 2019,Indonesia,Batee Meurenon,5.873513056,95.26466306,2019-07-13,1191.84
+ACEH (Aceh Besar & Weh) 2019,Indonesia,Battee,5.58223333333333,95.2078719444444,2019-07-04,551.06
+ACEH (Aceh Besar & Weh) 2019,Indonesia,Benteng,5.845705,95.373215,2019-07-18,716.55
+ACEH (Aceh Besar & Weh) 2019,Indonesia,Beurawang,5.777511111,95.33685194,2019-07-20,589.65
+ACEH (Aceh Besar & Weh) 2019,Indonesia,Canyon,5.89829,95.21692306,2019-07-15,630.67
+ACEH (Aceh Besar & Weh) 2019,Indonesia,Deudap,5.607141944,95.19258111,2019-07-07,758.71
+ACEH (Aceh Besar & Weh) 2019,Indonesia,Deudap 2,5.60436111111111,95.1721388888889,2019-07-11,294.2
+ACEH (Aceh Besar & Weh) 2019,Indonesia,Inti Arun,5.831388333,95.3783025,2019-07-18,935.73
+ACEH (Aceh Besar & Weh) 2019,Indonesia,Inti Pulau Bunta,5.558743056,95.163395,2019-07-04,554.88
+ACEH (Aceh Besar & Weh) 2019,Indonesia,Jaboi,5.799778889,95.34604611,2019-07-20,426.82
+ACEH (Aceh Besar & Weh) 2019,Indonesia,Kontrol Kota Atas,5.898000278,95.31451444,2019-07-16,546.06
+ACEH (Aceh Besar & Weh) 2019,Indonesia,Lapeng,5.698566944,95.11094194,2019-07-07,334.88
+ACEH (Aceh Besar & Weh) 2019,Indonesia,Leun Balee 1,5.7276,95.07301111,2019-07-08,760.64
+ACEH (Aceh Besar & Weh) 2019,Indonesia,Leun Balee 2,5.742093889,95.06680306,2019-07-08,96.39
+ACEH (Aceh Besar & Weh) 2019,Indonesia,Lhok Weng,5.863641111,95.26643611,2019-07-15,535.09
+ACEH (Aceh Besar & Weh) 2019,Indonesia,Lhong Angin 1,5.832608056,95.25836611,2019-07-14,801.28
+ACEH (Aceh Besar & Weh) 2019,Indonesia,Lhong Angin 2,5.821983889,95.25977111,2019-07-14,383.03
+ACEH (Aceh Besar & Weh) 2019,Indonesia,Paloh,5.664196111,95.09257694,2019-07-10,141.88
+ACEH (Aceh Besar & Weh) 2019,Indonesia,Pasi Janeng,5.600628056,95.124595,2019-07-05,161.37
+ACEH (Aceh Besar & Weh) 2019,Indonesia,Pemanfaatan Anoi Itam,5.842690278,95.37351944,2019-07-17,1255.31
+ACEH (Aceh Besar & Weh) 2019,Indonesia,Pemanfaatan Ie Meule,5.902357222,95.32695222,2019-07-16,729.24
+ACEH (Aceh Besar & Weh) 2019,Indonesia,Pemanfaatan lam pageu,5.55488833333333,95.2126738888889,2019-07-04,179.31
+ACEH (Aceh Besar & Weh) 2019,Indonesia,Pulau tengkorak,5.66090583333333,95.1438061111111,2019-07-05,80.84
+ACEH (Aceh Besar & Weh) 2019,Indonesia,Reuteuk,5.857248889,95.36137889,2019-07-17,409.91
+ACEH (Aceh Besar & Weh) 2019,Indonesia,Rubiah Channel,5.883753056,95.25491,2019-07-13,663.28
+ACEH (Aceh Besar & Weh) 2019,Indonesia,Rubiah Sea Garden,5.881451944,95.260645,2019-07-13,783.96
+ACEH (Aceh Besar & Weh) 2019,Indonesia,Selatan Teunom,5.63202777777778,95.07775,2019-07-11,256.38
+ACEH (Aceh Besar & Weh) 2019,Indonesia,Sumur Tiga,5.888368056,95.34547111,2019-07-16,669.83
+ACEH (Aceh Besar & Weh) 2019,Indonesia,Tuan Pulau,5.563429,95.242958,2019-07-22,183.88
+ACEH (Aceh Besar & Weh) 2019,Indonesia,Ujung Kareung,5.876188889,95.35363575,2019-07-17,1440.43
+ACEH (Aceh Besar & Weh) 2019,Indonesia,Ujung Seuke,5.808331944,95.37631,2019-07-20,759.12
+ACEH (Aceh Besar & Weh) 2019,Indonesia,Ujung Seurawan,5.89558,95.237595,2019-07-13,268.98
+Aceh 2006,Indonesia,Anoi Itam,5.842690278,95.37351944,2006-02-16,633.93
+Aceh 2006,Indonesia,Ba Kopra,5.866863889,95.22823111,2006-02-09,488.93
+Aceh 2006,Indonesia,Batee Meurenon,5.873513056,95.26466306,2006-02-22,1502.5
+Aceh 2006,Indonesia,Benteng,5.845705,95.373215,2006-02-16,840.02
+Aceh 2006,Indonesia,Beurawang,5.777511111,95.33685194,2006-02-23,331.61
+Aceh 2006,Indonesia,Deudap,5.607141944,95.19258111,2006-02-15,641.47
+Aceh 2006,Indonesia,Gapang,5.85416157,95.27371142,2006-02-11,275.59
+Aceh 2006,Indonesia,Jaboi,5.799778889,95.34604611,2006-02-18,738.16
+Aceh 2006,Indonesia,Lamteng,5.64733081,95.1629988,2006-02-15,134.5
+Aceh 2006,Indonesia,Lapeng,5.698566944,95.11094194,2006-02-14,546.76
+Aceh 2006,Indonesia,Leun Balee 1,5.7276,95.07301111,2006-02-14,765.91
+Aceh 2006,Indonesia,Leun Balee 2,5.742093889,95.06680306,2006-02-14,230.24
+Aceh 2006,Indonesia,Lhoh,5.6678498,95.12664691,2006-02-19,240.19
+Aceh 2006,Indonesia,Lhok Weng,5.863641111,95.26643611,2006-02-22,464.07
+Aceh 2006,Indonesia,Lhong Angin 1,5.832608056,95.25836611,2006-02-09,291.71
+Aceh 2006,Indonesia,Lhong Angin 2,5.821983889,95.25977111,2006-02-10,231.9
+Aceh 2006,Indonesia,Lhong Angin 3,5.80788936,95.26471613,2006-02-10,220.72
+Aceh 2006,Indonesia,Paloh,5.664196111,95.09257694,2006-02-19,163.4
+Aceh 2006,Indonesia,Pasi Janeng 1,5.6287846,95.131667,2006-02-20,164.09
+Aceh 2006,Indonesia,Pasi Janeng 2,5.63200375,95.13802886,2006-02-20,102.64
+Aceh 2006,Indonesia,Pulau Klah,5.87730995,95.31408085,2006-02-11,328.15
+Aceh 2006,Indonesia,Rubiah Channel,5.883753056,95.25491,2006-02-12,887.59
+Aceh 2006,Indonesia,Rubiah Sea Garden,5.881451944,95.260645,2006-02-22,834.42
+Aceh 2006,Indonesia,Sumur Tiga,5.888368056,95.34547111,2006-02-18,1826.71
+Aceh 2006,Indonesia,Ujung Kareung,5.876188889,95.35363575,2006-02-16,851.72
+Aceh 2006,Indonesia,Ujung Seuke,5.808331944,95.37631,2006-02-18,843.86
+Aceh 2006,Indonesia,Ujung Seurawan,5.89558,95.237595,2006-02-12,562.74
+Madagascar Northwest Ankivonjy 2021,Madagascar,Ambatofisaka_19,-13.604278,47.811028,2021-12-08,162.77
+Madagascar Northwest Ankivonjy 2021,Madagascar,Ambatomilay_18,-13.605056,47.804944,2021-12-08,1251.95
+Madagascar Northwest Ankivonjy 2021,Madagascar,Ankaso_15,-13.486944,47.978222,2021-12-11,744.18
+Madagascar Northwest Ankivonjy 2021,Madagascar,Ankivonjy_14,-13.502278,47.95105,2021-12-11,636.79
+Madagascar Northwest Ankivonjy 2021,Madagascar,Kisimani_16,-13.558944,48.095389,2021-12-12,224.34
+Madagascar Northwest Ankivonjy 2021,Madagascar,Madiro_17,-13.522056,48.026778,2021-12-12,224.98
+Madagascar Northwest Ankivonjy 2021,Madagascar,Marotogny_20,-13.581056,47.901556,2021-12-10,147.09
+Madagascar Northwest Ankivonjy 2021,Madagascar,Plateau_13,-13.500222,47.882472,2021-12-08,4233.69
+Madagascar Northwest Ankivonjy 2021,Madagascar,Plateau_13,-13.500222,47.882472,2021-12-10,1701.84
+Panjang + Saringgit 2014,Indonesia,Panjang N1,-8.435167,116.91993,2014-06-24,101.33
+Panjang + Saringgit 2014,Indonesia,Panjang N2,-8.4313,116.8698,2014-06-24,217.62
+Panjang + Saringgit 2014,Indonesia,Saringgit,-8.40475861,116.9878783,2014-06-10,213.36
+Panjang + Saringgit 2014,Indonesia,Saringgit S,-8.430183,116.97245,2014-06-24,214.17
+Panjang + Saringgit 2014,Indonesia,Taked Batang,-8.47249,116.85716,2014-06-27,193.09
+Tanzania CRCP surveys,Tanzania,Amana1,-8.7109,39.46088,2011-09-20,213.06
+Tanzania CRCP surveys,Tanzania,Amana2,-8.70167,39.46367,2011-09-23,251.38
+Tanzania CRCP surveys,Tanzania,Amana3,-8.70047,39.46022,2011-09-23,247
+Tanzania CRCP surveys,Tanzania,Aquarium,-4.96,39.66,2013-10-04,697.82
+Tanzania CRCP surveys,Tanzania,Blue corner,-5.840925909806998,39.397928000814545,2018-10-02,2337.87
+Tanzania CRCP surveys,Tanzania,Blue corner 2,-5.840716654208819,39.39623737263429,2018-10-05,1626.36
+Tanzania CRCP surveys,Tanzania,Bongoyo1,-6.69964,39.26326,1996-02-13,93.14
+Tanzania CRCP surveys,Tanzania,Bongoyo1,-6.69964,39.26326,2005-03-29,64.92
+Tanzania CRCP surveys,Tanzania,Bongoyo1,-6.69964,39.26326,2016-11-06,148.68
+Tanzania CRCP surveys,Tanzania,Bongoyo2,-6.7,39.26,1996-02-13,80.01
+Tanzania CRCP surveys,Tanzania,Bongoyo2,-6.7,39.26,2005-03-29,76.31
+Tanzania CRCP surveys,Tanzania,Bongoyo2,-6.7,39.26,2016-11-06,94.24
+Tanzania CRCP surveys,Tanzania,Changale,-5.3118,39.06928,1996-04-20,146.15
+Tanzania CRCP surveys,Tanzania,Changale,-5.3118,39.06928,2004-01-07,218.48
+Tanzania CRCP surveys,Tanzania,Changale,-5.3118,39.06928,2010-11-06,390.63
+Tanzania CRCP surveys,Tanzania,Changuu,-6.1176,39.1692,1997-12-08,191.55
+Tanzania CRCP surveys,Tanzania,Changuu,-6.1176,39.1692,2005-04-21,167.86
+Tanzania CRCP surveys,Tanzania,Changuu,-6.1176,39.1692,2012-11-13,90.36
+Tanzania CRCP surveys,Tanzania,Changuu,-6.1176,39.1692,2016-11-11,88.8
+Tanzania CRCP surveys,Tanzania,Chapwani,-6.066944444,39.11,1997-12-08,57.87
+Tanzania CRCP surveys,Tanzania,Chapwani,-6.066944444,39.11,2005-04-21,131.74
+Tanzania CRCP surveys,Tanzania,Chapwani,-6.066944444,39.11,2012-11-13,34.14
+Tanzania CRCP surveys,Tanzania,Chapwani,-6.066944444,39.11,2016-11-12,34.8
+Tanzania CRCP surveys,Tanzania,ChristmasReef,-5.2438,39.59285,2013-10-06,607.69
+Tanzania CRCP surveys,Tanzania,Chumbe 1(house),-6.27928,39.17436,1997-12-07,640.36
+Tanzania CRCP surveys,Tanzania,Chumbe 1(house),-6.27928,39.17436,2005-04-24,881.13
+Tanzania CRCP surveys,Tanzania,Chumbe 1(house),-6.27928,39.17436,2012-11-16,778.47
+Tanzania CRCP surveys,Tanzania,Chumbe 1(house),-6.27928,39.17436,2015-09-05,412.37
+Tanzania CRCP surveys,Tanzania,Chumbe 2 (rock),-6.276986111,39.17425833,1997-12-06,709.5
+Tanzania CRCP surveys,Tanzania,Chumbe 2 (rock),-6.276986111,39.17425833,2005-04-24,526.31
+Tanzania CRCP surveys,Tanzania,Chumbe 2 (rock),-6.276986111,39.17425833,2012-11-17,320.2
+Tanzania CRCP surveys,Tanzania,Chumbe 2 (rock),-6.276986111,39.17425833,2015-09-06,425.93
+Tanzania CRCP surveys,Tanzania,Chundo,-4.9027,39.28679,2018-10-16,382.89
+Tanzania CRCP surveys,Tanzania,Chundo 2,-4.91238,39.28746,2018-10-17,180.64
+Tanzania CRCP surveys,Tanzania,Coral Mountain,-5.23828,39.59589,2018-10-09,520.12
+Tanzania CRCP surveys,Tanzania,Dambwe East,-5.64383,39.00757,2015-09-18,260.19
+Tanzania CRCP surveys,Tanzania,Dambwe East,-5.64383,39.00757,2016-10-06,553.21
+Tanzania CRCP surveys,Tanzania,Dambwe leeward,-5.64402,39.00057,2010-11-10,436.27
+Tanzania CRCP surveys,Tanzania,Dambwe West,-5.64102,39.00128,2015-09-18,200.15
+Tanzania CRCP surveys,Tanzania,Dambwe West,-5.64102,39.00128,2016-10-06,248.09
+Tanzania CRCP surveys,Tanzania,Dambwe windward,-5.6451,39.006,2010-11-10,227.92
+Tanzania CRCP surveys,Tanzania,Devil's Wall,-5.23,39.597,2013-10-06,718.12
+Tanzania CRCP surveys,Tanzania,Dory's reef,-5.79526,39.38551,2018-10-02,475.6
+Tanzania CRCP surveys,Tanzania,Dory's reef 2,-5.79293,39.38774,2018-10-03,304.82
+Tanzania CRCP surveys,Tanzania,Fuguni,-5.26773,39.12693,1996-04-20,276.2
+Tanzania CRCP surveys,Tanzania,Fuguni,-5.26773,39.12693,2004-01-07,641.79
+Tanzania CRCP surveys,Tanzania,Fuguni,-5.26773,39.12693,2010-11-06,901.48
+Tanzania CRCP surveys,Tanzania,Fuguni,-5.26773,39.12693,2015-09-14,192.74
+Tanzania CRCP surveys,Tanzania,Fuguni,-5.26773,39.12693,2016-10-04,341.09
+Tanzania CRCP surveys,Tanzania,FundoChannel,-5.0693,39.6553,2013-10-02,369.94
+Tanzania CRCP surveys,Tanzania,FundoOuter,-5.0693,39.6553,2013-10-02,295.7
+Tanzania CRCP surveys,Tanzania,House reef,-5.82416,39.38208,2018-10-04,472.87
+Tanzania CRCP surveys,Tanzania,House reef 2,-5.82416,39.38208,2018-10-05,290.81
+Tanzania CRCP surveys,Tanzania,House reef 3,-5.82416,39.38208,2018-10-06,235.63
+Tanzania CRCP surveys,Tanzania,Jewe1,-8.65335,39.45437,2011-09-20,374.25
+Tanzania CRCP surveys,Tanzania,Jewe3,-8.6348,39.4882,2011-09-22,614.94
+Tanzania CRCP surveys,Tanzania,KasaBoma,-4.84947,39.21726,2018-10-17,274.35
+Tanzania CRCP surveys,Tanzania,Kieti,-10.34,40.374,2008-04-05,200.75
+Tanzania CRCP surveys,Tanzania,Kipwamkandini,-4.841939975,39.24017399,2018-10-15,224.63
+Tanzania CRCP surveys,Tanzania,Kitutia 1,-8.066278798758319,39.59345355021367,2007-04-20,662.13
+Tanzania CRCP surveys,Tanzania,Kitutia 2,-8.063047838247755,39.594908659389176,2007-04-21,1295.15
+Tanzania CRCP surveys,Tanzania,Kokota,-5.1503,39.63075,2013-10-03,388.55
+Tanzania CRCP surveys,Tanzania,Kwata,-5.3782,39.56608,2018-10-08,241.05
+Tanzania CRCP surveys,Tanzania,Kwata 2,-5.35805,39.58064,2018-10-10,255.79
+Tanzania CRCP surveys,Tanzania,Kwata 3,-5.35805,39.58064,2018-10-10,202.93
+Tanzania CRCP surveys,Tanzania,Makome,-5.27985,39.11589,1996-04-20,99.8
+Tanzania CRCP surveys,Tanzania,Makome,-5.27985,39.11589,2004-01-07,299.49
+Tanzania CRCP surveys,Tanzania,Makome,-5.27985,39.11589,2010-11-06,317.02
+Tanzania CRCP surveys,Tanzania,Makome,-5.27985,39.11589,2015-09-13,141.46
+Tanzania CRCP surveys,Tanzania,Makome,-5.27985,39.11589,2016-10-03,115.41
+Tanzania CRCP surveys,Tanzania,Makome Temp,-5.2811,39.11554,2015-09-12,169.46
+Tanzania CRCP surveys,Tanzania,Makome Temp,-5.2811,39.11554,2016-10-03,195.38
+Tanzania CRCP surveys,Tanzania,Mange 1,-8.07807,39.59907,2007-04-22,307.15
+Tanzania CRCP surveys,Tanzania,Mange 2,-8.07807,39.59907,2007-04-23,381.45
+Tanzania CRCP surveys,Tanzania,Manta,-4.8857,39.67535,2013-10-07,209.96
+Tanzania CRCP surveys,Tanzania,Matemwe Coral Garden1,-5.83671,39.40513,2017-11-08,412.04
+Tanzania CRCP surveys,Tanzania,Matemwe Coral Garden2,-5.83355,39.40875,2017-11-10,1314.02
+Tanzania CRCP surveys,Tanzania,Maziwe Edge,-5.49507,39.07372,2015-09-19,469.02
+Tanzania CRCP surveys,Tanzania,Maziwe North,-5.49793,39.06555,2010-11-10,450.34
+Tanzania CRCP surveys,Tanzania,Maziwe North,-5.49793,39.06555,2015-09-16,284.05
+Tanzania CRCP surveys,Tanzania,Maziwe North,-5.49793,39.06555,2016-10-05,349.78
+Tanzania CRCP surveys,Tanzania,Maziwe South,-5.508,39.06251,2010-11-10,476.25
+Tanzania CRCP surveys,Tanzania,Maziwe South,-5.508,39.06251,2015-09-16,257.35
+Tanzania CRCP surveys,Tanzania,Maziwe South,-5.508,39.06251,2016-10-05,333.18
+Tanzania CRCP surveys,Tanzania,Mbudya 1,-6.65323,39.24397,1996-02-13,108.6
+Tanzania CRCP surveys,Tanzania,Mbudya 1,-6.65323,39.24397,2005-04-01,284.82
+Tanzania CRCP surveys,Tanzania,Mbudya 1,-6.65323,39.24397,2012-09-16,202.85
+Tanzania CRCP surveys,Tanzania,Mbudya 1,-6.65323,39.24397,2016-11-05,124.47
+Tanzania CRCP surveys,Tanzania,Mbudya 2,-6.66104,39.2485,1996-02-13,109.23
+Tanzania CRCP surveys,Tanzania,Mbudya 2,-6.66104,39.2485,2005-04-01,138.04
+Tanzania CRCP surveys,Tanzania,Mbudya 2,-6.66104,39.2485,2012-09-16,111.88
+Tanzania CRCP surveys,Tanzania,Mbudya 2,-6.66104,39.2485,2016-11-05,91.84
+Tanzania CRCP surveys,Tanzania,Mgandi,-4.825184969,39.22256403,2018-10-15,323.01
+Tanzania CRCP surveys,Tanzania,Misali Christmas tree,-5.2438,39.59285,2018-10-09,531.71
+Tanzania CRCP surveys,Tanzania,Misali Coral garden,-5.2464,39.59005,2018-10-12,860.64
+Tanzania CRCP surveys,Tanzania,Mivinjeni,-10.28,40.4,2008-04-08,475.19
+Tanzania CRCP surveys,Tanzania,Mkaya1,-8.73467,39.50657,2011-09-21,276.95
+Tanzania CRCP surveys,Tanzania,Mkaya2,-8.73448,39.51722,2011-09-21,490.14
+Tanzania CRCP surveys,Tanzania,Mmongo,-10.27,40.33,2008-04-06,822.93
+Tanzania CRCP surveys,Tanzania,MnaraniCorner,-4.8398,39.68116,2013-10-07,277.71
+Tanzania CRCP surveys,Tanzania,Mnemba Coral garden,-5.8143,39.3847,2018-10-04,255.16
+Tanzania CRCP surveys,Tanzania,Mnemba Coral gardens 2,-5.8171,39.3827,2018-10-05,550.88
+Tanzania CRCP surveys,Tanzania,Mtaa,-4.87009,39.31181,2018-10-16,707.96
+Tanzania CRCP surveys,Tanzania,Mwamba Nyama4,-5.01021,39.22058,2017-12-06,214.24
+Tanzania CRCP surveys,Tanzania,Mwamba Nyama5,-5.03392,39.20842,2017-12-07,206.85
+Tanzania CRCP surveys,Tanzania,Mwamba Nyama6,-5.0402,39.21925,2017-12-07,179.29
+Tanzania CRCP surveys,Tanzania,Mwamba Nyama Patch1,-5.02282,39.214086,2017-12-05,151.27
+Tanzania CRCP surveys,Tanzania,Mwamba Nyama Patch2,-5.02282,39.214086,2017-12-05,258.71
+Tanzania CRCP surveys,Tanzania,Mwamba Nyama South,-5.03502,39.20721,2017-12-04,293.4
+Tanzania CRCP surveys,Tanzania,Mwamba wa kati,-8.63447,39.51503,2011-09-22,471.21
+Tanzania CRCP surveys,Tanzania,Namponda,-10.28,40.38,2008-04-07,375.41
+Tanzania CRCP surveys,Tanzania,Ngoa,-4.9646,39.6628,2013-10-04,506.07
+Tanzania CRCP surveys,Tanzania,North reef,-5.77961,39.39855,2018-10-03,131.29
+Tanzania CRCP surveys,Tanzania,Panza Lagoon,-5.47884,39.62224,2018-10-11,180.85
+Tanzania CRCP surveys,Tanzania,Panza Wreck,-5.48256,39.62904,2018-10-11,309.92
+Tanzania CRCP surveys,Tanzania,Pemba Matumbini,-5.3961,39.55704,2018-10-08,288.93
+Tanzania CRCP surveys,Tanzania,Ruvula,-10.3,40.38,2008-04-04,278.46
+Tanzania CRCP surveys,Tanzania,Taa,-5.3031,39.0982,1996-04-20,257.76
+Tanzania CRCP surveys,Tanzania,Taa,-5.3031,39.0982,2004-01-07,479.71
+Tanzania CRCP surveys,Tanzania,Taa,-5.3031,39.0982,2010-11-06,428.19
+Tanzania CRCP surveys,Tanzania,Taa,-5.3031,39.0982,2015-09-13,111.65
+Tanzania CRCP surveys,Tanzania,Taa,-5.3031,39.0982,2016-10-04,259.65
+Tanzania CRCP surveys,Tanzania,Ulenge,-5.02543,39.16558,2017-12-05,192.5
+Tanzania CRCP surveys,Tanzania,Ulenge 2- 3m,-5.011961,39.165986,2017-12-06,24.6
+Tanzania CRCP surveys,Tanzania,Ulenge 2- 7m,-5.01226,39.16722,2017-12-06,300.07
+Tanzania CRCP surveys,Tanzania,Ulenge Lighthouse,-5.00582,39.16917,2017-12-07,139.03
+Tanzania CRCP surveys,Tanzania,Uvinge,-5.1351,39.6239,2013-10-03,512.25
+Tanzania CRCP surveys,Tanzania,Yambe East,-5.11444,39.17922,2017-12-08,335.14
+Tanzania CRCP surveys,Tanzania,Yambe North,-5.08979,39.16858,2017-12-08,280.52
+Tanzania CRCP surveys,Tanzania,Zanzibar- Aquarium,-5.83615,39.3899,2017-11-08,1118.14
+Tanzania CRCP surveys,Tanzania,Zanzibar- Sandbank,-5.840703,39.398494,2017-11-06,996.6
+Tanzania CRCP surveys,Tanzania,Zanzibar- Wall,-5.840703,39.398494,2017-11-06,572.66
+Moyo MPA_2019,Indonesia,Ai Dara,-8.318833373,117.49025,2019-10-30,189.09
+Moyo MPA_2019,Indonesia,Ai Dara,-8.318833373,117.49025,2019-10-30,139.33
+Moyo MPA_2019,Indonesia,Ai Manis 2,-8.372416701,117.4976944,2019-10-28,173.03
+Moyo MPA_2019,Indonesia,Ai Manis 2,-8.372416701,117.4976944,2019-10-28,307.39
+Moyo MPA_2019,Indonesia,Brang Sedo,-8.26638,117.49954,2019-10-30,507.55
+Moyo MPA_2019,Indonesia,Brang Sedo,-8.26638,117.49954,2019-10-30,317.29
+Moyo MPA_2019,Indonesia,Mufti's Reef,-8.284089966,117.58636,2019-10-31,247.94
+Moyo MPA_2019,Indonesia,Raja Sua Barat,-8.347972222,117.4702222,2019-10-28,191.16
+Moyo MPA_2019,Indonesia,Raja Sua Barat,-8.347972222,117.4702222,2019-10-28,239.24
+Moyo MPA_2019,Indonesia,Raja Sua Barat,-8.347972222,117.4702222,2019-11-28,30.38
+Moyo MPA_2019,Indonesia,Raja Sua Selatan,-8.365138862,117.4840556,2019-10-28,355.72
+Moyo MPA_2019,Indonesia,Raja Sua Selatan,-8.365138862,117.4840556,2019-10-28,136.18
+Moyo MPA_2019,Indonesia,Sengalo,-8.148813,117.545205,2019-10-26,491.15
+Moyo MPA_2019,Indonesia,Sobu Nasi,-8.245514,117.481623,2019-10-30,172.46
+Moyo MPA_2019,Indonesia,Sobu Nasi,-8.245514,117.481623,2019-11-30,87.37
+Moyo MPA_2019,Indonesia,Takad Sagele,-8.233026,117.476107,2019-10-31,602.32
+Moyo MPA_2019,Indonesia,Tanjung Pasir,-8.386444403,117.5184028,2019-10-27,109.57
+Moyo MPA_2019,Indonesia,Tanjung Pasir,-8.386444403,117.5184028,2019-10-27,237.5
+Moyo MPA_2019,Indonesia,Timur Moyo,-8.352702,117.558224,2019-10-27,132.85
+Moyo MPA_2019,Indonesia,Timur Moyo,-8.352702,117.558224,2019-10-27,67.13
+Moyo MPA_2019,Indonesia,Timur Moyo,-8.352702,117.558224,2019-11-27,20.32
+Comoros,Comoros,Bimbini,-12.1972,44.2245,2011-11-10,133.69
+Comoros,Comoros,Dahajou Hachelafou,-12.1619,44.2318,2011-11-11,483.74
+Comoros,Comoros,Lambwe,-12.2336,44.2857,2011-11-13,262.7
+Comoros,Comoros,Mayindrini,-12.1597,44.2034,2011-11-10,362.84
+Comoros,Comoros,Mlongo Moishou,-12.1641,44.2289,2011-11-11,429.89
+Comoros,Comoros,Momoni,-12.1076,44.4257,2011-11-09,250.57
+Comoros,Comoros,Mtsangani,-12.2284,44.2737,2011-11-13,227.7
+Aceh 2016,Indonesia,Anoi Itam,5.842690278,95.37351944,2016-01-06,852.75
+Aceh 2016,Indonesia,Batee Meurenon,5.873513056,95.26466306,2016-02-06,340.12
+Aceh 2016,Indonesia,Benteng,5.845705,95.373215,2016-05-31,586.02
+Aceh 2016,Indonesia,Beurawang,5.777511111,95.33685194,2016-02-06,428.68
+Aceh 2016,Indonesia,Gapang,5.85416157,95.27371142,2016-02-06,753.91
+Aceh 2016,Indonesia,Jaboi,5.799778889,95.34604611,2016-02-06,439.58
+Aceh 2016,Indonesia,Lucas Reefs,5.88345,95.24502,2016-06-01,304.04
+Aceh 2016,Indonesia,Reuteuk,5.857248889,95.36137889,2016-05-31,639.64
+Aceh 2016,Indonesia,Rubiah Channel,5.883753056,95.25491,2016-06-01,376.85
+Aceh 2016,Indonesia,Rubiah Sea Garden,5.881451944,95.260645,2016-06-01,538.53
+Aceh 2016,Indonesia,Sumur Tiga,5.888368056,95.34547111,2016-05-31,1223.42
+Aceh 2016,Indonesia,Ujung Kareung,5.876188889,95.35363575,2016-05-31,717.37
+Aceh 2016,Indonesia,Ujung Seuke,5.808331944,95.37631,2016-01-06,1119.18
+Aceh 2016,Indonesia,Ujung Seurawan,5.89558,95.237595,2016-06-01,427.76
+Aceh 2007,Indonesia,Anoi Itam,5.842690278,95.37351944,2007-02-08,307.33
+Aceh 2007,Indonesia,Ba Kopra,5.866863889,95.22823111,2007-02-06,341.76
+Aceh 2007,Indonesia,Batee Meurenon,5.873513056,95.26466306,2007-02-07,395.66
+Aceh 2007,Indonesia,Benteng,5.845705,95.373215,2007-02-20,1414.04
+Aceh 2007,Indonesia,Beurawang,5.777511111,95.33685194,2007-02-19,790.63
+Aceh 2007,Indonesia,Canyon,5.89829,95.21692306,2007-02-21,1733.29
+Aceh 2007,Indonesia,Deudap,5.607141944,95.19258111,2007-02-13,457.27
+Aceh 2007,Indonesia,Gapang,5.85416157,95.27371142,2007-02-10,320.7
+Aceh 2007,Indonesia,Jaboi,5.799778889,95.34604611,2007-02-11,1321.67
+Aceh 2007,Indonesia,Lamteng,5.64733081,95.1629988,2007-02-14,219.89
+Aceh 2007,Indonesia,Lapeng,5.698566944,95.11094194,2007-02-15,121.29
+Aceh 2007,Indonesia,Leun Balee 1,5.7276,95.07301111,2007-02-15,246.76
+Aceh 2007,Indonesia,Leun Balee 2,5.742093889,95.06680306,2007-02-18,499.65
+Aceh 2007,Indonesia,Lhoh,5.6678498,95.12664691,2007-02-14,165.33
+Aceh 2007,Indonesia,Lhok Weng,5.863641111,95.26643611,2007-02-18,1002.54
+Aceh 2007,Indonesia,Lhong Angin 1,5.832608056,95.25836611,2007-02-06,210.91
+Aceh 2007,Indonesia,Lhong Angin 2,5.821983889,95.25977111,2007-02-11,417.64
+Aceh 2007,Indonesia,Lhong Angin 3,5.80788936,95.26471613,2007-02-11,385.68
+Aceh 2007,Indonesia,Paloh,5.664196111,95.09257694,2007-02-14,753.86
+Aceh 2007,Indonesia,Pasi Janeng 1,5.6287846,95.131667,2007-02-13,171.96
+Aceh 2007,Indonesia,Pasi Janeng 2,5.63200375,95.13802886,2007-02-13,151.72
+Aceh 2007,Indonesia,Pulau Klah,5.87730995,95.31408085,2007-02-08,201.91
+Aceh 2007,Indonesia,Reuteuk,5.857248889,95.36137889,2007-02-06,249.32
+Aceh 2007,Indonesia,Rubiah Channel,5.883753056,95.25491,2007-02-10,660.93
+Aceh 2007,Indonesia,Rubiah Sea Garden,5.881451944,95.260645,2007-02-07,348.48
+Aceh 2007,Indonesia,Sumur Tiga,5.888368056,95.34547111,2007-02-08,270.43
+Aceh 2007,Indonesia,Ujung Kareung,5.876188889,95.35363575,2007-02-20,466.3
+Aceh 2007,Indonesia,Ujung Seuke,5.808331944,95.37631,2007-02-19,1221.95
+Aceh 2007,Indonesia,Ujung Seurawan,5.89558,95.237595,2007-02-10,350
+Madagascar NW 2020,Madagascar,Ambatofisaka_19,-13.604278,47.811028,2020-12-15,571.33
+Madagascar NW 2020,Madagascar,Ambatomilay_18,-13.605056,47.804944,2020-12-15,933.11
+Madagascar NW 2020,Madagascar,Amparimilay_10,-12.886194,48.562361,2020-12-07,320.36
+Madagascar NW 2020,Madagascar,Ankarea_03,-12.845278,48.574083,2020-12-06,611.21
+Madagascar NW 2020,Madagascar,Ankaso_15,-13.486944,47.978222,2020-12-14,478.93
+Madagascar NW 2020,Madagascar,Ankivonjy_14,-13.502278,47.95105,2020-12-14,253.58
+Madagascar NW 2020,Madagascar,Antsoa_07,-12.985736,48.577917,2020-12-09,683.99
+Madagascar NW 2020,Madagascar,Beangovo_04,-13.002778,48.497639,2020-12-09,3375.51
+Madagascar NW 2020,Madagascar,Kisimani_16,-13.558944,48.095389,2020-12-12,168.2
+Madagascar NW 2020,Madagascar,Madiro_17,-13.522056,48.026778,2020-12-13,112.97
+Madagascar NW 2020,Madagascar,Marotogny_20,-13.581056,47.901556,2020-12-16,71.32
+Madagascar NW 2020,Madagascar,NosyFisaka_02,-12.74733,48.592333000000004,2020-12-05,755.03
+Madagascar NW 2020,Madagascar,NosyKarabo_06,-12.996556,48.562083,2020-12-10,1121.54
+Madagascar NW 2020,Madagascar,Nosy Komba,-13.43711,48.3471,2020-12-17,75.59
+Madagascar NW 2020,Madagascar,Ratapenjiky_12,-12.938222,48.583028,2020-12-08,1046.43
+Madagascar NW 2020,Madagascar,Tandavandriva_North,-13.18982,48.17449,2020-12-18,630.37
+Madagascar NW 2020,Madagascar,Tandavandriva_West,-13.3116,48.02728,2020-12-19,80.59
+Madagascar NW 2020,Madagascar,Tsarabanjina_08,-13.034944,48.549417,2020-12-10,655.71
+MRAG - Goff's Caye Baseline,Belize,Goff B1 - North Snorkel Site,17.362501,-88.044016,2022-04-12,41.96
+MRAG - Goff's Caye Baseline,Belize,Goff B2 - East Snorkel Site,17.342718,-88.028983,2022-04-13,255.29
+MRAG - Goff's Caye Baseline,Belize,Goff BK2,17.346031,-88.035795,2022-04-13,99.25
+MRAG - Goff's Caye Baseline,Belize,Goff FR1,17.351238,-88.024512,2022-04-13,179.36
+MRAG - Goff's Caye Baseline,Belize,Goff FR2,17.280424,-88.042567,2022-04-11,110.11
+MRAG - Goff's Caye Baseline,Belize,Goff FR3,17.306482,-88.041674,2022-04-11,88.62
+MRAG - Goff's Caye Baseline,Belize,GOFFSCTLD2,17.3527,-88.03161,2022-04-14,175.87
+MRAG - Goff's Caye Baseline,Belize,Sergeant's BK2,17.39693,-88.039969,2022-04-12,144.54
+Medang MPA_2019,Indonesia,Pohon Lana,-8.152134,117.342614,2019-11-02,301.17
+Medang MPA_2019,Indonesia,Sapa Genting,-8.163946,117.371734,2019-11-04,205.81
+Medang MPA_2019,Indonesia,Sapa Pasepeh,-8.156428,117.397673,2019-11-04,491.81
+Medang MPA_2019,Indonesia,Teluk Mondo,-8.14208,117.374863,2019-11-02,308.36
+Medang MPA_2019,Indonesia,Torohan Karang,-8.126263,117.422556,2019-11-01,216.16
+Medang MPA_2019,Indonesia,Torohan Kaseng,-8.131665,117.380857,2019-11-01,143.05
+Belize Glover's Atoll legacy,Belize,CZFR1,16.73337962,-87.81849504,2019-04-02,343.56
+Belize Glover's Atoll legacy,Belize,CZFR2,16.7368931416422,-87.8077126387506,2019-04-02,1242.45
+Belize Glover's Atoll legacy,Belize,CZFR3,16.7416456,-87.80126913,2019-04-03,592.05
+Belize Glover's Atoll legacy,Belize,CZPR1,16.75611427,-87.82482647,2019-04-03,269.74
+Belize Glover's Atoll legacy,Belize,CZPR4,16.76369411,-87.80431361,2019-04-02,111.75
+Belize Glover's Atoll legacy,Belize,CZPR5,16.77630669,-87.81187744,2019-04-03,864.53
+Belize Glover's Atoll legacy,Belize,CZPR7,16.76827339,-87.82634997,2019-04-03,462.41
+Belize Glover's Atoll legacy,Belize,GUZPR1,16.79270354,-87.8157228,2019-06-04,184.47
+Belize Glover's Atoll legacy,Belize,GUZPR6,16.78071633,-87.78895704,2019-06-04,215.99
+Belize Glover's Atoll legacy,Belize,WFR2,16.79548474,-87.8606452,2019-06-06,306.03
+Belize Glover's Atoll legacy,Belize,WFR3,16.80375047,-87.85624729,2019-06-06,230.14
+Belize Glover's Atoll legacy,Belize,WFR4,16.81538003,-87.85216983,2019-06-05,304.75
+Belize Glover's Atoll legacy,Belize,WFR5,16.82601633,-87.84927724,2019-06-05,405.02
+Belize Glover's Atoll legacy,Belize,WFR6,16.83796196,-87.8439228,2019-06-04,215.17
+Madagascar Baie d'Antongil 2019,Madagascar,Antanambe_15,-16.42436,49.84953,2019-12-03,131.82
+Madagascar Northwest Ankarea 2021,Madagascar,Ambarinidada_11,-12.915278,48.606917,2021-12-01,202.48
+Madagascar Northwest Ankarea 2021,Madagascar,Amparimilay_10,-12.886194,48.562361,2021-12-05,247.04
+Madagascar Northwest Ankarea 2021,Madagascar,Ankarea_03,-12.845278,48.574083,2021-12-05,662.65
+Madagascar Northwest Ankarea 2021,Madagascar,Ankarea_03,-12.845278,48.574083,2021-12-05,650.38
+Madagascar Northwest Ankarea 2021,Madagascar,Antsoa_07,-12.985736,48.577917,2021-12-06,532.79
+Madagascar Northwest Ankarea 2021,Madagascar,Beangovo_04,-13.002778,48.497639,2021-12-04,1811.17
+Madagascar Northwest Ankarea 2021,Madagascar,NosyFisaka_02,-12.74733,48.592333000000004,2021-11-30,779.79
+Madagascar Northwest Ankarea 2021,Madagascar,NosyKaine_09,-13.024583,48.537444,2021-12-02,547.06
+Madagascar Northwest Ankarea 2021,Madagascar,NosyKarabo_06,-12.996556,48.562083,2021-12-04,736.45
+Madagascar Northwest Ankarea 2021,Madagascar,NosyLava_01,-12.74733,48.670833,2021-11-30,912.45
+Madagascar Northwest Ankarea 2021,Madagascar,NosyVazoana_05,-12.883389,48.634833,2021-12-01,1761.14
+Madagascar Northwest Ankarea 2021,Madagascar,Ratapenjiky_12,-12.938222,48.583028,2021-12-06,356.79
+Madagascar Northwest Ankarea 2021,Madagascar,Tsarabanjina_08,-13.034944,48.549417,2021-12-02,2464.85
+Liang Ngali MPA 2018,Indonesia,Dangar Rea (N),-8.41902,117.65688,2018-09-20,283
+Liang Ngali MPA 2018,Indonesia,Dangar Rea (SE),-8.43359,117.66481,2018-09-20,183.75
+Liang Ngali MPA 2018,Indonesia,Gili dua rea,-8.48883,117.75834,2018-09-24,216.48
+Liang Ngali MPA 2018,Indonesia,Liang (N),-8.4482,117.66158,2018-09-22,255.76
+Liang Ngali MPA 2018,Indonesia,Liang (S),-8.52406,117.67701,2018-09-23,166.18
+Liang Ngali MPA 2018,Indonesia,Ngali (N),-8.4748,117.72924,2018-09-23,188.64
+Liang Ngali MPA 2018,Indonesia,Owang Balok,-8.53553,117.74933,2018-09-24,316.21
+Liang Ngali MPA 2018,Indonesia,Sea Site,-8.4078,117.44772,2018-09-26,449.93
+Liang Ngali MPA 2018,Indonesia,Tanjung Bantin_Zona Inti,-8.42352,117.59091999999998,2018-09-19,249.01
+Liang Ngali MPA 2018,Indonesia,Tanjung Bantin_Zona Pemanfaatan,-8.42352,117.60097999999994,2018-09-19,217.34
+Liang Ngali MPA 2018,Indonesia,Tanjung Bara,-8.40459,117.56184,2018-09-22,261.76
+Liang Ngali MPA 2018,Indonesia,Tanjung Bele,-8.45523,117.63306,2018-09-20,117.3
+Liang Ngali MPA 2018,Indonesia,Tanjung Menangis,-8.40283,117.43035,2018-09-25,319.18
+Liang Ngali MPA 2018,Indonesia,Teluk Jarak,-8.51392,117.71107,2018-09-23,107.12
+Liang Ngali MPA 2018,Indonesia,Teluk Mariam,-8.52157,117.65513,2018-09-22,75.29
+Liang Ngali MPA 2018,Indonesia,Teluk Tete,-8.4946,117.73374,2018-09-24,219.82
+Belize SWCMR 2021 - WCS,Belize,SWCCZFR1,16.884665004909,-88.0605540052056,2021-07-03,225.64
+Belize SWCMR 2021 - WCS,Belize,SWCCZFR2,16.8679160345345,-88.064929023385,2021-06-04,247.67
+Belize SWCMR 2021 - WCS,Belize,SWCCZFR2,16.8679160345345,-88.064929023385,2021-07-04,346.67
+Belize SWCMR 2021 - WCS,Belize,SWCCZFR3,16.8499210104346,-88.07087699,2021-08-15,407.26
+Belize SWCMR 2021 - WCS,Belize,SWCCZFR4,16.8348859716206,-88.0745620094239,2021-08-11,124.92
+Belize SWCMR 2021 - WCS,Belize,SWCCZFR5,16.81828,-88.07736,2021-08-10,123.94
+Belize SWCMR 2021 - WCS,Belize,SWCCZFR6,16.8131040036678,-88.0777440313249,2021-07-03,301.73
+Belize SWCMR 2021 - WCS,Belize,SWCCZFR6,16.8131040036678,-88.0777440313249,2021-07-07,410.05
+Belize SWCMR 2021 - WCS,Belize,SWCGUZFR1,16.9142070226371,-88.0498870275914,2021-06-26,44.85
+Belize SWCMR 2021 - WCS,Belize,SWCGUZFR1,16.9142070226371,-88.0498870275914,2021-06-29,200.51
+Belize SWCMR 2021 - WCS,Belize,SWCGUZFR2,16.9036100339144,-88.0541909672319,2021-06-30,341.87
+Belize SWCMR 2021 - WCS,Belize,SWCGUZFR3,16.7889509629458,-88.0757209751754,2021-08-14,256.7
+Belize SWCMR 2021 - WCS,Belize,SWCGUZFR4,16.7775830067694,-88.0750149674713,2021-06-30,133.74
+Belize SWCMR 2021 - WCS,Belize,SWCGUZFR5,16.76858,-88.07501,2021-08-12,182.08
+Belize SWCMR 2021 - WCS,Belize,SWCGUZFR6,16.76079,-88.07356,2021-08-12,318.27
+Open access Surveys and New LMMA NW 2021,Madagascar,APGL Ampangoriana,13.4312103,48.3629503,2021-12-14,143.16
+Open access Surveys and New LMMA NW 2021,Madagascar,APGL Anjiabe,13.49893,48.34185,2021-12-15,151.93
+Open access Surveys and New LMMA NW 2021,Madagascar,APGL Anjiabe,13.49893,48.34185,2022-01-15,69.5
+Open access Surveys and New LMMA NW 2021,Madagascar,APGL Antanamitarana 1,13.26913,48.17162,2021-12-17,163.72
+Open access Surveys and New LMMA NW 2021,Madagascar,APGL Antanamitarana 2,13.249748,48.179219,2021-12-17,165.99
+Open access Surveys and New LMMA NW 2021,Madagascar,APGL Sakatia,13.32041,48.15632,2021-12-18,174.18
+Open access Surveys and New LMMA NW 2021,Madagascar,NK02D,13.46882,48.32284,2021-12-15,163.71
+Open access Surveys and New LMMA NW 2021,Madagascar,Nosy Sakatia,13.29055,48.15712,2021-12-18,78.83
+Karimunjawa NP 2016,Indonesia,Batu Putih,-5.80503,110.49186,2016-05-11,350.64
+Karimunjawa NP 2016,Indonesia,Batu Putih,-5.80503,110.49186,2016-11-05,1073.02
+Karimunjawa NP 2016,Indonesia,Bengkoang,-5.74239,110.41747,2016-05-16,512.3
+Karimunjawa NP 2016,Indonesia,Burung,-5.89102,110.34657,2016-05-17,411.75
+Karimunjawa NP 2016,Indonesia,Cemara Besar 1,-5.80675,110.37822,2016-05-16,537.74
+Karimunjawa NP 2016,Indonesia,Cemara Besar 2,-5.8031,110.38098,2016-05-14,479.57
+Karimunjawa NP 2016,Indonesia,Cemara Kecil 1,-5.83129,110.38224,2016-05-12,251.83
+Karimunjawa NP 2016,Indonesia,Cemara Kecil 2,-5.833226,110.381165,2016-05-12,188.04
+Karimunjawa NP 2016,Indonesia,Cendekian,-5.80419,110.55876,2016-05-08,560.73
+Karimunjawa NP 2016,Indonesia,Gelean,-5.88023,110.3594,2016-05-17,509.32
+Karimunjawa NP 2016,Indonesia,Genting 1,-5.86211,110.60538,2016-05-07,213.13
+Karimunjawa NP 2016,Indonesia,Genting 2,-5.8336,110.60616,2016-05-07,282.8
+Karimunjawa NP 2016,Indonesia,Genting 3,-5.84098,110.61131,2016-05-07,307.32
+Karimunjawa NP 2016,Indonesia,Gosong Selikur 1,-5.729274,110.204483,2016-05-20,342.46
+Karimunjawa NP 2016,Indonesia,Gosong Selikur 2,-5.727058,110.207648,2016-05-20,612.37
+Karimunjawa NP 2016,Indonesia,Gosong Tengah,-5.7998,110.51065,2016-05-10,618.88
+Karimunjawa NP 2016,Indonesia,Karang Kapal,-5.89937,110.24403,2016-05-23,651.2
+Karimunjawa NP 2016,Indonesia,Karang Katang,-5.804122,110.149306,2016-05-21,364.58
+Karimunjawa NP 2016,Indonesia,Katang 1,-5.798441,110.166105,2016-05-21,302.64
+Karimunjawa NP 2016,Indonesia,Katang 2,-5.802959,110.164412,2016-05-21,314.91
+Karimunjawa NP 2016,Indonesia,Kecil,-5.82036,110.51187,2016-05-10,1223.67
+Karimunjawa NP 2016,Indonesia,Kembar,-5.743575,110.19561,2016-05-20,469.57
+Karimunjawa NP 2016,Indonesia,Kumbang 1,-5.771209,110.226294,2016-05-19,616.64
+Karimunjawa NP 2016,Indonesia,Kumbang 2,-5.774815,110.228799,2016-05-19,582.52
+Karimunjawa NP 2016,Indonesia,Kumbang 3,-5.775143,110.233448,2016-05-22,474.51
+Karimunjawa NP 2016,Indonesia,Legon Janten,-5.86647,110.461393,2016-05-05,695.09
+Karimunjawa NP 2016,Indonesia,Legon Moto,-5.86286,110.46648,2016-05-11,350.5
+Karimunjawa NP 2016,Indonesia,Menjangan Besar,-5.89806,110.43379,2016-05-06,226.94
+Karimunjawa NP 2016,Indonesia,Menjangan Kecil,-5.90131,110.40563,2016-05-06,381.48
+Karimunjawa NP 2016,Indonesia,Menyawakan,-5.79817,110.34733,2016-05-15,331.19
+Karimunjawa NP 2016,Indonesia,Nyamuk,-5.82071,110.206447,2016-05-23,500.52
+Karimunjawa NP 2016,Indonesia,Pantai Nirwana,-5.8868,110.45016,2016-05-12,584.92
+Karimunjawa NP 2016,Indonesia,Parang 1,-5.755273,110.260433,2016-05-22,426.03
+Karimunjawa NP 2016,Indonesia,Parang 2,-5.7680110000000004,110.258263,2016-05-22,564.9
+Karimunjawa NP 2016,Indonesia,Sintok 1,-5.78476,110.51927,2016-05-08,422.9
+Karimunjawa NP 2016,Indonesia,Sintok 2,-5.78817,110.51389,2016-05-08,427.32
+Karimunjawa NP 2016,Indonesia,Taka Malang E,-5.822472,110.438789,2016-05-14,251.84
+Karimunjawa NP 2016,Indonesia,Taka Malang W,-5.82071,110.438853,2016-05-14,315.25
+Karimunjawa NP 2016,Indonesia,Taka Menyawakan E,-5.76733,110.325654,2016-05-15,1084.36
+Karimunjawa NP 2016,Indonesia,Taka Menyawakan W,-5.766931,110.324744,2016-05-15,187.76
+Karimunjawa NP 2016,Indonesia,Tanjung Dua,-5.85681,110.47279,2016-05-05,409.63
+Karimunjawa NP 2016,Indonesia,Tanjung Lemu,-5.83365,110.48852,2016-05-11,476.86
+Karimunjawa NP 2016,Indonesia,Tanjung Sekoci,-5.85771,110.46753,2016-05-05,583.43
+Karimunjawa NP 2016,Indonesia,Tengah,-5.80877,110.51163,2016-05-10,447.99
+Minut 2016,Indonesia,Lihunu 1,1.7525,125.15647,2016-02-25,264.33
+Minut 2016,Indonesia,Lihunu 2,1.75149,125.15646,2016-02-25,280.27
+Minut 2016,Indonesia,Lihunu Control,1.75149,125.15646,2016-02-25,333.99
+Minut 2016,Indonesia,Pulisan Control,1.68134,125.1396,2016-02-27,653.56
+Minut 2016,Indonesia,Pulisan DPL 1,1.68143,125.1385,2016-02-27,189.15
+Minut 2016,Indonesia,Pulisan DPL 2,1.68133,125.1396,2016-02-27,364.46
+Minut 2016,Indonesia,Tambun,1.8067,125.06127,2016-02-26,186.6
+Minut 2016,Indonesia,Tambun Control,1.8067,125.06127,2016-02-26,304.3
+Minut 2016,Indonesia,Tanah Putih 1,1.73635,124.96785,2016-02-24,105.64
+Minut 2016,Indonesia,Tanah Putih 2,1.726,124.97501,2016-02-24,267.14
+Minut 2016,Indonesia,Tarabitan 1,1.745216667,124.9770833,2016-02-24,332.34
+Minut 2016,Indonesia,Tarabitan 2,1.7498,124.98,2016-02-28,917.86
+Minut 2016,Indonesia,Tarabitan Control,1.74971,124.97637,2016-02-28,343.83
+Waworada 2015,Indonesia,Dora,-8.734569,118.784598,2015-06-07,573.36
+Waworada 2015,Indonesia,Kambing,-8.731797,118.821537,2015-06-08,285.97
+Waworada 2015,Indonesia,Kampung Bugis,-8.71009,118.812969,2015-06-07,275.24
+Waworada 2015,Indonesia,Perangajara,-8.763282,118.903392,2015-06-08,228.36
+Waworada 2015,Indonesia,Sura,-8.736776,118.741772,2015-06-07,234.07
+Waworada 2015,Indonesia,Toro Nuntu,-8.721389,118.842451,2015-06-08,88.91
+SAP Teluk Cempi,Indonesia,Maci',-8.75373,118.29442,2019-09-26,61.3
+SAP Teluk Cempi,Indonesia,Maci',-8.75373,118.29442,2019-09-27,15.5
+SAP Teluk Cempi,Indonesia,Matiti,-8.87449,118.42085,2022-04-01,76.18
+SAP Teluk Cempi,Indonesia,Pantai Lakey,-8.80648,118.37808,2022-04-02,74.23
+SAP Teluk Cempi,Indonesia,Pantai Ria,-8.69059,118.35162,2019-09-26,32.41
+SAP Teluk Cempi,Indonesia,Somila,-8.70327,118.33795,2019-09-26,40.75
+SAP Teluk Cempi,Indonesia,Somila,-8.70327,118.33795,2022-03-30,19.48
+India - Angria Bank,India,ANGBS1,16.368144,72.152656,2019-12-24,856.1
+India - Angria Bank,India,ANGBS2,16.351667,72.150556,2019-12-24,409.07
+India - Angria Bank,India,ANGBS3,16.351747,72.117725,2019-12-24,132.65
+India - Angria Bank,India,ANGBS4,16.4,72.100556,2019-12-25,149.64
+India - Angria Bank,India,ANGBS5,16.383469,72.067244,2019-12-25,372.62
+India - Angria Bank,India,ANGBS6,16.433333,72.0675,2019-12-26,957.63
+India - Angria Bank,India,ANGBS7,16.468056,72.050972,2019-12-26,557.84
+India - Angria Bank,India,ANGBS8,16.583361,72.002714,2019-12-27,8.12
+India - Angria Bank,India,ANGBS9,16.583386,72.018892,2019-12-27,485.21
+SE Sulawesi Monitoring Biofisik 2021,Indonesia,KAPUN2,-5.18717,122.73701,2021-03-30,70.6
+SE Sulawesi Monitoring Biofisik 2021,Indonesia,KAPUN3,-5.20359,122.72163,2021-03-30,90.16
+SE Sulawesi Monitoring Biofisik 2021,Indonesia,KAPUN4,-5.25015,122.70133,2021-03-29,21.45
+SE Sulawesi Monitoring Biofisik 2021,Indonesia,KAPUN6,-5.28555,122.68118,2021-03-29,18.24
+SE Sulawesi Monitoring Biofisik 2021,Indonesia,KAPUN7,-5.23989,122.73993,2021-03-30,12
+SE Sulawesi Monitoring Biofisik 2021,Indonesia,KAPUN8,-5.16226,122.74267,2021-03-30,114.49
+SE Sulawesi Monitoring Biofisik 2021,Indonesia,KULIS1,-4.81342,123.12096,2021-04-11,91.55
+SE Sulawesi Monitoring Biofisik 2021,Indonesia,KULIS2,-4.84111,123.12006,2021-04-11,307.49
+SE Sulawesi Monitoring Biofisik 2021,Indonesia,KULIS3,-4.78552,123.15209,2021-04-11,106.56
+SE Sulawesi Monitoring Biofisik 2021,Indonesia,KULIS6,-4.83437,123.1691,2021-04-11,211.47
+SE Sulawesi Monitoring Biofisik 2021,Indonesia,KULIS7,-4.8075,123.167,2021-04-11,133.9
+SE Sulawesi Monitoring Biofisik 2021,Indonesia,KULIS8,-4.79436,123.14523,2021-04-11,179.07
+SE Sulawesi Monitoring Biofisik 2021,Indonesia,MAGIN1,-4.77327,122.26115,2021-04-03,29.01
+SE Sulawesi Monitoring Biofisik 2021,Indonesia,MAGIN3,-4.81858,122.291,2021-04-03,36.06
+SE Sulawesi Monitoring Biofisik 2021,Indonesia,MAGIN4,-4.8431,122.21632,2021-04-03,22.64
+SE Sulawesi Monitoring Biofisik 2021,Indonesia,MAGIN5,-4.86419,122.25579,2021-04-02,76.64
+SE Sulawesi Monitoring Biofisik 2021,Indonesia,MAGIN6,-4.93512,122.32075,2021-04-02,3.11
+SE Sulawesi Monitoring Biofisik 2021,Indonesia,MAGIN7,-4.88772,122.28965,2021-04-02,25.89
+SE Sulawesi Monitoring Biofisik 2021,Indonesia,MATAO1,-4.91954,122.08707,2021-04-05,52.62
+SE Sulawesi Monitoring Biofisik 2021,Indonesia,MATAO2,-4.88977,122.05219,2021-04-05,27.49
+SE Sulawesi Monitoring Biofisik 2021,Indonesia,MATAO4,-4.84567,122.11833,2021-04-04,56.89
+SE Sulawesi Monitoring Biofisik 2021,Indonesia,MATAO5,-4.83917,122.14491,2021-04-03,73.04
+SE Sulawesi Monitoring Biofisik 2021,Indonesia,MATAO6,-4.81514,122.15236,2021-04-03,34.4
+SE Sulawesi Monitoring Biofisik 2021,Indonesia,MATAO7,-4.858833,122.0601,2021-04-04,19.56
+SE Sulawesi Monitoring Biofisik 2021,Indonesia,MAWAS2,-5.27672,122.26852,2021-04-01,51.17
+SE Sulawesi Monitoring Biofisik 2021,Indonesia,MAWAS3,-5.28481,122.25244000000001,2021-04-01,27.22
+SE Sulawesi Monitoring Biofisik 2021,Indonesia,MAWAS4,-5.35652,122.25968,2021-04-01,75.19
+SE Sulawesi Monitoring Biofisik 2021,Indonesia,MAWAS5,-5.36989,122.26509,2021-04-01,66.71
+SE Sulawesi Monitoring Biofisik 2021,Indonesia,MAWAS6,-5.39834,122.27374,2021-04-01,229.51
+SE Sulawesi Monitoring Biofisik 2021,Indonesia,MAWAS7,-5.39842,122.3273,2021-04-01,153.7
+SE Sulawesi Monitoring Biofisik 2021,Indonesia,MAWAS8,-5.31316,122.26286,2021-04-01,13.07
+SE Sulawesi Monitoring Biofisik 2021,Indonesia,MORAM1,-4.07863,122.76952,2021-03-28,116.5
+SE Sulawesi Monitoring Biofisik 2021,Indonesia,MORAM2,-4.10858,122.80081,2021-03-28,55.87
+SE Sulawesi Monitoring Biofisik 2021,Indonesia,MORAM3,-4.11564,122.82211,2021-03-28,68.27
+SE Sulawesi Monitoring Biofisik 2021,Indonesia,MORAM5,-4.15096,122.76029,2021-03-27,172.81
+SE Sulawesi Monitoring Biofisik 2021,Indonesia,MORAM6,-4.12624,122.72997,2021-03-27,79.17
+SE Sulawesi Monitoring Biofisik 2021,Indonesia,MORAM7,-4.14972,122.80367,2021-03-27,188.96
+SE Sulawesi Monitoring Biofisik 2021,Indonesia,NTZ1,-4.38772,122.74915,2021-04-10,101.25
+SE Sulawesi Monitoring Biofisik 2021,Indonesia,NTZ2,-4.41088,122.77388,2021-04-10,88.02
+SE Sulawesi Monitoring Biofisik 2021,Indonesia,NTZ3,-4.4373,122.84434,2021-04-11,120.21
+SE Sulawesi Monitoring Biofisik 2021,Indonesia,PASIK1,-4.96714,122.7837,2021-04-04,148.36
+SE Sulawesi Monitoring Biofisik 2021,Indonesia,PASIK2,-4.9673,122.75213,2021-04-04,133.38
+SE Sulawesi Monitoring Biofisik 2021,Indonesia,PASIK3,-5.09188,122.61497,2021-03-30,249.73
+SE Sulawesi Monitoring Biofisik 2021,Indonesia,PASIK4,-5.1229,122.61387,2021-03-30,162.93
+SE Sulawesi Monitoring Biofisik 2021,Indonesia,PASIK5,-5.18488,122.61737,2021-03-30,124.48
+SE Sulawesi Monitoring Biofisik 2021,Indonesia,PASIK6,-5.05122,122.73442,2021-03-30,217.37
+SE Sulawesi Monitoring Biofisik 2021,Indonesia,PASIK8,-5.09813,122.72398,2021-03-30,105.05
+SE Sulawesi Monitoring Biofisik 2021,Indonesia,SAGOR1,-5.34738,121.78023,2021-04-07,84.88
+SE Sulawesi Monitoring Biofisik 2021,Indonesia,SAGOR2,-5.33695,121.75924,2021-04-07,88.15
+SE Sulawesi Monitoring Biofisik 2021,Indonesia,SAGOR3,-5.35974,121.73766,2021-04-07,218.63
+SE Sulawesi Monitoring Biofisik 2021,Indonesia,SAGOR4,-5.30793,121.76372,2021-04-06,137.21
+SE Sulawesi Monitoring Biofisik 2021,Indonesia,SAGOR6,-5.23678,121.76996,2021-04-07,58.54
+SE Sulawesi Monitoring Biofisik 2021,Indonesia,SAGOR7,-5.12458,121.81958,2021-04-05,58.07
+SE Sulawesi Monitoring Biofisik 2021,Indonesia,SIOMP1,-5.68043,122.45918,2021-04-02,214.19
+SE Sulawesi Monitoring Biofisik 2021,Indonesia,SIOMP2,-5.66852,122.48435,2021-04-02,153.21
+SE Sulawesi Monitoring Biofisik 2021,Indonesia,SIOMP4,-5.68715,122.54721,2021-04-02,184.03
+SE Sulawesi Monitoring Biofisik 2021,Indonesia,SIOMP4,-5.68715,122.54721,2021-05-02,255.25
+SE Sulawesi Monitoring Biofisik 2021,Indonesia,SIOMP5,-5.6276,122.54023,2021-04-02,69.9
+SE Sulawesi Monitoring Biofisik 2021,Indonesia,SIOMP6,-5.62037,122.51912,2021-04-02,147.75
+SE Sulawesi Monitoring Biofisik 2021,Indonesia,SIOMP7,-5.65373,122.4927,2021-04-02,118.1
+SE Sulawesi Monitoring Biofisik 2021,Indonesia,SIONT1,-5.31553,123.20327,2021-03-28,172.09
+SE Sulawesi Monitoring Biofisik 2021,Indonesia,SIONT2,-5.33657,123.19466,2021-03-28,86.61
+SE Sulawesi Monitoring Biofisik 2021,Indonesia,SIONT3,-5.36695,123.16908,2021-03-28,108.35
+SE Sulawesi Monitoring Biofisik 2021,Indonesia,SIONT4,-5.38184,123.15185,2021-03-28,63.52
+SE Sulawesi Monitoring Biofisik 2021,Indonesia,SIONT5,-5.40467,123.11939,2021-03-28,159.39
+SE Sulawesi Monitoring Biofisik 2021,Indonesia,SIONT6,-5.417,123.08949,2021-03-28,177.47
+SE Sulawesi Monitoring Biofisik 2021,Indonesia,TALRAY1,-5.47597,121.9236,2021-04-08,50.67
+SE Sulawesi Monitoring Biofisik 2021,Indonesia,TALRAY2,-5.4931,121.93444,2021-04-08,43.51
+SE Sulawesi Monitoring Biofisik 2021,Indonesia,TALRAY3,-5.52145,121.99358,2021-04-08,37.27
+SE Sulawesi Monitoring Biofisik 2021,Indonesia,TALRAY4,-5.48832,122.05472,2021-04-09,47.94
+SE Sulawesi Monitoring Biofisik 2021,Indonesia,TALRAY5,-5.49253,122.07934,2021-04-09,415.34
+SE Sulawesi Monitoring Biofisik 2021,Indonesia,TALRAY7,-5.44763,122.04902,2021-04-09,54.76
+SE Sulawesi Monitoring Biofisik 2021,Indonesia,TIWOR1,-4.5773,122.30295,2021-04-05,166.6
+SE Sulawesi Monitoring Biofisik 2021,Indonesia,TIWOR2,-4.58446,122.33176,2021-04-05,91.17
+SE Sulawesi Monitoring Biofisik 2021,Indonesia,TIWOR3,-4.63096,122.33135,2021-04-05,67.22
+SE Sulawesi Monitoring Biofisik 2021,Indonesia,TIWOR4,-4.6448,122.33294,2021-04-04,106.9
+SE Sulawesi Monitoring Biofisik 2021,Indonesia,TIWOR6,-4.6591,122.29202,2021-04-04,154.61
+SE Sulawesi Monitoring Biofisik 2021,Indonesia,TIWOR7,-4.69816,122.39209,2021-04-04,45.39
+SE Sulawesi Monitoring Biofisik 2021,Indonesia,UZ1,-4.39601,122.75924,2021-04-11,171.68
+SE Sulawesi Monitoring Biofisik 2021,Indonesia,UZ2,-4.42498,122.7985,2021-04-10,111.97
+SE Sulawesi Monitoring Biofisik 2021,Indonesia,UZ3,-4.42284,122.86157,2021-04-11,112.68
+SE Sulawesi Monitoring Biofisik 2021,Indonesia,WABUL1,-5.61543,122.86898,2021-03-27,263.09
+SE Sulawesi Monitoring Biofisik 2021,Indonesia,WABUL5,-5.62727,122.85188,2021-03-27,160.06
+SE Sulawesi Monitoring Biofisik 2021,Indonesia,WABUL6,-5.63841,122.84261,2021-03-27,179.64
+SE Sulawesi Monitoring Biofisik 2021,Indonesia,WABUL7,-5.58892,122.88592,2021-03-27,232.7
+SE Sulawesi Monitoring Biofisik 2021,Indonesia,WABUL8,-5.59789,122.87903,2021-03-27,315.78
+SE Sulawesi Monitoring Biofisik 2021,Indonesia,WABUL9,-5.65542,122.82203,2021-03-27,175.75
+SE Sulawesi Monitoring Biofisik 2021,Indonesia,WAWON1,-4.01485,123.07786,2021-03-30,130.09
+SE Sulawesi Monitoring Biofisik 2021,Indonesia,WAWON2,-4.008,123.13557,2021-03-31,251.76
+SE Sulawesi Monitoring Biofisik 2021,Indonesia,WAWON4,-4.00761,123.17924,2021-03-31,100.89
+SE Sulawesi Monitoring Biofisik 2021,Indonesia,WAWON6,-4.02478,123.22365,2021-03-31,78.32
+SE Sulawesi Monitoring Biofisik 2021,Indonesia,WAWON7,-3.99474,122.9681,2021-03-30,20.67
+SE Sulawesi Monitoring Biofisik 2021,Indonesia,WAWON8,-3.98542,123.03827,2021-03-30,543.39
+Satonda MPA 2019,Indonesia,Kima Point,-8.119555553,117.7465556,2019-10-23,335.98
+Satonda MPA 2019,Indonesia,Labu Na'e,-8.173556,117.717016,2019-10-25,180.39
+Satonda MPA 2019,Indonesia,Labu Na'e,-8.173556,117.717016,2019-11-25,36.14
+Satonda MPA 2019,Indonesia,Manta Point,-8.116472187,117.73975,2019-10-23,100.42
+Satonda MPA 2019,Indonesia,Palung Utara,-8.097999,117.740062,2019-10-22,195.46
+Satonda MPA 2019,Indonesia,Pasir Panjang,-8.108729,117.761439,2019-10-22,303.48
+Satonda MPA 2019,Indonesia,Taman Laut Calabai,-8.221149,117.702695,2019-10-25,259.34
+Satonda MPA 2019,Indonesia,Tanjung Beranti,-8.148951,117.724482,2019-10-25,168.57
+Satonda MPA 2019,Indonesia,Turtle Point,-8.116027778,117.7605833,2019-10-23,286.53
+Taka Bonerate 2015 - Delete,Indonesia,Ampalas Barat,-6.92243,121.28002,2015-04-22,488.53
+TPK KBT 2014,Indonesia,Gili Bedil 1,-8.39057568,117.0747236,2014-06-09,212.47
+TPK KBT 2014,Indonesia,Gili Bedil 2,-8.39235515,117.0682995,2014-06-09,297.31
+TPK KBT 2014,Indonesia,Gili Keramat,-8.36974246,117.0785807,2014-06-09,50.57
+TPK KBT 2014,Indonesia,Temudong,-8.3721831,117.0488596,2014-06-10,84.63
+Aceh 2014,Indonesia,Ba Kopra,5.866863889,95.22823111,2014-03-06,809.47
+Aceh 2014,Indonesia,Benteng,5.845705,95.373215,2014-03-06,3567.45
+Aceh 2014,Indonesia,Jaboi,5.799778889,95.34604611,2014-03-06,142.14
+Aceh 2014,Indonesia,Lampuyang,5.6673,95.12725,2014-03-08,534.17
+Aceh 2014,Indonesia,Leun Balee 1,5.7276,95.07301111,2014-03-08,757.11
+Aceh 2014,Indonesia,Lhoknga Left,5.47714,95.23146,2014-03-03,376.29
+Aceh 2014,Indonesia,Lhoknga Right,5.47051,95.23448,2014-03-03,552.47
+Aceh 2014,Indonesia,Lucas Reefs,5.88345,95.24502,2014-03-05,600.66
+Aceh 2014,Indonesia,Paloh,5.664196111,95.09257694,2014-03-08,1206.79
+Aceh 2014,Indonesia,Pasi Janeng 2,5.63200375,95.13802886,2014-03-08,586.07
+Aceh 2014,Indonesia,Rubiah Channel,5.883753056,95.25491,2014-03-05,678.93
+Aceh 2014,Indonesia,Rubiah Sea Garden,5.881451944,95.260645,2014-03-05,689.48
+Aceh 2014,Indonesia,Ujung Kareung,5.876188889,95.35363575,2014-03-06,183.75
+Sayafi - Patani North Maluku 2022,Indonesia,Barat Daya P. Oto,0.62908,128.63179,2022-03-22,205.54
+Sayafi - Patani North Maluku 2022,Indonesia,Control 1 (Tenggara P. Wor),0.63179,128.54242,2022-03-22,383.04
+Sayafi - Patani North Maluku 2022,Indonesia,Control 2 (Barat P. Paniki),0.66597,128.47174,2022-03-22,323.37
+Sayafi - Patani North Maluku 2022,Indonesia,Control 3 (Desa Moreala),0.35195,128.50298,2022-03-24,963.68
+Sayafi - Patani North Maluku 2022,Indonesia,Jeysowo,0.27213,128.78253,2022-03-20,528.41
+Sayafi - Patani North Maluku 2022,Indonesia,Mour Selatan,0.17622,128.95192,2022-03-20,691.77
+Sayafi - Patani North Maluku 2022,Indonesia,Patani 1,0.29442,128.83339,2022-03-20,698.37
+Sayafi - Patani North Maluku 2022,Indonesia,P. England,0.57581,128.63922,2022-03-23,311.45
+Sayafi - Patani North Maluku 2022,Indonesia,Peniti,0.40276,128.68782,2022-03-21,289.45
+Sayafi - Patani North Maluku 2022,Indonesia,P. Liwo,0.46063,128.88086,2022-03-21,948.17
+Sayafi - Patani North Maluku 2022,Indonesia,P. Sayafi,0.55244,128.80495,2022-03-23,1213.21
+Liang Ngali 2014,Indonesia,Dangar Ode,-8.4264879,117.635282,2014-06-11,253.62
+Liang Ngali 2014,Indonesia,Liang E,-8.4909668,117.678166,2014-06-11,242.3
+Liang Ngali 2014,Indonesia,Liang N,-8.4482047,117.661589,2014-06-12,227.6
+Liang Ngali 2014,Indonesia,Liang S1,-8.5329,117.65367,2014-06-23,156.02
+Liang Ngali 2014,Indonesia,Liang S2,-8.524067,117.677017,2014-06-23,226.7
+Liang Ngali 2014,Indonesia,Liang W,-8.4718397,117.644826,2014-06-11,161.55
+Liang Ngali 2014,Indonesia,Ngali E,-8.5355358,117.749333,2014-06-12,345.08
+Liang Ngali 2014,Indonesia,Ngali N,-8.4748062,117.729244,2014-06-12,407.72
+Liang Ngali 2014,Indonesia,Ngali W,-8.5073037,117.70825,2014-06-13,291.02
+Gita Nada_MPA 2018,Indonesia,Bunutan,-8.72336,116.0463,2018-04-21,199.38
+Gita Nada_MPA 2018,Indonesia,Dusun Medang,-8.72316,116.0391,2018-04-22,162.55
+Gita Nada_MPA 2018,Indonesia,Gili Asahan,-8.73283,115.8903,2018-04-17,222.84
+Gita Nada_MPA 2018,Indonesia,Gili Gede Barat,-8.72875,115.9167,2018-04-16,251.21
+Gita Nada_MPA 2018,Indonesia,Gili Gede Timur,-8.73092,115.9282,2018-04-16,407.34
+Gita Nada_MPA 2018,Indonesia,Gili Goleng,-8.74876,115.88982,2018-04-17,359.61
+Gita Nada_MPA 2018,Indonesia,Gili Layar Timur,-8.72547,115.9105,2018-04-18,585.12
+Gita Nada_MPA 2018,Indonesia,Gili Nanggu Barat Laut,-8.71634,116.0059,2018-04-22,1120.16
+Gita Nada_MPA 2018,Indonesia,Gili Renggit,-8.71147,115.9141,2018-04-19,188.88
+Gita Nada_MPA 2018,Indonesia,Gili Renggit 2,-8.71869,115.9184,2018-04-19,666.07
+Gita Nada_MPA 2018,Indonesia,Gili Sudak Barat Laut,-8.72061,116.021,2018-04-21,437.79
+Gita Nada_MPA 2018,Indonesia,Gili Surat,-8.72739,115.98879999999996,2018-04-22,223.63
+Gita Nada_MPA 2018,Indonesia,Lohlandak,-8.71687,116.0355,2018-04-21,352.59
+Gita Nada_MPA 2018,Indonesia,Takad Anyaran,-8.71179,115.92513,2018-04-19,354.67
+Gita Nada_MPA 2018,Indonesia,Tanjung Beberak,-8.72311,115.86675,2018-04-17,254.5
+Gita Nada_MPA 2018,Indonesia,Temeran,-8.74553,115.9478,2018-04-18,217.91
+Gili Balu 2014,Indonesia,Belang E,-8.539817,116.78985,2014-06-25,370.55
+Gili Balu 2014,Indonesia,Belang N,-8.529017,116.778633,2014-06-25,278.35
+Gili Balu 2014,Indonesia,Gili Ranggi,-8.501433,116.855917,2014-06-26,327.35
+Gili Balu 2014,Indonesia,Kenawa,-8.50022,116.83022,2014-06-26,227.34
+Gili Balu 2014,Indonesia,Mandiki,-8.4939,116.807817,2014-06-26,324.72
+Gili Balu 2014,Indonesia,Paserang,-8.5144,116.78305,2014-06-25,371.79
+Lunyuk 2014,Indonesia,Muara Lamar,-9.055767,117.153617,2014-06-22,353.38
+Lunyuk 2014,Indonesia,Pasir Putih,-9.072417,117.135167,2014-06-21,285.33
+Lunyuk 2014,Indonesia,Pasir Putih,-9.072417,117.135167,2014-06-22,809.48
+India Andaman Islands,India,Chester_Seriatopora Garden,11.58571711,92.57951239,2017-02-22,162.23
+India Andaman Islands,India,Chester_Seriatopora Garden,11.58571711,92.57951239,2018-01-23,191.82
+India Andaman Islands,India,Chester_Seriatopora Garden,11.58571711,92.57951239,2019-03-25,313.96
+India Andaman Islands,India,Chester_Seriatopora Garden,11.58571711,92.57951239,2019-05-18,369.55
+India Andaman Islands,India,Havelock_Minerva Ledge,12.03018007,93.01197346,2016-05-13,749.65
+India Andaman Islands,India,Havelock_Minerva Ledge,12.03018007,93.01197346,2017-03-28,465.09
+India Andaman Islands,India,Havelock_Turtle Beach,12.04665022,92.97340052,2017-03-19,734.43
+India Andaman Islands,India,Havelock_Wall,11.96874925,92.96245832,2017-03-23,918.97
+India Andaman Islands,India,Henry Lawrence_Imlidera,12.21336,93.05965871,2016-05-13,568.52
+India Andaman Islands,India,Henry Lawrence_Imlidera,12.21336,93.05965871,2017-03-27,250.39
+India Andaman Islands,India,John Lawrence_Giantpuff,12.0632144,93.05703111,2017-03-20,459.01
+India Andaman Islands,India,John Lawrence_Padina Garden,12.0632144,93.05703111,2017-03-20,143.51
+India Andaman Islands,India,John Lawrence_Pilot Reef,12.06396542,93.0589437,2016-05-09,418.46
+India Andaman Islands,India,Jollybuoy_North West,11.51058174,92.61186269,2019-04-21,225.59
+India Andaman Islands,India,Jollybuoy_Squirrel Point,11.64380472,92.53225869,2016-03-15,274
+India Andaman Islands,India,Jollybuoy_Squirrel Point,11.64380472,92.53225869,2017-03-01,198.34
+India Andaman Islands,India,Jollybuoy_Squirrel Point,11.64380472,92.53225869,2018-04-26,249.68
+India Andaman Islands,India,Redskin_Squatshrimp,11.57434871,92.5943232,2016-02-13,3535.37
+India Andaman Islands,India,Redskin_Squatshrimp,11.57434871,92.5943232,2017-04-22,814.17
+India Andaman Islands,India,Redskin_Squatshrimp,11.57434871,92.5943232,2018-05-05,734.79
+India Andaman Islands,India,Redskin_Squatshrimp,11.57434871,92.5943232,2019-05-14,414.88
+India Andaman Islands,India,South Andaman_Ghost Pipe Fish,11.36995,92.33785,2017-12-22,120.76
+India Andaman Islands,India,South Andaman_Graveyard,11.38076,92.35785,2017-12-29,128.58
+India Andaman Islands,India,South Andaman_HG,11.37986,92.3395,2017-11-25,1032.56
+India Andaman Islands,India,South Andaman_McDowells,11.630717,92.598233,2017-12-28,270.23
+India Andaman Islands,India,South Andaman_Oh Shark,11.63195,92.5895,2017-11-21,279.87
+India Andaman Islands,India,South Andaman_Oh Shark,11.63195,92.5895,2017-12-26,235.48
+India Andaman Islands,India,South Andaman_Oh Shark,11.63195,92.5895,2018-03-19,176.39
+India Andaman Islands,India,South Andaman_Oh Shark,11.63195,92.5895,2019-04-24,350
+India Andaman Islands,India,South Andaman_Onion Reef,11.6307,92.591267,2017-11-27,225.25
+India Andaman Islands,India,South Andaman_Playground,11.62395,92.559533,2017-11-29,515.2
+India Andaman Islands,India,South Andaman_Playground,11.62395,92.559533,2018-01-16,623.12
+India Andaman Islands,India,South Andaman_Sailor's Eyeball,11.63065,92.59845,2017-12-04,244.49
+India Andaman Islands,India,South Andaman_Sailor's Eyeball,11.63065,92.59845,2018-03-16,170.39
+India Andaman Islands,India,South Andaman_Simranoff,11.6118,92.536517,2018-01-02,111.31
+India Andaman Islands,India,South Andaman_Simranoff,11.6118,92.536517,2018-03-17,181.68
+India Andaman Islands,India,South Andaman_Simranoff,11.6118,92.536517,2019-04-14,283.2
+India Andaman Islands,India,South Andaman_SKG,11.606417,92.559317,2017-11-17,128.39
+India Andaman Islands,India,South Andaman_SKG,11.606417,92.559317,2018-03-14,289.45
+India Andaman Islands,India,South Andaman_SKG,11.606417,92.559317,2019-04-27,450.61
+India Andaman Islands,India,South Button_AK47,12.2232,93.01967,2017-03-25,609.99
+India Andaman Islands,India,South Button_Lost Slate,12.22287757,93.02005124,2016-05-07,887.69
+India Andaman Islands,India,South Button_Lost Slate,12.22287757,93.02005124,2017-03-25,415.66
+India Andaman Islands,India,Tarmugli_Anchor,11.60093229,92.50902892,2016-01-25,380.44
+India Andaman Islands,India,Tarmugli_Anchor,11.60093229,92.50902892,2016-03-13,110.24
+India Andaman Islands,India,Tarmugli_Anchor,11.60093229,92.50902892,2017-04-08,498.33
+India Andaman Islands,India,Tarmugli_Anchor,11.60093229,92.50902892,2018-01-18,484
+India Andaman Islands,India,Tarmugli_Anchor,11.60093229,92.50902892,2019-04-03,246.02
+India Andaman Islands,India,Tarmugli_Nearseagrass,11.59590932,92.52461341,2016-03-15,532.18
+India Andaman Islands,India,Tarmugli_Nearseagrass,11.59590932,92.52461341,2017-02-27,136.23
+India Andaman Islands,India,Twins E_Manta Point,11.64380472,92.53225869,2016-02-15,629.35
+India Andaman Islands,India,Twins W_Manta Ray,11.6242593,92.52112848,2018-01-16,626
+RHM TPK KOON 2020,Indonesia,KOE01,-3.92035,131.20472222,2020-11-10,1578.78
+Rakit Lipan 2018,Indonesia,Gili Dewa,-8.66031,118.05218,2018-03-21,287.96
+Rakit Lipan 2018,Indonesia,Gili Tai Kebo,-8.65891,117.88732,2018-03-17,109.32
+Rakit Lipan 2018,Indonesia,Kampung Pecak,-8.66034,118.06315,2018-03-21,88.23
+Rakit Lipan 2018,Indonesia,Labajo,-8.67043,117.95738,2018-03-17,766.77
+Rakit Lipan 2018,Indonesia,Panjang 1,-8.6097,117.87382,2018-03-18,761.13
+Rakit Lipan 2018,Indonesia,Panjang 2,-8.61,117.86488,2018-03-18,275.93
+Rakit Lipan 2018,Indonesia,Pulau Bakau,-8.69103,118.01315,2018-03-22,422.4
+Rakit Lipan 2018,Indonesia,Pulau Lipan,-8.65793,117.85704,2018-03-17,554.32
+Rakit Lipan 2018,Indonesia,Takad Tabampang,-8.61008,118.0866,2018-03-22,588.95
+Rakit Lipan 2018,Indonesia,Takad Tanjung Billa,-8.62185,117.99878,2018-03-15,272.3
+Rakit Lipan 2018,Indonesia,Tanjung Batu,-8.66761,118.00719,2018-03-19,237.98
+Rakit Lipan 2018,Indonesia,Tanjung Lepek Tambora,-8.60849,117.97827,2018-03-15,333.33
+Rakit Lipan 2018,Indonesia,Tanjung Padang,-8.61301,117.9498,2018-03-19,768.25
+Rakit Lipan 2018,Indonesia,Tanjung Sentigi,-8.628,117.95365,2018-03-19,725.76
+Rakit Lipan 2018,Indonesia,Tanjung Tengah,-8.69207,117.98892,2018-03-21,142
+Mayotte,Mayotte,Banque de Iris,-12.588,45.088133,2009-09-10,743.48
+Mayotte,Mayotte,Banque de la surprise,-12.6471,45.1325,2009-09-09,1606.67
+Mayotte,Mayotte,BarrierEdge,-12.70128,45.25845,2009-09-09,308.99
+Mayotte,Mayotte,Buoy 6,-12.8685,45.2736,2009-09-09,1138.64
+Mayotte,Mayotte,N'gouja Pass S (Barrier),-12.97688,44.98402,2009-09-10,833.91
+Mayotte,Mayotte,Ngouja Taj Mahal,-12.88,44.95,2009-09-10,368.53
+Mayotte,Mayotte,Ngouja Zone C,-12.97,45.08,2009-09-10,472.62
+Mayotte,Mayotte,Passe en Sada,-12.8719,45.2763,2009-09-09,753.11
+Mayotte,Mayotte,Prevoyant,-12.692483,45.167367,2009-09-09,609.16
+Mayotte,Mayotte,Sazily barrier,-12.9941,45.229,2010-06-18,594.33
+Mayotte,Mayotte,Sazily closure - barrier,-12.99417,45.23077,2010-06-18,1051.97
+Mayotte,Mayotte,Sazily closure -fringing,-12.9857,45.18227,2010-06-18,549.63
+Mayotte,Mayotte,Sazily fringing,-12.99947,45.15398,2010-06-18,487.11
+Mayotte,Mayotte,Teddy's reef,-12.68,44.96,2009-09-10,863.62
+Mayotte,Mayotte,Turtle Point,-12.866067,45.271,2009-09-09,722.31
+TAKABONARATE 2015 _ DELETE2,Indonesia,Ampalas Barat,-6.92243,121.28002,2015-04-22,126.89
+2022_BAF and WISH coral reef surveys in Dama_Tailevu_Ovalau,Fiji,BU02,-17.746,178.76,2022-01-09,34.34
+2022_BAF and WISH coral reef surveys in Dama_Tailevu_Ovalau,Fiji,BU03,-17.734462,178.59043,2022-01-09,169.2
+2022_BAF and WISH coral reef surveys in Dama_Tailevu_Ovalau,Fiji,BuC1,-17.64,178.708,2022-01-08,554.48
+2022_BAF and WISH coral reef surveys in Dama_Tailevu_Ovalau,Fiji,BuC6,-17.675,178.693,2022-01-08,231.66
+2022_BAF and WISH coral reef surveys in Dama_Tailevu_Ovalau,Fiji,BuE5,-17.714,178.712,2022-01-12,156.3
+2022_BAF and WISH coral reef surveys in Dama_Tailevu_Ovalau,Fiji,BuE6,-17.706,178.715,2022-01-12,246.14
+2022_BAF and WISH coral reef surveys in Dama_Tailevu_Ovalau,Fiji,"NA05",-17.72,178.85115,2022-01-13,661.67
+2022_BAF and WISH coral reef surveys in Dama_Tailevu_Ovalau,Fiji,"NAO1",-17.746,178.827,2022-01-13,1113.02
+2022_BAF and WISH coral reef surveys in Dama_Tailevu_Ovalau,Fiji,"NAO1",-17.746,178.827,2022-01-13,928.26
+2022_BAF and WISH coral reef surveys in Dama_Tailevu_Ovalau,Fiji,"NAO6",-17.74,178.838,2022-01-13,1290.85
+2022_BAF and WISH coral reef surveys in Dama_Tailevu_Ovalau,Fiji,"NAO7",-17.734,178.841,2022-01-13,1347.43
+2022_BAF and WISH coral reef surveys in Dama_Tailevu_Ovalau,Fiji,"NAOBF2",-17.631,178.83,2022-01-15,1132.33
+2022_BAF and WISH coral reef surveys in Dama_Tailevu_Ovalau,Fiji,"NAOBF3",-17.598,178.825,2022-01-14,767.92
+2022_BAF and WISH coral reef surveys in Dama_Tailevu_Ovalau,Fiji,"NAOBF4",-17.595,178.819,2022-01-14,519.11
+2022_BAF and WISH coral reef surveys in Dama_Tailevu_Ovalau,Fiji,"NAOBT1",-17.622,178.831,2022-01-15,220.43
+2022_BAF and WISH coral reef surveys in Dama_Tailevu_Ovalau,Fiji,"NAOBT2",-17.618,178.829,2022-01-15,789.38
+2022_BAF and WISH coral reef surveys in Dama_Tailevu_Ovalau,Fiji,"NAOBT3",-17.614,178.83,2022-01-14,1005.75
+2022_BAF and WISH coral reef surveys in Dama_Tailevu_Ovalau,Fiji,WaiE4,-17.78621,178.6909,2022-01-12,606.72
+Belize Glover's Atoll 2020,Belize,CZFR1,16.73337962,-87.81849504,2020-07-25,918.61
+Belize Glover's Atoll 2020,Belize,CZFR2,16.7368931416422,-87.8077126387506,2020-06-27,1378.88
+Belize Glover's Atoll 2020,Belize,CZFR4,16.74931596,-87.79279218,2020-07-24,194.8
+Belize Glover's Atoll 2020,Belize,CZFR4,16.74931596,-87.79279218,2020-07-25,714.98
+Belize Glover's Atoll 2020,Belize,CZFR5,16.75170036,-87.78707136,2020-02-26,555.28
+Belize Glover's Atoll 2020,Belize,CZFR5,16.75170036,-87.78707136,2020-06-28,1938.77
+Belize Glover's Atoll 2020,Belize,CZFR6,16.75803121,-87.76614578,2020-07-24,952.27
+Belize Glover's Atoll 2020,Belize,CZPR1,16.75611427,-87.82482647,2020-06-25,721.54
+Belize Glover's Atoll 2020,Belize,CZPR2,16.76207816,-87.83025468,2020-06-25,411.7
+Belize Glover's Atoll 2020,Belize,CZPR2,16.76207816,-87.83025468,2020-06-26,1818.76
+Belize Glover's Atoll 2020,Belize,CZPR5,16.77630669,-87.81187744,2020-06-25,374.07
+Belize Glover's Atoll 2020,Belize,CZPR7,16.76827339,-87.82634997,2020-06-25,381.73
+Belize Glover's Atoll 2020,Belize,GUZFR2,16.77805633,-87.75537914,2020-02-26,755.22
+Belize Glover's Atoll 2020,Belize,GUZFR4,16.79355246,-87.74458341,2020-07-25,860.07
+Belize Glover's Atoll 2020,Belize,GUZPR1,16.79270354,-87.8157228,2020-06-26,704.73
+Belize Glover's Atoll 2020,Belize,GUZPR2,16.81365553,-87.80829786,2020-06-27,828.66
+Belize Glover's Atoll 2020,Belize,GUZPR5,16.8263713,-87.78079826,2020-06-27,699.56
+Belize Glover's Atoll 2020,Belize,GUZPR6,16.78071633,-87.78895704,2020-06-26,405.26
+Belize Glover's Atoll 2020,Belize,WFR2,16.79548474,-87.8606452,2020-06-26,391.79
+Belize Glover's Atoll 2020,Belize,WFR4,16.81538003,-87.85216983,2020-06-28,814.23
+Belize Glover's Atoll 2020,Belize,WFR6,16.83796196,-87.8439228,2020-06-27,510.48
+Taka Bonerate NP-2019,Indonesia,Ampalas Barat,-6.92243,121.28002,2019-10-16,817.14
+Taka Bonerate NP-2019,Indonesia,Belang-Belang,-6.39778,121.09569,2019-10-06,383.46
+Taka Bonerate NP-2019,Indonesia,Bungin Laloh,-6.81948,121.28083,2019-10-17,1064.44
+Taka Bonerate NP-2019,Indonesia,Jinato Barat,-6.77289,120.96176,2019-10-14,907.17
+Taka Bonerate NP-2019,Indonesia,Jinato Timur,-6.7591,120.97266,2019-10-14,1645.64
+Taka Bonerate NP-2019,Indonesia,Kayuadi Barat,-6.80719,120.775,2019-10-20,824.97
+Taka Bonerate NP-2019,Indonesia,Kayuadi Tenggara,-6.83133,120.81421,2019-10-20,706.59
+Taka Bonerate NP-2019,Indonesia,Kayuadi Timur,-6.78968,120.8084,2019-10-21,1159.64
+Taka Bonerate NP-2019,Indonesia,Lantigiang Barat Daya,-6.70882,120.95501,2019-10-13,672.77
+Taka Bonerate NP-2019,Indonesia,Lantigiang Timur,-6.70094,120.97813,2019-10-13,403.17
+Taka Bonerate NP-2019,Indonesia,Lantigiang Utara,-6.69546,120.96014,2019-10-13,467.99
+Taka Bonerate NP-2019,Indonesia,Latondu Kecil 1,-6.54816,120.92637,2019-10-07,493.65
+Taka Bonerate NP-2019,Indonesia,Latondu Kecil 3,-6.49715,120.94196,2019-10-07,456.18
+Taka Bonerate NP-2019,Indonesia,Latondu Timur,-6.499,121.0013,2019-10-07,464.81
+Taka Bonerate NP-2019,Indonesia,Pasitalu Barat,-7.05258,121.06151,2019-10-18,1191.63
+Taka Bonerate NP-2019,Indonesia,Pasitalu Timur,-7.07844,121.11573,2019-10-18,960.54
+Taka Bonerate NP-2019,Indonesia,Rajuni Besar,-6.57093,121.01618,2019-10-08,927.24
+Taka Bonerate NP-2019,Indonesia,Rajuni Kecil Barat Daya,-6.54722,120.9909,2019-10-04,338.52
+Taka Bonerate NP-2019,Indonesia,Taka Balaloong Utara,-6.81288,121.12989,2019-10-15,787.88
+Taka Bonerate NP-2019,Indonesia,Taka Balanda,-6.92343,121.30575,2019-10-16,795.15
+Taka Bonerate NP-2019,Indonesia,Taka Bayang Pogo,-6.92478,121.06876,2019-10-19,469.88
+Taka Bonerate NP-2019,Indonesia,Taka Gantarang 1,-6.44483,121.2271,2019-10-11,496.44
+Taka Bonerate NP-2019,Indonesia,Taka Kayu Bulan Utara,-6.75829,121.05997,2019-10-14,1002.67
+Taka Bonerate NP-2019,Indonesia,Taka Kumai Barat,-6.87341,121.1457,2019-10-15,921.7
+Taka Bonerate NP-2019,Indonesia,Taka Lamongan Tenggara,-6.54611,121.27791,2019-10-10,1183.33
+Taka Bonerate NP-2019,Indonesia,Taka Lamongan Timur,-6.51493,121.30519,2019-10-10,1970.8
+Taka Bonerate NP-2019,Indonesia,Taka Lamongan Timur Laut,-6.48622,121.29791,2019-10-10,1141.03
+Taka Bonerate NP-2019,Indonesia,Taka Lasalimu,-6.5849,121.18877,2019-10-09,807.48
+Taka Bonerate NP-2019,Indonesia,Taka Malori Selatan,-6.89226,121.0464,2019-10-19,571.44
+Taka Bonerate NP-2019,Indonesia,Taka Rajuni,-6.6057,121.03266,2019-10-08,457.05
+Taka Bonerate NP-2019,Indonesia,Taka Sirobe,-6.64884,121.20457,2019-10-05,406.8
+Taka Bonerate NP-2019,Indonesia,Taka Takere,-6.68496,121.20734,2019-10-05,572.93
+Taka Bonerate NP-2019,Indonesia,Tambuna Besar,-7.01067,121.20885,2019-10-17,672.87
+Taka Bonerate NP-2019,Indonesia,Tarupa Besar Selatan,-6.50876,121.1272,2019-10-06,846.96
+Taka Bonerate NP-2019,Indonesia,Tarupa Kecil,-6.45167,121.13815,2019-10-11,609.2
+Taka Bonerate NP-2019,Indonesia,Tarupa Kecil Barat,-6.44962,121.07067,2019-10-06,831.77
+Taka Bonerate NP-2019,Indonesia,Tinabo Besar,-6.56134,121.10214,2019-10-05,1068.28
+Taka Bonerate NP-2019,Indonesia,Tinabo Kecil 1,-6.573907966,121.075189,2019-10-08,446.8
+Taka Bonerate NP-2019,Indonesia,Tinanja Timur,-6.55469,121.17685,2019-10-09,734.64
+Aceh 2010,Indonesia,Anoi Itam,5.842690278,95.37351944,2010-07-28,610.29
+Aceh 2010,Indonesia,Batee Meurenon,5.873513056,95.26466306,2010-07-27,292.16
+Aceh 2010,Indonesia,Benteng,5.845705,95.373215,2010-07-29,224.19
+Aceh 2010,Indonesia,Beurawang,5.777511111,95.33685194,2010-07-28,370.47
+Aceh 2010,Indonesia,Gapang,5.85416157,95.27371142,2010-07-31,530.85
+Aceh 2010,Indonesia,Jaboi,5.799778889,95.34604611,2010-07-28,223.14
+Aceh 2010,Indonesia,Lhok Weng,5.863641111,95.26643611,2010-07-31,392.79
+Aceh 2010,Indonesia,Reuteuk,5.857248889,95.36137889,2010-07-29,170.11
+Aceh 2010,Indonesia,Rubiah Channel,5.883753056,95.25491,2010-07-27,784.23
+Aceh 2010,Indonesia,Sumur Tiga,5.888368056,95.34547111,2010-07-29,444.91
+Aceh 2010,Indonesia,Ujung Kareung,5.876188889,95.35363575,2010-07-29,431.48
+Moyo 2014,Indonesia,Moyo 1,-8.14732111,117.6582949,2014-06-14,201.46
+Moyo 2014,Indonesia,Moyo 2,-8.153198,117.6073974,2014-06-14,135.19
+Moyo 2014,Indonesia,Moyo 3,-8.14320803,117.5644398,2014-06-14,281.67
+Moyo 2014,Indonesia,Moyo 4,-8.1544184,117.5368045,2014-06-14,245.18
+Aceh 2011,Indonesia,Anoi Itam,5.842690278,95.37351944,2011-02-05,261.99
+Aceh 2011,Indonesia,Ba Kopra,5.866863889,95.22823111,2011-02-13,661.58
+Aceh 2011,Indonesia,Batee Meurenon,5.873513056,95.26466306,2011-02-02,375.76
+Aceh 2011,Indonesia,Benteng,5.845705,95.373215,2011-02-10,423.94
+Aceh 2011,Indonesia,Beurawang,5.777511111,95.33685194,2011-02-06,382.81
+Aceh 2011,Indonesia,Canyon,5.89829,95.21692306,2011-02-14,739.36
+Aceh 2011,Indonesia,Deudap,5.607141944,95.19258111,2011-02-08,596.12
+Aceh 2011,Indonesia,Gapang,5.85416157,95.27371142,2011-02-03,364.54
+Aceh 2011,Indonesia,Jaboi,5.799778889,95.34604611,2011-02-06,351.26
+Aceh 2011,Indonesia,Lamteng,5.64733081,95.1629988,2011-02-08,281.12
+Aceh 2011,Indonesia,Leun Balee 1,5.7276,95.07301111,2011-02-09,341.07
+Aceh 2011,Indonesia,Lhoh,5.6678498,95.12664691,2011-02-07,377.71
+Aceh 2011,Indonesia,Lhok Weng,5.863641111,95.26643611,2011-02-03,331.96
+Aceh 2011,Indonesia,Lhong Angin 2,5.821983889,95.25977111,2011-02-13,590.13
+Aceh 2011,Indonesia,Paloh,5.664196111,95.09257694,2011-02-07,616.37
+Aceh 2011,Indonesia,Pasi Janeng 2,5.63200375,95.13802886,2011-02-09,339.85
+Aceh 2011,Indonesia,Pulau Klah,5.87730995,95.31408085,2011-02-15,273.06
+Aceh 2011,Indonesia,Reuteuk,5.857248889,95.36137889,2011-02-10,167.3
+Aceh 2011,Indonesia,Rubiah Channel,5.883753056,95.25491,2011-02-14,389.42
+Aceh 2011,Indonesia,Rubiah Sea Garden,5.881451944,95.260645,2011-02-15,542.59
+Aceh 2011,Indonesia,Sumur Tiga,5.888368056,95.34547111,2011-02-12,408.95
+Aceh 2011,Indonesia,Ujung Kareung,5.876188889,95.35363575,2011-02-12,440.15
+Aceh 2011,Indonesia,Ujung Seuke,5.808331944,95.37631,2011-02-05,499.42
+Aceh 2011,Indonesia,Ujung Seurawan,5.89558,95.237595,2011-02-02,514.74
+Aceh 2013,Indonesia,Anoi Itam,5.842690278,95.37351944,2013-03-28,231.4
+Aceh 2013,Indonesia,Ba Kopra,5.866863889,95.22823111,2013-03-31,1571.03
+Aceh 2013,Indonesia,Batee Meurenon,5.873513056,95.26466306,2013-03-30,1749.87
+Aceh 2013,Indonesia,Benteng,5.845705,95.373215,2013-03-27,367.46
+Aceh 2013,Indonesia,Beurawang,5.777511111,95.33685194,2013-03-28,215.27
+Aceh 2013,Indonesia,Canyon,5.89829,95.21692306,2013-03-31,945.63
+Aceh 2013,Indonesia,Deudap,5.607141944,95.19258111,2013-04-02,755.29
+Aceh 2013,Indonesia,Gapang,5.85416157,95.27371142,2013-03-30,513.85
+Aceh 2013,Indonesia,Jaboi,5.799778889,95.34604611,2013-03-28,406.88
+Aceh 2013,Indonesia,Lamteng,5.64733081,95.1629988,2013-04-01,357.69
+Aceh 2013,Indonesia,Leun Balee 1,5.7276,95.07301111,2013-04-01,650.75
+Aceh 2013,Indonesia,Lhoh,5.6678498,95.12664691,2013-04-02,625.86
+Aceh 2013,Indonesia,Lhok Weng,5.863641111,95.26643611,2013-03-30,586.36
+Aceh 2013,Indonesia,Lhong Angin 2,5.821983889,95.25977111,2013-03-31,691.48
+Aceh 2013,Indonesia,Paloh,5.664196111,95.09257694,2013-04-02,860.91
+Aceh 2013,Indonesia,Pasi Janeng 2,5.63200375,95.13802886,2013-04-02,958.36
+Aceh 2013,Indonesia,Reuteuk,5.857248889,95.36137889,2013-03-29,301.51
+Aceh 2013,Indonesia,Rubiah Channel,5.883753056,95.25491,2013-03-30,710.1
+Aceh 2013,Indonesia,Rubiah Sea Garden,5.881451944,95.260645,2013-03-30,653.19
+Aceh 2013,Indonesia,Sumur Tiga,5.888368056,95.34547111,2013-03-28,516.92
+Aceh 2013,Indonesia,Ujung Kareung,5.876188889,95.35363575,2013-03-28,618.73
+Aceh 2013,Indonesia,Ujung Seuke,5.808331944,95.37631,2013-03-27,352.48
+Aceh 2013,Indonesia,Ujung Seurawan,5.89558,95.237595,2013-03-31,930.34
+Belize National Lionfish Monitoring Program,Belize,BCMR 06,18.17822,-87.832895,2015-10-10,443.8
+Belize National Lionfish Monitoring Program,Belize,BCMR 07,18.169558,-87.833819,2015-10-10,404.36
+Belize National Lionfish Monitoring Program,Belize,BCMR 22,18.138644,-87.823355,2015-11-03,424.58
+Belize National Lionfish Monitoring Program,Belize,BCMR 24,18.136243,-87.82453,2015-11-03,1051.91
+Belize National Lionfish Monitoring Program,Belize,BCMR 29,18.111543,-87.850726,2015-10-11,359.35
+Belize National Lionfish Monitoring Program,Belize,BCMR 31,18.11352,-87.8341,2015-10-08,177.95
+Belize National Lionfish Monitoring Program,Belize,BCMR 33,18.089187,-87.868101,2015-10-09,324.03
+Belize National Lionfish Monitoring Program,Belize,BCMR 39,18.099946,-87.853042,2015-10-11,214.18
+Belize National Lionfish Monitoring Program,Belize,BCMR 46,18.08711,-87.8656,2015-10-09,216.83
+Belize National Lionfish Monitoring Program,Belize,BCMR - Alleys,18.17,-87.823,2015-10-08,218.41
+Belize National Lionfish Monitoring Program,Belize,BCMR - Alleys,18.17,-87.823,2020-06-23,28.12
+Belize National Lionfish Monitoring Program,Belize,BCMR BR 19,18.14729,-87.82401,2015-12-10,1015.27
+Belize National Lionfish Monitoring Program,Belize,BZCCCB02,17.78378,-88.00267,2019-11-19,440.85
+Belize National Lionfish Monitoring Program,Belize,BZHCCB02,17.84336,-87.98484,2015-12-06,203.52
+Belize National Lionfish Monitoring Program,Belize,CCMR-B-GUZ-10,17.700363,-88.014066,2019-11-23,283.74
+Belize National Lionfish Monitoring Program,Belize,CCMR-B-NTZ-09,17.728593,-88.009179,2019-11-22,530.76
+Belize National Lionfish Monitoring Program,Belize,CCMR-B-NTZ-10,17.721603000000002,-88.017225,2019-11-19,303.82
+Belize National Lionfish Monitoring Program,Belize,CCMR-F-GUZ-03,17.717433,-88.004112,2019-11-20,536.83
+Belize National Lionfish Monitoring Program,Belize,CCMR-F-GUZ-08,17.698399,-88.007937,2019-11-22,281.46
+Belize National Lionfish Monitoring Program,Belize,CCMR-F-GUZ-08,17.698399,-88.007937,2019-11-23,21.23
+Belize National Lionfish Monitoring Program,Belize,CCMR-F-NTZ-01,17.777767,-87.993228,2019-11-20,251.52
+Belize National Lionfish Monitoring Program,Belize,CCMR-F-NTZ-08,17.750066,-87.999182,2019-11-23,313.12
+Belize National Lionfish Monitoring Program,Belize,CCMR-F-NTZ-08,17.750066,-87.999182,2019-11-23,1013.4
+Belize National Lionfish Monitoring Program,Belize,Conch 2,16.156062,-88.600019,2019-11-09,67.93
+Belize National Lionfish Monitoring Program,Belize,HCMR-B-GUZ-01,17.856651,-87.980791,2015-12-07,314.33
+Belize National Lionfish Monitoring Program,Belize,HCMR-B-GUZ-03,17.851145,-87.983328,2015-12-06,311.63
+Belize National Lionfish Monitoring Program,Belize,HCMR-B-GUZ-04,17.847997,-87.984413,2015-11-25,319.07
+Belize National Lionfish Monitoring Program,Belize,HCMR-B-NTZ-02,17.865879,-87.977638,2015-11-24,457.41
+Belize National Lionfish Monitoring Program,Belize,HCMR-B-NTZ-04,17.840799,-87.986154,2015-12-06,1221.25
+Belize National Lionfish Monitoring Program,Belize,HCMR-F-GUZ-02,17.853186,-87.97656,2015-12-04,273.49
+Belize National Lionfish Monitoring Program,Belize,HCMR-F-GUZ-03,17.850378,-87.97781,2015-11-25,401.7
+Belize National Lionfish Monitoring Program,Belize,HCMR-F-NTZ-01,17.871414,-87.970512,2015-11-25,111.37
+Belize National Lionfish Monitoring Program,Belize,HCMR-F-NTZ-03,17.863084,-87.973322,2015-11-24,1155.37
+Belize National Lionfish Monitoring Program,Belize,HCMR-F-NTZ-04,17.859794,-87.974706,2015-11-24,85.15
+Belize National Lionfish Monitoring Program,Belize,Lobster 2,16.198704,-88.559313,2019-11-10,672.79
+Belize National Lionfish Monitoring Program,Belize,Middle Snake Caye,16.203365,-88.551082,2019-11-11,430.75
+Belize National Lionfish Monitoring Program,Belize,PHMR-42,16.174153,-88.575638,2019-11-09,2266.94
+Belize National Lionfish Monitoring Program,Belize,PHMR-44,16.192107,-88.575718,2019-11-09,186.81
+Belize National Lionfish Monitoring Program,Belize,PHMR-45,16.188547,-88.574082,2019-11-11,259.44
+Belize National Lionfish Monitoring Program,Belize,Rapid Conch,16.218241,-88.514681,2019-11-12,300.61
+Belize National Lionfish Monitoring Program,Belize,SWCMR-18,16.85632,-88.06968,2015-10-26,118.7
+Belize National Lionfish Monitoring Program,Belize,SWCMR-19,16.85308,-88.07078,2015-10-26,144.48
+Belize National Lionfish Monitoring Program,Belize,SWCMR-22,16.842599,-88.073252,2015-10-25,69.24
+Belize National Lionfish Monitoring Program,Belize,SWCMR-43,16.76634,-88.07527,2015-10-27,131.14
+Belize National Lionfish Monitoring Program,Belize,SWCMR-43,16.76634,-88.07527,2015-10-27,434.04
+Belize National Lionfish Monitoring Program,Belize,SWCMR-44,16.76291,-88.07507,2015-10-27,150.7
+Belize National Lionfish Monitoring Program,Belize,SWCMR-45,16.75864,-88.07481,2015-10-27,234.45
+Belize National Lionfish Monitoring Program,Belize,SWCMR-BR-16,16.91393,-88.08321,2015-10-26,834.14
+Belize National Lionfish Monitoring Program,Belize,SWCMR-BR-255,16.6867,-88.19323,2010-10-28,17.28
+Belize National Lionfish Monitoring Program,Belize,SWCMR-BR-255,16.6867,-88.19323,2015-10-28,420.51
+Belize National Lionfish Monitoring Program,Belize,SWCMR-BR-286,16.75188,-88.14646,2015-10-27,500.83
+Belize National Lionfish Monitoring Program,Belize,SWCMR-BR-371,16.656860000000002,-88.14841,2015-10-28,596
+Belize National Lionfish Monitoring Program,Belize,SWCMR-BR-63,16.79458,-88.08717,2015-10-28,799.74
+Belize National Lionfish Monitoring Program,Belize,SWCMR-BR-99,16.80159,-88.11433,2015-10-29,1123.74
+Belize National Lionfish Monitoring Program,Belize,Wilson Caye,16.222947,-88.587921,2019-11-11,245.74
+Kenya CRCP legacy,Kenya,Bamburi Wreck,-3.99584,39.75339,2013-11-30,543.84
+Kenya CRCP legacy,Kenya,Boso-Kiunga,-1.74,41.5253,2008-03-08,464.25
+Kenya CRCP legacy,Kenya,Bureni,-3.83583,39.82564,2009-04-07,71.41
+Kenya CRCP legacy,Kenya,Bureni,-3.83583,39.82564,2012-11-22,49.86
+Kenya CRCP legacy,Kenya,Bureni,-3.83583,39.82564,2012-11-22,21.87
+Kenya CRCP legacy,Kenya,Bureni,-3.83583,39.82564,2014-09-17,90.02
+Kenya CRCP legacy,Kenya,Bureni,-3.83583,39.82564,2015-11-05,141.22
+Kenya CRCP legacy,Kenya,Bureni,-3.83583,39.82564,2016-10-11,53.92
+Kenya CRCP legacy,Kenya,Bureni Forereef,-3.82075,39.8351,2014-12-03,434.77
+Kenya CRCP legacy,Kenya,Chale Edge,-4.43,39.55,2015-11-21,252.48
+Kenya CRCP legacy,Kenya,Chale-Makonde,-4.40965,39.55348,2014-11-15,89.14
+Kenya CRCP legacy,Kenya,Chale Mavumizini,-4.43,39.55,2015-11-22,507.61
+Kenya CRCP legacy,Kenya,Chale-Mwaromba,-4.40203,39.55513,2014-11-15,85.43
+Kenya CRCP legacy,Kenya,Changai,-4.64453,39.36611,2012-05-25,164.45
+Kenya CRCP legacy,Kenya,Changai,-4.64453,39.36611,2014-12-15,53.13
+Kenya CRCP legacy,Kenya,Coral garden(Kiunga),-2.04386,41.24119,2008-03-07,520.53
+Kenya CRCP legacy,Kenya,Diani,-4.32165,39.58024,1987-09-15,16.91
+Kenya CRCP legacy,Kenya,Diani,-4.32165,39.58024,1992-11-11,7.65
+Kenya CRCP legacy,Kenya,Diani,-4.32165,39.58024,1993-11-11,10.32
+Kenya CRCP legacy,Kenya,Diani,-4.32165,39.58024,1994-12-01,23.51
+Kenya CRCP legacy,Kenya,Diani,-4.32165,39.58024,1995-12-30,12.94
+Kenya CRCP legacy,Kenya,Diani,-4.32165,39.58024,1996-12-30,24.27
+Kenya CRCP legacy,Kenya,Diani,-4.32165,39.58024,1997-02-06,9.11
+Kenya CRCP legacy,Kenya,Diani,-4.32165,39.58024,1999-03-12,10.65
+Kenya CRCP legacy,Kenya,Diani,-4.32165,39.58024,2000-03-03,7.52
+Kenya CRCP legacy,Kenya,Diani,-4.32165,39.58024,2001-02-16,13.07
+Kenya CRCP legacy,Kenya,Diani,-4.32165,39.58024,2002-02-21,20.54
+Kenya CRCP legacy,Kenya,Diani,-4.32165,39.58024,2004-04-02,22.38
+Kenya CRCP legacy,Kenya,Diani,-4.32165,39.58024,2005-02-18,22.91
+Kenya CRCP legacy,Kenya,Diani,-4.32165,39.58024,2006-03-22,24.27
+Kenya CRCP legacy,Kenya,Diani,-4.32165,39.58024,2007-02-28,26.56
+Kenya CRCP legacy,Kenya,Diani,-4.32165,39.58024,2009-02-18,42.01
+Kenya CRCP legacy,Kenya,Diani,-4.32165,39.58024,2011-10-05,42.7
+Kenya CRCP legacy,Kenya,Diani,-4.32165,39.58024,2013-12-09,94.44
+Kenya CRCP legacy,Kenya,Diani,-4.32165,39.58024,2015-12-18,114.5
+Kenya CRCP legacy,Kenya,Diani,-4.32165,39.58024,2017-06-04,17.5
+Kenya CRCP legacy,Kenya,Diani New reef,-4.32376,39.58464,2014-11-09,160.58
+Kenya CRCP legacy,Kenya,Funzi,-4.56461,39.45727,2012-10-02,221.74
+Kenya CRCP legacy,Kenya,Galu,-4.35198,39.57778,2014-11-09,240.46
+Kenya CRCP legacy,Kenya,Gazi,-4.46288,39.51982,2012-09-10,68.84
+Kenya CRCP legacy,Kenya,Hamadu,-3.87048,39.81004,2014-08-06,17.79
+Kenya CRCP legacy,Kenya,Jiwe la kale East,-4.66056,39.39,2014-11-04,254.68
+Kenya CRCP legacy,Kenya,Jiwe la kale West,-4.66055,39.389,2014-11-04,174.18
+Kenya CRCP legacy,Kenya,Jumba,-3.94602,39.78839,2017-10-16,63.15
+Kenya CRCP legacy,Kenya,Jumba Reef Edge,-3.94602,39.78839,2014-12-09,115.59
+Kenya CRCP legacy,Kenya,Kanamai,-3.923,39.7898,1987-09-08,24.03
+Kenya CRCP legacy,Kenya,Kanamai,-3.923,39.7898,1992-12-06,35.24
+Kenya CRCP legacy,Kenya,Kanamai,-3.923,39.7898,1993-10-28,93.51
+Kenya CRCP legacy,Kenya,Kanamai,-3.923,39.7898,1994-11-29,98.78
+Kenya CRCP legacy,Kenya,Kanamai,-3.923,39.7898,1996-02-01,39.68
+Kenya CRCP legacy,Kenya,Kanamai,-3.923,39.7898,1996-11-21,94.92
+Kenya CRCP legacy,Kenya,Kanamai,-3.923,39.7898,1997-02-05,26.52
+Kenya CRCP legacy,Kenya,Kanamai,-3.923,39.7898,1999-02-24,65.77
+Kenya CRCP legacy,Kenya,Kanamai,-3.923,39.7898,2000-02-17,34.54
+Kenya CRCP legacy,Kenya,Kanamai,-3.923,39.7898,2001-02-03,42.18
+Kenya CRCP legacy,Kenya,Kanamai,-3.923,39.7898,2002-02-07,32.21
+Kenya CRCP legacy,Kenya,Kanamai,-3.923,39.7898,2004-04-05,28.5
+Kenya CRCP legacy,Kenya,Kanamai,-3.923,39.7898,2005-02-17,63.09
+Kenya CRCP legacy,Kenya,Kanamai,-3.923,39.7898,2006-02-06,82.68
+Kenya CRCP legacy,Kenya,Kanamai,-3.923,39.7898,2007-02-17,30.88
+Kenya CRCP legacy,Kenya,Kanamai,-3.923,39.7898,2009-03-07,60.05
+Kenya CRCP legacy,Kenya,Kanamai,-3.923,39.7898,2010-06-10,98.76
+Kenya CRCP legacy,Kenya,Kanamai,-3.923,39.7898,2011-10-20,41.15
+Kenya CRCP legacy,Kenya,Kanamai,-3.923,39.7898,2012-06-12,30.37
+Kenya CRCP legacy,Kenya,Kanamai,-3.923,39.7898,2013-11-25,33.21
+Kenya CRCP legacy,Kenya,Kanamai,-3.923,39.7898,2015-12-04,38
+Kenya CRCP legacy,Kenya,Kanamai Reef Edge,-3.93025,39.79302,2014-12-09,230.35
+Kenya CRCP legacy,Kenya,Kasa_Mombasa,-3.9905,39.75817,2009-04-14,1019.51
+Kenya CRCP legacy,Kenya,Kasa_Msambweni,-4.49611,39.48417,2013-11-23,56.21
+Kenya CRCP legacy,Kenya,Kibuyuni,-4.64119,39.34288,2012-11-30,126.71
+Kenya CRCP legacy,Kenya,Kibuyuni 1 (East or B),-4.64381,39.334,2010-06-07,111.51
+Kenya CRCP legacy,Kenya,Kibuyuni 1 (East or B),-4.64381,39.334,2011-09-13,127.89
+Kenya CRCP legacy,Kenya,Kibuyuni 1 (East or B),-4.64381,39.334,2014-11-03,756.89
+Kenya CRCP legacy,Kenya,Kibuyuni 2 (West or A),-4.64119,39.343,2010-06-07,119.21
+Kenya CRCP legacy,Kenya,Kibuyuni 2 (West or A),-4.64119,39.343,2014-11-03,620.25
+Kenya CRCP legacy,Kenya,Kinondo,-4.40948,39.56057,2014-11-12,394.65
+Kenya CRCP legacy,Kenya,Kisite,-4.71506,39.37338,1995-12-18,612.56
+Kenya CRCP legacy,Kenya,Kisite,-4.71506,39.37338,2004-01-21,1267.68
+Kenya CRCP legacy,Kenya,Kisite,-4.71506,39.37338,2006-03-24,727.75
+Kenya CRCP legacy,Kenya,Kisite,-4.71506,39.37338,2009-12-04,1249.2
+Kenya CRCP legacy,Kenya,Kisite 1,-4.71506,39.37338,2012-11-29,1084.62
+Kenya CRCP legacy,Kenya,Kisite 1,-4.71506,39.37338,2015-11-28,1312.97
+Kenya CRCP legacy,Kenya,Kisite 1,-4.71506,39.37338,2016-11-08,747.13
+Kenya CRCP legacy,Kenya,Kisite 2,-4.71528,39.36793,2012-11-29,601.49
+Kenya CRCP legacy,Kenya,Kisite 2,-4.71528,39.36793,2015-11-28,1241.47
+Kenya CRCP legacy,Kenya,Kisite corner,-4.71848,39.38134,2016-11-08,1011.78
+Kenya CRCP legacy,Kenya,Kisite Edge 1,-4.71848,39.38134,2013-12-12,802.65
+Kenya CRCP legacy,Kenya,Kisite Edge 2,-4.72248,39.36502,2013-12-12,311.81
+Kenya CRCP legacy,Kenya,Kitanga (Tradewinds tengefu),-4.31395,39.58289,2009-03-06,129.48
+Kenya CRCP legacy,Kenya,Kui Kiunga,-1.829139,41.44475,2008-03-10,3001.78
+Kenya CRCP legacy,Kenya,Mabakani,-4.66766,39.40538,2013-12-11,357.5
+Kenya CRCP legacy,Kenya,Mabakani,-4.66766,39.40538,2013-12-11,227.51
+Kenya CRCP legacy,Kenya,Malindi,-3.26,40.15,1987-10-13,994.6
+Kenya CRCP legacy,Kenya,Malindi,-3.26,40.15,1992-11-17,865.18
+Kenya CRCP legacy,Kenya,Malindi,-3.26,40.15,1993-11-15,878.38
+Kenya CRCP legacy,Kenya,Malindi,-3.26,40.15,1994-11-09,1634.49
+Kenya CRCP legacy,Kenya,Malindi,-3.26,40.15,1995-12-10,1149.31
+Kenya CRCP legacy,Kenya,Malindi,-3.26,40.15,1996-12-24,948.34
+Kenya CRCP legacy,Kenya,Malindi,-3.26,40.15,1997-12-17,960.58
+Kenya CRCP legacy,Kenya,Malindi,-3.26,40.15,1999-03-10,1161.58
+Kenya CRCP legacy,Kenya,Malindi,-3.26,40.15,2000-03-02,504.82
+Kenya CRCP legacy,Kenya,Malindi,-3.26,40.15,2001-03-05,902.82
+Kenya CRCP legacy,Kenya,Malindi,-3.26,40.15,2002-02-23,619.32
+Kenya CRCP legacy,Kenya,Malindi,-3.26,40.15,2004-02-17,853.47
+Kenya CRCP legacy,Kenya,Malindi,-3.26,40.15,2005-03-21,1265.43
+Kenya CRCP legacy,Kenya,Malindi,-3.26,40.15,2006-02-23,980.39
+Kenya CRCP legacy,Kenya,Malindi,-3.26,40.15,2006-02-23,501.18
+Kenya CRCP legacy,Kenya,Malindi,-3.26,40.15,2007-02-15,824.27
+Kenya CRCP legacy,Kenya,Malindi,-3.26,40.15,2009-10-27,839.48
+Kenya CRCP legacy,Kenya,Malindi,-3.26,40.15,2011-10-19,530.72
+Kenya CRCP legacy,Kenya,Malindi,-3.26,40.15,2013-11-28,1061.16
+Kenya CRCP legacy,Kenya,Malindi,-3.26,40.15,2016-09-27,588.2
+Kenya CRCP legacy,Kenya,Malindi Edge,-3.24565,40.14708,2016-04-12,624.46
+Kenya CRCP legacy,Kenya,Mayungu,-3.29438,40.12906,2012-05-05,133.28
+Kenya CRCP legacy,Kenya,Mgwani Makonde,-4.40965,39.55348,2009-02-20,73.37
+Kenya CRCP legacy,Kenya,Mgwani Mwaromba,-4.40203,39.55513,2009-02-20,42.09
+Kenya CRCP legacy,Kenya,Midjira,-4.73605,39.30289,2013-12-13,146.2
+Kenya CRCP legacy,Kenya,Mji wa Kale 1 (Mkwiro),-4.65969,39.3862,2015-11-26,264.97
+Kenya CRCP legacy,Kenya,Mji wa Kale 2 (Mkwiro),-4.65983,39.38976,2015-11-27,332.81
+Kenya CRCP legacy,Kenya,Mlango wa Muhindi,-1.90811,41.37158,2008-03-09,1458.24
+Kenya CRCP legacy,Kenya,Mombasa,-3.99204,39.74966,1987-09-22,117.75
+Kenya CRCP legacy,Kenya,Mombasa,-3.99204,39.74966,1991-11-23,173.59
+Kenya CRCP legacy,Kenya,Mombasa,-3.99204,39.74966,1993-11-26,418.4
+Kenya CRCP legacy,Kenya,Mombasa,-3.99204,39.74966,1994-11-16,903.97
+Kenya CRCP legacy,Kenya,Mombasa,-3.99204,39.74966,1995-11-01,309.51
+Kenya CRCP legacy,Kenya,Mombasa,-3.99204,39.74966,1996-11-19,350.33
+Kenya CRCP legacy,Kenya,Mombasa,-3.99204,39.74966,1998-01-08,623.68
+Kenya CRCP legacy,Kenya,Mombasa,-3.99204,39.74966,1998-01-10,889.06
+Kenya CRCP legacy,Kenya,Mombasa,-3.99204,39.74966,1999-02-26,512.07
+Kenya CRCP legacy,Kenya,Mombasa,-3.99204,39.74966,2000-02-15,501.91
+Kenya CRCP legacy,Kenya,Mombasa,-3.99204,39.74966,2001-02-03,609.08
+Kenya CRCP legacy,Kenya,Mombasa,-3.99204,39.74966,2002-01-25,964.77
+Kenya CRCP legacy,Kenya,Mombasa,-3.99204,39.74966,2004-01-29,982.16
+Kenya CRCP legacy,Kenya,Mombasa,-3.99204,39.74966,2005-03-04,1136.31
+Kenya CRCP legacy,Kenya,Mombasa,-3.99204,39.74966,2006-01-25,819.79
+Kenya CRCP legacy,Kenya,Mombasa,-3.99204,39.74966,2007-01-31,1176.86
+Kenya CRCP legacy,Kenya,Mombasa,-3.99204,39.74966,2008-09-26,564.61
+Kenya CRCP legacy,Kenya,Mombasa,-3.99204,39.74966,2009-11-26,483.63
+Kenya CRCP legacy,Kenya,Mombasa,-3.99204,39.74966,2010-09-16,371.82
+Kenya CRCP legacy,Kenya,Mombasa,-3.99204,39.74966,2010-09-16,411.16
+Kenya CRCP legacy,Kenya,Mombasa,-3.99204,39.74966,2011-09-08,619.61
+Kenya CRCP legacy,Kenya,Mombasa,-3.99204,39.74966,2013-11-26,834.82
+Kenya CRCP legacy,Kenya,Mombasa,-3.99204,39.74966,2015-10-07,898.28
+Kenya CRCP legacy,Kenya,Mombasa,-3.99204,39.74966,2018-04-25,927.47
+Kenya CRCP legacy,Kenya,Mombasa,-3.99204,39.74966,2018-04-25,691.28
+Kenya CRCP legacy,Kenya,Mombasa Braincoral,-3.9791,39.7651,2014-09-25,1048.58
+Kenya CRCP legacy,Kenya,Mombasa Braincoral,-3.9791,39.7651,2016-12-06,1147.82
+Kenya CRCP legacy,Kenya,Mombasa Braincoral,-3.9791,39.7651,2016-12-07,499.3
+Kenya CRCP legacy,Kenya,Mombasa Braincoral,-3.9791,39.7651,2017-10-28,587.41
+Kenya CRCP legacy,Kenya,Mombasa Coral Gardens,-3.99204,39.74966,1992-10-12,235.81
+Kenya CRCP legacy,Kenya,Mombasa Coral Gardens,-3.99204,39.74966,1992-12-03,385.12
+Kenya CRCP legacy,Kenya,Mombasa Coral Gardens,-3.99204,39.74966,2009-04-18,543.96
+Kenya CRCP legacy,Kenya,Mombasa Coral Gardens,-3.99204,39.74966,2016-09-13,1157.1
+Kenya CRCP legacy,Kenya,Mombasa Green turtle,-3.9905,39.75817,2014-09-20,465.38
+Kenya CRCP legacy,Kenya,Mombasa Green turtle,-3.9905,39.75817,2017-11-18,334.15
+Kenya CRCP legacy,Kenya,Mombasa Lobster bank,-3.99492,39.75415,2016-12-07,677.92
+Kenya CRCP legacy,Kenya,Mombasa park forereef,-3.99443,39.74562,2013-11-30,594.14
+Kenya CRCP legacy,Kenya,Mombasa Sand patch,-3.97766,39.765860000000004,2014-09-20,1089.31
+Kenya CRCP legacy,Kenya,Mombasa Sand patch,-3.97766,39.765860000000004,2017-10-28,439.38
+Kenya CRCP legacy,Kenya,Mombasa_Sharkpoint,-3.99204,39.74966,2014-09-25,2174.7
+Kenya CRCP legacy,Kenya,Mombasa Starfish,-3.99204,39.74966,2009-04-17,525.31
+Kenya CRCP legacy,Kenya,Mpunga North,-4.49901,39.48138,2010-06-02,36.35
+Kenya CRCP legacy,Kenya,Mpunga North,-4.49901,39.48138,2010-06-02,37.37
+Kenya CRCP legacy,Kenya,Mpunga North,-4.49901,39.48138,2015-11-24,127.77
+Kenya CRCP legacy,Kenya,Mpunga South,-4.5052,39.4794,2010-06-02,78.08
+Kenya CRCP legacy,Kenya,Mpunga South,-4.5052,39.4794,2014-12-14,121.2
+Kenya CRCP legacy,Kenya,Mpunga South,-4.5052,39.4794,2015-11-24,303.5
+Kenya CRCP legacy,Kenya,Mpunguti,-4.700527,39.408119,2007-02-27,101.24
+Kenya CRCP legacy,Kenya,Mpunguti Edge 2 (Kijamba),-4.70475,39.41611,2013-12-11,570.86
+Kenya CRCP legacy,Kenya,Mpunguti wa Juu Edge,-4.70122,39.41863,2013-12-10,516.09
+Kenya CRCP legacy,Kenya,Mradi,-3.94166,39.7823,2009-11-26,13.2
+Kenya CRCP legacy,Kenya,Mradi,-3.94166,39.7823,2011-09-09,261.56
+Kenya CRCP legacy,Kenya,Mradi,-3.94166,39.7823,2012-06-11,317.05
+Kenya CRCP legacy,Kenya,Mradi,-3.94166,39.7823,2014-09-18,215.26
+Kenya CRCP legacy,Kenya,Mradi,-3.94166,39.7823,2015-12-05,288.97
+Kenya CRCP legacy,Kenya,Msumarini,-3.87048,39.81004,2015-11-06,41.65
+Kenya CRCP legacy,Kenya,Mtangata,-4.31395,39.58289,2011-10-06,97.27
+Kenya CRCP legacy,Kenya,Mtangata,-4.31395,39.58289,2014-12-16,202.59
+Kenya CRCP legacy,Kenya,Mtangata,-4.31395,39.58289,2015-12-18,163.98
+Kenya CRCP legacy,Kenya,Mtangata,-4.31395,39.58289,2017-06-04,125.58
+Kenya CRCP legacy,Kenya,Mtangata,-4.31395,39.58289,2017-06-04,125.58
+Kenya CRCP legacy,Kenya,Mtangata,-4.31395,39.58289,2017-06-04,89.66
+Kenya CRCP legacy,Kenya,Mtwapa,-3.94719,39.77583,2012-09-07,78.07
+Kenya CRCP legacy,Kenya,Mvuleni Kijamba,-4.36205,39.56956,2009-02-19,81.7
+Kenya CRCP legacy,Kenya,Mvuleni Kijamba,-4.36205,39.56956,2014-11-14,210.14
+Kenya CRCP legacy,Kenya,Mvuleni Mecca,-4.35618,39.57669,2009-02-19,124.23
+Kenya CRCP legacy,Kenya,Mvuleni Mecca,-4.35618,39.57669,2014-11-14,158.54
+Kenya CRCP legacy,Kenya,Mwaembe,-4.4925,39.48694,2013-11-23,94.38
+Kenya CRCP legacy,Kenya,Mwaepe,-4.34974,39.57237,2010-10-01,54.69
+Kenya CRCP legacy,Kenya,Mwarembo,-4.67816,39.27108,2012-09-11,116
+Kenya CRCP legacy,Kenya,Mwipwa,-4.70313,39.31185,2013-12-13,279.94
+Kenya CRCP legacy,Kenya,Nyali,-4.063,39.71,2007-01-28,102.22
+Kenya CRCP legacy,Kenya,Nyali,-4.063,39.71,2009-10-25,286.83
+Kenya CRCP legacy,Kenya,Nyali,-4.063,39.71,2016-10-24,441.19
+Kenya CRCP legacy,Kenya,Nyali Forereef North,-4.04082,39.72688,2013-11-27,168.79
+Kenya CRCP legacy,Kenya,Nyali Forereef South,-4.0438,39.72622,2013-11-27,259.72
+Kenya CRCP legacy,Kenya,Nyuli ndogo,-4.67513,39.42774,2013-12-10,394.11
+Kenya CRCP legacy,Kenya,Nzidzani,-4.40498,39.56112,2014-11-12,195.93
+Kenya CRCP legacy,Kenya,RasIwatine,-4.02163,39.73313,1992-10-13,99.85
+Kenya CRCP legacy,Kenya,RasIwatine,-4.02163,39.73313,1993-11-06,129.29
+Kenya CRCP legacy,Kenya,RasIwatine,-4.02163,39.73313,1994-11-10,124.07
+Kenya CRCP legacy,Kenya,RasIwatine,-4.02163,39.73313,1995-11-13,72.71
+Kenya CRCP legacy,Kenya,RasIwatine,-4.02163,39.73313,1996-11-07,47.86
+Kenya CRCP legacy,Kenya,RasIwatine,-4.02163,39.73313,1997-01-06,69.78
+Kenya CRCP legacy,Kenya,RasIwatine,-4.02163,39.73313,1999-02-25,120.41
+Kenya CRCP legacy,Kenya,RasIwatine,-4.02163,39.73313,2000-02-28,95.36
+Kenya CRCP legacy,Kenya,RasIwatine,-4.02163,39.73313,2001-02-05,54.77
+Kenya CRCP legacy,Kenya,RasIwatine,-4.02163,39.73313,2002-01-24,87.53
+Kenya CRCP legacy,Kenya,RasIwatine,-4.02163,39.73313,2004-01-30,89.94
+Kenya CRCP legacy,Kenya,RasIwatine,-4.02163,39.73313,2005-03-03,59.14
+Kenya CRCP legacy,Kenya,RasIwatine,-4.02163,39.73313,2006-01-23,74.37
+Kenya CRCP legacy,Kenya,RasIwatine,-4.02163,39.73313,2007-01-29,239.1
+Kenya CRCP legacy,Kenya,RasIwatine,-4.02163,39.73313,2009-11-24,56.09
+Kenya CRCP legacy,Kenya,RasIwatine,-4.02163,39.73313,2010-09-18,129.85
+Kenya CRCP legacy,Kenya,RasIwatine,-4.02163,39.73313,2010-09-18,116.47
+Kenya CRCP legacy,Kenya,RasIwatine,-4.02163,39.73313,2011-11-07,70.22
+Kenya CRCP legacy,Kenya,RasIwatine,-4.02163,39.73313,2013-11-26,141.26
+Kenya CRCP legacy,Kenya,RasIwatine,-4.02163,39.73313,2015-11-07,116.19
+Kenya CRCP legacy,Kenya,RasIwatine,-4.02163,39.73313,2016-09-12,88.08
+Kenya CRCP legacy,Kenya,RasIwatine,-4.02163,39.73313,2018-04-25,40.37
+Kenya CRCP legacy,Kenya,Shark Point 2,-3.98,39.77,2009-04-14,597.66
+Kenya CRCP legacy,Kenya,Shimo la Tewa,-2.04389,41.24119,2008-03-06,382.23
+Kenya CRCP legacy,Kenya,Sii,-4.67816,39.27108,2012-09-11,124.99
+Kenya CRCP legacy,Kenya,Tiwi In,-4.2193,39.6124,2012-09-10,35.16
+Kenya CRCP legacy,Kenya,Tiwi In,-4.2193,39.6124,2014-11-02,29.99
+Kenya CRCP legacy,Kenya,Tiwi In,-4.2193,39.6124,2015-11-20,32.33
+Kenya CRCP legacy,Kenya,Tiwi Out,-4.22187,39.61113,2009-10-29,31.47
+Kenya CRCP legacy,Kenya,Tiwi Out,-4.22187,39.61113,2011-10-05,90.73
+Kenya CRCP legacy,Kenya,Tiwi Out,-4.22187,39.61113,2011-10-05,86.24
+Kenya CRCP legacy,Kenya,Tiwi Out,-4.22187,39.61113,2012-09-10,52.39
+Kenya CRCP legacy,Kenya,Tiwi Out,-4.22187,39.61113,2014-11-02,107.8
+Kenya CRCP legacy,Kenya,Tiwi Out,-4.22187,39.61113,2015-11-20,70.52
+Kenya CRCP legacy,Kenya,Tiwi Tengefu,-4.22187,39.61113,2009-10-29,17.59
+Kenya CRCP legacy,Kenya,Tiwi Tengefu,-4.22187,39.61113,2011-10-05,77.89
+Kenya CRCP legacy,Kenya,Vipingo,-3.80136,39.83687,1987-10-01,57.66
+Kenya CRCP legacy,Kenya,Vipingo,-3.80136,39.83687,1992-10-30,46.96
+Kenya CRCP legacy,Kenya,Vipingo,-3.80136,39.83687,1993-10-27,64.83
+Kenya CRCP legacy,Kenya,Vipingo,-3.80136,39.83687,1994-11-28,99.08
+Kenya CRCP legacy,Kenya,Vipingo,-3.80136,39.83687,1995-12-04,55.31
+Kenya CRCP legacy,Kenya,Vipingo,-3.80136,39.83687,1996-11-20,50.41
+Kenya CRCP legacy,Kenya,Vipingo,-3.80136,39.83687,1997-01-09,70.58
+Kenya CRCP legacy,Kenya,Vipingo,-3.80136,39.83687,1999-03-10,40.22
+Kenya CRCP legacy,Kenya,Vipingo,-3.80136,39.83687,2000-02-16,25.41
+Kenya CRCP legacy,Kenya,Vipingo,-3.80136,39.83687,2001-02-01,21.44
+Kenya CRCP legacy,Kenya,Vipingo,-3.80136,39.83687,2002-02-08,46.66
+Kenya CRCP legacy,Kenya,Vipingo,-3.80136,39.83687,2004-02-12,40.64
+Kenya CRCP legacy,Kenya,Vipingo,-3.80136,39.83687,2005-03-07,49.67
+Kenya CRCP legacy,Kenya,Vipingo,-3.80136,39.83687,2006-02-07,65.64
+Kenya CRCP legacy,Kenya,Vipingo,-3.80136,39.83687,2007-02-16,104.24
+Kenya CRCP legacy,Kenya,Vipingo,-3.80136,39.83687,2008-03-19,274.45
+Kenya CRCP legacy,Kenya,Vipingo,-3.80136,39.83687,2009-04-06,273.19
+Kenya CRCP legacy,Kenya,Vipingo,-3.80136,39.83687,2010-11-01,225.7
+Kenya CRCP legacy,Kenya,Vipingo,-3.80136,39.83687,2011-09-08,374.59
+Kenya CRCP legacy,Kenya,Vipingo,-3.80136,39.83687,2012-06-14,244.49
+Kenya CRCP legacy,Kenya,Vipingo,-3.80136,39.83687,2013-12-11,240.37
+Kenya CRCP legacy,Kenya,Vipingo,-3.80136,39.83687,2014-04-23,234.71
+Kenya CRCP legacy,Kenya,Vipingo,-3.80136,39.83687,2015-10-06,344.72
+Kenya CRCP legacy,Kenya,Vipingo Forereef,-3.81421,39.83718,2014-12-03,375.4
+Kenya CRCP legacy,Kenya,Vipingo Kinuni1,-3.80638,39.83996,2014-12-01,219.3
+Kenya CRCP legacy,Kenya,Vipingo Kinuni2,-3.81031,39.83856,2014-12-01,698.9
+Kenya CRCP legacy,Kenya,Waa,-4.20824,39.61448,2015-09-19,54.43
+Kenya CRCP legacy,Kenya,Waa,-4.20824,39.61448,2017-04-05,41.79
+Kenya CRCP legacy,Kenya,Waa,-4.20824,39.61448,2017-04-05,39.44
+Kenya CRCP legacy,Kenya,Waga,-4.64938,39.39463,2011-09-12,98.07
+Kenya CRCP legacy,Kenya,Watamu,-3.37,40.01,1987-10-12,1430.2
+Kenya CRCP legacy,Kenya,Watamu,-3.37,40.01,1992-11-20,856.97
+Kenya CRCP legacy,Kenya,Watamu,-3.37,40.01,1993-11-17,1249.27
+Kenya CRCP legacy,Kenya,Watamu,-3.37,40.01,1994-11-09,1490.75
+Kenya CRCP legacy,Kenya,Watamu,-3.37,40.01,1995-12-08,819.13
+Kenya CRCP legacy,Kenya,Watamu,-3.37,40.01,1996-12-30,779
+Kenya CRCP legacy,Kenya,Watamu,-3.37,40.01,1997-11-27,873.98
+Kenya CRCP legacy,Kenya,Watamu,-3.37,40.01,1999-03-13,819.21
+Kenya CRCP legacy,Kenya,Watamu,-3.37,40.01,2000-02-29,875.52
+Kenya CRCP legacy,Kenya,Watamu,-3.37,40.01,2001-02-15,1181.47
+Kenya CRCP legacy,Kenya,Watamu,-3.37,40.01,2002-02-22,1056.62
+Kenya CRCP legacy,Kenya,Watamu,-3.37,40.01,2004-02-16,1421.38
+Kenya CRCP legacy,Kenya,Watamu,-3.37,40.01,2005-03-18,1370.06
+Kenya CRCP legacy,Kenya,Watamu,-3.37,40.01,2006-02-21,943.53
+Kenya CRCP legacy,Kenya,Watamu,-3.37,40.01,2007-02-23,1021.33
+Kenya CRCP legacy,Kenya,Watamu,-3.37,40.01,2009-10-26,986.18
+Kenya CRCP legacy,Kenya,Watamu,-3.37,40.01,2011-11-02,959.37
+Kenya CRCP legacy,Kenya,Watamu,-3.37,40.01,2013-11-29,962.64
+Kenya CRCP legacy,Kenya,Watamu,-3.37,40.01,2016-09-26,966.25
+Kenya CRCP legacy,Kenya,Watamu Canyon,-3.363,40.021,2014-10-10,392.94
+Kenya CRCP legacy,Kenya,Watamu Caracas,-3.357,40.029,2014-10-09,1335.48
+Kenya CRCP legacy,Kenya,Watamu Deep reef,-3.352,40.04,2014-10-09,565.77
+Kenya CRCP legacy,Kenya,Watamu Tewa,-3.38,40.01,2014-10-10,486.69
+Gili Banta 2015,Indonesia,Gili Banta Barat,-8.413237,119.268869,2015-06-02,335.9
+Gili Banta 2015,Indonesia,Gili Banta Selatan 1,-8.458254,119.278491,2015-06-01,264.9
+Gili Banta 2015,Indonesia,Gili Banta Timur,-8.440154,119.327039,2015-06-02,257.04
+Gili Banta 2015,Indonesia,Gili Banta Utara,-8.399066,119.27582,2015-06-03,195.07
+Gili Banta 2015,Indonesia,Loho Mobuka,-8.437862,119.302617,2015-06-02,232.48
+Gili Matra MPA_2019,Indonesia,Air Core,-8.36431667,116.075,2019-08-27,152.06
+Gili Matra MPA_2019,Indonesia,Barat Sire,-8.36794,116.09777778,2019-08-22,142.49
+Gili Matra MPA_2019,Indonesia,Barat Sire,-8.36794,116.09777778,2019-09-22,178.13
+Gili Matra MPA_2019,Indonesia,Biorock,-8.35855389,116.04277778,2019-08-25,135.47
+Gili Matra MPA_2019,Indonesia,Bongkas Reef,-8.36952,116.0775,2019-08-26,232
+Gili Matra MPA_2019,Indonesia,Bongkas Reef,-8.36952,116.0775,2019-08-26,109.65
+Gili Matra MPA_2019,Indonesia,Corner Reef,-8.36217,116.08805556,2019-08-21,281.59
+Gili Matra MPA_2019,Indonesia,Gazebo Reef,-8.35433,116.0625,2019-08-22,91.11
+Gili Matra MPA_2019,Indonesia,Gazebo Reef,-8.35433,116.0625,2019-09-22,309.72
+Gili Matra MPA_2019,Indonesia,Good Heart,-8.34647,116.04333333,2019-08-20,221.93
+Gili Matra MPA_2019,Indonesia,Hans Reef,-8.35016,116.0875,2019-08-21,150.09
+Gili Matra MPA_2019,Indonesia,Hans Reef,-8.35016,116.0875,2019-11-21,8.42
+Gili Matra MPA_2019,Indonesia,Meno Slope 2,-8.35216444,116.05111111,2019-08-21,84.15
+Gili Matra MPA_2019,Indonesia,Meno Slope 2,-8.35216444,116.05111111,2019-08-22,225.5
+Gili Matra MPA_2019,Indonesia,Meno Wall,-8.34369,116.05055556,2019-08-21,380.56
+Gili Matra MPA_2019,Indonesia,Romantic Reef,-8.36078,116.05861111,2019-08-24,50.14
+Gili Matra MPA_2019,Indonesia,Romantic Reef,-8.36078,116.05861111,2019-08-25,193.7
+Gili Matra MPA_2019,Indonesia,Romantic Reef,-8.36078,116.05861111,2019-08-25,431.19
+Gili Matra MPA_2019,Indonesia,Secret Garden,-8.347065,116.06694444,2019-08-24,87.99
+Gili Matra MPA_2019,Indonesia,Shark Point,-8.34222,116.02722222,2019-08-20,139.08
+Gili Matra MPA_2019,Indonesia,Sunset Reef,-8.36252,116.03138889,2019-08-26,98.09
+Gili Matra MPA_2019,Indonesia,Sunset Reef 2,-8.35451111,116.02833333,2019-08-24,158.74
+Gili Matra MPA_2019,Indonesia,Tanjung Sire,-8.35934,116.11083333,2019-08-27,92.43
+Gili Matra MPA_2019,Indonesia,Tanjung Sire,-8.35934,116.11083333,2019-08-27,34.17
+Gili Matra MPA_2019,Indonesia,Teluk Medane,-8.35713,116.12388889,2019-08-27,168.18
+Gili Matra MPA_2019,Indonesia,Trawangan Slope,-8.35077,116.025,2019-08-26,183.18
+Gili Matra MPA_2019,Indonesia,Ujung Sire,-8.36065,116.09666667,2019-08-25,69.54
+Gili Matra MPA_2019,Indonesia,Ujung Sire,-8.36065,116.09666667,2019-11-25,3.78
+Kelapa 2015,Indonesia,Kelapa Barat,-8.671834,119.211459,2015-06-04,179.64
+Kelapa 2015,Indonesia,Kelapa Selatan 1,-8.680729,119.22349,2015-06-04,394.05
+Kelapa 2015,Indonesia,Kelapa Timur 1,-8.661149,119.234369,2015-06-04,232.06
+Kelapa 2015,Indonesia,Kelapa Timur 2,-8.668129,119.239374,2015-06-05,223.49
+Kelapa 2015,Indonesia,Kelapa Utara 2,-8.653198,119.224946,2015-06-05,448.23
+"Sulat Lawang 2013, 2017",Indonesia,Batu Mandi,-8.30411,116.71231,2013-06-22,327.69
+"Sulat Lawang 2013, 2017",Indonesia,Batu Mandi,-8.30411,116.71231,2017-11-16,214.11
+"Sulat Lawang 2013, 2017",Indonesia,Gili Bidara,-8.43886,116.73894,2017-11-20,465.18
+"Sulat Lawang 2013, 2017",Indonesia,Gili Kondo,-8.44114,116.73247,2017-11-20,329.82
+"Sulat Lawang 2013, 2017",Indonesia,Gili Lawang Barat,-8.29561,116.6855,2013-06-22,293.58
+"Sulat Lawang 2013, 2017",Indonesia,Gili Lawang Barat,-8.29561,116.6855,2017-11-18,189.11
+"Sulat Lawang 2013, 2017",Indonesia,Gili Lawang Utara 1,-8.29561,116.70919,2013-06-23,307.82
+"Sulat Lawang 2013, 2017",Indonesia,Gili Lawang Utara 1,-8.29561,116.70919,2017-11-18,325.08
+"Sulat Lawang 2013, 2017",Indonesia,Gili Lawang Utara 2,-8.28192,116.69611,2017-11-18,264.12
+"Sulat Lawang 2013, 2017",Indonesia,Gili Petagan,-8.43483,116.75606,2017-11-20,441.62
+"Sulat Lawang 2013, 2017",Indonesia,Gili Sulat Barat,-8.30997,116.71219,2013-06-23,324.54
+"Sulat Lawang 2013, 2017",Indonesia,Gili Sulat Barat,-8.30997,116.71219,2017-11-16,190.38
+"Sulat Lawang 2013, 2017",Indonesia,Gili Sulat Barat Daya,-8.31256,116.70819,2013-06-24,393.35
+"Sulat Lawang 2013, 2017",Indonesia,Gili Sulat Selatan,-8.32964,116.71339,2013-06-25,695.08
+"Sulat Lawang 2013, 2017",Indonesia,Gili Sulat Selatan,-8.32964,116.71339,2017-11-15,340.29
+"Sulat Lawang 2013, 2017",Indonesia,Gili Sulat Tenggara,-8.34578,116.74472,2013-06-25,440.25
+"Sulat Lawang 2013, 2017",Indonesia,Gili Sulat Tenggara,-8.34578,116.74472,2017-11-19,215.05
+"Sulat Lawang 2013, 2017",Indonesia,Gili Sulat Timur,-8.32036,116.72889,2013-06-25,511.49
+"Sulat Lawang 2013, 2017",Indonesia,Gili Sulat Timur,-8.32036,116.72889,2017-11-19,196.32
+"Sulat Lawang 2013, 2017",Indonesia,Pekaja Gili Lawang,-8.31053,116.70408,2013-06-23,511.92
+"Sulat Lawang 2013, 2017",Indonesia,Pekaja Gili Lawang,-8.31053,116.70408,2017-11-16,272.38
+"Sulat Lawang 2013, 2017",Indonesia,Tekalok Barat,-8.33897,116.70767,2013-06-24,575.3
+"Sulat Lawang 2013, 2017",Indonesia,Tekalok Timur,-8.33592,116.70244,2013-06-24,234.95
+"Sulat Lawang 2013, 2017",Indonesia,Tekalok Timur,-8.33592,116.70244,2017-11-15,197.37
+Aceh 2009,Indonesia,Anoi Itam,5.842690278,95.37351944,2009-02-24,248.55
+Aceh 2009,Indonesia,Ba Kopra,5.866863889,95.22823111,2009-03-02,564.01
+Aceh 2009,Indonesia,Batee Meurenon,5.873513056,95.26466306,2009-02-21,521.31
+Aceh 2009,Indonesia,Batee Meurenon,5.873513056,95.26466306,2009-03-05,407.76
+Aceh 2009,Indonesia,Benteng,5.845705,95.373215,2009-03-01,686.34
+Aceh 2009,Indonesia,Beurawang,5.777511111,95.33685194,2009-02-28,569.4
+Aceh 2009,Indonesia,Canyon,5.89829,95.21692306,2009-03-08,846.5
+Aceh 2009,Indonesia,Deudap,5.607141944,95.19258111,2009-03-07,459.07
+Aceh 2009,Indonesia,Gapang,5.85416157,95.27371142,2009-02-21,494.77
+Aceh 2009,Indonesia,Gapang,5.85416157,95.27371142,2009-03-05,500.86
+Aceh 2009,Indonesia,Jaboi,5.799778889,95.34604611,2009-02-28,355.11
+Aceh 2009,Indonesia,Lamteng,5.64733081,95.1629988,2009-02-25,699.4
+Aceh 2009,Indonesia,Lapeng,5.698566944,95.11094194,2009-02-22,795.99
+Aceh 2009,Indonesia,Lapeng,5.698566944,95.11094194,2009-03-09,627.07
+Aceh 2009,Indonesia,Leun Balee 1,5.7276,95.07301111,2009-02-22,805.06
+Aceh 2009,Indonesia,Leun Balee 1,5.7276,95.07301111,2009-03-09,527.11
+Aceh 2009,Indonesia,Leun Balee 2,5.742093889,95.06680306,2009-03-09,222.19
+Aceh 2009,Indonesia,Lhoh,5.6678498,95.12664691,2009-02-23,1399.97
+Aceh 2009,Indonesia,Lhok Weng,5.863641111,95.26643611,2009-02-21,153.18
+Aceh 2009,Indonesia,Lhok Weng,5.863641111,95.26643611,2009-03-04,461.46
+Aceh 2009,Indonesia,Lhong Angin 1,5.832608056,95.25836611,2009-02-18,265.88
+Aceh 2009,Indonesia,Lhong Angin 1,5.832608056,95.25836611,2009-03-10,556.12
+Aceh 2009,Indonesia,Lhong Angin 2,5.821983889,95.25977111,2009-03-02,542.08
+Aceh 2009,Indonesia,Lhong Angin 3,5.80788936,95.26471613,2009-02-18,508.49
+Aceh 2009,Indonesia,Lhong Angin 3,5.80788936,95.26471613,2009-03-10,501.67
+Aceh 2009,Indonesia,Paloh,5.664196111,95.09257694,2009-02-25,458.58
+Aceh 2009,Indonesia,Pasi Janeng 1,5.6287846,95.131667,2009-02-23,554.86
+Aceh 2009,Indonesia,Pasi Janeng 1,5.6287846,95.131667,2009-03-07,343.46
+Aceh 2009,Indonesia,Pasi Janeng 2,5.63200375,95.13802886,2009-03-07,105.15
+Aceh 2009,Indonesia,Pulau Klah,5.87730995,95.31408085,2009-03-04,286.99
+Aceh 2009,Indonesia,Reuteuk,5.857248889,95.36137889,2009-03-03,235.46
+Aceh 2009,Indonesia,Rubiah Channel,5.883753056,95.25491,2009-02-19,98.95
+Aceh 2009,Indonesia,Rubiah Channel,5.883753056,95.25491,2009-03-05,1023.96
+Aceh 2009,Indonesia,Rubiah Sea Garden,5.881451944,95.260645,2009-02-19,583.18
+Aceh 2009,Indonesia,Rubiah Sea Garden,5.881451944,95.260645,2009-03-04,542.58
+Aceh 2009,Indonesia,Sumur Tiga,5.888368056,95.34547111,2009-03-03,371.97
+Aceh 2009,Indonesia,Ujung Kareung,5.876188889,95.35363575,2009-02-24,807.87
+Aceh 2009,Indonesia,Ujung Seuke,5.808331944,95.37631,2009-03-01,336.11
+Aceh 2009,Indonesia,Ujung Seurawan,5.89558,95.237595,2009-02-19,1045.88
+Aceh 2009,Indonesia,Ujung Seurawan,5.89558,95.237595,2009-03-05,377
+Kenya MACMON 2016-17,Kenya,Kanamai (Mradi),-3.94166,39.7823,2016-10-25,299.14
+Kenya MACMON 2016-17,Kenya,Kanamai (Mradi),-3.94166,39.7823,2017-09-14,70.66
+Kenya MACMON 2016-17,Kenya,Kibuyuni 1 (East or B),-4.64381,39.334,2016-11-19,172.72
+Kenya MACMON 2016-17,Kenya,Kibuyuni 1 (East or B),-4.64381,39.334,2019-01-11,250.19
+Kenya MACMON 2016-17,Kenya,Kibuyuni 2 (West or A),-4.64119,39.343,2016-11-18,242.68
+Kenya MACMON 2016-17,Kenya,Kibuyuni 2 (West or A),-4.64119,39.343,2019-01-12,86.96
+Kenya MACMON 2016-17,Kenya,Kuruwitu (Vipingo),-3.803622487979644,39.84432220458984,2016-10-10,268.69
+Kenya MACMON 2016-17,Kenya,Kuruwitu (Vipingo),-3.803622487979644,39.84432220458984,2018-04-24,288.76
+Kenya MACMON 2016-17,Kenya,Mji wa Kale 1 (Mkwiro),-4.65969,39.3862,2016-11-15,131.63
+Kenya MACMON 2016-17,Kenya,Mji wa Kale 1 (Mkwiro),-4.65969,39.3862,2019-01-09,144.99
+Kenya MACMON 2016-17,Kenya,Mji wa Kale 2 (Mkwiro),-4.65983,39.38976,2016-11-15,466.33
+Kenya MACMON 2016-17,Kenya,Mji wa Kale 2 (Mkwiro),-4.65983,39.38976,2019-01-09,323.78
+Kenya MACMON 2016-17,Kenya,Mwaembe (Mpunga South),-4.5052,39.4794,2017-10-06,175.58
+Kenya MACMON 2016-17,Kenya,Takaungu,-3.69028,39.87159,2012-04-28,39.36
+India - Netrani and Grand island,India,Bountybay,15.35505,73.77786,2018-04-02,138.09
+India - Netrani and Grand island,India,Coral garden,15.35039,73.78329,2018-03-27,61.06
+India - Netrani and Grand island,India,Freddys Nook,15.35028,73.77982,2018-03-28,113.71
+India - Netrani and Grand island,India,Jenny's Aquarium,14.014235,74.32747,2019-11-27,732.29
+India - Netrani and Grand island,India,Lighthouse,15.3545,73.76344,2018-04-06,603.18
+India - Netrani and Grand island,India,Lobster Avenue,15.34994,73.77651,2018-04-05,427.52
+India - Netrani and Grand island,India,Navy Bay Jetty,15.35279,73.76582,2018-03-29,88.87
+India - Netrani and Grand island,India,Navy Bay Rocks,15.353,73.76961,2018-04-01,171.04
+India - Netrani and Grand island,India,Northwest,14.020159,74.324359,2019-11-30,694.13
+India - Netrani and Grand island,India,Nursery,14.015256,74.324638,2019-11-28,774.5
+India - Netrani and Grand island,India,Nursery,14.015256,74.324638,2019-11-29,617.47
+India - Netrani and Grand island,India,Pebble Bay,14.018794,74.327735,2019-11-28,1837.85
+India - Netrani and Grand island,India,Pebble Bay,14.018794,74.327735,2019-11-29,528.62
+India - Netrani and Grand island,India,Shelter cove,15.35168,73.78463,2018-04-03,100.83
+India - Netrani and Grand island,India,Southrock,14.010561,74.323302,2019-12-01,407.71
+India - Netrani and Grand island,India,Umaghuma,15.35159,73.78939,2018-04-03,94.89
+India - Netrani and Grand island,India,Wreck,15.35012,73.77957,2018-04-06,628.97
+Cempi 2015,Indonesia,Air Panas,-8.886491,118.455286,2015-06-11,811.12
+Cempi 2015,Indonesia,Goncujarah,-8.702329,118.338449,2015-06-10,89.43
+Cempi 2015,Indonesia,Lakey,-8.806476,118.378083,2015-06-11,112.52
+Cempi 2015,Indonesia,Matiti,-8.87449,118.420854,2015-06-11,139.04
+Cempi 2015,Indonesia,Tanjung Pasir,-8.838954,118.382335,2015-06-12,85.77
+CONTOH - Kelapa 2015,Indonesia,Kelapa Barat,-8.671834,119.211459,2015-06-04,130.06
