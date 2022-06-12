@@ -1,0 +1,227 @@
+---
+title: "Figure 1: taxon/species impact summaries"
+author: "*Compiled on `r date()` by `r Sys.info()['user']`*"
+output: 
+  html_document:
+    code_folding: hide
+    toc: true
+    toc_depth: 3
+    toc_float: yes
+    number_sections: true
+    theme: cerulean
+    highlight: haddock
+    includes: 
+      in_header: '~/github/src/templates/ohara_hdr.html'
+  pdf_document:
+    toc: true
+---
+
+``` {r setup, echo = TRUE, message = FALSE, warning = FALSE}
+
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE, fig.height = 4, fig.width = 7)
+
+library(oharac)
+library(tidyverse)
+library(cowplot)
+library(showtext) ### for custom fonts
+library(here)
+source(here('common_fxns.R'))
+
+font_add(family = 'bentonbold', 
+         regular = file.path('~/fonts', 
+                             'BentonSans Condensed Bold', 
+                             'BentonSans Condensed Bold.otf'))
+font_add(family = 'benton', 
+         regular = file.path('~/fonts', 
+                             'BentonSans Condensed Book', 
+                             'BentonSans Condensed Book.otf'))
+showtext_auto()
+```
+
+# Summary
+
+This figure shows distribution of mean impacts (climate and non-climate) across species within taxonomic groups
+
+# Data
+
+Results from scripts in folder `2_process_spp_vuln_and_impacts`
+
+# Methods
+
+Read in the species impact summaries; summarize to climate and non-climate impacts, attach taxonomic groups, create boxplots - one for climate stressors, one for non-climate.
+
+```{r}
+spp_imp_fs <- list.files(here_anx('impacts_by_species'), 
+                         pattern = '^impacts_.+.csv', full.names = TRUE)
+
+spp_imp_raw_df <- parallel::mclapply(spp_imp_fs, mc.cores = 40,
+                                     data.table::fread) %>%
+  setNames(basename(spp_imp_fs)) %>%
+  data.table::rbindlist(idcol = 'f') %>%
+  rename(vuln = vulnerability)
+
+spp_imp_scores <- spp_imp_raw_df %>%
+  filter(vuln == 'stressor_group') %>%
+  filter(range == 'full') %>%
+  filter(range_km2 > 0) %>%
+  select(f, stressor, impact_tot, impact_npp_tot, range_km2) %>%
+  mutate(stressor = ifelse(stressor != 'climate', 'non-climate', stressor)) %>%
+  group_by(f, stressor) %>%
+  summarize(mean_imp = sum(impact_tot/range_km2), 
+            mean_imp_npp = sum(impact_npp_tot/range_km2),
+            .groups = 'drop') %>%
+  mutate(iucn_sid = str_extract(f, '[0-9]+') %>% as.integer(),
+         species = ifelse(!str_detect(f, '_am_'), NA,
+                          str_remove_all(f, 'impacts_am_|.csv') %>% 
+                            str_replace_all('_', ' '))) %>%
+  select(-f)
+
+
+spp_taxa <- assemble_spp_info_df() %>%
+  select(species, iucn_sid, taxon) %>%
+  distinct()
+```
+
+``` {r}
+taxa_imp_scores <- spp_imp_scores %>%
+  filter(!is.na(iucn_sid)) %>%
+  left_join(spp_taxa %>% select(-species), by = 'iucn_sid') %>%
+  bind_rows(spp_imp_scores %>%
+              filter(is.na(iucn_sid)) %>%
+              left_join(spp_taxa %>% select(-iucn_sid), by = 'species')) %>%
+  gather(type, imp, mean_imp, mean_imp_npp) %>%
+  mutate(type = ifelse(type == 'mean_imp', 'Unweighted mean', 'NPP-weighted mean'))
+  
+### create an "all" taxa that just plops the data frame on top of itself
+all_tx_imp_scores <- taxa_imp_scores %>%
+  mutate(taxon = 'all') %>%
+  bind_rows(taxa_imp_scores)
+
+tx_order <- all_tx_imp_scores %>%
+  filter(type == 'Unweighted mean') %>%
+  group_by(taxon) %>%
+  summarize(m = mean(imp)) %>%
+  arrange(m) %>%
+  mutate(taxon = fct_inorder(taxon),
+         taxon = fct_relevel(taxon, 'all', after = Inf)) %>%
+  pull(taxon) %>% levels()
+
+tx_imp_df <- all_tx_imp_scores %>%
+  mutate(taxon = factor(taxon, levels = tx_order),
+         type = factor(type, levels = c('NPP-weighted mean', 'Unweighted mean')))
+
+tx_avg_med <- tx_imp_df %>%
+  group_by(taxon, type, stressor) %>%
+  summarize(avg = mean(imp),
+            med = median(imp),
+            .groups = 'drop')
+
+tx_spp_counts <- spp_taxa %>%
+  bind_rows(spp_taxa %>% mutate(taxon = 'all')) %>%
+  group_by(taxon) %>%
+  summarize(n_spp = paste0('n = ', n())) %>%
+  mutate(taxon = factor(taxon, levels = tx_order))
+
+```
+
+## Create panels
+
+One panel for climate stressors, another for non-climate.
+
+### Panel A: climate stressors
+
+```{r}
+cc_imp <- tx_imp_df %>%
+  filter(stressor == 'climate')
+cc_avg_med <- tx_avg_med %>%
+  filter(stressor == 'climate')
+
+panel_a <- ggplot(cc_imp, aes(x = imp, y = taxon, color = type, fill = type)) +
+  geom_boxplot(width = .3, position = position_dodge(width = -.6),
+               outlier.color = 'grey70', outlier.size = .02) +
+  geom_point(data = cc_avg_med, aes(x = med),
+             position = position_dodge(width = -.6),
+             shape = 21, fill = 'black', size = 1.5,
+             show.legend = FALSE) +
+  geom_point(data = cc_avg_med, aes(x = avg),
+             position = position_dodge(width = -.6),
+             shape = 21, fill = 'white', size = 1.5,
+             show.legend = FALSE) +
+  scale_x_continuous(expand = c(0, 0), limits = c(0, 1)) +
+  theme_ohara() +
+  theme(axis.text.y = element_text(family = 'bentonbold', size = 12),
+        axis.title.y = element_blank(),
+        axis.text.x = element_text(family = 'benton', size = 12),
+        axis.title.x = element_text(family = 'bentonbold', size = 14),
+        legend.key.size = unit(.25, 'cm'),
+        legend.title = element_blank(),
+        legend.text = element_text(family = 'bentonbold', size = 12),
+        legend.background = element_blank()) +
+  labs(x = 'Climate impact')
+```
+
+### Panel B: climate stressors
+
+```{r}
+noncc_imp <- tx_imp_df %>%
+  filter(stressor == 'non-climate')
+noncc_avg_med <- tx_avg_med %>%
+  filter(stressor == 'non-climate')
+
+panel_b <- ggplot(noncc_imp, aes(x = imp, y = taxon)) +
+  geom_boxplot(aes(color = type, fill = type),
+               width = .3, position = position_dodge(width = -.6),
+               outlier.color = 'grey70', outlier.size = .02) +
+  geom_point(data = noncc_avg_med, aes(x = med, color = type, fill = type),
+             position = position_dodge(width = -.6),
+             shape = 21, fill = 'black', size = 1.5,
+             show.legend = FALSE) +
+  geom_point(data = noncc_avg_med, aes(x = avg, color = type, fill = type),
+             position = position_dodge(width = -.6),
+             shape = 21, fill = 'white', size = 1.5,
+             show.legend = FALSE) +
+  annotate('rect',
+           xmin = .30, xmax = .35, ymin = 0.5, ymax = 13.5,
+           fill = 'white', color = 'white') +
+  geom_text(data = tx_spp_counts, aes(label = n_spp),
+            x = .31, hjust = 0, color = 'black', fill = NA, 
+            family = 'benton', size = 4) +
+  scale_x_continuous(expand = c(0, 0), limits = c(0, .35)) +
+  theme_ohara() +
+  theme(axis.text.y = element_blank(),
+        axis.title.y = element_blank(),
+        axis.text.x = element_text(family = 'benton', size = 12),
+        axis.title.x = element_text(family = 'bentonbold', size = 14)) +
+  labs(x = 'Non-climate impact')
+```
+
+
+## Assemble figure
+
+```{r assemble figure}
+fig1_file <- here('5_ms_figs/fig1_taxon_impact_summaries.png')
+panel_a_plot <- panel_a + theme(legend.position = 'none')
+panel_b_plot <- panel_b + theme(legend.position = 'none')
+panel_a_lgd  <- get_legend(panel_a)
+
+### parameterize legends for easier changing of label positions:
+lgd_a_xy <- c(x = .50, y = .12, h = .09, w = .12)
+
+fig1 <- ggdraw() +
+  ### draw panels:
+  draw_plot(panel_a_plot,  x = 0.00, y = 0.00, height = 1.00, width = 0.53) +
+  draw_plot(panel_b_plot,  x = 0.53, y = 0.00, height = 1.00, width = 0.47) +
+  ### draw legends:
+  draw_plot(panel_a_lgd, x = lgd_a_xy['x'], y = lgd_a_xy['y'], 
+            height = lgd_a_xy['h'], width = lgd_a_xy['w']) +
+  ### Panel labels:
+  draw_label('A', x = 0.002, y = .99, hjust = 0, vjust = 1, 
+             size = 25, fontfamily = 'bentonbold') +
+  draw_label('B', x = 0.55, y = .99, hjust = 0, vjust = 1, 
+             size = 25, fontfamily = 'bentonbold')
+
+ggsave(fig1_file, width = 12, height = 8, units = 'cm', dpi = 300)
+
+knitr::include_graphics(fig1_file)
+```
+

@@ -1,0 +1,380 @@
+---
+title: "Figure 2: Map of spp-level CHI"
+author: "*Compiled on `r date()` by `r Sys.info()['user']`*"
+output: 
+  html_document:
+    code_folding: hide
+    toc: true
+    toc_depth: 3
+    toc_float: yes
+    number_sections: true
+    theme: cerulean
+    highlight: haddock
+    includes: 
+      in_header: '~/github/src/templates/ohara_hdr.html'
+  pdf_document:
+    toc: true
+---
+
+``` {r setup, echo = TRUE, message = FALSE, warning = FALSE}
+
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE, fig.height = 4, fig.width = 7)
+
+library(terra)
+library(sf)
+library(oharac)
+library(data.table)
+library(tidyverse)
+library(biscale)  ### for bivariate legend
+library(cowplot)
+library(showtext) ### for custom fonts
+library(here)
+source(here('common_fxns.R'))
+
+font_add(family = 'bentonbold', 
+         regular = file.path('~/fonts', 
+                             'BentonSans Condensed Bold', 
+                             'BentonSans Condensed Bold.otf'))
+font_add(family = 'benton', 
+         regular = file.path('~/fonts', 
+                             'BentonSans Condensed Book', 
+                             'BentonSans Condensed Book.otf'))
+showtext_auto()
+```
+
+# Summary
+
+Create Fig. 1 for manuscript
+
+# Data
+
+Results from scripts in folder `2_process_spp_vuln_and_impacts`
+
+# Methods
+
+Read in the output rasters for species-level impacts (unweighted); reclassify based on quartile/quintile.  Fig. 1A is bivariate plot of climate vs. non-climate stressors for equal weighted species average, Fig. 1B is bivariate plot of climate vs. non-climate stressors for FV-weighted FE average; Fig. 1C and 1D are %difference plots for each category.
+
+NOTE: dropping cells with fewer than 20 species, mostly in the Arctic, a few in Antarctic.
+
+```{r}
+ocean_map <- rast(here('_spatial/ocean_area_mol.tif'))
+ocean_df <- as.data.frame(ocean_map, xy = TRUE)
+
+land_sf <- read_sf(here('_spatial/ne_10m_land/ne_10m_land_no_casp.shp')) %>%
+  st_transform(st_crs(ocean_map))
+
+nspp_mask <- rast(here('_output/nspp_maps/nspp_in_unwt_vuln.tif'))
+nspp_vals <- values(nspp_mask)
+values(nspp_mask)[nspp_vals < 20] <- NA
+
+chi_gps_spp <- list.files(here('_output/impact_maps/cumulative_maps'),
+                         pattern = 'unweighted_group_chi',
+                         full.names = TRUE)
+chi_gps_fe <- list.files(here('_output/impact_maps/cumulative_maps'),
+                         pattern = 'fvweighted_group_chi',
+                         full.names = TRUE)
+climate_map_spp     <- rast(chi_gps_spp[1]) %>%
+  mask(nspp_mask)
+climate_map_fe     <- rast(chi_gps_fe[1]) %>%
+  mask(nspp_mask)
+
+nonclimate_map_spp  <- rast(chi_gps_spp[2:4]) %>%
+  sum(na.rm = TRUE) %>%
+  mask(nspp_mask)
+
+nonclimate_map_fe  <- rast(chi_gps_fe[2:4]) %>%
+  sum(na.rm = TRUE) %>%
+  mask(nspp_mask)
+```
+
+### Reclassify
+
+Reclassify values using `ntile` to get quartile values:
+```{r reclass eq weight}
+cc_qtile_spp <- noncc_qtile_spp <- climate_map_spp ### initialize two new maps
+values(cc_qtile_spp) <- ntile(values(climate_map_spp), 4)
+values(noncc_qtile_spp) <- ntile(values(nonclimate_map_spp), 4)
+plot(cc_qtile_spp, axes = FALSE, 
+     main = 'Climate impact quintile, spp avg', col = hcl.colors(4))
+plot(noncc_qtile_spp, axes = FALSE, 
+     main = 'Non-climate impact quintile, spp avg', col = hcl.colors(4))
+```
+
+```{r reclass fv weight}
+cc_qtile_fe <- noncc_qtile_fe <- climate_map_fe ### initialize two new maps
+values(cc_qtile_fe) <- ntile(values(climate_map_fe), 4)
+values(noncc_qtile_fe) <- ntile(values(nonclimate_map_fe), 4)
+plot(cc_qtile_fe, axes = FALSE, 
+     main = 'Climate impact quintile, fv wt avg', col = hcl.colors(4))
+plot(noncc_qtile_fe, axes = FALSE, 
+     main = 'Non-climate impact quintile, fv wt avg', col = hcl.colors(4))
+```
+
+## Create panels
+
+### Set up palettes
+
+For the bivariate color plot, one axis of colors represents climate, the other represents non-climate; pull these values from the bivariate palette to use for the climate and non-climate maps separately.
+
+```{r}
+# x <- c("Bluegill", "BlueGold", "BlueOr", "BlueYl",
+#        "Brown2", "DkBlue2", "DkCyan2",
+#        "DkViolet2", "GrPink2", "PinkGrn",
+#        "PurpleGrn", "PurpleOr")
+# bi_pal(x[8], dim = 4, preview = TRUE)
+
+pal_name <- 'DkViolet2'
+```
+
+
+### Panel A: spp average bivariate plot
+
+Use a four-level bivariate color scale to capture spatial overlap of quartiles for climate and non-climate stressors.
+
+```{r panel A}
+cc_spp_df <- as.data.frame(cc_qtile_spp, xy = TRUE) %>%
+  setNames(c('x', 'y', 'cc_spp'))
+noncc_spp_df <- as.data.frame(noncc_qtile_spp, xy = TRUE) %>%
+  setNames(c('x', 'y', 'noncc_spp'))
+
+cc_noncc_spp_df <- dt_join(cc_spp_df, noncc_spp_df, by = c('x', 'y'), type = 'full') %>%
+  mutate(bi_class = paste(cc_spp, noncc_spp, sep = '-'))
+
+### Polygon of hot-hot and cool-cool spots for outlines
+hot_cool_sf <- cc_noncc_spp_df %>%
+  filter(bi_class %in% c('1-1', '4-4')) %>%
+  mutate(val = ifelse(bi_class == '1-1', 0, 1)) %>%
+  select(x, y, val) %>%
+  rast(type = 'xyz', crs = crs(cc_qtile_spp)) %>%
+  as.polygons() %>% 
+  sf::st_as_sf() %>%
+  st_simplify(dTolerance = 20000) %>%
+  mutate(val = as.character(val))
+
+spp_overlap_summary <- cc_noncc_spp_df %>%
+  group_by(bi_class) %>%
+  summarize(ncell = n(),
+            pct = n() / nrow(.))
+knitr::kable(spp_overlap_summary, digits = 4, 
+             col.names = c('spp CHI overlap', '# of cells', '% of area'))
+
+panel_a <- ggplot() +
+  ### background for NA cells:
+  geom_raster(data = ocean_df, aes(x, y), fill = 'grey85') +
+  ### plot data:
+  geom_raster(data = cc_noncc_spp_df, aes(x, y, fill = bi_class), show.legend = FALSE) +
+  bi_scale_fill(pal = pal_name, dim = 4) +
+  ### continents:
+  geom_sf(data = land_sf,
+          fill = 'grey96', color = 'grey40', size = .5) +
+  geom_sf(data = hot_cool_sf, aes(color = val), 
+          fill = NA, size = .1,
+          show.legend = FALSE) +
+  scale_color_manual(values = c('green', 'yellow')) +
+  scale_x_continuous(expand = c(0, 0)) +
+  scale_y_continuous(expand = c(0, 0)) +
+  theme_void() +
+  theme(axis.text = element_blank(), 
+        axis.title = element_blank())
+```
+
+``` {r make biscale legend}
+### DF to plot frames around hot-hot and cool-cool legend
+colors_df <- crossing(x = 1:4, y = 1:4) %>%
+  mutate(clr = case_when(x == 1 & y == 1 ~ 'green',
+                         x == 4 & y == 4 ~ 'yellow',
+                         TRUE ~ NA_character_))
+
+panel_a_lgd_raw <- bi_legend(pal = pal_name, dim = 4,
+                         xlab = "Climate -->",
+                         ylab = "Nonclimate -->",
+                         size = 15,
+                         arrows = FALSE) +
+  ### add a new unfilled but color-framed tile on top
+  geom_tile(data = colors_df, aes(x, y, color = clr), 
+            fill = NA, size = .5, show.legend = FALSE) +
+  scale_color_manual(values = c('green', 'yellow'), 
+                     breaks = c('green', 'yellow'), na.value = NA) +
+  scale_x_continuous(expand = c(0, 0)) +
+  scale_y_continuous(expand = c(0, 0)) +
+  theme(text = element_text(family = 'bentonbold'),
+        plot.background = element_blank())
+```
+
+<!-- ### Panel B: FV-weighted FE average bivariate plot -->
+
+```{r panel B bivariate by fe, eval = FALSE}
+cc_fe_df <- as.data.frame(cc_qtile_fe, xy = TRUE) %>%
+  setNames(c('x', 'y', 'cc_fe'))
+noncc_fe_df <- as.data.frame(noncc_qtile_fe, xy = TRUE) %>%
+  setNames(c('x', 'y', 'noncc_fe'))
+
+cc_noncc_fe_df <- dt_join(cc_fe_df, noncc_fe_df, by = c('x', 'y'), type = 'full') %>%
+  mutate(bi_class = paste(cc_fe, noncc_fe, sep = '-'))
+
+fe_overlap_summary <- cc_noncc_fe_df %>%
+  group_by(bi_class) %>%
+  summarize(ncell = n(),
+            pct = n() / nrow(.))
+knitr::kable(fe_overlap_summary, digits = 4, 
+             col.names = c('FE CHI overlap', '# of cells', '% of area'))
+
+fe_hotspots <- cc_noncc_fe_df %>%
+  filter(bi_class %in% c('1-1', '4-4')) %>%
+  select(x, y, fe_bi = bi_class)
+spp_hotspots <- cc_noncc_spp_df %>%
+  filter(bi_class %in% c('1-1', '4-4')) %>%
+  select(x, y, spp_bi = bi_class)
+
+similarity_df <- fe_hotspots %>%
+  full_join(spp_hotspots, by = c('x', 'y')) %>%
+  mutate(match = case_when(is.na(spp_bi) ~ 'b',
+                           is.na(fe_bi)  ~ 'c',
+                           spp_bi == fe_bi ~ 'a',
+                           TRUE ~ 'X')) %>%
+  group_by(match) %>%
+  summarize(n_gp = n()) %>%
+  spread(match, n_gp) %>%
+  mutate(jaccard = a / (a + b + c),
+         sorensen = 2*a / (2*a + b + c))
+table(similarity_df$match)
+knitr::kable(sim_sum)
+# panel_x <- ggplot() +
+#   ### background for NA cells:
+#   geom_raster(data = ocean_df, aes(x, y), fill = 'grey85') +
+#   ### plot data:
+#   geom_raster(data = cc_noncc_fe_df, aes(x, y, fill = bi_class), show.legend = FALSE) +
+#   bi_scale_fill(pal = pal_name, dim = 4) +
+#   ### continents:
+#   geom_sf(data = land_sf,
+#           fill = 'grey96', color = 'grey40', size = .10) +
+#   scale_x_continuous(expand = c(0, 0)) +
+#   scale_y_continuous(expand = c(0, 0)) +
+#   theme_void() +
+#   theme(axis.text = element_blank(), 
+#         axis.title = element_blank())
+```
+
+### Panel B and C: pct difference, spp-average vs fe-average
+
+Clip max difference to 100%...
+
+```{r panel B and C}
+cc_spp_vals_df <- as.data.frame(climate_map_spp, xy = TRUE) %>%
+  setNames(c('x', 'y', 'cc_spp'))
+noncc_spp_vals_df <- as.data.frame(nonclimate_map_spp, xy = TRUE) %>%
+  setNames(c('x', 'y', 'noncc_spp'))
+cc_fe_vals_df <- as.data.frame(climate_map_fe, xy = TRUE) %>%
+  setNames(c('x', 'y', 'cc_fe'))
+noncc_fe_vals_df <- as.data.frame(nonclimate_map_fe, xy = TRUE) %>%
+  setNames(c('x', 'y', 'noncc_fe'))
+
+diff_df <- dt_join(cc_spp_vals_df, noncc_spp_vals_df, 
+                   by = c('x', 'y'), type = 'full') %>%
+           dt_join(cc_fe_vals_df, by = c('x', 'y'), type = 'full') %>%
+           dt_join(noncc_fe_vals_df, by = c('x', 'y'), type = 'full') %>%
+  mutate(cc_diff = (cc_fe - cc_spp) / cc_spp * 100,
+         noncc_diff = (noncc_fe - noncc_spp) / noncc_spp * 100) %>%
+  mutate(cc_diff = ifelse(abs(cc_diff) > 100, sign(cc_diff) * 100, cc_diff),
+         noncc_diff = ifelse(abs(noncc_diff) > 100, sign(noncc_diff) * 100, noncc_diff))
+
+brks <- seq(-100, 100, 50)
+lbls <- paste0(brks, '%')
+lims <- range(brks)
+clrs <- hcl.colors(palette = 'Red-Green', rev = TRUE, n = 9)
+
+panel_b <- ggplot() +
+  ### background for NA cells:
+  geom_raster(data = ocean_df, aes(x, y), fill = 'grey85') +
+  ### plot data:
+  geom_raster(data = diff_df, 
+              aes(x, y, fill = cc_diff)) +
+  scale_fill_gradientn(breaks = brks, labels = lbls, limits = lims, colors = clrs,
+                       na.value = 'grey85') +
+  ### continents:
+  geom_sf(data = land_sf,
+          fill = 'grey96', color = 'grey40', size = .10) +
+  scale_x_continuous(expand = c(0, 0)) +
+  scale_y_continuous(expand = c(0, 0)) +
+  theme_void() +
+  theme(axis.text = element_blank(), 
+        axis.title = element_blank(),
+        legend.key.width = unit(.25, 'cm'),
+        legend.margin = margin(0, 0, 0, 0, unit = 'pt'),
+        legend.text = element_text(size = 16, color = 'black', 
+                                   family = 'benton', hjust = 0),
+        legend.title = element_blank())
+
+panel_c <- ggplot() +
+  ### background for NA cells:
+  geom_raster(data = ocean_df, aes(x, y), fill = 'grey85') +
+  ### plot data:
+  geom_raster(data = diff_df, 
+              aes(x, y, fill = noncc_diff)) +
+  scale_fill_gradientn(breaks = brks, labels = lbls, limits = lims, colors = clrs,
+                       na.value = 'grey85') +
+  ### continents:
+  geom_sf(data = land_sf,
+          fill = 'grey96', color = 'grey40', size = .10) +
+  scale_x_continuous(expand = c(0, 0)) +
+  scale_y_continuous(expand = c(0, 0)) +
+  theme_void() +
+  theme(axis.text = element_blank(), 
+        axis.title = element_blank())
+
+# panel_b; panel_c
+```
+
+## Assemble figure
+
+```{r assemble figure}
+fig2_file <- here('5_ms_figs/fig2_mapping_impacts.png')
+panel_a_map  <- get_panel(panel_a)
+panel_b_map  <- get_panel(panel_b)
+panel_c_map  <- get_panel(panel_c)
+# panel_d_map  <- get_panel(panel_d)
+panel_a_lgd <- get_panel(panel_a_lgd_raw)
+panel_bc_lgd <- get_legend(panel_b)
+
+### parameterize legends for easier changing of label positions:
+lgd_a_xy <- c(x = .875, y = .80, h = .09, w = .12)
+lgd_b_xy <- c(x = .875, y = .25, h = .15, w = .12)
+
+fig_2 <- ggdraw() +
+  ### draw panels:
+  draw_plot(panel_a_map,  x = 0.00, y = 0.67, height = 0.33, width = 0.85) +
+  draw_plot(panel_b_map,  x = 0.00, y = 0.335, height = 0.33, width = 0.85) +
+  draw_plot(panel_c_map,  x = 0.00, y = 0.00, height = 0.33, width = 0.85) +
+  ### draw legends:
+  draw_plot(panel_a_lgd, x = lgd_a_xy['x'], y = lgd_a_xy['y'], 
+            height = lgd_a_xy['h'], width = lgd_a_xy['w']) +
+  draw_plot(panel_bc_lgd, x = lgd_b_xy['x'], y = lgd_b_xy['y'], 
+            height = lgd_b_xy['h'], width = lgd_b_xy['w']) +
+  ### Panel labels:
+  draw_label('A', x = 0.002, y = .99, hjust = 0, vjust = 1, 
+             size = 25, fontfamily = 'bentonbold') +
+  draw_label('B', x = 0.002, y = .65, hjust = 0, vjust = 1, 
+             size = 25, fontfamily = 'bentonbold') +
+  draw_label('C', x = 0.002, y = .31, hjust = 0, vjust = 1, 
+             size = 25, fontfamily = 'bentonbold') +
+  ### Legend labels:
+  draw_label('Climate vs. non-climate\nimpacts (quartiles)',
+             x = 0.99, y = 0.90, hjust = 1, vjust = 0, angle = 0,
+             size = 25, color = 'black', fontfamily = 'bentonbold') +
+  draw_label('% difference,\nspp vs. FE',
+             x = 0.99, y = 0.50, hjust = 1, vjust = 0, angle = 0,
+             size = 25, color = 'black', fontfamily = 'bentonbold') +
+  draw_label('Climate ->', 
+             x = lgd_a_xy['x'], y = lgd_a_xy['y'] - .005, 
+             hjust = 0, vjust = 1, angle = 0,
+             size = 20, color = 'black', fontfamily = 'bentonbold') +
+  draw_label('Non-climate ->', 
+             x = lgd_a_xy['x'] - .005, y = lgd_a_xy['y'], 
+             hjust = 0, vjust = 0, angle = 90,
+             size = 20, color = 'black', fontfamily = 'bentonbold')
+
+ggsave(fig2_file, width = 12, height = 15, units = 'cm', dpi = 300)
+
+knitr::include_graphics(fig2_file)
+```
+
