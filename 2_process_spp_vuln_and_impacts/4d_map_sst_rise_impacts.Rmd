@@ -278,8 +278,8 @@ tx_sst_map_df <- data.frame(f = list.files(dirname(out_stem), full.names = TRUE)
   mutate(t = str_extract(basename(f), paste0(taxa, collapse = '|')),
          p = str_extract(basename(f), '_mean|_sdev|_nspp') %>% str_remove('_'))
 
-impact_map_stem <- here('_output/impact_maps/impact_maps_unweighted', 
-                        'impact_unwt_sst_rise_%s.tif')
+impact_map_stem <- here('_output/impact_maps/impact_maps_species', 
+                        'impact_spp_sst_rise_%s.tif')
   ### %s is parameter (mean, sd, nspp)
 
 ### check if total stressor maps are complete
@@ -297,7 +297,7 @@ if(any(!file.exists(impact_f_mean, impact_f_sdev))) {
 #   data.table() %>%
 #   .[, .(nspp = sum(imp_nspp)), by = .(cell_id)]
 # rast_nspp <- map_to_mol(nspp_df, which = 'nspp')
-# main_nspp_rast <- rast(here('_output/nspp_maps/nspp_in_unwt_vuln.tif'))
+# main_nspp_rast <- rast(here('_output/nspp_maps/species_richness.tif'))
 # x <- as.vector(values(rast_nspp)); y <- as.vector(values(main_nspp_rast))
 # match <- (is.na(x) & is.na(y)) | x == y
 # all(match)
@@ -336,31 +336,31 @@ if(!file.exists(impact_f_sdev)) {
 ```
 
 ```{r}
-mean_rast_unwt <- rast(impact_f_mean)
-sdev_rast_unwt <- rast(impact_f_sdev)
-cv_rast_unwt <- sdev_rast_unwt / mean_rast_unwt
+mean_rast_spp <- rast(impact_f_mean)
+sdev_rast_spp <- rast(impact_f_sdev)
+cv_rast_spp <- sdev_rast_spp / mean_rast_spp
 
 map_cols <- hcl.colors(n = 50)
 
-plot(mean_rast_unwt, col = map_cols, 
+plot(mean_rast_spp, col = map_cols, 
      main = 'Unweighted impact: SST rise (all spp)',
      legend = TRUE, axes = FALSE)  
-plot(sdev_rast_unwt, col = map_cols, 
+plot(sdev_rast_spp, col = map_cols, 
      main = 'Std dev unweighted weighted impact: SST rise (all spp)',
      legend = TRUE, axes = FALSE)
 ```
 
 ## Impacts by FV-weighted mean vulnerability
 
-Here we will rely on similar code to that used in script 3a_map_vulnerability_FV_weighted.Rmd.
+Here we will rely on similar code to that used in script `3a_map_funct_entity_vulnerability.Rmd`.
 
 ### Tidy the loop
 
 Because this is a complex process, let's tidy the big `for` loop by breaking out key code as functions.
 
 * `read_truncated_rangemap`: read in all range maps, truncating each one to just those cells in the current chunk.
-* `calc_fv`: Calculate the functional vulnerability for a given functional entity based on the number of spp present.
-* `calc_spp_cell_fv`: For each cell, identify all FEs and calculate the FV of each.  Because grouping by large numbers of groups (e.g, 100000 cells and multiple FEs), for crash-avoidance, this is parallelized. 
+* `calc_fe`: Calculate the functional vulnerability for a given functional entity based on the number of spp present.
+* `calc_spp_cell_fe`: For each cell, identify all FEs and calculate the FV of each.  Because grouping by large numbers of groups (e.g, 100000 cells and multiple FEs), for crash-avoidance, this is parallelized. 
 * `bind_maps_list`: for a list of truncated species maps, clean out NULL results and bind rows, keeping cell ID and species name.
 * `calc_chunk_str_sum`: for a dataframe of truncated species maps
 
@@ -449,9 +449,9 @@ calc_chunk_str_sum <- function(chunk_maps, spp_info_df) {
 chunk_size <- 100000
 n_chunks <- ceiling(6.5e6 / chunk_size)
 
-tmp_stem_fv <- here('tmp', 'impact_fv_chunks',
+tmp_stem_fe <- here('tmp', 'impact_fv_chunks',
                     'impact_summary_chunk_%s_to_%s_sst_rise.csv')
-### zxcv <- list.files(dirname(tmp_stem_fv), pattern = 'impact_summary_chunk', full.names = TRUE)
+### zxcv <- list.files(dirname(tmp_stem_fe), pattern = 'impact_summary_chunk', full.names = TRUE)
 ### unlink(zxcv)
 
 for(chunk_i in 1:n_chunks) { 
@@ -466,8 +466,8 @@ for(chunk_i in 1:n_chunks) {
                         chunk_i, n_chunks, chunk_start, chunk_end)
 
   ### check if all chunk-stressor maps are complete
-  tmp_sst_rise_fv <- sprintf(tmp_stem_fv, chunk_start, chunk_end)
-  if(file.exists(tmp_sst_rise_fv)) {
+  tmp_sst_rise_fe <- sprintf(tmp_stem_fe, chunk_start, chunk_end)
+  if(file.exists(tmp_sst_rise_fe)) {
     message('SST rise stressor summary exists for ', chunk_text, '... skipping!')
     next()
   }
@@ -489,7 +489,7 @@ for(chunk_i in 1:n_chunks) {
     select(species, fe_id) %>%
     distinct()
   chunk_maps <- chunk_maps_raw %>%
-    calc_spp_cell_fv(spp_fe)
+    calc_spp_cell_fe(spp_fe)
   
   message('... In ', chunk_text,  ' rangemap dataframe: \n    ', nrow(chunk_maps), 
           ' cell observations for ', n_distinct(chunk_maps$species), ' species across ',
@@ -498,7 +498,7 @@ for(chunk_i in 1:n_chunks) {
   message('... Processing mean/sd vuln in ', chunk_text, ' to stressor: sst rise...')
   chunk_str_sum <- calc_chunk_str_sum(chunk_maps, spp_info_df)
   
-  write_csv(chunk_str_sum, tmp_sst_rise_fv)
+  write_csv(chunk_str_sum, tmp_sst_rise_fe)
 }
 ```
 
@@ -508,16 +508,16 @@ For each stressor, pull in all chunk dataframes, assemble into dataframe, and sa
 
 ```{r assemble chunk impact maps to total maps}
 
-chunk_files <- list.files(dirname(tmp_stem_fv), 
+chunk_files <- list.files(dirname(tmp_stem_fe), 
                           pattern = 'impact_summary_chunk', full.names = TRUE)
 
-rast_fv_out_stem <- here('_output/impact_maps/impact_maps_fv_weighted', 
-                         'impact_fvwt_sst_rise_%s.tif')
+rast_fe_out_stem <- here('_output/impact_maps/impact_maps_funct_entity', 
+                         'impact_fe_sst_rise_%s.tif')
 
-rast_mean_impact_fv_f <- sprintf(rast_fv_out_stem, 'mean')
-rast_sdev_impact_fv_f <- sprintf(rast_fv_out_stem, 'sdev')
+rast_mean_impact_fe_f <- sprintf(rast_fe_out_stem, 'mean')
+rast_sdev_impact_fe_f <- sprintf(rast_fe_out_stem, 'sdev')
 
-if(any(!file.exists(rast_mean_impact_fv_f, rast_sdev_impact_fv_f))) {
+if(any(!file.exists(rast_mean_impact_fe_f, rast_sdev_impact_fe_f))) {
   message('Gathering impact chunk maps for sst rise...')
   
   impact_map_df <- parallel::mclapply(chunk_files, mc.cores = 33, 
@@ -525,33 +525,33 @@ if(any(!file.exists(rast_mean_impact_fv_f, rast_sdev_impact_fv_f))) {
     bind_rows()
   
   message('Converting impact maps to rasters for sst rise...')
-  mean_rast_fvwt <- map_to_mol(impact_map_df, which = 'fv_wt_mean_impact')
-  sdev_rast_fvwt <- map_to_mol(impact_map_df, which = 'fv_wt_sd_impact')
+  mean_rast_fe <- map_to_mol(impact_map_df, which = 'fv_wt_mean_impact')
+  sdev_rast_fe <- map_to_mol(impact_map_df, which = 'fv_wt_sd_impact')
   
   message('Writing impact rasters for sst rise...')
-  writeRaster(mean_rast_fvwt, rast_mean_impact_fv_f, overwrite = TRUE)
-  writeRaster(sdev_rast_fvwt, rast_sdev_impact_fv_f, overwrite = TRUE)
+  writeRaster(mean_rast_fe, rast_mean_impact_fe_f, overwrite = TRUE)
+  writeRaster(sdev_rast_fe, rast_sdev_impact_fe_f, overwrite = TRUE)
   
   ### Check that # of FEs match with other parts of analysis
-  # n_fe_rast_main <- rast(here('_output/nspp_maps/n_fe_in_fvwt_vuln.tif'))
-  # n_fe_rast_fvwt <- map_to_mol(impact_map_df, which = 'n_fe')
-  # x <- as.vector(values(n_fe_rast_fvwt)); y <- as.vector(values(n_fe_rast_main))
+  # n_fe_rast_main <- rast(here('_output/nspp_maps/funct_entity_richness.tif'))
+  # n_fe_rast_fe <- map_to_mol(impact_map_df, which = 'n_fe')
+  # x <- as.vector(values(n_fe_rast_fe)); y <- as.vector(values(n_fe_rast_main))
   # match <- (is.na(x) & is.na(y)) | x == y
   # all(match)
 }
 ```
 
 ```{r}
-mean_rast_fvwt <- rast(rast_mean_impact_fv_f)
-sdev_rast_fvwt <- rast(rast_sdev_impact_fv_f)
-cv_rast_fvwt <- sdev_rast_fvwt / mean_rast_fvwt
+mean_rast_fe <- rast(rast_mean_impact_fe_f)
+sdev_rast_fe <- rast(rast_sdev_impact_fe_f)
+cv_rast_fe <- sdev_rast_fe / mean_rast_fe
 
 map_cols <- hcl.colors(n = 50)
 
-plot(mean_rast_fvwt, col = map_cols, 
+plot(mean_rast_fe, col = map_cols, 
      main = 'FV-weighted impact: SST rise',
      legend = TRUE, axes = FALSE)  
-plot(sdev_rast_fvwt, col = map_cols, 
+plot(sdev_rast_fe, col = map_cols, 
      main = 'Std dev FV-weighted weighted impact: SST rise',
      legend = TRUE, axes = FALSE)
 ```
@@ -573,14 +573,14 @@ squish_rast <- function(r, qtile = .999) {
 }
 
 ### Set up rasters; trim extreme values
-mean_diff_rast <- (mean_rast_fvwt - mean_rast_unwt) / mean_rast_unwt
+mean_diff_rast <- (mean_rast_fe - mean_rast_spp) / mean_rast_spp
 mean_diff_squished <- squish_rast(mean_diff_rast, qtile = .999)
-# cv_diff_rast <- (cv_rast_fvwt - cv_rast_unwt) / cv_rast_unwt
+# cv_diff_rast <- (cv_rast_fe - cv_rast_spp) / cv_rast_spp
 # cv_r_sq <- squish_rast(cv_diff_rast, qtile = .999)
 
 m_d_mask_0.10 <- m_d_mask_0.25 <- mean_diff_squished$r
-values(m_d_mask_0.10)[values(mean_rast_unwt) < .10 & values(mean_rast_fvwt) < .10] <- NA
-values(m_d_mask_0.25)[values(mean_rast_unwt) < .25 & values(mean_rast_fvwt) < .25] <- NA
+values(m_d_mask_0.10)[values(mean_rast_spp) < .10 & values(mean_rast_fe) < .10] <- NA
+values(m_d_mask_0.25)[values(mean_rast_spp) < .25 & values(mean_rast_fe) < .25] <- NA
 
 message('Plotting difference maps for SST rise...')
 

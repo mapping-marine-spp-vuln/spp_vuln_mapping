@@ -826,12 +826,12 @@ iterated_pooled_var <- function(mean_vec, sdev_vec, n_vec, flag = FALSE) {
 ####     Functional vulnerability functions     ####
 ####################################################.
 
-calc_fv <- function(n_spp) {
+calc_fe <- function(n_spp) {
   k <- n_spp - 1
   fv <- 0.5^k
 } 
 
-calc_spp_cell_fv <- function(spp_cells, spp_fe) {
+calc_spp_cell_fe <- function(spp_cells, spp_fe) {
   ### parallelize this across smaller chunks to keep group_by from crashing 
   ### everything - but not for every cell individually!  
   ### Set up 1000 different cell groups across the 100k(ish) cells in the chunk
@@ -862,7 +862,7 @@ calc_spp_cell_fv <- function(spp_cells, spp_fe) {
                       by = .(cell_id)] %>%
                     .[, ':='(n_spp_fe = length(unique(species))),
                       by = .(cell_id, fe_id)] %>%
-                    .[, ':='(fv = calc_fv(n_spp_fe)),
+                    .[, ':='(fv = calc_fe(n_spp_fe)),
                       by = .(cell_id, fe_id)]
                   
                   return(x)

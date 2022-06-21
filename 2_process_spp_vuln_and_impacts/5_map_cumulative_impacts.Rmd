@@ -29,7 +29,7 @@ source(here('common_fxns.R'))
 
 # Summary
 
-With impact maps generated for all stressors, means calculated both unweighted and FV-weighted, we can add the impact layers to generate a comprehensive cumulative human impact map.
+With impact maps generated for all stressors, means calculated both unweighted across species and FV-weighted across functional entities, we can add the impact layers to generate a comprehensive cumulative human impact map.
 
 # Data
 
@@ -37,17 +37,17 @@ See scripts 2, 3a, and 3b for vulnerability mapping scripts, and scripts 4a-4d f
 
 # Methods
 
-## Calculate CHI: unweighted
+## Calculate CHI: spp
 
 Sum impacts across all stressor/vulnerability combos.
 
-```{r calc chi by unweighted vuln, fig.height = 3, fig.width = 6}
-imp1_fs <- list.files(here('_output/impact_maps/impact_maps_unweighted'),
+```{r calc chi by spp vuln, fig.height = 3, fig.width = 6}
+imp1_fs <- list.files(here('_output/impact_maps/impact_maps_species'),
                       pattern = 'mean',
                       full.names = TRUE)
 
 imp1_stack <- rast(imp1_fs) %>%
-  setNames(str_remove_all(basename(imp1_fs), '.+unwt_|_x_.+|_mean.tif'))
+  setNames(str_remove_all(basename(imp1_fs), '.+_spp_|_x_.+|_mean.tif'))
 
 
 ```
@@ -55,98 +55,98 @@ imp1_stack <- rast(imp1_fs) %>%
 ```{r}
 ocean_a_rast <- rast(here('_spatial/ocean_area_mol.tif'))
 ### Calculate cumulative impacts
-chi_unwt_raw <- sum(imp1_stack, na.rm = TRUE)
-chi_unweighted <- chi_unwt_raw %>%
+chi_spp_raw <- sum(imp1_stack, na.rm = TRUE)
+chi_spp <- chi_spp_raw %>%
   mask(ocean_a_rast) %>%
-  setNames('chi_unwt')
+  setNames('chi_spp')
 
-writeRaster(chi_unweighted, here('_output/impact_maps/cumulative_maps/chi_unweighted.tif'),
+writeRaster(chi_spp, here('_output/impact_maps/cumulative_maps/chi_species.tif'),
             overwrite = TRUE)
 
 ```
 
 ```{r}
 ### plot with ggplot
-chi_unwt_plot <- here('figs/chi_unweighted.png')
+chi_spp_plot <- here('figs/chi_species.png')
 
-chi_unweighted_df <- chi_unweighted %>%
+chi_spp_df <- chi_spp %>%
   as.data.frame(xy = TRUE) %>%
-  filter(!is.na(chi_unwt))
+  filter(!is.na(chi_spp))
 
-fill_lbls <- c(0, .1, .25, .5, 1, round(minmax(chi_unweighted)[2], 2))
+fill_lbls <- c(0, .1, .25, .5, 1, round(minmax(chi_spp)[2], 2))
 xfm <- function(x) {x^.25}
-p <- ggplot(chi_unweighted_df, aes(x, y, fill = xfm(chi_unwt))) +
+p <- ggplot(chi_spp_df, aes(x, y, fill = xfm(chi_spp))) +
   geom_raster() +
   scale_fill_viridis_c(labels = fill_lbls, breaks = xfm(fill_lbls)) +
   coord_sf() +
   theme_void() +
-  labs(title = 'CHI by unweighted mean vulnerability',
+  labs(title = 'CHI by species mean vulnerability',
        fill  = 'CHI')
 
-ggsave(chi_unwt_plot, height = 4, width = 8, dpi = 300)
+ggsave(chi_spp_plot, height = 4, width = 8, dpi = 300)
   
-knitr::include_graphics(chi_unwt_plot)
+knitr::include_graphics(chi_spp_plot)
 ```
 
-## Calculate CHI: FV-weighted
+## Calculate CHI: functional entity
 
 Sum impacts across all stressor/vulnerability combos.
 
-```{r calc chi by fv-weighted vuln, fig.height = 3, fig.width = 6}
+```{r calc chi by FE vuln, fig.height = 3, fig.width = 6}
 
-imp2_fs <- list.files(here('_output/impact_maps/impact_maps_fv_weighted'), 
+imp2_fs <- list.files(here('_output/impact_maps/impact_maps_funct_entity'), 
                       pattern = 'mean',
                       full.names = TRUE)
 
 imp2_stack <- rast(imp2_fs) %>%
-  setNames(str_remove_all(basename(imp2_fs), '.+fvwt_|_x_.+|_mean.tif'))
+  setNames(str_remove_all(basename(imp2_fs), '.+_fe_|_x_.+|_mean.tif'))
 
 ```
 
 ```{r}
 ocean_a_rast <- rast(here('_spatial/ocean_area_mol.tif'))
 ### Calculate cumulative impacts
-chi_fv_wt_raw <- sum(imp2_stack, na.rm = TRUE)
+chi_fe_raw <- sum(imp2_stack, na.rm = TRUE)
 
-chi_fv_weighted <- chi_fv_wt_raw %>%
+chi_fe <- chi_fe_raw %>%
   mask(ocean_a_rast) %>%
-  setNames('chi_fvwt')
+  setNames('chi_fe')
 
-writeRaster(chi_fv_weighted, here('_output/impact_maps/cumulative_maps/chi_fv_weighted.tif'),
+writeRaster(chi_fe, here('_output/impact_maps/cumulative_maps/chi_funct_entity.tif'),
             overwrite = TRUE)
 
 ```
 
 ```{r}
 ### plot with ggplot
-chi_fvwt_plot <- here('figs/chi_fv_weighted.png')
+chi_fe_plot <- here('figs/chi_funct_entity.png')
 
-chi_fv_weighted_df <- chi_fv_weighted %>%
+chi_fe_df <- chi_fe %>%
   as.data.frame(xy = TRUE) %>%
-  filter(!is.na(chi_fvwt))
+  filter(!is.na(chi_fe))
 
-fill_lbls <- c(0, .1, .25, .5, 1, round(minmax(chi_fv_weighted)[2], 2))
+fill_lbls <- c(0, .1, .25, .5, 1, round(minmax(chi_fe)[2], 2))
 
-p <- ggplot(chi_fv_weighted_df, aes(x, y, fill = xfm(chi_fvwt))) +
+p <- ggplot(chi_fe_df, aes(x, y, fill = xfm(chi_fe))) +
   geom_raster() +
   scale_fill_viridis_c(labels = fill_lbls, breaks = xfm(fill_lbls)) +
   coord_sf() +
   theme_void() +
-  labs(title = 'CHI by FV-weighted mean vulnerability',
+  labs(title = 'CHI by functional entity vulnerability',
        fill = 'CHI')
 
-ggsave(chi_fvwt_plot, height = 4, width = 8, dpi = 300)
+ggsave(chi_fe_plot, height = 4, width = 8, dpi = 300)
 
-knitr::include_graphics(chi_fvwt_plot)
+knitr::include_graphics(chi_fe_plot)
 ```
 
 ## Plot relative difference in CHI
 
-Difference in CHI calculated from FV-weighted vulnerability relative to unweighted vulnerability (using only spp included in functional entities):
-$$\frac{CHI_{FV} - CHI_{unweighted}}{CHI_{unweighted}} \times 100\%$$
+Difference in CHI calculated from FE vulnerability relative to species vulnerability (using only spp included in functional entities):
+$$\frac{CHI_{FE} - CHI_{spp}}{CHI_{spp}} \times 100\%$$
 
-```{r fv weighted vs unweighted, fig.height = 4, fig.width = 7}
-r <- ((chi_fv_weighted - chi_unweighted) / chi_unweighted * 100) %>%
+```{r fe vs spp, fig.height = 4, fig.width = 7}
+r <- ((chi_fe - chi_spp) / chi_spp * 100) %>%
   setNames('layer')
 
 r_vals <- values(r); r_vals <- r_vals[!is.na(r_vals)]
@@ -156,17 +156,17 @@ values(r)[values(r) < -r_zlim] <- -r_zlim
 
 ### set up thresholded rasts as well
 r1 <- r2 <- r
-r1[chi_fv_weighted < .10 & chi_unweighted < .10] <- NA
+r1[chi_fe < .10 & chi_spp < .10] <- NA
 r1[r1 > r_zlim] <- r_zlim
 r1[r1 < -r_zlim] <- -r_zlim
-r2[chi_fv_weighted < .25 & chi_unweighted < .25] <- NA
+r2[chi_fe < .25 & chi_spp < .25] <- NA
 r2[r2 > r_zlim] <- r_zlim
 r2[r2 < -r_zlim] <- -r_zlim
  
 ### Difference plots
-chi_diff_plot  <- here('figs/chi_fv_diff_unwt.png')
-chi_diff1_plot <- here('figs/chi_fv_diff_unwt_0.10.png')
-chi_diff2_plot <- here('figs/chi_fv_diff_unwt_0.25.png')
+chi_diff_plot  <- here('figs/chi_fe_diff_spp.png')
+chi_diff1_plot <- here('figs/chi_fe_diff_spp_0.10.png')
+chi_diff2_plot <- here('figs/chi_fe_diff_spp_0.25.png')
 
 chi_diff_df <- as.data.frame(r, xy = TRUE) %>%
   filter(!is.na(layer))
@@ -179,7 +179,7 @@ p <- ggplot(chi_diff_df, aes(x, y, fill = layer)) +
                          limits = c(-r_zlim, r_zlim)) +
     coord_sf() +
     theme_void() +
-    labs(title = 'CHI difference between FV and unweighted',
+    labs(title = 'CHI difference between FE and species',
          fill = '%∆CHI')
   
 ggsave(chi_diff_plot, height = 4, width = 8, dpi = 300)
@@ -195,10 +195,10 @@ p <- ggplot(chi_diff1_df, aes(x, y, fill = layer)) +
                          limits = c(-r_zlim, r_zlim)) +
     coord_sf() +
     theme_void() +
-    labs(title = 'CHI difference between FV and unwt (0.10 threshold)',
+    labs(title = 'CHI difference between FE and species (0.10 threshold)',
          fill = '%∆CHI')
   
-ggsave(chi_diff2_plot, height = 4, width = 8, dpi = 300)
+ggsave(chi_diff1_plot, height = 4, width = 8, dpi = 300)
 
 
 ### Difference cropped by .25 threshold
@@ -211,7 +211,7 @@ p <- ggplot(chi_diff2_df, aes(x, y, fill = layer)) +
                          limits = c(-r_zlim, r_zlim)) +
     coord_sf() +
     theme_void() +
-    labs(title = 'CHI difference between FV and unweighted (0.25 threshold)',
+    labs(title = 'CHI difference between FE and species (0.25 threshold)',
          fill = '%∆CHI')
   
 ggsave(chi_diff2_plot, height = 4, width = 8, dpi = 300)
@@ -228,25 +228,25 @@ In and outside of neritic zone.
 
 ``` {r}
 neritic_rast <- rast(here('_spatial/bathy_mol_neritic.tif'))
-mean_str_unwt <- sapply(imp1_stack, 
+mean_str_spp <- sapply(imp1_stack, 
                         FUN = function(r) mean(values(r), na.rm = TRUE)) %>%
   setNames(names(imp1_stack))
-mean_str_unwt_coastal <- sapply(imp1_stack %>% mask(neritic_rast), 
+mean_str_spp_coastal <- sapply(imp1_stack %>% mask(neritic_rast), 
                                 FUN = function(r) mean(values(r), na.rm = TRUE)) %>%
   setNames(names(imp1_stack))
 
-mean_str_fvwt <- sapply(imp2_stack, 
+mean_str_fe <- sapply(imp2_stack, 
                         FUN = function(r) mean(values(r), na.rm = TRUE)) %>%
   setNames(names(imp2_stack))
-mean_str_fvwt_coastal <- sapply(imp2_stack %>% mask(neritic_rast), 
+mean_str_fe_coastal <- sapply(imp2_stack %>% mask(neritic_rast), 
                                 FUN = function(r) mean(values(r), na.rm = TRUE)) %>%
   setNames(names(imp2_stack))
 
 mean_str_df <- data.frame(stressor = names(imp1_stack)) %>%
-  mutate(mean_impact_fvwt = mean_str_fvwt[stressor],
-         mean_impact_fvwt_nonzero = mean_str_fvwt_coastal[stressor],
-         mean_impact_unwt = mean_str_unwt[stressor],
-         mean_impact_unwt_nonzero = mean_str_unwt_coastal[stressor]) %>%
-  arrange(desc(mean_impact_fvwt))
+  mutate(mean_impact_fe = mean_str_fe[stressor],
+         mean_impact_fe_nonzero = mean_str_fe_coastal[stressor],
+         mean_impact_spp = mean_str_spp[stressor],
+         mean_impact_spp_nonzero = mean_str_spp_coastal[stressor]) %>%
+  arrange(desc(mean_impact_fe))
 knitr::kable(mean_str_df)
 ```

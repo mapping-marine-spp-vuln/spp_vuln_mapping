@@ -1,5 +1,5 @@
 ---
-title: "Compare vulnerability results: unweighted vs fv-weighted"
+title: "Compare vulnerability results: species vs FE"
 author: "*Compiled on `r date()` by `r Sys.info()['user']`*"
 output: 
   html_document:
@@ -20,7 +20,7 @@ output:
 
 knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
 
-library(raster)
+library(terra)
 library(oharac)
 library(tidyverse)
 library(here)
@@ -38,10 +38,10 @@ Inputs are mean (and sd?) vulnerability maps from scripts 2 and 3.
 
 # Methods
 
-Loop over several focal stressors.  For each stressor, read in the maps of unweighted mean $\bar x$ and fv-weighted mean $\bar x_{FV}$ (and similar for coefficient of variance).  Calculate the following comparisons:
+Loop over several focal stressors.  For each stressor, read in the maps of species mean $\bar x_{spp}$ and fv-weighted mean $\bar x_{FE}$ (and similar for coefficient of variance).  Calculate the following comparisons:
 
-* Percent difference in FV-weighted mean relative to unweighted: $(\bar x_{FV} - \bar x) / \bar x$
-* Percent difference in FV-weighted coefficient of variance relative to unweighted: $(\bar {CV}_{FV} - \bar {CV}) / \bar {CV}$
+* Percent difference in FE mean relative to species mean: $(\bar x_{FE} - \bar x) / \bar x$
+* Percent difference in FE coefficient of variance relative to species mean: $(\bar {CV}_{FE} - \bar {CV}_{spp}) / \bar {CV}_{spp}$
 
 ```{r}
 squish_rast <- function(r, qtile = .999) {
@@ -57,13 +57,13 @@ squish_rast <- function(r, qtile = .999) {
 
 ```{r plot vuln by stressor, fig.height = 4, fig.width = 7.5}
 
-vuln_unwt_dir <- here('_output/vuln_maps/vuln_maps_unweighted')
-mean_fs_unwt <- list.files(vuln_unwt_dir, pattern = '_mean.tif', full.names = TRUE)
-# sdev_fs_unwt <- list.files(vuln_unwt_dir, pattern = '_sdev.tif', full.names = TRUE)
+vuln_spp_dir <- here('_output/vuln_maps/vuln_maps_by_species')
+mean_fs_spp <- list.files(vuln_spp_dir, pattern = '_mean.tif', full.names = TRUE)
+# sdev_fs_spp <- list.files(vuln_spp_dir, pattern = '_sdev.tif', full.names = TRUE)
 
-vuln_fvwt_dir <- here('_output/vuln_maps/vuln_maps_fv_weighted')
-mean_fs_fvwt <- list.files(vuln_fvwt_dir, pattern = '_mean.tif', full.names = TRUE)
-# sdev_fs_fvwt <- list.files(vuln_fvwt_dir, pattern = '_sdev.tif', full.names = TRUE)
+vuln_fe_dir <- here('_output/vuln_maps/vuln_maps_by_funct_entity')
+mean_fs_fe <- list.files(vuln_fe_dir, pattern = '_mean.tif', full.names = TRUE)
+# sdev_fs_fe <- list.files(vuln_fe_dir, pattern = '_sdev.tif', full.names = TRUE)
 
 focal_strs <- c('biomass_removal', 'bycatch', 
                 'microplastic', 'wildlife_strike',
@@ -79,27 +79,27 @@ for(f in focal_strs) { ### f <- focal_strs[3]
   
   message('Calculating difference maps for ', tolower(str_name), '...')
   
-  mean_f_unwt <- mean_fs_unwt[str_detect(basename(mean_fs_unwt), f)]
-  # sdev_f_unwt <- sdev_fs_unwt[str_detect(basename(sdev_fs_unwt), f)]
-  mean_rast_unwt <- raster::raster(mean_f_unwt)
-  # sdev_rast_unwt <- raster::raster(sdev_f_unwt)
-  # cv_rast_unwt <- sdev_rast_unwt / mean_rast_unwt
+  mean_f_spp <- mean_fs_spp[str_detect(basename(mean_fs_spp), f)]
+  # sdev_f_spp <- sdev_fs_spp[str_detect(basename(sdev_fs_spp), f)]
+  mean_rast_spp <- terra::rast(mean_f_spp)
+  # sdev_rast_spp <- raster::raster(sdev_f_spp)
+  # cv_rast_spp <- sdev_rast_spp / mean_rast_spp
   
-  mean_f_fvwt <- mean_fs_fvwt[str_detect(basename(mean_fs_fvwt), f)]
-  # sdev_f_fvwt <- sdev_fs_fvwt[str_detect(basename(sdev_fs_fvwt), f)]
-  mean_rast_fvwt <- raster::raster(mean_f_fvwt)
-  # sdev_rast_fvwt <- raster::raster(sdev_f_fvwt)
-  # cv_rast_fvwt <- sdev_rast_fvwt / mean_rast_fvwt
+  mean_f_fe <- mean_fs_fe[str_detect(basename(mean_fs_fe), f)]
+  # sdev_f_fe <- sdev_fs_fe[str_detect(basename(sdev_fs_fe), f)]
+  mean_rast_fe <- terra::rast(mean_f_fe)
+  # sdev_rast_fe <- raster::raster(sdev_f_fe)
+  # cv_rast_fe <- sdev_rast_fe / mean_rast_fe
   
   ### Set up rasters; trim extreme values
-  mean_diff_rast <- (mean_rast_fvwt - mean_rast_unwt) / mean_rast_unwt
+  mean_diff_rast <- (mean_rast_fe - mean_rast_spp) / mean_rast_spp
   mean_diff_squished <- squish_rast(mean_diff_rast, qtile = .999)
-  # cv_diff_rast <- (cv_rast_fvwt - cv_rast_unwt) / cv_rast_unwt
+  # cv_diff_rast <- (cv_rast_fe - cv_rast_spp) / cv_rast_spp
   # cv_r_sq <- squish_rast(cv_diff_rast, qtile = .999)
   
   m_d_mask_0.10 <- m_d_mask_0.25 <- mean_diff_squished$r
-  values(m_d_mask_0.10)[values(mean_rast_unwt) < .10 & values(mean_rast_fvwt) < .10] <- NA
-  values(m_d_mask_0.25)[values(mean_rast_unwt) < .25 & values(mean_rast_fvwt) < .25] <- NA
+  values(m_d_mask_0.10)[values(mean_rast_spp) < .10 & values(mean_rast_fe) < .10] <- NA
+  values(m_d_mask_0.25)[values(mean_rast_spp) < .25 & values(mean_rast_fe) < .25] <- NA
   
   message('Plotting difference maps for ', tolower(str_name), '...')
   
@@ -124,6 +124,6 @@ for(f in focal_strs) { ### f <- focal_strs[3]
        legend = TRUE, axes = FALSE)  
   # plot(cv_r_sq$r, col = map_cols, main = paste0('% Diff in coef of var: ', str_name),
   #      zlim = c(-cv_r_sq$zlim, cv_r_sq$zlim), 
-  #      legend = TRUE, axes = FALSE)  
+  #      legend = TRUE, axes = FALSE)
 }
 ```

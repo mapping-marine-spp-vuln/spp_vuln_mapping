@@ -29,7 +29,7 @@ source(here('common_fxns.R'))
 
 # Summary
 
-With impact maps generated for all stressors, means calculated both unweighted and FV-weighted, we can add the impact layers to generate a comprehensive cumulative human impact map.  This script aggregates by stressor group: fishing-related, land-based, ocean-based, and climate.
+With impact maps generated for all stressors, means calculated both species and FE, we can add the impact layers to generate a comprehensive cumulative human impact map.  This script aggregates by stressor group: fishing-related, land-based, ocean-based, and climate.
 
 # Data
 
@@ -37,7 +37,7 @@ See scripts 2, 3a, and 3b for vulnerability mapping scripts, and scripts 4a-4d f
 
 # Methods
 
-## Calculate CHI: unweighted by stressor group
+## Calculate CHI: species by stressor group
 
 Sum impacts across all stressor/vulnerability combos, by stressor group.
 
@@ -46,35 +46,35 @@ str_gp_df <- read_csv(here('_raw/stressor_vulnerability_lookup.csv'))
 ```
 
 
-```{r calc chi by unweighted vuln, fig.height = 3, fig.width = 6}
-imp1_fs <- list.files(here('_output/impact_maps/impact_maps_unweighted'),
+```{r calc chi by species vuln, fig.height = 3, fig.width = 6}
+imp1_fs <- list.files(here('_output/impact_maps/impact_maps_species'),
                       pattern = 'mean',
                       full.names = TRUE)
 imp1_stack <- rast(imp1_fs) %>%
-  setNames(str_remove_all(basename(imp1_fs), '.+unwt_|_x_.+|_mean.tif'))
+  setNames(str_remove_all(basename(imp1_fs), '.+_spp_|_x_.+|_mean.tif'))
 
 ocean_a_rast <- rast(here('_spatial/ocean_area_mol.tif'))
 
-unwt_outfile_stem <- here('_output/impact_maps/cumulative_maps/unweighted_group_chi_%s.tif')
+spp_outfile_stem <- here('_output/impact_maps/cumulative_maps/species_group_chi_%s.tif')
 
 str_gps <- str_gp_df$stressor_group %>% unique()
 for(str_gp in str_gps) {
   ### str_gp <- str_gps[1]
-  unwt_outfile <- sprintf(unwt_outfile_stem, str_gp)
+  spp_outfile <- sprintf(spp_outfile_stem, str_gp)
   
-  if(!file.exists(unwt_outfile)) {
+  if(!file.exists(spp_outfile)) {
     str_vec <- str_gp_df %>% 
       filter(stressor_group == str_gp) %>% 
       .$stressor
     
     gp_stack <- imp1_stack[[str_vec]]
     ### Calculate cumulative impacts for this group
-    gp_chi_unwt_raw <- sum(gp_stack, na.rm = TRUE)
-    gp_chi_unweighted <- gp_chi_unwt_raw %>%
+    gp_chi_spp_raw <- sum(gp_stack, na.rm = TRUE)
+    gp_chi_species <- gp_chi_spp_raw %>%
       mask(ocean_a_rast) %>%
-      setNames(sprintf('%s_chi_unwt', str_gp))
+      setNames(sprintf('%s_chi_spp', str_gp))
     
-    writeRaster(gp_chi_unweighted, unwt_outfile,
+    writeRaster(gp_chi_species, spp_outfile,
                 overwrite = TRUE)
   }
 }
@@ -85,47 +85,47 @@ for(str_gp in str_gps) {
 ```{r}
 for(s in str_gps) {
   ### s <- str_gps[1]
-  f <- sprintf(unwt_outfile_stem, s)
+  f <- sprintf(spp_outfile_stem, s)
   r <- rast(f)
   plot(log10(r), col = hcl.colors(50), 
-       main = paste0('Log_10(', s, ' stressors), unweighted'),
+       main = paste0('Log_10(', s, ' stressors), species'),
        axes = FALSE)
 }
 ```
 
-## Calculate CHI: FV-weighted
+## Calculate CHI: Functional Entity
 
 Sum impacts across all stressor/vulnerability combos.
 
-```{r calc chi by fv-weighted vuln, fig.height = 3, fig.width = 6}
+```{r calc chi by fe vuln, fig.height = 3, fig.width = 6}
 
-imp2_fs <- list.files(here('_output/impact_maps/impact_maps_fv_weighted'), 
+imp2_fs <- list.files(here('_output/impact_maps/impact_maps_funct_entity'), 
                       pattern = 'mean',
                       full.names = TRUE)
 
 imp2_stack <- rast(imp2_fs) %>%
-  setNames(str_remove_all(basename(imp2_fs), '.+fvwt_|_x_.+|_mean.tif'))
+  setNames(str_remove_all(basename(imp2_fs), '.+_fe_|_x_.+|_mean.tif'))
 
-fvwt_outfile_stem <- here('_output/impact_maps/cumulative_maps/fvweighted_group_chi_%s.tif')
+fe_outfile_stem <- here('_output/impact_maps/cumulative_maps/funct_entity_group_chi_%s.tif')
 
 str_gps <- str_gp_df$stressor_group %>% unique()
 for(str_gp in str_gps) {
   ### str_gp <- str_gps[1]
-  fvwt_outfile <- sprintf(fvwt_outfile_stem, str_gp)
+  fe_outfile <- sprintf(fe_outfile_stem, str_gp)
   
-  if(!file.exists(fvwt_outfile)) {
+  if(!file.exists(fe_outfile)) {
     str_vec <- str_gp_df %>% 
       filter(stressor_group == str_gp) %>% 
       .$stressor
     
     gp_stack <- imp2_stack[[str_detect(names(imp2_stack), smash2or(str_vec))]]
     ### Calculate cumulative impacts for this group
-    gp_chi_fvwt_raw <- sum(gp_stack, na.rm = TRUE)
-    gp_chi_fvweighted <- gp_chi_fvwt_raw %>%
+    gp_chi_fe_raw <- sum(gp_stack, na.rm = TRUE)
+    gp_chi_fe <- gp_chi_fe_raw %>%
       mask(ocean_a_rast) %>%
-      setNames(sprintf('%s_chi_fvwt', str_gp))
+      setNames(sprintf('%s_chi_fe', str_gp))
     
-    writeRaster(gp_chi_fvweighted, fvwt_outfile,
+    writeRaster(gp_chi_fe, fe_outfile,
                 overwrite = TRUE)
   }
 }
@@ -134,31 +134,31 @@ for(str_gp in str_gps) {
 ```{r}
 for(s in str_gps) {
   ### s <- str_gps[1]
-  f <- sprintf(fvwt_outfile_stem, s)
+  f <- sprintf(fe_outfile_stem, s)
   r <- rast(f)
   plot(log10(r), col = hcl.colors(50), 
-       main = paste0('Log_10(', s, ' stressors), FV-weighted'),
+       main = paste0('Log_10(', s, ' stressors), FE'),
        axes = FALSE)
 }
 ```
 
 ## Plot relative difference in CHI
 
-Difference in CHI calculated from FV-weighted vulnerability relative to unweighted vulnerability (using only spp included in functional entities):
-$$\frac{CHI_{FV} - CHI_{unweighted}}{CHI_{unweighted}} \times 100\%$$
+Difference in CHI calculated from FE vulnerability relative to species vulnerability (using only spp included in functional entities):
+$$\frac{CHI_{FE} - CHI_{spp}}{CHI_{spp}} \times 100\%$$
 
-```{r fv weighted vs unweighted, fig.height = 4, fig.width = 7}
+```{r fe vs species, fig.height = 4, fig.width = 7}
 
 for(s in str_gps) {
   ### s <- str_gps[1]
-  f1 <- sprintf(fvwt_outfile_stem, s)
+  f1 <- sprintf(fe_outfile_stem, s)
   r1 <- rast(f1)
-  f2 <- sprintf(unwt_outfile_stem, s)
+  f2 <- sprintf(spp_outfile_stem, s)
   r2 <- rast(f2)
   r <- (r1 - r2) / r2
   
   plot(r, col = hcl.colors(50), 
-       main = paste0('Difference: FV-weighted vs unweighted ', s, ' stressors'),
+       main = paste0('Difference: FE vs species ', s, ' stressors'),
        axes = FALSE)
 }
 ```

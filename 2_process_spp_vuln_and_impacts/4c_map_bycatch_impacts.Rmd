@@ -274,8 +274,8 @@ tx_bycatch_map_df <- data.frame(f = list.files(dirname(out_stem),
   mutate(t = str_extract(basename(f), paste0(taxa, collapse = '|')),
          p = str_extract(basename(f), '_mean|_sdev|_nspp') %>% str_remove('_'))
 
-impact_map_stem <- here('_output/impact_maps/impact_maps_unweighted', 
-                        'impact_unwt_bycatch_%s.tif')
+impact_map_stem <- here('_output/impact_maps/impact_maps_species', 
+                        'impact_spp_bycatch_%s.tif')
   ### %s is parameter (mean, sd, nspp)
 
 ### check if total stressor maps are complete
@@ -292,8 +292,8 @@ if(!all(file.exists(impact_f_mean, impact_f_sdev))) {
 if(!file.exists(impact_f_mean)) {
   message('... summarizing mean impact map across all taxa...')
 
-  unwt_mean <- process_mean_rasts(big_df)
-  rast_mean <- map_to_mol(unwt_mean, which = 'imp_mean')
+  spp_mean <- process_mean_rasts(big_df)
+  rast_mean <- map_to_mol(spp_mean, which = 'imp_mean')
 
   message('Writing out mean raster: \n  ',
           str_replace(impact_f_mean, '/home/ohara/github/', 'GitHub:'))
@@ -306,8 +306,8 @@ if(!file.exists(impact_f_sdev)) {
   message('... summarizing standard deviation impact map across all taxa...')
   ### break this into smaller chunks and parallelize over those?
 
-  unwt_sdev <- process_sdev_rasts(big_df)
-  rast_sdev <- map_to_mol(unwt_sdev, which = 'imp_sdev')
+  spp_sdev <- process_sdev_rasts(big_df)
+  rast_sdev <- map_to_mol(spp_sdev, which = 'imp_sdev')
   
   message('Writing out std dev raster: \n  ',
           str_replace(impact_f_sdev, '/home/ohara/github/', 'GitHub:'))
@@ -316,32 +316,32 @@ if(!file.exists(impact_f_sdev)) {
 }
 
 ### check that nspp adds up correctly
-# unwt_nspp <- big_df %>% group_by(cell_id) %>% summarize(nspp = sum(imp_nspp))
-# rast_nspp <- map_to_mol(unwt_nspp, which = 'nspp')
-# main_nspp <- rast(here('_output/nspp_maps/nspp_in_unwt_vuln.tif'))
+# spp_nspp <- big_df %>% group_by(cell_id) %>% summarize(nspp = sum(imp_nspp))
+# rast_nspp <- map_to_mol(spp_nspp, which = 'nspp')
+# main_nspp <- rast(here('_output/nspp_maps/species_richness'))
 # x <- as.vector(values(rast_nspp)); y <- as.vector(values(main_nspp))
 # match <- (is.na(x) & is.na(y)) | x == y
 # all(match)
 ```
 
 ```{r}
-mean_rast_unwt <- rast(impact_f_mean)
-sdev_rast_unwt <- rast(impact_f_sdev)
-cv_rast_unwt <- sdev_rast_unwt / mean_rast_unwt
+mean_rast_spp <- rast(impact_f_mean)
+sdev_rast_spp <- rast(impact_f_sdev)
+cv_rast_spp <- sdev_rast_spp / mean_rast_spp
 
 map_cols <- hcl.colors(n = 50)
 
-plot(log10(mean_rast_unwt), col = map_cols, 
+plot(log10(mean_rast_spp), col = map_cols, 
      main = 'log_10(Mean) unweighted impact: bycatch (all spp)',
      legend = TRUE, axes = FALSE)  
-plot(cv_rast_unwt, col = map_cols, 
+plot(cv_rast_spp, col = map_cols, 
      main = 'CV unweighted weighted impact: bycatch (all spp)',
      legend = TRUE, axes = FALSE)
 ```
 
 ## Impacts by FV-weighted mean vulnerability
 
-Here we will rely on similar code to that used in script 3a_map_vulnerability_FV_weighted.Rmd.
+Here we will rely on similar code to that used in script 3a_map_funct_entity_vulnerability.Rmd.
 
 ### Tidy the loop
 
@@ -457,9 +457,9 @@ spp_fe <- spp_info_df %>%
   select(species, fe_id) %>%
   distinct()
 
-tmp_stem_fv <- here_anx('impact_maps_by_taxon/impacts_tx_bycatch',
+tmp_stem_fe <- here_anx('impact_maps_by_taxon/impacts_tx_bycatch',
                         'imp_fvwt_summary_chunk_%s_to_%s_bycatch.csv')
-### zxcv <- list.files(dirname(tmp_stem_fv), pattern = 'imp_fvwt_summary_chunk', full.names = TRUE)
+### zxcv <- list.files(dirname(tmp_stem_fe), pattern = 'imp_fvwt_summary_chunk', full.names = TRUE)
 ### unlink(zxcv)
 
 for(chunk_i in 1:n_chunks) { 
@@ -474,8 +474,8 @@ for(chunk_i in 1:n_chunks) {
                         chunk_i, n_chunks, chunk_start, chunk_end)
 
   ### check if all chunk-stressor maps are complete
-  tmp_bycatch_fv <- sprintf(tmp_stem_fv, chunk_start, chunk_end)
-  if(file.exists(tmp_bycatch_fv)) {
+  tmp_bycatch_fe <- sprintf(tmp_stem_fe, chunk_start, chunk_end)
+  if(file.exists(tmp_bycatch_fe)) {
     message('Temp csv exists for ', chunk_text, ' for stressor bycatch... skipping!')
     next()
   }
@@ -495,7 +495,7 @@ for(chunk_i in 1:n_chunks) {
   if(nrow(chunk_maps_raw) == 0) {
     message('No species X cells found for ', chunk_text, 
             '... writing out empty data.frame...')
-    write_csv(data.frame(), tmp_bycatch_fv)
+    write_csv(data.frame(), tmp_bycatch_fe)
     next()
   }
 
@@ -503,7 +503,7 @@ for(chunk_i in 1:n_chunks) {
   message('... Calculating functional vulnerability metrics for ', nrow(chunk_maps_raw), 
           ' spp-cells in ', chunk_text, '...')
   chunk_maps <- chunk_maps_raw %>%
-    calc_spp_cell_fv(spp_fe)
+    calc_spp_cell_fe(spp_fe)
   
   message('... In ', chunk_text,  ' rangemap dataframe: \n      ', nrow(chunk_maps), 
           ' cell observations for ', n_distinct(chunk_maps$species), ' species across ',
@@ -513,7 +513,7 @@ for(chunk_i in 1:n_chunks) {
   message('... Processing mean/sd vuln in ', chunk_text, ' to stressor: bycatch...')
   chunk_str_sum <- calc_chunk_str_sum(chunk_maps, spp_for_calc = spp_info_df)
   
-  write_csv(chunk_str_sum, tmp_bycatch_fv)
+  write_csv(chunk_str_sum, tmp_bycatch_fe)
 }
 ```
 
@@ -522,16 +522,16 @@ for(chunk_i in 1:n_chunks) {
 For each stressor, pull in all chunk dataframes, assemble into dataframe, and save out as rasters.
 
 ```{r assemble chunk vuln maps to total maps}
-chunk_files <- list.files(dirname(tmp_stem_fv), 
+chunk_files <- list.files(dirname(tmp_stem_fe), 
                           pattern = 'imp_fvwt_summary_chunk', full.names = TRUE)
 
-rast_fv_out_stem <- here('_output/impact_maps/impact_maps_fv_weighted', 
-                         'impact_fvwt_bycatch_%s.tif')
+rast_fe_out_stem <- here('_output/impact_maps/impact_maps_funct_entity', 
+                         'impact_fe_bycatch_%s.tif')
 
-rast_mean_imp_fv_f <- sprintf(rast_fv_out_stem, 'mean')
-rast_sdev_imp_fv_f <- sprintf(rast_fv_out_stem, 'sdev')
+rast_mean_imp_fe_f <- sprintf(rast_fe_out_stem, 'mean')
+rast_sdev_imp_fe_f <- sprintf(rast_fe_out_stem, 'sdev')
 
-if(any(!file.exists(rast_mean_imp_fv_f, rast_sdev_imp_fv_f))) {
+if(any(!file.exists(rast_mean_imp_fe_f, rast_sdev_imp_fe_f))) {
   message('Gathering impact chunk maps for bycatch...')
   
   impact_map_df <- parallel::mclapply(chunk_files, mc.cores = 33, 
@@ -539,17 +539,17 @@ if(any(!file.exists(rast_mean_imp_fv_f, rast_sdev_imp_fv_f))) {
     bind_rows()
   
   message('Converting impact maps to rasters for bycatch...')
-  mean_rast_fvwt <- map_to_mol(impact_map_df, by = 'cell_id', which = 'fv_wt_mean_impact')
-  sdev_rast_fvwt <- map_to_mol(impact_map_df, by = 'cell_id', which = 'fv_wt_sd_impact')
+  mean_rast_fe <- map_to_mol(impact_map_df, by = 'cell_id', which = 'fv_wt_mean_impact')
+  sdev_rast_fe <- map_to_mol(impact_map_df, by = 'cell_id', which = 'fv_wt_sd_impact')
   
   message('Writing impact rasters for bycatch...')
-  writeRaster(mean_rast_fvwt, rast_mean_imp_fv_f, overwrite = TRUE)
-  writeRaster(sdev_rast_fvwt, rast_sdev_imp_fv_f, overwrite = TRUE)
+  writeRaster(mean_rast_fe, rast_mean_imp_fe_f, overwrite = TRUE)
+  writeRaster(sdev_rast_fe, rast_sdev_imp_fe_f, overwrite = TRUE)
   
   ### check that n_fe adds up correctly
   # n_fe <- impact_map_df %>% data.table() %>% .[ , n_fe := sum(n_fe), by = 'cell_id']
   # rast_n_fe <- map_to_mol(n_fe, which = 'n_fe')
-  # main_n_fe <- rast(here('_output/nspp_maps/n_fe_in_fvwt_vuln.tif'))
+  # main_n_fe <- rast(here('_output/nspp_maps/funct_entity_richness'))
   # x <- as.vector(values(rast_n_fe)); y <- as.vector(values(main_n_fe))
   # match <- (is.na(x) & is.na(y)) | x == y
   # all(match)
@@ -559,16 +559,16 @@ if(any(!file.exists(rast_mean_imp_fv_f, rast_sdev_imp_fv_f))) {
 ```
 
 ```{r}
-mean_rast_fvwt <- rast(rast_mean_imp_fv_f)
-sdev_rast_fvwt <- rast(rast_sdev_imp_fv_f)
-cv_rast_fvwt <- sdev_rast_fvwt / mean_rast_fvwt
+mean_rast_fe <- rast(rast_mean_imp_fe_f)
+sdev_rast_fe <- rast(rast_sdev_imp_fe_f)
+cv_rast_fe <- sdev_rast_fe / mean_rast_fe
 
 map_cols <- hcl.colors(n = 50)
 
-plot(log10(mean_rast_fvwt), col = map_cols, 
+plot(log10(mean_rast_fe), col = map_cols, 
      main = 'log_10(Mean) FV-weighted impact: bycatch',
      legend = TRUE, axes = FALSE)  
-plot(cv_rast_fvwt, col = map_cols, 
+plot(cv_rast_fe, col = map_cols, 
      main = 'CV FV-weighted weighted impact: bycatch',
      legend = TRUE, axes = FALSE)
 ```
@@ -590,14 +590,14 @@ squish_rast <- function(r, qtile = .999) {
 }
 
 ### Set up rasters; trim extreme values
-mean_diff_rast <- (mean_rast_fvwt - mean_rast_unwt) / mean_rast_unwt
+mean_diff_rast <- (mean_rast_fe - mean_rast_spp) / mean_rast_spp
 mean_diff_squished <- squish_rast(mean_diff_rast, qtile = .999)
-# cv_diff_rast <- (cv_rast_fvwt - cv_rast_unwt) / cv_rast_unwt
+# cv_diff_rast <- (cv_rast_fe - cv_rast_spp) / cv_rast_spp
 # cv_r_sq <- squish_rast(cv_diff_rast, qtile = .999)
 
 m_d_mask_0.10 <- m_d_mask_0.25 <- mean_diff_squished$r
-values(m_d_mask_0.10)[values(mean_rast_unwt) < .10 | values(mean_rast_fvwt) < .10] <- NA
-values(m_d_mask_0.25)[values(mean_rast_unwt) < .25 | values(mean_rast_fvwt) < .25] <- NA
+values(m_d_mask_0.10)[values(mean_rast_spp) < .10 | values(mean_rast_fe) < .10] <- NA
+values(m_d_mask_0.25)[values(mean_rast_spp) < .25 | values(mean_rast_fe) < .25] <- NA
 
 message('Plotting difference maps for bycatch...')
 

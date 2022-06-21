@@ -314,8 +314,8 @@ tx_bio_rem_map_df <- data.frame(f = list.files(dirname(out_stem),
   mutate(t = str_extract(basename(f), paste0(taxa, collapse = '|')),
          p = str_extract(basename(f), '_mean|_sdev|_nspp') %>% str_remove('_'))
 
-impact_map_stem <- here('_output/impact_maps/impact_maps_unweighted', 
-                        'impact_unwt_biomass_removal_%s.tif')
+impact_map_stem <- here('_output/impact_maps/impact_maps_species', 
+                        'impact_spp_biomass_removal_%s.tif')
   ### %s is parameter (mean, sd, nspp)
 
 ### check if total stressor maps are complete
@@ -357,32 +357,32 @@ if(!file.exists(impact_f_sdev)) {
 ```
 
 ```{r}
-mean_rast_unwt <- rast(impact_f_mean)
-sdev_rast_unwt <- rast(impact_f_sdev)
-cv_rast_unwt <- sdev_rast_unwt / mean_rast_unwt
+mean_rast_spp <- rast(impact_f_mean)
+sdev_rast_spp <- rast(impact_f_sdev)
+cv_rast_spp <- sdev_rast_spp / mean_rast_spp
 
 map_cols <- hcl.colors(n = 50)
 
-plot(log10(mean_rast_unwt), col = map_cols, #zlim = c(0, 1),
-     main = 'log_10(Mean) unweighted impact: biomass removal',
+plot(log10(mean_rast_spp), col = map_cols, #zlim = c(0, 1),
+     main = 'log_10(Mean) species mean impact: biomass removal',
      legend = TRUE, axes = FALSE)  
-plot(cv_rast_unwt, col = map_cols, 
-     main = 'CV unweighted weighted impact: biomass removal',
+plot(cv_rast_spp, col = map_cols, 
+     main = 'CV species impact: biomass removal',
      legend = TRUE, axes = FALSE)
 
 ```
 
 ## Impacts by FV-weighted mean vulnerability
 
-Here we will rely on similar code to that used in script 3a_map_vulnerability_FV_weighted.Rmd.
+Here we will rely on similar code to that used in script 3a_map_funct_entity_vulnerability.Rmd.
 
 ### Tidy the loop
 
 Because this is a complex process, let's tidy the big `for` loop by breaking out key code as functions.
 
 * `read_truncated_rangemap`: read in all range maps, truncating each one to just those cells in the current chunk.
-* `calc_fv`: Calculate the functional vulnerability for a given functional entity based on the number of spp present.
-* `calc_spp_cell_fv`: For each cell, identify all FEs and calculate the FV of each.  Because grouping by large numbers of groups (e.g, 100000 cells and multiple FEs), for crash-avoidance, this is parallelized. 
+* `calc_fe`: Calculate the functional vulnerability for a given functional entity based on the number of spp present.
+* `calc_spp_cell_fe`: For each cell, identify all FEs and calculate the FV of each.  Because grouping by large numbers of groups (e.g, 100000 cells and multiple FEs), for crash-avoidance, this is parallelized. 
 * `bind_maps_list`: for a list of truncated species maps, clean out NULL results and bind rows, keeping cell ID and species name.
 * `calc_chunk_str_sum`: for a dataframe of truncated species maps
 
@@ -413,7 +413,7 @@ read_truncated_rangemap <- function(f, chunk_start, chunk_end) {
 }
 
 read_truncated_str_map <- function(f, chunk_start, chunk_end) {
-  ### f <- catch_mapfile_fv_df$map_f[1000]
+  ### f <- catch_mapfile_fe_df$map_f[1000]
   if(!file.exists(f)) return(NULL)
   
   df <- data.table::fread(f) 
@@ -501,7 +501,7 @@ chunk_size <- 100000
 n_chunks <- ceiling(6.5e6 / chunk_size)
 spp_fe <- spp_info_df %>% select(species, fe_id) %>% distinct()
 
-tmp_stem_fv <- here_anx('impact_maps_by_taxon/impacts_tx_biomass_removal', 
+tmp_stem_fe <- here_anx('impact_maps_by_taxon/impacts_tx_biomass_removal', 
                         'imp_fvwt_biomass_removal_chunk_%s_to_%s.tif')
 ### zxcv <- list.files(dirname(tmp_stem_fv), pattern = 'imp_fvwt', full.names = TRUE)
 ### unlink(zxcv)
@@ -518,8 +518,8 @@ for(chunk_i in 1:n_chunks) {
                         chunk_i, n_chunks, chunk_start, chunk_end)
 
   ### check if chunk-stressor map is complete
-  tmp_biomass_removal_fv <- sprintf(tmp_stem_fv, chunk_start, chunk_end)
-  if(file.exists(tmp_biomass_removal_fv)) {
+  tmp_biomass_removal_fe <- sprintf(tmp_stem_fe, chunk_start, chunk_end)
+  if(file.exists(tmp_biomass_removal_fe)) {
     message('Temp csv exists for ', chunk_text, ' for stressor biomass removal... skipping!')
     next()
   }
@@ -553,22 +553,22 @@ for(chunk_i in 1:n_chunks) {
     ### no catch, and no spp - write out empty file and move on
     warning('Neither catch nor species found for ', chunk_text,
             '... writing empty file...')
-    write_csv(data.frame(), tmp_biomass_removal_fv)
+    write_csv(data.frame(), tmp_biomass_removal_fe)
     next()
   }
   if(nrow(chunk_catch_maps_raw) == 0 & nrow(chunk_rangemaps_raw) > 0) {
     ### no catch, but spp present - summarize here and save out
     message('... No catch found but ', n_distinct(chunk_rangemaps_raw$species),
             ' species found for ', chunk_text, '...')
-    range_maps_fv <- calc_spp_cell_fv(spp_cells = chunk_rangemaps_raw,
+    range_maps_fe <- calc_spp_cell_fe(spp_cells = chunk_rangemaps_raw,
                                       spp_fe = spp_fe)
 
-    no_catch_df <- range_maps_fv %>%
+    no_catch_df <- range_maps_fe %>%
       group_by(cell_id) %>%
       summarize(n_fe = n_distinct(fe_id), 
                 fv_wt_mean_impact = 0, 
                 fv_wt_sd_impact = 0)
-    write_csv(no_catch_df, tmp_biomass_removal_fv)
+    write_csv(no_catch_df, tmp_biomass_removal_fe)
     next()
   }
 
@@ -580,18 +580,18 @@ for(chunk_i in 1:n_chunks) {
   ### OK, now we have species and cells for this chunk.  Calculate functional vulnerability!
   message('... Calculating functional vulnerability metrics for ', nrow(catch_maps_filled), 
           ' spp-cells in \n    ', chunk_text, '...')
-  chunk_maps_fv <- calc_spp_cell_fv(spp_cells = catch_maps_filled,
+  chunk_maps_fe <- calc_spp_cell_fe(spp_cells = catch_maps_filled,
                                     spp_fe = spp_fe)
   
-  message('... In ', chunk_text,  ' rangemap dataframe: \n    ', nrow(chunk_maps_fv), 
-          ' cell observations for ', n_distinct(chunk_maps_fv$species), ' species across ',
-          n_distinct(chunk_maps_fv$fe_id), ' functional entities...')
+  message('... In ', chunk_text,  ' rangemap dataframe: \n    ', nrow(chunk_maps_fe), 
+          ' cell observations for ', n_distinct(chunk_maps_fe$species), ' species across ',
+          n_distinct(chunk_maps_fe$fe_id), ' functional entities...')
   
   message('... Processing mean/sd vuln in ', chunk_text, ' to stressor: biomass removal...')
-  chunk_str_sum <- calc_chunk_str_sum(chunk_maps = chunk_maps_fv, 
+  chunk_str_sum <- calc_chunk_str_sum(chunk_maps = chunk_maps_fe, 
                                       spp_for_calc = spp_info_df)
   
-  write_csv(chunk_str_sum, tmp_biomass_removal_fv)
+  write_csv(chunk_str_sum, tmp_biomass_removal_fe)
 }
 
 ```
@@ -601,16 +601,16 @@ for(chunk_i in 1:n_chunks) {
 For each stressor, pull in all chunk dataframes, assemble into dataframe, and save out as rasters.
 
 ```{r assemble chunk vuln maps to total maps}
-rast_fv_out_stem <- here('_output/impact_maps/impact_maps_fv_weighted', 
-                         'impact_fvwt_biomass_removal_%s.tif')
+rast_fe_out_stem <- here('_output/impact_maps/impact_maps_funct_entity', 
+                         'impact_fe_biomass_removal_%s.tif')
 
-rast_mean_impact_fv_f <- sprintf(rast_fv_out_stem, 'mean')
-rast_sdev_impact_fv_f <- sprintf(rast_fv_out_stem, 'sdev')
+rast_mean_impact_fe_f <- sprintf(rast_fe_out_stem, 'mean')
+rast_sdev_impact_fe_f <- sprintf(rast_fe_out_stem, 'sdev')
 
-if(any(!file.exists(rast_mean_impact_fv_f, rast_sdev_impact_fv_f))) {
+if(any(!file.exists(rast_mean_impact_fe_f, rast_sdev_impact_fe_f))) {
   message('Gathering impact chunk maps for biomass removal...')
   
-  chunk_files <- list.files(dirname(tmp_stem_fv), 
+  chunk_files <- list.files(dirname(tmp_stem_fe), 
                             pattern = 'imp_fvwt_biomass_removal_chunk', 
                             full.names = TRUE)
 
@@ -618,12 +618,12 @@ if(any(!file.exists(rast_mean_impact_fv_f, rast_sdev_impact_fv_f))) {
     bind_rows()
   
   message('Converting impact maps to rasters for biomass removal...')
-  mean_rast_fvwt <- map_to_mol(impact_map_df, by = 'cell_id', which = 'fv_wt_mean_impact')
-  sdev_rast_fvwt <- map_to_mol(impact_map_df, by = 'cell_id', which = 'fv_wt_sd_impact')
+  mean_rast_fe <- map_to_mol(impact_map_df, by = 'cell_id', which = 'fe_mean_impact')
+  sdev_rast_fe <- map_to_mol(impact_map_df, by = 'cell_id', which = 'fe_sd_impact')
   
   message('Writing impact rasters for biomass removal...')
-  writeRaster(mean_rast_fvwt, rast_mean_impact_fv_f, overwrite = TRUE)
-  writeRaster(sdev_rast_fvwt, rast_sdev_impact_fv_f, overwrite = TRUE)
+  writeRaster(mean_rast_fe, rast_mean_impact_fe_f, overwrite = TRUE)
+  writeRaster(sdev_rast_fe, rast_sdev_impact_fe_f, overwrite = TRUE)
   
   ### n_fe rast matches with that calculated in the vuln calcs:
   # n_fe_rast_main <- raster(here('_output/nspp_maps/n_fe_in_fvwt_vuln.tif'))
@@ -633,16 +633,16 @@ if(any(!file.exists(rast_mean_impact_fv_f, rast_sdev_impact_fv_f))) {
 ```
 
 ```{r}
-mean_rast_fvwt <- rast(rast_mean_impact_fv_f)
-sdev_rast_fvwt <- rast(rast_sdev_impact_fv_f)
-cv_rast_fvwt <- sdev_rast_fvwt / mean_rast_fvwt
+mean_rast_fe <- rast(rast_mean_impact_fe_f)
+sdev_rast_fe <- rast(rast_sdev_impact_fe_f)
+cv_rast_fe <- sdev_rast_fe / mean_rast_fe
 
 map_cols <- hcl.colors(n = 50)
 
-plot(log10(mean_rast_fvwt), col = map_cols, #zlim = c(0, 1),
+plot(log10(mean_rast_fe), col = map_cols, #zlim = c(0, 1),
      main = 'log_10(Mean) FV-weighted impact: biomass removal',
      legend = TRUE, axes = FALSE)  
-plot(cv_rast_fvwt, col = map_cols, 
+plot(cv_rast_fe, col = map_cols, 
      main = 'CV FV-weighted weighted impact: biomass removal',
      legend = TRUE, axes = FALSE)
 ```
@@ -664,23 +664,23 @@ squish_rast <- function(r, qtile = .999) {
 }
 
 ### Set up rasters; trim extreme values
-mean_diff_rast <- (mean_rast_fvwt - mean_rast_unwt) / mean_rast_unwt
-mean_diff_rast[mean_rast_unwt == 0] <- NA
+mean_diff_rast <- (mean_rast_fe - mean_rast_spp) / mean_rast_spp
+mean_diff_rast[mean_rast_spp == 0] <- NA
 mean_diff_squished <- squish_rast(mean_diff_rast, qtile = .999)
 # cv_diff_rast <- (cv_rast_fvwt - cv_rast_unwt) / cv_rast_unwt
 # cv_r_sq <- squish_rast(cv_diff_rast, qtile = .999)
-high_diff_cells <- data.frame(unwt = as.vector(values(mean_rast_unwt)), 
-                              fvwt = as.vector(values(mean_rast_fvwt)),
-                              cell_id = 1:ncell(mean_rast_unwt)) %>%
-  filter(!is.na(unwt)) %>%
-  mutate(diff = (fvwt - unwt) / unwt) %>%
+high_diff_cells <- data.frame(spp = as.vector(values(mean_rast_spp)), 
+                              fe  = as.vector(values(mean_rast_fe)),
+                              cell_id = 1:ncell(mean_rast_spp)) %>%
+  filter(!is.na(spp)) %>%
+  mutate(diff = (fe - spp) / spp) %>%
   filter(diff == -1 | diff > 10) %>%
   filter(!is.infinite(diff)) %>%
   mutate(chunk = ceiling(cell_id / 1e5))
   
 m_d_mask_0.10 <- m_d_mask_0.25 <- mean_diff_squished$r
-values(m_d_mask_0.10)[values(mean_rast_unwt) < .10 & values(mean_rast_fvwt) < .10] <- NA
-values(m_d_mask_0.25)[values(mean_rast_unwt) < .25 & values(mean_rast_fvwt) < .25] <- NA
+values(m_d_mask_0.10)[values(mean_rast_spp) < .10 & values(mean_rast_fe) < .10] <- NA
+values(m_d_mask_0.25)[values(mean_rast_spp) < .25 & values(mean_rast_fe) < .25] <- NA
 
 message('Plotting difference maps for biomass removal...')
 
