@@ -1,0 +1,58 @@
+---
+title: "Compare areas of high/low cumulative impact across methods"
+author: "*Compiled on `r date()` by `r Sys.info()['user']`*"
+output: 
+  html_document:
+    code_folding: hide
+    toc: true
+    toc_depth: 3
+    toc_float: yes
+    number_sections: true
+    theme: cerulean
+    highlight: haddock
+    includes: 
+      in_header: '~/github/src/templates/ohara_hdr.html'
+  pdf_document:
+    toc: true
+---
+
+``` {r setup, echo = TRUE, message = FALSE, warning = FALSE}
+
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE, fig.height = 4, fig.width = 7)
+
+library(terra)
+library(oharac)
+library(data.table)
+library(tidyverse)
+library(here)
+source(here('common_fxns.R'))
+```
+
+# Summary
+
+Identify areas with anomalous predictions of impact from habitat and FE based CHI methods, looking at the bar charts by region.  Possible areas include the Andaman Islands area?  
+
+Questions:
+
+* Overall, climate, and non-climate CHI, high hab and low FE
+    * which species and stressors are driving low FE?
+    * which habs and stressors are driving high hab?
+    * implications of this combo?
+* Overall, climate, and non-climate CHI, low hab and high FE
+    * which species and stressors are driving high FE?
+    * which habs and stressors are driving low hab?
+    * implications of this combo?
+
+# Methods
+
+- Identify a few cells to focus on
+- Generate a species list for these cells (and hab list?)
+- calculate FV across all spp in the cell
+- candidate species to focus on might be:
+    * local high FV: species is the lone rep of an FE locally (but in an FE with multiple spp)
+        * species FE list contains info on FE overall membership; compare to local species list in candidate area
+    * regional moderate/low FV: species has a large range, such that it overlaps with other members of its FE in other regions
+        * info on spp ranges is available
+        * for candidate FE, generate a map of FE richness (or FV)
+    * highly vulnerable to stressors that are patchy, creating local high impacts in some areas but low in others nearby
+    

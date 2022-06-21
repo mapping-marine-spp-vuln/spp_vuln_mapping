@@ -63,7 +63,7 @@ ocean_df <- as.data.frame(ocean_map, xy = TRUE)
 land_sf <- read_sf(here('_spatial/ne_10m_land/ne_10m_land_no_casp.shp')) %>%
   st_transform(st_crs(ocean_map))
 
-nspp_mask <- rast(here('_output/nspp_maps/nspp_in_unwt_vuln.tif'))
+nspp_mask <- rast(here('_output/nspp_maps/species_richness'))
 nspp_vals <- values(nspp_mask)
 values(nspp_mask)[nspp_vals < 20] <- NA
 
@@ -71,7 +71,7 @@ chi_gps_hab <- list.files(here('_output/impact_maps/cumulative_maps'),
                          pattern = 'habitat_group_chi',
                          full.names = TRUE)
 chi_gps_fe <- list.files(here('_output/impact_maps/cumulative_maps'),
-                         pattern = 'fvweighted_group_chi',
+                         pattern = 'funct_entity_group_chi',
                          full.names = TRUE)
 climate_map_hab <- rast(chi_gps_hab[1]) %>%
   mask(nspp_mask)
