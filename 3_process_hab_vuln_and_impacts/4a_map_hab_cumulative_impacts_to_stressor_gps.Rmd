@@ -69,14 +69,14 @@ Habitat impact maps created in script `4_map_hab_cumulative_impacts.Rmd.`
 ```{r}
 ocean_a <- rast(here('_spatial/ocean_area_mol.tif'))
 
-impact_fs <- list.files(here('_output/impact_maps/impact_maps_habitat'),
+impact_fs <- list.files(here_anx('_output/impact_maps/impact_maps_habitat'),
                         pattern = 'impact_hab_.+.tif', full.names = TRUE)
 impact_stack <- rast(impact_fs) %>%
   setNames(basename(impact_fs) %>% str_remove_all('impact_hab_|.tif'))
 
 stressor_gps <- hab_stressor_df$stressor_group %>% unique()
 
-hab_outfile_stem <- here('_output/impact_maps/cumulative_maps/habitat_group_chi_%s.tif')
+hab_outfile_stem <- here('_output/cumulative_impact_maps/habitat_group_chi_%s.tif')
 
 for(s in stressor_gps) {
   ### s <- stressor_gps[1]

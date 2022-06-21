@@ -9,7 +9,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
 
 
-<meta name="author" content="Compiled on Sun Jun 12 15:12:13 2022 by ohara" />
+<meta name="author" content="Compiled on Tue Jun 21 09:33:05 2022 by ohara" />
 
 
 <title>Map biomass removal impacts</title>
@@ -361,7 +361,7 @@ div.tocify {
 
 
 <h1 class="title toc-ignore">Map biomass removal impacts</h1>
-<h4 class="author"><em>Compiled on Sun Jun 12 15:12:13 2022 by ohara</em></h4>
+<h4 class="author"><em>Compiled on Tue Jun 21 09:33:05 2022 by ohara</em></h4>
 
 </div>
 
@@ -640,7 +640,7 @@ div.tocify {
 <span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">t =</span> <span class="fu">str_extract</span>(<span class="fu">basename</span>(f), <span class="fu">paste0</span>(taxa, <span class="at">collapse =</span> <span class="st">&#39;|&#39;</span>)),</span>
 <span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>         <span class="at">p =</span> <span class="fu">str_extract</span>(<span class="fu">basename</span>(f), <span class="st">&#39;_mean|_sdev|_nspp&#39;</span>) <span class="sc">%&gt;%</span> <span class="fu">str_remove</span>(<span class="st">&#39;_&#39;</span>))</span>
 <span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>impact_map_stem <span class="ot">&lt;-</span> <span class="fu">here</span>(<span class="st">&#39;_output/impact_maps/impact_maps_species&#39;</span>, </span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>impact_map_stem <span class="ot">&lt;-</span> <span class="fu">here_anx</span>(<span class="st">&#39;_output/impact_maps/impact_maps_species&#39;</span>, </span>
 <span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>                        <span class="st">&#39;impact_spp_biomass_removal_%s.tif&#39;</span>)</span>
 <span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a>  <span class="do">### %s is parameter (mean, sd, nspp)</span></span>
 <span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a></span>
@@ -916,7 +916,7 @@ div.tocify {
 <div id="aggregate-chunk-vulnerability-maps-to-global-map" class="section level3" number="3.3.2">
 <h3><span class="header-section-number">3.3.2</span> Aggregate chunk vulnerability maps to global map</h3>
 <p>For each stressor, pull in all chunk dataframes, assemble into dataframe, and save out as rasters.</p>
-<div class="sourceCode" id="cb12"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a>rast_fe_out_stem <span class="ot">&lt;-</span> <span class="fu">here</span>(<span class="st">&#39;_output/impact_maps/impact_maps_funct_entity&#39;</span>, </span>
+<div class="sourceCode" id="cb12"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a>rast_fe_out_stem <span class="ot">&lt;-</span> <span class="fu">here_anx</span>(<span class="st">&#39;_output/impact_maps/impact_maps_funct_entity&#39;</span>, </span>
 <span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>                         <span class="st">&#39;impact_fe_biomass_removal_%s.tif&#39;</span>)</span>
 <span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a>rast_mean_impact_fe_f <span class="ot">&lt;-</span> <span class="fu">sprintf</span>(rast_fe_out_stem, <span class="st">&#39;mean&#39;</span>)</span>

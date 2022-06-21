@@ -314,7 +314,7 @@ tx_bio_rem_map_df <- data.frame(f = list.files(dirname(out_stem),
   mutate(t = str_extract(basename(f), paste0(taxa, collapse = '|')),
          p = str_extract(basename(f), '_mean|_sdev|_nspp') %>% str_remove('_'))
 
-impact_map_stem <- here('_output/impact_maps/impact_maps_species', 
+impact_map_stem <- here_anx('_output/impact_maps/impact_maps_species', 
                         'impact_spp_biomass_removal_%s.tif')
   ### %s is parameter (mean, sd, nspp)
 
@@ -601,7 +601,7 @@ for(chunk_i in 1:n_chunks) {
 For each stressor, pull in all chunk dataframes, assemble into dataframe, and save out as rasters.
 
 ```{r assemble chunk vuln maps to total maps}
-rast_fe_out_stem <- here('_output/impact_maps/impact_maps_funct_entity', 
+rast_fe_out_stem <- here_anx('_output/impact_maps/impact_maps_funct_entity', 
                          'impact_fe_biomass_removal_%s.tif')
 
 rast_mean_impact_fe_f <- sprintf(rast_fe_out_stem, 'mean')

@@ -42,7 +42,7 @@ See scripts 2, 3a, and 3b for vulnerability mapping scripts, and scripts 4a-4d f
 Sum impacts across all stressor/vulnerability combos.
 
 ```{r calc chi by spp vuln, fig.height = 3, fig.width = 6}
-imp1_fs <- list.files(here('_output/impact_maps/impact_maps_species'),
+imp1_fs <- list.files(here_anx('_output/impact_maps/impact_maps_species'),
                       pattern = 'mean',
                       full.names = TRUE)
 
@@ -60,7 +60,7 @@ chi_spp <- chi_spp_raw %>%
   mask(ocean_a_rast) %>%
   setNames('chi_spp')
 
-writeRaster(chi_spp, here('_output/impact_maps/cumulative_maps/chi_species.tif'),
+writeRaster(chi_spp, here('_output/cumulative_impact_maps/chi_species.tif'),
             overwrite = TRUE)
 
 ```
@@ -94,7 +94,7 @@ Sum impacts across all stressor/vulnerability combos.
 
 ```{r calc chi by FE vuln, fig.height = 3, fig.width = 6}
 
-imp2_fs <- list.files(here('_output/impact_maps/impact_maps_funct_entity'), 
+imp2_fs <- list.files(here_anx('_output/impact_maps/impact_maps_funct_entity'), 
                       pattern = 'mean',
                       full.names = TRUE)
 
@@ -112,7 +112,7 @@ chi_fe <- chi_fe_raw %>%
   mask(ocean_a_rast) %>%
   setNames('chi_fe')
 
-writeRaster(chi_fe, here('_output/impact_maps/cumulative_maps/chi_funct_entity.tif'),
+writeRaster(chi_fe, here('_output/cumulative_impact_maps/chi_funct_entity.tif'),
             overwrite = TRUE)
 
 ```

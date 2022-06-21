@@ -9,7 +9,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
 
 
-<meta name="author" content="Compiled on Sun Jun 12 15:02:49 2022 by ohara" />
+<meta name="author" content="Compiled on Tue Jun 21 09:31:36 2022 by ohara" />
 
 
 <title>Map cumulative impacts from uniform-exposure stressors</title>
@@ -361,7 +361,7 @@ div.tocify {
 
 
 <h1 class="title toc-ignore">Map cumulative impacts from uniform-exposure stressors</h1>
-<h4 class="author"><em>Compiled on Sun Jun 12 15:02:49 2022 by ohara</em></h4>
+<h4 class="author"><em>Compiled on Tue Jun 21 09:31:36 2022 by ohara</em></h4>
 
 </div>
 
@@ -492,14 +492,14 @@ div.tocify {
 <p>For each line in the above listing, determine the impact (mean and sd) of that stressor on the suite of species in each cell, based on that vulnerability.</p>
 <div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>vuln_string <span class="ot">&lt;-</span> <span class="fu">paste</span>(str_vuln_lookup<span class="sc">$</span>vulnerability, <span class="at">collapse =</span> <span class="st">&#39;|&#39;</span>)</span>
 <span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>vuln1_mean_fs <span class="ot">&lt;-</span> <span class="fu">list.files</span>(<span class="fu">here</span>(<span class="st">&#39;_output/vuln_maps/vuln_maps_by_species&#39;</span>), </span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>vuln1_mean_fs <span class="ot">&lt;-</span> <span class="fu">list.files</span>(<span class="fu">here_anx</span>(<span class="st">&#39;_output/vuln_maps/vuln_maps_by_species&#39;</span>), </span>
 <span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>                            <span class="at">pattern =</span> <span class="st">&#39;mean.tif&#39;</span>, <span class="at">full.names =</span> <span class="cn">TRUE</span>)</span>
 <span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>vuln1_mean_fs <span class="ot">&lt;-</span> vuln1_mean_fs[<span class="fu">str_detect</span>(vuln1_mean_fs, vuln_string)]</span>
 <span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>vuln1_mean_stack <span class="ot">&lt;-</span> terra<span class="sc">::</span><span class="fu">rast</span>(vuln1_mean_fs) <span class="sc">%&gt;%</span></span>
 <span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">setNames</span>(<span class="fu">basename</span>(vuln1_mean_fs) <span class="sc">%&gt;%</span> <span class="fu">str_remove_all</span>(<span class="st">&#39;vuln_spp_|_mean.tif&#39;</span>))</span>
 <span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a>vuln1_sd_fs <span class="ot">&lt;-</span> <span class="fu">list.files</span>(<span class="fu">here</span>(<span class="st">&#39;_output/vuln_maps/vuln_maps_by_species&#39;</span>), </span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a>vuln1_sd_fs <span class="ot">&lt;-</span> <span class="fu">list.files</span>(<span class="fu">here_anx</span>(<span class="st">&#39;_output/vuln_maps/vuln_maps_by_species&#39;</span>), </span>
 <span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a>                          <span class="at">pattern =</span> <span class="st">&#39;sdev.tif&#39;</span>, <span class="at">full.names =</span> <span class="cn">TRUE</span>)</span>
 <span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a>vuln1_sd_fs <span class="ot">&lt;-</span> vuln1_sd_fs[<span class="fu">str_detect</span>(vuln1_sd_fs, vuln_string)]</span>
 <span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a></span>
@@ -510,7 +510,7 @@ div.tocify {
 <span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>  s <span class="ot">&lt;-</span> str_vuln_lookup<span class="sc">$</span>stressor[i]</span>
 <span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>  v <span class="ot">&lt;-</span> str_vuln_lookup<span class="sc">$</span>vulnerability[i]</span>
 <span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>  f_stem <span class="ot">&lt;-</span> <span class="fu">here</span>(<span class="st">&#39;_output/impact_maps/impact_maps_species&#39;</span>, </span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>  f_stem <span class="ot">&lt;-</span> <span class="fu">here_anx</span>(<span class="st">&#39;_output/impact_maps/impact_maps_species&#39;</span>, </span>
 <span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>                 <span class="st">&#39;impact_spp_%s_x_%s_%s.tif&#39;</span>)</span>
 <span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>  f_out  <span class="ot">&lt;-</span> <span class="fu">sprintf</span>(f_stem, s, v, <span class="fu">c</span>(<span class="st">&#39;mean&#39;</span>, <span class="st">&#39;sdev&#39;</span>))</span>
 <span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a>  </span>
@@ -532,7 +532,7 @@ div.tocify {
 <span id="cb6-25"><a href="#cb6-25" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb6-26"><a href="#cb6-26" aria-hidden="true" tabindex="-1"></a>  <span class="co"># print(p)</span></span>
 <span id="cb6-27"><a href="#cb6-27" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
-<div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>imp_map_dir <span class="ot">&lt;-</span> <span class="fu">here</span>(<span class="st">&#39;_output/impact_maps/impact_maps_species&#39;</span>)</span>
+<div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>imp_map_dir <span class="ot">&lt;-</span> <span class="fu">here_anx</span>(<span class="st">&#39;_output/impact_maps/impact_maps_species&#39;</span>)</span>
 <span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>imp_map_fs <span class="ot">&lt;-</span> <span class="fu">list.files</span>(imp_map_dir, <span class="at">pattern =</span> <span class="st">&#39;_mean.tif&#39;</span>, <span class="at">full.names =</span> <span class="cn">TRUE</span>)</span>
 <span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>focal_strs <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">&#39;microplastic&#39;</span>, <span class="st">&#39;wildlife_strike&#39;</span>,</span>
@@ -559,14 +559,14 @@ div.tocify {
 <div id="impacts-by-fv-weighted-vulnerability" class="section level2" number="3.4">
 <h2><span class="header-section-number">3.4</span> Impacts by FV-weighted vulnerability</h2>
 <p>Using the FV-weighted vulnerability value, calculate impacts by stressor and overall.</p>
-<div class="sourceCode" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>vuln2_mean_fs <span class="ot">&lt;-</span> <span class="fu">list.files</span>(<span class="fu">here</span>(<span class="st">&#39;_output/vuln_maps/vuln_maps_by_funct_entity&#39;</span>), </span>
+<div class="sourceCode" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>vuln2_mean_fs <span class="ot">&lt;-</span> <span class="fu">list.files</span>(<span class="fu">here_anx</span>(<span class="st">&#39;_output/vuln_maps/vuln_maps_by_funct_entity&#39;</span>), </span>
 <span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>                       <span class="at">pattern =</span> <span class="st">&#39;mean.tif&#39;</span>, <span class="at">full.names =</span> <span class="cn">TRUE</span>)</span>
 <span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>vuln2_mean_fs <span class="ot">&lt;-</span> vuln2_mean_fs[<span class="fu">str_detect</span>(vuln2_mean_fs, vuln_string)]</span>
 <span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>vuln2_mean_stack <span class="ot">&lt;-</span> terra<span class="sc">::</span><span class="fu">rast</span>(vuln2_mean_fs) <span class="sc">%&gt;%</span></span>
 <span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">setNames</span>(<span class="fu">basename</span>(vuln2_mean_fs) <span class="sc">%&gt;%</span> <span class="fu">str_remove_all</span>(<span class="st">&#39;vuln_fe_|_mean.tif&#39;</span>))</span>
 <span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a>vuln2_sd_fs <span class="ot">&lt;-</span> <span class="fu">list.files</span>(<span class="fu">here</span>(<span class="st">&#39;_output/vuln_maps/vuln_maps_by_funct_entity&#39;</span>), </span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a>vuln2_sd_fs <span class="ot">&lt;-</span> <span class="fu">list.files</span>(<span class="fu">here_anx</span>(<span class="st">&#39;_output/vuln_maps/vuln_maps_by_funct_entity&#39;</span>), </span>
 <span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a>                       <span class="at">pattern =</span> <span class="st">&#39;sdev.tif&#39;</span>, <span class="at">full.names =</span> <span class="cn">TRUE</span>)</span>
 <span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a>vuln2_sd_fs <span class="ot">&lt;-</span> vuln2_sd_fs[<span class="fu">str_detect</span>(vuln2_sd_fs, vuln_string)]</span>
 <span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a></span>
@@ -577,7 +577,7 @@ div.tocify {
 <span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>  s <span class="ot">&lt;-</span> str_vuln_lookup<span class="sc">$</span>stressor[i]</span>
 <span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>  v <span class="ot">&lt;-</span> str_vuln_lookup<span class="sc">$</span>vulnerability[i]</span>
 <span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a>  f_stem <span class="ot">&lt;-</span> <span class="fu">here</span>(<span class="st">&#39;_output/impact_maps/impact_maps_funct_entity&#39;</span>, </span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a>  f_stem <span class="ot">&lt;-</span> <span class="fu">here_anx</span>(<span class="st">&#39;_output/impact_maps/impact_maps_funct_entity&#39;</span>, </span>
 <span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a>                 <span class="st">&#39;impact_fe_%s_x_%s_%s.tif&#39;</span>)</span>
 <span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a>  f_out  <span class="ot">&lt;-</span> <span class="fu">sprintf</span>(f_stem, s, v, <span class="fu">c</span>(<span class="st">&#39;mean&#39;</span>, <span class="st">&#39;sdev&#39;</span>))</span>
 <span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a>  </span>
@@ -596,7 +596,7 @@ div.tocify {
 <span id="cb9-22"><a href="#cb9-22" aria-hidden="true" tabindex="-1"></a>    <span class="fu">writeRaster</span>(i_sdev_rast, f_out[<span class="dv">2</span>], <span class="at">overwrite =</span> <span class="cn">TRUE</span>)</span>
 <span id="cb9-23"><a href="#cb9-23" aria-hidden="true" tabindex="-1"></a>  }</span>
 <span id="cb9-24"><a href="#cb9-24" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
-<div class="sourceCode" id="cb10"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>imp_map_dir <span class="ot">&lt;-</span> <span class="fu">here</span>(<span class="st">&#39;_output/impact_maps/impact_maps_funct_entity&#39;</span>)</span>
+<div class="sourceCode" id="cb10"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>imp_map_dir <span class="ot">&lt;-</span> <span class="fu">here_anx</span>(<span class="st">&#39;_output/impact_maps/impact_maps_funct_entity&#39;</span>)</span>
 <span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>imp_map_fs <span class="ot">&lt;-</span> <span class="fu">list.files</span>(imp_map_dir, <span class="at">pattern =</span> <span class="st">&#39;mean.tif&#39;</span>, <span class="at">full.names =</span> <span class="cn">TRUE</span>)</span>
 <span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span>(f <span class="cf">in</span> focal_strs) { <span class="do">### f &lt;- focal_strs[1]</span></span>
@@ -627,9 +627,9 @@ div.tocify {
 <span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">return</span>(<span class="fu">list</span>(<span class="at">r =</span> r, <span class="at">zlim =</span> r_zlim))</span>
 <span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a>}</span>
 <span id="cb11-9"><a href="#cb11-9" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-10"><a href="#cb11-10" aria-hidden="true" tabindex="-1"></a>mean_unwt_fs <span class="ot">&lt;-</span> <span class="fu">list.files</span>(<span class="fu">here</span>(<span class="st">&#39;_output/impact_maps/impact_maps_species&#39;</span>), </span>
+<span id="cb11-10"><a href="#cb11-10" aria-hidden="true" tabindex="-1"></a>mean_unwt_fs <span class="ot">&lt;-</span> <span class="fu">list.files</span>(<span class="fu">here_anx</span>(<span class="st">&#39;_output/impact_maps/impact_maps_species&#39;</span>), </span>
 <span id="cb11-11"><a href="#cb11-11" aria-hidden="true" tabindex="-1"></a>                           <span class="at">pattern =</span> <span class="st">&#39;_mean.tif&#39;</span>, <span class="at">full.names =</span> <span class="cn">TRUE</span>)</span>
-<span id="cb11-12"><a href="#cb11-12" aria-hidden="true" tabindex="-1"></a>mean_fvwt_fs <span class="ot">&lt;-</span> <span class="fu">list.files</span>(<span class="fu">here</span>(<span class="st">&#39;_output/impact_maps/impact_maps_funct_entity&#39;</span>), </span>
+<span id="cb11-12"><a href="#cb11-12" aria-hidden="true" tabindex="-1"></a>mean_fvwt_fs <span class="ot">&lt;-</span> <span class="fu">list.files</span>(<span class="fu">here_anx</span>(<span class="st">&#39;_output/impact_maps/impact_maps_funct_entity&#39;</span>), </span>
 <span id="cb11-13"><a href="#cb11-13" aria-hidden="true" tabindex="-1"></a>                           <span class="at">pattern =</span> <span class="st">&#39;_mean.tif&#39;</span>, <span class="at">full.names =</span> <span class="cn">TRUE</span>)</span>
 <span id="cb11-14"><a href="#cb11-14" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb11-15"><a href="#cb11-15" aria-hidden="true" tabindex="-1"></a>focal_strs <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">&#39;microplastic&#39;</span>, <span class="st">&#39;wildlife_strike&#39;</span>,</span>

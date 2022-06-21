@@ -47,7 +47,7 @@ str_gp_df <- read_csv(here('_raw/stressor_vulnerability_lookup.csv'))
 
 
 ```{r calc chi by species vuln, fig.height = 3, fig.width = 6}
-imp1_fs <- list.files(here('_output/impact_maps/impact_maps_species'),
+imp1_fs <- list.files(here_anx('_output/impact_maps/impact_maps_species'),
                       pattern = 'mean',
                       full.names = TRUE)
 imp1_stack <- rast(imp1_fs) %>%
@@ -55,7 +55,7 @@ imp1_stack <- rast(imp1_fs) %>%
 
 ocean_a_rast <- rast(here('_spatial/ocean_area_mol.tif'))
 
-spp_outfile_stem <- here('_output/impact_maps/cumulative_maps/species_group_chi_%s.tif')
+spp_outfile_stem <- here('_output/cumulative_impact_maps/species_group_chi_%s.tif')
 
 str_gps <- str_gp_df$stressor_group %>% unique()
 for(str_gp in str_gps) {
@@ -99,14 +99,14 @@ Sum impacts across all stressor/vulnerability combos.
 
 ```{r calc chi by fe vuln, fig.height = 3, fig.width = 6}
 
-imp2_fs <- list.files(here('_output/impact_maps/impact_maps_funct_entity'), 
+imp2_fs <- list.files(here_anx('_output/impact_maps/impact_maps_funct_entity'), 
                       pattern = 'mean',
                       full.names = TRUE)
 
 imp2_stack <- rast(imp2_fs) %>%
   setNames(str_remove_all(basename(imp2_fs), '.+_fe_|_x_.+|_mean.tif'))
 
-fe_outfile_stem <- here('_output/impact_maps/cumulative_maps/funct_entity_group_chi_%s.tif')
+fe_outfile_stem <- here('_output/cumulative_impact_maps/funct_entity_group_chi_%s.tif')
 
 str_gps <- str_gp_df$stressor_group %>% unique()
 for(str_gp in str_gps) {

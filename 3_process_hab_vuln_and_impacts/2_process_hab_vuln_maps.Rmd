@@ -84,7 +84,7 @@ habs <- names(hab_maps)
 
 for(p in prs) {
   ### p <- prs[1]
-  out_fstem <- here('_output/vuln_maps/vuln_maps_habitat/vuln_hab_%s_mean.tif')
+  out_fstem <- here_anx('_output/vuln_maps/vuln_maps_habitat/vuln_hab_%s_mean.tif')
   out_f <- sprintf(out_fstem, p)
   
   if(file.exists(out_f)) {
@@ -129,7 +129,7 @@ for(p in prs) {
 prs_of_interest <- c('dem_dest', 'dem_nondest_hb', 'dem_nondest_lb', 
                      'pel_hb', 'pel_lb', 'art_fish')
 
-map_fstem <- here('_output/vuln_maps/vuln_maps_habitat/vuln_hab_%s_mean.tif')
+map_fstem <- here_anx('_output/vuln_maps/vuln_maps_habitat/vuln_hab_%s_mean.tif')
 
 for(p in prs_of_interest) {
   p_map <- rast(sprintf(map_fstem, p))
@@ -144,7 +144,7 @@ for(p in prs_of_interest) {
 ```{r}
 prs_of_interest <- c('sst', 'uv', 'oa', 'slr')
 
-map_fstem <- here('_output/vuln_maps/vuln_maps_habitat/vuln_hab_%s_mean.tif')
+map_fstem <- here_anx('_output/vuln_maps/vuln_maps_habitat/vuln_hab_%s_mean.tif')
 
 for(p in prs_of_interest) {
   p_map <- rast(sprintf(map_fstem, p))
@@ -159,7 +159,7 @@ for(p in prs_of_interest) {
 ```{r}
 prs_of_interest <- c('nutrient', 'light', 'direct_human')
 
-map_fstem <- here('_output/vuln_maps/vuln_maps_habitat/vuln_hab_%s_mean.tif')
+map_fstem <- here_anx('_output/vuln_maps/vuln_maps_habitat/vuln_hab_%s_mean.tif')
 
 for(p in prs_of_interest) {
   p_map <- rast(sprintf(map_fstem, p))
@@ -174,7 +174,7 @@ for(p in prs_of_interest) {
 ```{r}
 prs_of_interest <- c('shipping', 'benthic_str')
 
-map_fstem <- here('_output/vuln_maps/vuln_maps_habitat/vuln_hab_%s_mean.tif')
+map_fstem <- here_anx('_output/vuln_maps/vuln_maps_habitat/vuln_hab_%s_mean.tif')
 
 for(p in prs_of_interest) {
   ### p <- prs_of_interest[1]

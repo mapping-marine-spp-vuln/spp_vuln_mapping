@@ -63,7 +63,7 @@ hab_vuln_to_str_df <- tribble(
 ```
 
 ```{r}
-vuln_map_df <- data.frame(v_f = list.files(here('_output/vuln_maps/vuln_maps_habitat'), 
+vuln_map_df <- data.frame(v_f = list.files(here_anx('_output/vuln_maps/vuln_maps_habitat'), 
                                            full.names = TRUE)) %>%
   mutate(vuln_name = str_remove_all(basename(v_f), 'vuln_hab_|_mean.tif'))
 
@@ -72,7 +72,7 @@ str_map_df <- data.frame(s_f = list.files(c(here('_data/stressors_mol'),
                                           pattern = '.tif', full.names = TRUE)) %>%
   mutate(stressor_name = str_remove_all(basename(s_f), '_[0-9]{4}|.tif'))
 
-out_fstem <- here('_output/impact_maps/impact_maps_habitat/impact_hab_%s.tif')
+out_fstem <- here_anx('_output/impact_maps/impact_maps_habitat/impact_hab_%s.tif')
 layer_match_df <- hab_vuln_to_str_df %>%
   inner_join(vuln_map_df, by = 'vuln_name') %>%
   inner_join(str_map_df,  by = 'stressor_name') %>%
@@ -104,7 +104,7 @@ chi_map <- rast(layer_match_df$impact_out_f) %>%
   setNames('chi_hab')
 
 plot(chi_map, col = hcl.colors(50), main = 'CHI habitat based', axes = FALSE)
-writeRaster(chi_map, here('_output/impact_maps/cumulative_maps/chi_habitat.tif'), overwrite = TRUE)
+writeRaster(chi_map, here('_output/cumulative_impact_maps/chi_habitat.tif'), overwrite = TRUE)
 ```
 
 

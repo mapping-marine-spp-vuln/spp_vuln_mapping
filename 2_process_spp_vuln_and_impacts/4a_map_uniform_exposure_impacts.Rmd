@@ -76,14 +76,14 @@ For each line in the above listing, determine the impact (mean and sd) of that s
 ```{r}
 vuln_string <- paste(str_vuln_lookup$vulnerability, collapse = '|')
 
-vuln1_mean_fs <- list.files(here('_output/vuln_maps/vuln_maps_by_species'), 
+vuln1_mean_fs <- list.files(here_anx('_output/vuln_maps/vuln_maps_by_species'), 
                             pattern = 'mean.tif', full.names = TRUE)
 vuln1_mean_fs <- vuln1_mean_fs[str_detect(vuln1_mean_fs, vuln_string)]
 
 vuln1_mean_stack <- terra::rast(vuln1_mean_fs) %>%
   setNames(basename(vuln1_mean_fs) %>% str_remove_all('vuln_spp_|_mean.tif'))
 
-vuln1_sd_fs <- list.files(here('_output/vuln_maps/vuln_maps_by_species'), 
+vuln1_sd_fs <- list.files(here_anx('_output/vuln_maps/vuln_maps_by_species'), 
                           pattern = 'sdev.tif', full.names = TRUE)
 vuln1_sd_fs <- vuln1_sd_fs[str_detect(vuln1_sd_fs, vuln_string)]
 
@@ -97,7 +97,7 @@ for(i in 1:nrow(str_vuln_lookup)) {
   s <- str_vuln_lookup$stressor[i]
   v <- str_vuln_lookup$vulnerability[i]
   
-  f_stem <- here('_output/impact_maps/impact_maps_species', 
+  f_stem <- here_anx('_output/impact_maps/impact_maps_species', 
                  'impact_spp_%s_x_%s_%s.tif')
   f_out  <- sprintf(f_stem, s, v, c('mean', 'sdev'))
   
@@ -123,7 +123,7 @@ for(i in 1:nrow(str_vuln_lookup)) {
 
 ```{r plot impacts by unweighted vuln, eval = FALSE, fig.height = 4, fig.width = 7}
 
-imp_map_dir <- here('_output/impact_maps/impact_maps_species')
+imp_map_dir <- here_anx('_output/impact_maps/impact_maps_species')
 imp_map_fs <- list.files(imp_map_dir, pattern = '_mean.tif', full.names = TRUE)
 
 focal_strs <- c('microplastic', 'wildlife_strike',
@@ -152,14 +152,14 @@ for(f in focal_strs) { ### f <- focal_strs[1]
 Using the FV-weighted vulnerability value, calculate impacts by stressor and overall.
 
 ```{r}
-vuln2_mean_fs <- list.files(here('_output/vuln_maps/vuln_maps_by_funct_entity'), 
+vuln2_mean_fs <- list.files(here_anx('_output/vuln_maps/vuln_maps_by_funct_entity'), 
                        pattern = 'mean.tif', full.names = TRUE)
 vuln2_mean_fs <- vuln2_mean_fs[str_detect(vuln2_mean_fs, vuln_string)]
 
 vuln2_mean_stack <- terra::rast(vuln2_mean_fs) %>%
   setNames(basename(vuln2_mean_fs) %>% str_remove_all('vuln_fe_|_mean.tif'))
 
-vuln2_sd_fs <- list.files(here('_output/vuln_maps/vuln_maps_by_funct_entity'), 
+vuln2_sd_fs <- list.files(here_anx('_output/vuln_maps/vuln_maps_by_funct_entity'), 
                        pattern = 'sdev.tif', full.names = TRUE)
 vuln2_sd_fs <- vuln2_sd_fs[str_detect(vuln2_sd_fs, vuln_string)]
 
@@ -173,7 +173,7 @@ for(i in 1:nrow(str_vuln_lookup)) {
   s <- str_vuln_lookup$stressor[i]
   v <- str_vuln_lookup$vulnerability[i]
   
-  f_stem <- here('_output/impact_maps/impact_maps_funct_entity', 
+  f_stem <- here_anx('_output/impact_maps/impact_maps_funct_entity', 
                  'impact_fe_%s_x_%s_%s.tif')
   f_out  <- sprintf(f_stem, s, v, c('mean', 'sdev'))
   
@@ -196,7 +196,7 @@ for(i in 1:nrow(str_vuln_lookup)) {
 
 ```{r plot impacts by fv-weighted vuln, eval = FALSE, fig.height = 4, fig.width = 7}
 
-imp_map_dir <- here('_output/impact_maps/impact_maps_funct_entity')
+imp_map_dir <- here_anx('_output/impact_maps/impact_maps_funct_entity')
 imp_map_fs <- list.files(imp_map_dir, pattern = 'mean.tif', full.names = TRUE)
 
 for(f in focal_strs) { ### f <- focal_strs[1]
@@ -232,9 +232,9 @@ squish_rast <- function(r, qtile = .999) {
   return(list(r = r, zlim = r_zlim))
 }
 
-mean_unwt_fs <- list.files(here('_output/impact_maps/impact_maps_species'), 
+mean_unwt_fs <- list.files(here_anx('_output/impact_maps/impact_maps_species'), 
                            pattern = '_mean.tif', full.names = TRUE)
-mean_fvwt_fs <- list.files(here('_output/impact_maps/impact_maps_funct_entity'), 
+mean_fvwt_fs <- list.files(here_anx('_output/impact_maps/impact_maps_funct_entity'), 
                            pattern = '_mean.tif', full.names = TRUE)
 
 focal_strs <- c('microplastic', 'wildlife_strike',

@@ -274,7 +274,7 @@ tx_bycatch_map_df <- data.frame(f = list.files(dirname(out_stem),
   mutate(t = str_extract(basename(f), paste0(taxa, collapse = '|')),
          p = str_extract(basename(f), '_mean|_sdev|_nspp') %>% str_remove('_'))
 
-impact_map_stem <- here('_output/impact_maps/impact_maps_species', 
+impact_map_stem <- here_anx('_output/impact_maps/impact_maps_species', 
                         'impact_spp_bycatch_%s.tif')
   ### %s is parameter (mean, sd, nspp)
 
@@ -525,7 +525,7 @@ For each stressor, pull in all chunk dataframes, assemble into dataframe, and sa
 chunk_files <- list.files(dirname(tmp_stem_fe), 
                           pattern = 'imp_fvwt_summary_chunk', full.names = TRUE)
 
-rast_fe_out_stem <- here('_output/impact_maps/impact_maps_funct_entity', 
+rast_fe_out_stem <- here_anx('_output/impact_maps/impact_maps_funct_entity', 
                          'impact_fe_bycatch_%s.tif')
 
 rast_mean_imp_fe_f <- sprintf(rast_fe_out_stem, 'mean')

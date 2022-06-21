@@ -57,11 +57,11 @@ squish_rast <- function(r, qtile = .999) {
 
 ```{r plot vuln by stressor, fig.height = 4, fig.width = 7.5}
 
-vuln_spp_dir <- here('_output/vuln_maps/vuln_maps_by_species')
+vuln_spp_dir <- here_anx('_output/vuln_maps/vuln_maps_by_species')
 mean_fs_spp <- list.files(vuln_spp_dir, pattern = '_mean.tif', full.names = TRUE)
 # sdev_fs_spp <- list.files(vuln_spp_dir, pattern = '_sdev.tif', full.names = TRUE)
 
-vuln_fe_dir <- here('_output/vuln_maps/vuln_maps_by_funct_entity')
+vuln_fe_dir <- here_anx('_output/vuln_maps/vuln_maps_by_funct_entity')
 mean_fs_fe <- list.files(vuln_fe_dir, pattern = '_mean.tif', full.names = TRUE)
 # sdev_fs_fe <- list.files(vuln_fe_dir, pattern = '_sdev.tif', full.names = TRUE)
 
