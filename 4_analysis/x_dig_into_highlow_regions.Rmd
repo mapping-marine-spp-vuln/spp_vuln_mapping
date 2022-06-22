@@ -55,4 +55,7 @@ Questions:
         * info on spp ranges is available
         * for candidate FE, generate a map of FE richness (or FV)
     * highly vulnerable to stressors that are patchy, creating local high impacts in some areas but low in others nearby
-    
+
+## Candidate regions
+
+Central Indian Ocean and Andaman Islands (near one another) appear to have very low impacts per habitat method, and high impacts per FE approach.  Conversely, Warm and Cold Temperate NW Atlantic regions appear to have high impacts per habitat method but low impacts per FE method.  Note that these are cumulative, and may be driven solely by climate impacts.
