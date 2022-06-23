@@ -153,23 +153,25 @@ vals <- c('black', 'grey70')
 brks <- c('Unweighted mean', 'NPP-weighted mean')
 lbls <- c('Unweighted mean', 'NPP-weighted mean')
 
-panel_a <- ggplot(cc_imp, aes(x = imp, y = taxon, color = type, fill = type)) +
-  geom_boxplot(width = .3, position = position_dodge(width = -.6),
+panel_a <- ggplot(cc_imp, aes(x = imp, y = taxon)) +
+  geom_boxplot(aes(color = type, fill = type, color = type),
+               width = .3, position = position_dodge(width = -.6),
                size = .25,
                outlier.color = 'grey80', outlier.size = .02) +
-  geom_point(data = cc_avg_med, aes(x = med),
+  geom_point(data = cc_avg_med, aes(x = med, group = type),
              position = position_dodge(width = -.6),
-             shape = 21, fill = 'black', size = 1.5,
+             shape = 21, color = 'black', fill = 'black', size = 1.5,
              show.legend = FALSE) +
-  geom_point(data = cc_avg_med, aes(x = avg),
+  geom_point(data = cc_avg_med, aes(x = avg, group = type),
              position = position_dodge(width = -.6),
-             shape = 21, fill = 'white', size = 1.5,
+             shape = 21, color = 'black', fill = 'white', size = 1.5,
              show.legend = FALSE) +
-  scale_x_continuous(expand = c(0, 0), limits = c(0, 1)) +
+  scale_x_continuous(expand = c(0, 0), limits = c(0, 1), breaks = seq(0, 1, .2)) +
   scale_fill_manual(values = vals, breaks = brks, labels = lbls) +
   scale_color_manual(values = vals, breaks = brks, labels = lbls) +
   theme_ohara() +
-  theme(axis.text.y = element_text(family = 'bentonbold', size = 7),
+  theme(panel.background = element_blank(),
+        axis.text.y = element_text(family = 'bentonbold', size = 7),
         axis.title.y = element_blank(),
         axis.text.x = element_text(family = 'benton', size = 7),
         axis.title.x = element_text(family = 'bentonbold', size = 7),
@@ -177,7 +179,7 @@ panel_a <- ggplot(cc_imp, aes(x = imp, y = taxon, color = type, fill = type)) +
         legend.title = element_blank(),
         legend.text = element_text(family = 'benton', size = 7),
         legend.background = element_blank()) +
-  labs(x = 'Climate impact')
+  labs(x = 'Mean climate impact')
 ```
 
 ### Panel B: climate stressors
@@ -189,32 +191,33 @@ noncc_avg_med <- tx_avg_med %>%
   filter(stressor == 'non-climate')
 
 panel_b <- ggplot(noncc_imp, aes(x = imp, y = taxon)) +
-  geom_boxplot(aes(color = type, fill = type),
+  geom_boxplot(aes(color = type, fill = type, color = type),
                width = .3, position = position_dodge(width = -.6), size = .25,
                outlier.color = 'grey80', outlier.size = .02) +
-  geom_point(data = noncc_avg_med, aes(x = med, color = type, fill = type),
+  geom_point(data = noncc_avg_med, aes(x = med, group = type),
              position = position_dodge(width = -.6),
-             shape = 21, fill = 'black', size = 1.5,
+             shape = 21, color = 'black', fill = 'black', size = 1.5,
              show.legend = FALSE) +
-  geom_point(data = noncc_avg_med, aes(x = avg, color = type, fill = type),
+  geom_point(data = noncc_avg_med, aes(x = avg, group = type),
              position = position_dodge(width = -.6),
-             shape = 21, fill = 'white', size = 1.5,
+             shape = 21, color = 'black', fill = 'white', size = 1.5,
              show.legend = FALSE) +
   annotate('rect',
-           xmin = .30, xmax = .35, ymin = 0.5, ymax = 13.5,
+           xmin = .30, xmax = .37, ymin = 0.5, ymax = 13.5,
            fill = 'white', color = 'white') +
   geom_text(data = tx_spp_counts, aes(label = n_spp),
             x = .31, hjust = 0, color = 'black', fill = NA, 
-            family = 'benton', size = 4) +
-  scale_x_continuous(expand = c(0, 0), limits = c(0, .35)) +
+            family = 'benton', size = 1.9) +
+  scale_x_continuous(expand = c(0, 0), limits = c(0, .37)) +
   scale_fill_manual(values = vals, breaks = brks, labels = lbls) +
   scale_color_manual(values = vals, breaks = brks, labels = lbls) +
   theme_ohara() +
-  theme(axis.text.y = element_blank(),
+  theme(panel.background = element_blank(),
+        axis.text.y = element_blank(),
         axis.title.y = element_blank(),
         axis.text.x = element_text(family = 'benton', size = 7),
         axis.title.x = element_text(family = 'bentonbold', size = 7)) +
-  labs(x = 'Non-climate impact')
+  labs(x = 'Mean non-climate impact')
 ```
 
 
@@ -227,12 +230,12 @@ panel_b_plot <- panel_b + theme(legend.position = 'none')
 panel_a_lgd  <- get_legend(panel_a)
 
 ### parameterize legends for easier changing of label positions:
-lgd_a_xy <- c(x = .50, y = .12, h = .09, w = .12)
+lgd_a_xy <- c(x = .42, y = .12, h = .09, w = .12)
 
 fig1 <- ggdraw() +
   ### draw panels:
-  draw_plot(panel_a_plot,  x = 0.00, y = 0.00, height = 1.00, width = 0.53) +
-  draw_plot(panel_b_plot,  x = 0.53, y = 0.00, height = 1.00, width = 0.47) +
+  draw_plot(panel_a_plot,  x = 0.00, y = 0.00, height = 1.00, width = 0.56) +
+  draw_plot(panel_b_plot,  x = 0.56, y = 0.00, height = 1.00, width = 0.44) +
   ### draw legends:
   draw_plot(panel_a_lgd, x = lgd_a_xy['x'], y = lgd_a_xy['y'], 
             height = lgd_a_xy['h'], width = lgd_a_xy['w']) +
