@@ -257,12 +257,12 @@ diff_df <- spp_vs_fe_df %>%
          noncc_diff = (fe_noncc - spp_noncc) / spp_noncc * 100) %>%
   select(x, y, cc_diff, noncc_diff) %>%
   pivot_longer(names_to = 'type', values_to = 'diff', cols = c(cc_diff, noncc_diff)) %>%
-  mutate(diff_cat = case_when(diff <  -50 ~ '$I_{spp}^C > 1.5 \\times I_{FE}^C$',
-                              diff <  -20 ~ '$I_{spp}^C > 1.2 \\times I_{FE}^C$',
-                              diff <  -10 ~ '$I_{spp}^C > 1.1 \\times I_{FE}^C$',
-                              diff >  +50 ~ '$I_{FE}^C > 1.5 \\times I_{spp}^C$',
-                              diff >  +20 ~ '$I_{FE}^C > 1.2 \\times I_{spp}^C$',
-                              diff >  +10 ~ '$I_{FE}^C > 1.1 \\times I_{spp}^C$',
+  mutate(diff_cat = case_when(diff <  -50 ~ '$I_{spp}^C > 1.5 I_{FE}^C$',
+                              diff <  -20 ~ '$I_{spp}^C > 1.2 I_{FE}^C$',
+                              diff <  -10 ~ '$I_{spp}^C > 1.1 I_{FE}^C$',
+                              diff >  +50 ~ '$I_{FE}^C > 1.5 I_{spp}^C$',
+                              diff >  +20 ~ '$I_{FE}^C > 1.2 I_{spp}^C$',
+                              diff >  +10 ~ '$I_{FE}^C > 1.1 I_{spp}^C$',
                               TRUE ~ NA_character_))
 
 diff_df %>% select(diff_cat, type) %>% table()
@@ -270,12 +270,12 @@ diff_df %>% select(diff_cat, type) %>% table()
 
 
 ``` {r}
-brks <- c('$I_{spp}^C > 1.5 \\times I_{FE}^C$',
-          '$I_{spp}^C > 1.2 \\times I_{FE}^C$',
-          '$I_{spp}^C > 1.1 \\times I_{FE}^C$',
-          '$I_{FE}^C > 1.1 \\times I_{spp}^C$',
-          '$I_{FE}^C > 1.2 \\times I_{spp}^C$',
-          '$I_{FE}^C > 1.5 \\times I_{spp}^C$')
+brks <- c('$I_{spp}^C > 1.5 I_{FE}^C$',
+          '$I_{spp}^C > 1.2 I_{FE}^C$',
+          '$I_{spp}^C > 1.1 I_{FE}^C$',
+          '$I_{FE}^C > 1.1 I_{spp}^C$',
+          '$I_{FE}^C > 1.2 I_{spp}^C$',
+          '$I_{FE}^C > 1.5 I_{spp}^C$')
 lbls <- latex2exp::TeX(brks) %>% unname()
 
 clrs <- hcl.colors(palette = 'Red-Green', rev = TRUE, n = 6)
@@ -299,7 +299,7 @@ panel_b <- ggplot() +
         axis.title = element_blank(),
         legend.key.width = unit(.25, 'cm'),
         legend.margin = margin(0, 0, 0, 0, unit = 'pt'),
-        legend.text = element_text(size = 16, color = 'black', 
+        legend.text = element_text(size = 6.5, color = 'black', 
                                    # family = 'benton', 
                                    hjust = 0),
         legend.title = element_blank())
@@ -323,7 +323,7 @@ panel_c <- ggplot() +
         axis.title = element_blank(),
         legend.key.width = unit(.25, 'cm'),
         legend.margin = margin(0, 0, 0, 0, unit = 'pt'),
-        legend.text = element_text(size = 16, color = 'black', 
+        legend.text = element_text(size = 6.5, color = 'black', 
                                    # family = 'benton', 
                                    hjust = 0),
         legend.title = element_blank())
@@ -344,7 +344,7 @@ panel_bc_lgd <- get_legend(panel_c)
  
 ### parameterize legends for easier changing of label positions:
 lgd_a_xy <- c(x = .875, y = .80, h = .09, w = .12)
-lgd_b_xy <- c(x = .96, y = .25, h = .09, w = .12)
+lgd_b_xy <- c(x = .870, y = .25, h = .09, w = .12)
 
 fig_2 <- ggdraw() +
   ### draw panels:
@@ -358,30 +358,33 @@ fig_2 <- ggdraw() +
             height = lgd_b_xy['h'], width = lgd_b_xy['w']) +
   ### Panel labels:
   draw_label('A', x = 0.002, y = .99, hjust = 0, vjust = 1, 
-             size = 25, fontfamily = 'bentonbold') +
-  draw_label('B', x = 0.002, y = .63, hjust = 0, vjust = 0, 
-             size = 25, fontfamily = 'bentonbold') +
-  draw_label('C', x = 0.002, y = .28, hjust = 0, vjust = 0, 
-             size = 25, fontfamily = 'bentonbold') +
-  draw_label('Climate', x = 0.05, y = .63, hjust = 0, vjust = 0, 
-             size = 20, fontfamily = 'bentonbold') +
-  draw_label('Non-climate', x = 0.05, y = .28, hjust = 0, vjust = 0, 
-             size = 20, fontfamily = 'bentonbold') +
+             size = 10, fontfamily = 'bentonbold') +
+  draw_label('B', x = 0.002, y = .64, hjust = 0, vjust = 0, 
+             size = 10, fontfamily = 'bentonbold') +
+  draw_label('C', x = 0.002, y = .31, hjust = 0, vjust = 0, 
+             size = 10, fontfamily = 'bentonbold') +
+  draw_label('Climate', x = 0.05, y = .64, hjust = 0, vjust = 0, 
+             size = 8, fontfamily = 'bentonbold') +
+  draw_label('Non-climate', x = 0.05, y = .31, hjust = 0, vjust = 0, 
+             size = 8, fontfamily = 'bentonbold') +
   ### Legend labels for biscale:
   draw_label('Climate vs. non-climate\nimpacts (quartiles)',
-             x = 0.99, y = 0.90, hjust = 1, vjust = 0, angle = 0,
-             size = 25, color = 'black', fontfamily = 'bentonbold') +
-  draw_label(latex2exp::TeX('$I_{spp}^C$ vs $I_{FE}^C$') %>% unname(),
-             x = 0.99, y = 0.50, hjust = 1, vjust = 0, angle = 0,
-             size = 25, color = 'black', fontfamily = 'bentonbold') +
+             x = 0.99, y = 0.92, hjust = 1, vjust = 0, angle = 0,
+             size = 8, color = 'black', fontfamily = 'bentonbold') +
+  # draw_label(latex2exp::TeX('$I_{spp}^C$ vs $I_{FE}^C$') %>% unname(),
+  #            x = 0.99, y = 0.45, hjust = 1, vjust = 0, angle = 0,
+  #            size = 8, color = 'black', fontfamily = 'bentonbold') +
+  draw_label('Spp vs. FE\nrelative impacts',
+             x = 0.99, y = 0.42, hjust = 1, vjust = 0, angle = 0,
+             size = 8, color = 'black', fontfamily = 'bentonbold') +
   draw_label('Climate ->', 
              x = lgd_a_xy['x'], y = lgd_a_xy['y'] - .005, 
              hjust = 0, vjust = 1, angle = 0,
-             size = 20, color = 'black', fontfamily = 'bentonbold') +
+             size = 7, color = 'black', fontfamily = 'bentonbold') +
   draw_label('Non-climate ->', 
              x = lgd_a_xy['x'] - .005, y = lgd_a_xy['y'], 
              hjust = 0, vjust = 0, angle = 90,
-             size = 20, color = 'black', fontfamily = 'bentonbold')
+             size = 7, color = 'black', fontfamily = 'bentonbold')
 
 ggsave(fig2_file, width = 12, height = 15, units = 'cm', dpi = 300)
 

@@ -402,35 +402,39 @@ fig_3 <- ggdraw() +
             height = lgd_b_xy['h'], width = lgd_b_xy['w']) +
   ### Panel labels:
   draw_label('A', x = 0.002, y = .99, hjust = 0, vjust = 1, 
-             size = 25, fontfamily = 'bentonbold') +
-  draw_label('B', x = 0.002, y = .65, hjust = 0, vjust = 1, 
-             size = 25, fontfamily = 'bentonbold') +
-  draw_label('C', x = 0.002, y = .31, hjust = 0, vjust = 1, 
-             size = 25, fontfamily = 'bentonbold') +
+             size = 10, fontfamily = 'bentonbold') +
+  draw_label('B', x = 0.002, y = .64, hjust = 0, vjust = 0, 
+             size = 10, fontfamily = 'bentonbold') +
+  draw_label('C', x = 0.002, y = .30, hjust = 0, vjust = 0, 
+             size = 10, fontfamily = 'bentonbold') +
+  draw_label('Climate', x = 0.05, y = .64, hjust = 0, vjust = 0, 
+             size = 8, fontfamily = 'bentonbold') +
+  draw_label('Non-climate', x = 0.05, y = .30, hjust = 0, vjust = 0, 
+             size = 8, fontfamily = 'bentonbold') +
   ### panel A labels:
   draw_label('Climate vs. non-climate\nimpacts (quartiles)',
-             x = 0.99, y = 0.90, hjust = 1, vjust = 0, angle = 0,
-             size = 25, color = 'black', fontfamily = 'bentonbold') +
+             x = 0.99, y = 0.92, hjust = 1, vjust = 0, angle = 0,
+             size = 8, color = 'black', fontfamily = 'bentonbold') +
   draw_label('Climate ->', 
              x = lgd_a_xy['x'], y = lgd_a_xy['y'] - .005, 
              hjust = 0, vjust = 1, angle = 0,
-             size = 20, color = 'black', fontfamily = 'bentonbold') +
+             size = 7, color = 'black', fontfamily = 'bentonbold') +
   draw_label('Non-climate ->', 
              x = lgd_a_xy['x'] - .005, y = lgd_a_xy['y'], 
              hjust = 0, vjust = 0, angle = 90,
-             size = 20, color = 'black', fontfamily = 'bentonbold') +
+             size = 7, color = 'black', fontfamily = 'bentonbold') +
   ### panel B & C labels:
-  draw_label('FE vs. hab: cc/non-cc\nimpacts (quartiles)',
+  draw_label('FE vs. hab:\ncc/non-cc\nimpacts (quartiles)',
              x = 0.99, y = 0.35, hjust = 1, vjust = 0, angle = 0,
-             size = 25, color = 'black', fontfamily = 'bentonbold') +
+             size = 8, color = 'black', fontfamily = 'bentonbold') +
   draw_label('Habitat ->', 
              x = lgd_b_xy['x'], y = lgd_b_xy['y'] - .005, 
              hjust = 0, vjust = 1, angle = 0,
-             size = 20, color = 'black', fontfamily = 'bentonbold') +
+             size = 7, color = 'black', fontfamily = 'bentonbold') +
   draw_label('FE ->', 
              x = lgd_b_xy['x'] - .005, y = lgd_b_xy['y'], 
              hjust = 0, vjust = 0, angle = 90,
-             size = 20, color = 'black', fontfamily = 'bentonbold')
+             size = 7, color = 'black', fontfamily = 'bentonbold')
 
 ggsave(fig3_file, width = 12, height = 15, units = 'cm', dpi = 300)
 

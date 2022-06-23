@@ -157,13 +157,13 @@ panel_a <- ggplot(cc_imp, aes(x = imp, y = taxon, color = type, fill = type)) +
   scale_fill_manual(values = vals, breaks = brks, labels = lbls) +
   scale_color_manual(values = vals, breaks = brks, labels = lbls) +
   theme_ohara() +
-  theme(axis.text.y = element_text(family = 'bentonbold', size = 12),
+  theme(axis.text.y = element_text(family = 'bentonbold', size = 7),
         axis.title.y = element_blank(),
-        axis.text.x = element_text(family = 'benton', size = 12),
-        axis.title.x = element_text(family = 'bentonbold', size = 14),
+        axis.text.x = element_text(family = 'benton', size = 7),
+        axis.title.x = element_text(family = 'bentonbold', size = 7),
         legend.key.size = unit(.25, 'cm'),
         legend.title = element_blank(),
-        legend.text = element_text(family = 'benton', size = 12),
+        legend.text = element_text(family = 'benton', size = 7),
         legend.background = element_blank()) +
   labs(x = 'Climate impact')
 ```
@@ -200,8 +200,8 @@ panel_b <- ggplot(noncc_imp, aes(x = imp, y = taxon)) +
   theme_ohara() +
   theme(axis.text.y = element_blank(),
         axis.title.y = element_blank(),
-        axis.text.x = element_text(family = 'benton', size = 12),
-        axis.title.x = element_text(family = 'bentonbold', size = 14)) +
+        axis.text.x = element_text(family = 'benton', size = 7),
+        axis.title.x = element_text(family = 'bentonbold', size = 7)) +
   labs(x = 'Non-climate impact')
 ```
 
@@ -226,9 +226,9 @@ fig1 <- ggdraw() +
             height = lgd_a_xy['h'], width = lgd_a_xy['w']) +
   ### Panel labels:
   draw_label('A', x = 0.002, y = .99, hjust = 0, vjust = 1, 
-             size = 25, fontfamily = 'bentonbold') +
+             size = 10, fontfamily = 'bentonbold') +
   draw_label('B', x = 0.55, y = .99, hjust = 0, vjust = 1, 
-             size = 25, fontfamily = 'bentonbold')
+             size = 10, fontfamily = 'bentonbold')
 
 ggsave(fig1_file, width = 12, height = 8, units = 'cm', dpi = 300)
 

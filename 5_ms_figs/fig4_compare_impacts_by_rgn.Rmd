@@ -180,10 +180,11 @@ plot_by_province <- function(df, methods, labels) {
     coord_flip() +
     theme_minimal() +
     theme(axis.title = element_blank(),
-          axis.text  = element_text(family = 'benton', size = 20),
+          axis.text  = element_text(family = 'benton', size = 7),
           panel.grid.major.y = element_blank(),
           panel.grid.minor.y = element_blank(),
-          strip.text.y = element_text(angle = 90, hjust = .5, family = 'bentonbold', size = 20)) +
+          strip.text.y = element_text(angle = 90, hjust = .5, 
+                                      family = 'bentonbold', size = 7)) +
     facet_grid(rows = vars(realm_lbl), 
                scales = 'free_y', space = 'free_y')
   
@@ -274,11 +275,11 @@ plot_by_realm <- function(df, methods, labels, x_label) {
     theme_minimal() +
     labs(x = x_label) +
     theme(axis.title.y = element_blank(),
-          axis.title.x = element_text(family = 'bentonbold', size = 20),
-          axis.text  = element_text(family = 'benton', size = 20),
+          axis.title.x = element_text(family = 'bentonbold', size = 7),
+          axis.text  = element_text(family = 'benton', size = 7),
           panel.grid.major.y = element_blank(),
           panel.grid.minor.y = element_blank(),
-          legend.text  = element_text(family = 'bentonbold', size = 15),
+          legend.text  = element_text(family = 'bentonbold', size = 7),
           legend.key.size = unit(.25, 'cm'),
           legend.title = element_blank())
   
@@ -316,7 +317,7 @@ panel_c_plot <- panel_c +
 panel_a_lgd  <- get_legend(panel_a)
 
 ### parameterize legends for easier changing of label positions:
-lgd_a_xy <- c(x = .92, y = .40, h = .80, w = .10)
+lgd_a_xy <- c(x = .90, y = .30, h = .40, w = .10)
 
 fig4 <- ggdraw() +
   ### draw panels:
@@ -328,11 +329,11 @@ fig4 <- ggdraw() +
             height = lgd_a_xy['h'], width = lgd_a_xy['w']) +
   ### Panel labels:
   draw_label('A', x = 0.002, y = .99, hjust = 0, vjust = 1, 
-             size = 25, fontfamily = 'bentonbold') +
+             size = 10, fontfamily = 'bentonbold') +
   draw_label('B', x = 0.40, y = .99, hjust = 0, vjust = 1, 
-             size = 25, fontfamily = 'bentonbold') +
+             size = 10, fontfamily = 'bentonbold') +
   draw_label('C', x = 0.70, y = .99, hjust = 0, vjust = 1, 
-             size = 25, fontfamily = 'bentonbold')
+             size = 10, fontfamily = 'bentonbold')
 
 
 fig4_file <- here('5_ms_figs/fig4_impacts_by_ecoregion.png')
