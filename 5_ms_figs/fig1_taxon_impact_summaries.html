@@ -9,7 +9,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
 
 
-<meta name="author" content="Compiled on Thu Jun 23 08:50:01 2022 by ohara" />
+<meta name="author" content="Compiled on Thu Jun 23 09:05:31 2022 by ohara" />
 
 
 <title>Figure 1: taxon/species impact summaries</title>
@@ -361,7 +361,7 @@ div.tocify {
 
 
 <h1 class="title toc-ignore">Figure 1: taxon/species impact summaries</h1>
-<h4 class="author"><em>Compiled on Thu Jun 23 08:50:01 2022 by ohara</em></h4>
+<h4 class="author"><em>Compiled on Thu Jun 23 09:05:31 2022 by ohara</em></h4>
 
 </div>
 
@@ -425,11 +425,16 @@ div.tocify {
 <span id="cb2-28"><a href="#cb2-28" aria-hidden="true" tabindex="-1"></a>  <span class="fu">write_csv</span>(spp_imp_scores, spp_imp_sum_file)</span>
 <span id="cb2-29"><a href="#cb2-29" aria-hidden="true" tabindex="-1"></a>}</span>
 <span id="cb2-30"><a href="#cb2-30" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-31"><a href="#cb2-31" aria-hidden="true" tabindex="-1"></a>spp_imp_scores <span class="ot">&lt;-</span> <span class="fu">read_csv</span>(spp_imp_sum_file)</span>
-<span id="cb2-32"><a href="#cb2-32" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-33"><a href="#cb2-33" aria-hidden="true" tabindex="-1"></a>spp_taxa <span class="ot">&lt;-</span> <span class="fu">assemble_spp_info_df</span>() <span class="sc">%&gt;%</span></span>
-<span id="cb2-34"><a href="#cb2-34" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(species, iucn_sid, taxon) <span class="sc">%&gt;%</span></span>
-<span id="cb2-35"><a href="#cb2-35" aria-hidden="true" tabindex="-1"></a>  <span class="fu">distinct</span>()</span></code></pre></div>
+<span id="cb2-31"><a href="#cb2-31" aria-hidden="true" tabindex="-1"></a>spp_taxa_sum_file <span class="ot">&lt;-</span> <span class="fu">here</span>(<span class="st">&#39;5_ms_figs/int/fig1_spp_taxa.csv&#39;</span>)</span>
+<span id="cb2-32"><a href="#cb2-32" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span>(<span class="sc">!</span><span class="fu">file.exists</span>(spp_taxa_sum_file)) {</span>
+<span id="cb2-33"><a href="#cb2-33" aria-hidden="true" tabindex="-1"></a>  spp_taxa <span class="ot">&lt;-</span> <span class="fu">assemble_spp_info_df</span>() <span class="sc">%&gt;%</span></span>
+<span id="cb2-34"><a href="#cb2-34" aria-hidden="true" tabindex="-1"></a>    <span class="fu">select</span>(species, iucn_sid, taxon) <span class="sc">%&gt;%</span></span>
+<span id="cb2-35"><a href="#cb2-35" aria-hidden="true" tabindex="-1"></a>    <span class="fu">distinct</span>()</span>
+<span id="cb2-36"><a href="#cb2-36" aria-hidden="true" tabindex="-1"></a>  <span class="fu">write_csv</span>(spp_taxa, spp_taxa_sum_file)</span>
+<span id="cb2-37"><a href="#cb2-37" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb2-38"><a href="#cb2-38" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-39"><a href="#cb2-39" aria-hidden="true" tabindex="-1"></a>spp_imp_scores <span class="ot">&lt;-</span> <span class="fu">read_csv</span>(spp_imp_sum_file)</span>
+<span id="cb2-40"><a href="#cb2-40" aria-hidden="true" tabindex="-1"></a>spp_taxa <span class="ot">&lt;-</span> <span class="fu">read_csv</span>(spp_taxa_sum_file)</span></code></pre></div>
 <div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>taxa_imp_scores <span class="ot">&lt;-</span> spp_imp_scores <span class="sc">%&gt;%</span></span>
 <span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(<span class="sc">!</span><span class="fu">is.na</span>(iucn_sid)) <span class="sc">%&gt;%</span></span>
 <span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">left_join</span>(spp_taxa <span class="sc">%&gt;%</span> <span class="fu">select</span>(<span class="sc">-</span>species), <span class="at">by =</span> <span class="st">&#39;iucn_sid&#39;</span>) <span class="sc">%&gt;%</span></span>
