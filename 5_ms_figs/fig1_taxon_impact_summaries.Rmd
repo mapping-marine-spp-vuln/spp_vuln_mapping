@@ -52,7 +52,7 @@ Read in the species impact summaries; summarize to climate and non-climate impac
 
 ```{r}
 spp_imp_sum_file <- here('5_ms_figs/int/fig1_spp_summary.csv')
-if(!file.exists(spp_imp_sum_file)) {
+if(!file.exists(spp_imp_sum_file)) { ### unlink(spp_imp_sum_file)
   spp_imp_fs <- list.files(here_anx('impacts_by_species'), 
                            pattern = '^impacts_.+.csv', full.names = TRUE)
   

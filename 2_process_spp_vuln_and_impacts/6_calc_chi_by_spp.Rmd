@@ -201,23 +201,23 @@ get_spp_sst_rise <- function(spp_id, src) {
   return(spp_sst_rise_cells)  
 }
 
-get_spp_bycatch <- function(tmp_vuln_df, spp_range) {
-  bycatch_vuln <- tmp_vuln_df %>%
-    filter(vuln == 'bycatch')
-  ### if one score is zero, then either pelagic or benthic; keep just
-  ### that score
-  if(n_distinct(bycatch_vuln$score) == 2) {
-    bycatch_score <- bycatch_vuln %>%
-      filter(score > 0)
-    bycatch_range <- bycatch_map_df %>%
-      filter(cell_id %in% spp_range$cell_id) %>%
-      mutate()
-    
-  }
-  
-  ### if scores are same, then either benthopelagic or reef (and/or both zero);
-  ### take avg across them
-}
+# get_spp_bycatch <- function(tmp_vuln_df, spp_range) {
+#   bycatch_vuln <- tmp_vuln_df %>%
+#     filter(vuln == 'bycatch')
+#   ### if one score is zero, then either pelagic or benthic; keep just
+#   ### that score
+#   if(n_distinct(bycatch_vuln$score) == 2) {
+#     bycatch_score <- bycatch_vuln %>%
+#       filter(score > 0)
+#     bycatch_range <- bycatch_map_df %>%
+#       filter(cell_id %in% spp_range$cell_id) %>%
+#       mutate()
+#     
+#   }
+#   
+#   ### if scores are same, then either benthopelagic or reef (and/or both zero);
+#   ### take avg across them
+# }
 
 ```
 

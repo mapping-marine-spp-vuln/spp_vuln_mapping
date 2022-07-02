@@ -9,7 +9,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
 
 
-<meta name="author" content="Compiled on Sat May 28 06:48:37 2022 by ohara" />
+<meta name="author" content="Compiled on Sat Jul 2 13:54:41 2022 by ohara" />
 
 
 <title>Calculate cumulative impacts per species</title>
@@ -361,7 +361,7 @@ div.tocify {
 
 
 <h1 class="title toc-ignore">Calculate cumulative impacts per species</h1>
-<h4 class="author"><em>Compiled on Sat May 28 06:48:37 2022 by ohara</em></h4>
+<h4 class="author"><em>Compiled on Sat Jul 2 13:54:41 2022 by ohara</em></h4>
 
 </div>
 
@@ -630,23 +630,23 @@ div.tocify {
 <span id="cb5-56"><a href="#cb5-56" aria-hidden="true" tabindex="-1"></a>  <span class="fu">return</span>(spp_sst_rise_cells)  </span>
 <span id="cb5-57"><a href="#cb5-57" aria-hidden="true" tabindex="-1"></a>}</span>
 <span id="cb5-58"><a href="#cb5-58" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb5-59"><a href="#cb5-59" aria-hidden="true" tabindex="-1"></a>get_spp_bycatch <span class="ot">&lt;-</span> <span class="cf">function</span>(tmp_vuln_df, spp_range) {</span>
-<span id="cb5-60"><a href="#cb5-60" aria-hidden="true" tabindex="-1"></a>  bycatch_vuln <span class="ot">&lt;-</span> tmp_vuln_df <span class="sc">%&gt;%</span></span>
-<span id="cb5-61"><a href="#cb5-61" aria-hidden="true" tabindex="-1"></a>    <span class="fu">filter</span>(vuln <span class="sc">==</span> <span class="st">&#39;bycatch&#39;</span>)</span>
-<span id="cb5-62"><a href="#cb5-62" aria-hidden="true" tabindex="-1"></a>  <span class="do">### if one score is zero, then either pelagic or benthic; keep just</span></span>
-<span id="cb5-63"><a href="#cb5-63" aria-hidden="true" tabindex="-1"></a>  <span class="do">### that score</span></span>
-<span id="cb5-64"><a href="#cb5-64" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span>(<span class="fu">n_distinct</span>(bycatch_vuln<span class="sc">$</span>score) <span class="sc">==</span> <span class="dv">2</span>) {</span>
-<span id="cb5-65"><a href="#cb5-65" aria-hidden="true" tabindex="-1"></a>    bycatch_score <span class="ot">&lt;-</span> bycatch_vuln <span class="sc">%&gt;%</span></span>
-<span id="cb5-66"><a href="#cb5-66" aria-hidden="true" tabindex="-1"></a>      <span class="fu">filter</span>(score <span class="sc">&gt;</span> <span class="dv">0</span>)</span>
-<span id="cb5-67"><a href="#cb5-67" aria-hidden="true" tabindex="-1"></a>    bycatch_range <span class="ot">&lt;-</span> bycatch_map_df <span class="sc">%&gt;%</span></span>
-<span id="cb5-68"><a href="#cb5-68" aria-hidden="true" tabindex="-1"></a>      <span class="fu">filter</span>(cell_id <span class="sc">%in%</span> spp_range<span class="sc">$</span>cell_id) <span class="sc">%&gt;%</span></span>
-<span id="cb5-69"><a href="#cb5-69" aria-hidden="true" tabindex="-1"></a>      <span class="fu">mutate</span>()</span>
-<span id="cb5-70"><a href="#cb5-70" aria-hidden="true" tabindex="-1"></a>    </span>
-<span id="cb5-71"><a href="#cb5-71" aria-hidden="true" tabindex="-1"></a>  }</span>
-<span id="cb5-72"><a href="#cb5-72" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb5-73"><a href="#cb5-73" aria-hidden="true" tabindex="-1"></a>  <span class="do">### if scores are same, then either benthopelagic or reef (and/or both zero);</span></span>
-<span id="cb5-74"><a href="#cb5-74" aria-hidden="true" tabindex="-1"></a>  <span class="do">### take avg across them</span></span>
-<span id="cb5-75"><a href="#cb5-75" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
+<span id="cb5-59"><a href="#cb5-59" aria-hidden="true" tabindex="-1"></a><span class="co"># get_spp_bycatch &lt;- function(tmp_vuln_df, spp_range) {</span></span>
+<span id="cb5-60"><a href="#cb5-60" aria-hidden="true" tabindex="-1"></a><span class="co">#   bycatch_vuln &lt;- tmp_vuln_df %&gt;%</span></span>
+<span id="cb5-61"><a href="#cb5-61" aria-hidden="true" tabindex="-1"></a><span class="co">#     filter(vuln == &#39;bycatch&#39;)</span></span>
+<span id="cb5-62"><a href="#cb5-62" aria-hidden="true" tabindex="-1"></a><span class="co">#   </span><span class="al">###</span><span class="co"> if one score is zero, then either pelagic or benthic; keep just</span></span>
+<span id="cb5-63"><a href="#cb5-63" aria-hidden="true" tabindex="-1"></a><span class="co">#   </span><span class="al">###</span><span class="co"> that score</span></span>
+<span id="cb5-64"><a href="#cb5-64" aria-hidden="true" tabindex="-1"></a><span class="co">#   if(n_distinct(bycatch_vuln$score) == 2) {</span></span>
+<span id="cb5-65"><a href="#cb5-65" aria-hidden="true" tabindex="-1"></a><span class="co">#     bycatch_score &lt;- bycatch_vuln %&gt;%</span></span>
+<span id="cb5-66"><a href="#cb5-66" aria-hidden="true" tabindex="-1"></a><span class="co">#       filter(score &gt; 0)</span></span>
+<span id="cb5-67"><a href="#cb5-67" aria-hidden="true" tabindex="-1"></a><span class="co">#     bycatch_range &lt;- bycatch_map_df %&gt;%</span></span>
+<span id="cb5-68"><a href="#cb5-68" aria-hidden="true" tabindex="-1"></a><span class="co">#       filter(cell_id %in% spp_range$cell_id) %&gt;%</span></span>
+<span id="cb5-69"><a href="#cb5-69" aria-hidden="true" tabindex="-1"></a><span class="co">#       mutate()</span></span>
+<span id="cb5-70"><a href="#cb5-70" aria-hidden="true" tabindex="-1"></a><span class="co">#     </span></span>
+<span id="cb5-71"><a href="#cb5-71" aria-hidden="true" tabindex="-1"></a><span class="co">#   }</span></span>
+<span id="cb5-72"><a href="#cb5-72" aria-hidden="true" tabindex="-1"></a><span class="co">#   </span></span>
+<span id="cb5-73"><a href="#cb5-73" aria-hidden="true" tabindex="-1"></a><span class="co">#   </span><span class="al">###</span><span class="co"> if scores are same, then either benthopelagic or reef (and/or both zero);</span></span>
+<span id="cb5-74"><a href="#cb5-74" aria-hidden="true" tabindex="-1"></a><span class="co">#   </span><span class="al">###</span><span class="co"> take avg across them</span></span>
+<span id="cb5-75"><a href="#cb5-75" aria-hidden="true" tabindex="-1"></a><span class="co"># }</span></span></code></pre></div>
 <div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="do">### these are created in _setup/stressors/3_process_fishing_bycatch.Rmd:</span></span>
 <span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>surface_npp <span class="ot">&lt;-</span> <span class="fu">rast</span>(<span class="fu">here_anx</span>(<span class="st">&#39;stressors/fishing/npp&#39;</span>, <span class="st">&#39;log_npp_present_surf_gf_mol.tif&#39;</span>))</span>
 <span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>benthic_npp <span class="ot">&lt;-</span> <span class="fu">rast</span>(<span class="fu">here_anx</span>(<span class="st">&#39;stressors/fishing/npp&#39;</span>, <span class="st">&#39;log_npp_present_benth_gf_mol.tif&#39;</span>))</span>

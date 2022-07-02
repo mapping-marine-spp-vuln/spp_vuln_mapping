@@ -9,7 +9,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
 
 
-<meta name="author" content="Compiled on Tue Jun 21 09:33:05 2022 by ohara" />
+<meta name="author" content="Compiled on Thu Jun 30 13:04:34 2022 by ohara" />
 
 
 <title>Map biomass removal impacts</title>
@@ -361,7 +361,7 @@ div.tocify {
 
 
 <h1 class="title toc-ignore">Map biomass removal impacts</h1>
-<h4 class="author"><em>Compiled on Tue Jun 21 09:33:05 2022 by ohara</em></h4>
+<h4 class="author"><em>Compiled on Thu Jun 30 13:04:34 2022 by ohara</em></h4>
 
 </div>
 
@@ -929,22 +929,23 @@ div.tocify {
 <span id="cb12-11"><a href="#cb12-11" aria-hidden="true" tabindex="-1"></a>                            <span class="at">pattern =</span> <span class="st">&#39;imp_fvwt_biomass_removal_chunk&#39;</span>, </span>
 <span id="cb12-12"><a href="#cb12-12" aria-hidden="true" tabindex="-1"></a>                            <span class="at">full.names =</span> <span class="cn">TRUE</span>)</span>
 <span id="cb12-13"><a href="#cb12-13" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-14"><a href="#cb12-14" aria-hidden="true" tabindex="-1"></a>  impact_map_df <span class="ot">&lt;-</span> parallel<span class="sc">::</span><span class="fu">mclapply</span>(chunk_files, <span class="at">mc.cores =</span> <span class="dv">33</span>, <span class="at">FUN =</span> data.table<span class="sc">::</span>fread) <span class="sc">%&gt;%</span></span>
-<span id="cb12-15"><a href="#cb12-15" aria-hidden="true" tabindex="-1"></a>    <span class="fu">bind_rows</span>()</span>
-<span id="cb12-16"><a href="#cb12-16" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb12-17"><a href="#cb12-17" aria-hidden="true" tabindex="-1"></a>  <span class="fu">message</span>(<span class="st">&#39;Converting impact maps to rasters for biomass removal...&#39;</span>)</span>
-<span id="cb12-18"><a href="#cb12-18" aria-hidden="true" tabindex="-1"></a>  mean_rast_fe <span class="ot">&lt;-</span> <span class="fu">map_to_mol</span>(impact_map_df, <span class="at">by =</span> <span class="st">&#39;cell_id&#39;</span>, <span class="at">which =</span> <span class="st">&#39;fe_mean_impact&#39;</span>)</span>
-<span id="cb12-19"><a href="#cb12-19" aria-hidden="true" tabindex="-1"></a>  sdev_rast_fe <span class="ot">&lt;-</span> <span class="fu">map_to_mol</span>(impact_map_df, <span class="at">by =</span> <span class="st">&#39;cell_id&#39;</span>, <span class="at">which =</span> <span class="st">&#39;fe_sd_impact&#39;</span>)</span>
-<span id="cb12-20"><a href="#cb12-20" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb12-21"><a href="#cb12-21" aria-hidden="true" tabindex="-1"></a>  <span class="fu">message</span>(<span class="st">&#39;Writing impact rasters for biomass removal...&#39;</span>)</span>
-<span id="cb12-22"><a href="#cb12-22" aria-hidden="true" tabindex="-1"></a>  <span class="fu">writeRaster</span>(mean_rast_fe, rast_mean_impact_fe_f, <span class="at">overwrite =</span> <span class="cn">TRUE</span>)</span>
-<span id="cb12-23"><a href="#cb12-23" aria-hidden="true" tabindex="-1"></a>  <span class="fu">writeRaster</span>(sdev_rast_fe, rast_sdev_impact_fe_f, <span class="at">overwrite =</span> <span class="cn">TRUE</span>)</span>
-<span id="cb12-24"><a href="#cb12-24" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb12-25"><a href="#cb12-25" aria-hidden="true" tabindex="-1"></a>  <span class="do">### n_fe rast matches with that calculated in the vuln calcs:</span></span>
-<span id="cb12-26"><a href="#cb12-26" aria-hidden="true" tabindex="-1"></a>  <span class="co"># n_fe_rast_main &lt;- raster(here(&#39;_output/nspp_maps/n_fe_in_fvwt_vuln.tif&#39;))</span></span>
-<span id="cb12-27"><a href="#cb12-27" aria-hidden="true" tabindex="-1"></a>  <span class="co"># n_fe_rast_fvwt &lt;- map_to_mol(impact_map_df, by = &#39;cell_id&#39;, which = &#39;n_fe&#39;)</span></span>
-<span id="cb12-28"><a href="#cb12-28" aria-hidden="true" tabindex="-1"></a>  <span class="co"># compareRaster(n_fe_rast_main, n_fe_rast_fvwt, values = TRUE)</span></span>
-<span id="cb12-29"><a href="#cb12-29" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
+<span id="cb12-14"><a href="#cb12-14" aria-hidden="true" tabindex="-1"></a>  impact_map_df <span class="ot">&lt;-</span> parallel<span class="sc">::</span><span class="fu">mclapply</span>(chunk_files, <span class="at">mc.cores =</span> <span class="dv">33</span>, </span>
+<span id="cb12-15"><a href="#cb12-15" aria-hidden="true" tabindex="-1"></a>                                      <span class="at">FUN =</span> data.table<span class="sc">::</span>fread) <span class="sc">%&gt;%</span></span>
+<span id="cb12-16"><a href="#cb12-16" aria-hidden="true" tabindex="-1"></a>    <span class="fu">bind_rows</span>()</span>
+<span id="cb12-17"><a href="#cb12-17" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb12-18"><a href="#cb12-18" aria-hidden="true" tabindex="-1"></a>  <span class="fu">message</span>(<span class="st">&#39;Converting impact maps to rasters for biomass removal...&#39;</span>)</span>
+<span id="cb12-19"><a href="#cb12-19" aria-hidden="true" tabindex="-1"></a>  mean_rast_fe <span class="ot">&lt;-</span> <span class="fu">map_to_mol</span>(impact_map_df, <span class="at">by =</span> <span class="st">&#39;cell_id&#39;</span>, <span class="at">which =</span> <span class="st">&#39;fv_wt_mean_impact&#39;</span>)</span>
+<span id="cb12-20"><a href="#cb12-20" aria-hidden="true" tabindex="-1"></a>  sdev_rast_fe <span class="ot">&lt;-</span> <span class="fu">map_to_mol</span>(impact_map_df, <span class="at">by =</span> <span class="st">&#39;cell_id&#39;</span>, <span class="at">which =</span> <span class="st">&#39;fv_wt_sd_impact&#39;</span>)</span>
+<span id="cb12-21"><a href="#cb12-21" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb12-22"><a href="#cb12-22" aria-hidden="true" tabindex="-1"></a>  <span class="fu">message</span>(<span class="st">&#39;Writing impact rasters for biomass removal...&#39;</span>)</span>
+<span id="cb12-23"><a href="#cb12-23" aria-hidden="true" tabindex="-1"></a>  <span class="fu">writeRaster</span>(mean_rast_fe, rast_mean_impact_fe_f, <span class="at">overwrite =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb12-24"><a href="#cb12-24" aria-hidden="true" tabindex="-1"></a>  <span class="fu">writeRaster</span>(sdev_rast_fe, rast_sdev_impact_fe_f, <span class="at">overwrite =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb12-25"><a href="#cb12-25" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb12-26"><a href="#cb12-26" aria-hidden="true" tabindex="-1"></a>  <span class="do">### n_fe rast matches with that calculated in the vuln calcs:</span></span>
+<span id="cb12-27"><a href="#cb12-27" aria-hidden="true" tabindex="-1"></a>  <span class="co"># n_fe_rast_main &lt;- raster(here(&#39;_output/nspp_maps/n_fe_in_fvwt_vuln.tif&#39;))</span></span>
+<span id="cb12-28"><a href="#cb12-28" aria-hidden="true" tabindex="-1"></a>  <span class="co"># n_fe_rast_fvwt &lt;- map_to_mol(impact_map_df, by = &#39;cell_id&#39;, which = &#39;n_fe&#39;)</span></span>
+<span id="cb12-29"><a href="#cb12-29" aria-hidden="true" tabindex="-1"></a>  <span class="co"># compareRaster(n_fe_rast_main, n_fe_rast_fvwt, values = TRUE)</span></span>
+<span id="cb12-30"><a href="#cb12-30" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
 <div class="sourceCode" id="cb13"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a>mean_rast_fe <span class="ot">&lt;-</span> <span class="fu">rast</span>(rast_mean_impact_fe_f)</span>
 <span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>sdev_rast_fe <span class="ot">&lt;-</span> <span class="fu">rast</span>(rast_sdev_impact_fe_f)</span>
 <span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a>cv_rast_fe <span class="ot">&lt;-</span> sdev_rast_fe <span class="sc">/</span> mean_rast_fe</span>

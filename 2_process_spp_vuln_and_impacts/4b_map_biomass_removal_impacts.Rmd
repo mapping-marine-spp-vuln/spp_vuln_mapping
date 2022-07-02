@@ -614,12 +614,13 @@ if(any(!file.exists(rast_mean_impact_fe_f, rast_sdev_impact_fe_f))) {
                             pattern = 'imp_fvwt_biomass_removal_chunk', 
                             full.names = TRUE)
 
-  impact_map_df <- parallel::mclapply(chunk_files, mc.cores = 33, FUN = data.table::fread) %>%
+  impact_map_df <- parallel::mclapply(chunk_files, mc.cores = 33, 
+                                      FUN = data.table::fread) %>%
     bind_rows()
   
   message('Converting impact maps to rasters for biomass removal...')
-  mean_rast_fe <- map_to_mol(impact_map_df, by = 'cell_id', which = 'fe_mean_impact')
-  sdev_rast_fe <- map_to_mol(impact_map_df, by = 'cell_id', which = 'fe_sd_impact')
+  mean_rast_fe <- map_to_mol(impact_map_df, by = 'cell_id', which = 'fv_wt_mean_impact')
+  sdev_rast_fe <- map_to_mol(impact_map_df, by = 'cell_id', which = 'fv_wt_sd_impact')
   
   message('Writing impact rasters for biomass removal...')
   writeRaster(mean_rast_fe, rast_mean_impact_fe_f, overwrite = TRUE)

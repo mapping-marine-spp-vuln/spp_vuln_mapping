@@ -76,9 +76,9 @@ taxa <- spp_info_df$taxon %>% unique() %>% sort()
 out_stem <- here_anx('impact_maps_by_taxon/impacts_tx_sst_rise', 
                      'imp_unwt_sst_rise_%s_%s.tif')
 ### zxcv <- list.files(dirname(out_stem), pattern = 'imp_unwt_sst', full.names = TRUE)
-### unlink(zxcv)
+### unlink(zxcv) 
 for(t in taxa) {
-  ### t <- taxa[10]
+  ### t <- taxa[6]
   tx_vuln_df <- spp_info_df %>%
     filter(taxon == t) %>%
     select(species, v_score) %>%
@@ -417,7 +417,7 @@ calc_chunk_str_sum <- function(chunk_maps, spp_info_df) {
     oharac::dt_join(chunk_spp_vuln, by = 'species', type = 'inner') 
   
   ### parallelize for speed! balance vectorization with parallel to reduce crashing...
-  chunk_impact_list <- parallel::mclapply(cell_gps, mc.cores = 25,
+  chunk_impact_list <- parallel::mclapply(cell_gps, mc.cores = 20,
           FUN = function(gp) { ### gp <- 41
             cell_ids <- cell_id_df %>% 
               filter(cell_gp == gp) %>% 
@@ -436,9 +436,11 @@ calc_chunk_str_sum <- function(chunk_maps, spp_info_df) {
                      fv_wt_sd_impact   = sqrt(Hmisc::wtd.var(impact_mean, weights = fv))),
                  by = .(cell_id)]
           })
+  
   if(check_tryerror(chunk_impact_list)) {
     stop('Try errors detected in calc_chunk_str_sum()!')
   }
+  
   chunk_impact_sum_df <- data.table::rbindlist(chunk_impact_list)
   return(chunk_impact_sum_df)
 }
@@ -446,7 +448,8 @@ calc_chunk_str_sum <- function(chunk_maps, spp_info_df) {
 ```
 
 ```{r FV weighted impact by species iterating over chunks of cells}
-chunk_size <- 100000
+chunk_size <- 50000 ### smaller to avoid dropping cores?
+
 n_chunks <- ceiling(6.5e6 / chunk_size)
 
 tmp_stem_fe <- here('tmp', 'impact_fv_chunks',
@@ -479,7 +482,7 @@ for(chunk_i in 1:n_chunks) {
   chunk_maps_list <- parallel::mclapply(mapfile_df$map_f, mc.cores = 40, 
                                         FUN = read_truncated_map, 
                                         chunk_start = chunk_start, chunk_end = chunk_end) 
-  
+
   chunk_maps_raw <- bind_maps_list(chunk_maps_list, mapfile_df)
   
   ### OK, now we have species and cells for this chunk.  Calculate functional vulnerability!
@@ -490,7 +493,7 @@ for(chunk_i in 1:n_chunks) {
     distinct()
   chunk_maps <- chunk_maps_raw %>%
     calc_spp_cell_fe(spp_fe)
-  
+
   message('... In ', chunk_text,  ' rangemap dataframe: \n    ', nrow(chunk_maps), 
           ' cell observations for ', n_distinct(chunk_maps$species), ' species across ',
           n_distinct(chunk_maps$fe_id), ' functional entities...')
@@ -520,7 +523,7 @@ rast_sdev_impact_fe_f <- sprintf(rast_fe_out_stem, 'sdev')
 if(any(!file.exists(rast_mean_impact_fe_f, rast_sdev_impact_fe_f))) {
   message('Gathering impact chunk maps for sst rise...')
   
-  impact_map_df <- parallel::mclapply(chunk_files, mc.cores = 33, 
+  impact_map_df <- parallel::mclapply(chunk_files, mc.cores = 24, 
                                       FUN = data.table::fread) %>%
     bind_rows()
   

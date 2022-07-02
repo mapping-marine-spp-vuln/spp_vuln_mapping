@@ -59,8 +59,8 @@ assemble_spp_info_df <- function(fe_only = TRUE, vuln_only = TRUE) {
 ### Helper functions for gathering species rangemaps
 check_tryerror <- function(l) {
   x <- sapply(l, class) %>% 
-    unlist()
-  return(any(x == 'try-error'))
+    unlist() %>% as.vector()
+  return(any(stringr::str_detect(tolower(x), 'error')))
 }
 
 get_one_map <- function(f) {
@@ -187,6 +187,7 @@ map_to_hcaf <- function(df, by = 'loiczid', which, xfm = NULL, ocean_mask = FALS
   if(!by %in% names(df)) stop('Dataframe needs a valid column for "by" (e.g., loiczid)!')
   if(!which %in% names(df)) stop('Dataframe needs a valid column for "which" (e.g., n_spp)!')
   if(any(is.na(df[[by]]))) stop('Dataframe contains NA values for "by"!')
+  if(length(df[[by]]) != length(unique(df[[by]]))) stop('Dataframe contains duplicate observations of ', by, '!')
   
   out_rast <- get_hcaf_rast()
   
@@ -256,6 +257,7 @@ map_to_mol <- function(df, by = 'cell_id', which, xfm = NULL, ocean_mask = TRUE)
   if(!by %in% names(df)) stop('Dataframe needs a valid column for "by" (e.g., cell_id)!')
   if(!which %in% names(df)) stop('Dataframe needs a valid column for "which" (e.g., n_spp)!')
   if(any(is.na(df[[by]]))) stop('Dataframe contains NA values for "by"!')
+  if(length(df[[by]]) != length(unique(df[[by]]))) stop('Dataframe contains duplicate observations of ', by, '!')
   
   ### Instead of raster::subs (which is pretty slow), just make a 
   ### vector of all the new values by joining the dataframe to a
