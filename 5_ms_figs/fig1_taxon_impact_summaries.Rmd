@@ -242,7 +242,7 @@ fig1 <- ggdraw() +
   ### Panel labels:
   draw_label('A', x = 0.002, y = .99, hjust = 0, vjust = 1, 
              size = 10, fontfamily = 'bentonbold') +
-  draw_label('B', x = 0.55, y = .99, hjust = 0, vjust = 1, 
+  draw_label('B', x = 0.56, y = .99, hjust = 0, vjust = 1, 
              size = 10, fontfamily = 'bentonbold')
 
 ggsave(fig1_file, width = 12, height = 8, units = 'cm', dpi = 300)

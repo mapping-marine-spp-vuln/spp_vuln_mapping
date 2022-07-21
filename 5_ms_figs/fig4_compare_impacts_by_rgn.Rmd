@@ -249,18 +249,18 @@ lgd_a_xy <- c(x = .90, y = .30, h = .40, w = .10)
 
 fig4 <- ggdraw() +
   ### draw panels:
-  draw_plot(panel_a_plot,  x = 0.00, y = 0.00, height = 1.00, width = 0.35) +
-  draw_plot(panel_b_plot,  x = 0.35, y = 0.00, height = 1.00, width = 0.28) +
-  draw_plot(panel_c_plot,  x = 0.63, y = 0.00, height = 1.00, width = 0.28) +
+  draw_plot(panel_a_plot,  x = 0.00, y = 0.00, height = 1.00, width = 0.37) +
+  draw_plot(panel_b_plot,  x = 0.37, y = 0.00, height = 1.00, width = 0.27) +
+  draw_plot(panel_c_plot,  x = 0.64, y = 0.00, height = 1.00, width = 0.27) +
   ### draw legends:
   draw_plot(panel_a_lgd, x = lgd_a_xy['x'], y = lgd_a_xy['y'], 
             height = lgd_a_xy['h'], width = lgd_a_xy['w']) +
   ### Panel labels:
   draw_label('A', x = 0.002, y = .99, hjust = 0, vjust = 1, 
              size = 10, fontfamily = 'bentonbold') +
-  draw_label('B', x = 0.40, y = .99, hjust = 0, vjust = 1, 
+  draw_label('B', x = 0.37, y = .99, hjust = 0, vjust = 1, 
              size = 10, fontfamily = 'bentonbold') +
-  draw_label('C', x = 0.70, y = .99, hjust = 0, vjust = 1, 
+  draw_label('C', x = 0.64, y = .99, hjust = 0, vjust = 1, 
              size = 10, fontfamily = 'bentonbold')
 
 
