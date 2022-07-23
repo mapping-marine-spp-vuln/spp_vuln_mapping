@@ -126,9 +126,7 @@ for(i in 1:nrow(str_vuln_lookup)) {
 imp_map_dir <- here_anx('_output/impact_maps/impact_maps_species')
 imp_map_fs <- list.files(imp_map_dir, pattern = '_mean.tif', full.names = TRUE)
 
-focal_strs <- c('microplastic', 'wildlife_strike',
-                'nutrient_pollution', 'ocean_acidification', 'marine_heat_wave',
-                'light_pollution')
+focal_strs <- str_vuln_lookup$stressor %>% unique()
 
 for(f in focal_strs) { ### f <- focal_strs[1]
   str_name <- str_replace_all(f, '[^a-z]+', ' ') %>%
@@ -199,6 +197,8 @@ for(i in 1:nrow(str_vuln_lookup)) {
 imp_map_dir <- here_anx('_output/impact_maps/impact_maps_funct_entity')
 imp_map_fs <- list.files(imp_map_dir, pattern = 'mean.tif', full.names = TRUE)
 
+focal_strs <- str_vuln_lookup$stressor %>% unique()
+
 for(f in focal_strs) { ### f <- focal_strs[1]
   str_name <- str_replace_all(f, '[^a-z]+', ' ') %>%
     str_squish() %>%
@@ -232,15 +232,13 @@ squish_rast <- function(r, qtile = .999) {
   return(list(r = r, zlim = r_zlim))
 }
 
+focal_strs <- str_vuln_lookup$stressor %>% unique()
+
 mean_unwt_fs <- list.files(here_anx('_output/impact_maps/impact_maps_species'), 
                            pattern = '_mean.tif', full.names = TRUE)
 mean_fvwt_fs <- list.files(here_anx('_output/impact_maps/impact_maps_funct_entity'), 
                            pattern = '_mean.tif', full.names = TRUE)
 
-focal_strs <- c('microplastic', 'wildlife_strike',
-                'nutrient_pollution', 'ocean_acidification', 
-                'habitat_loss_degradation', 'marine_heat_wave',
-                'light_pollution')
 ocean_mask <- terra::rast(here('_spatial/ocean_area_mol.tif'))
 
 for(f in focal_strs) { ### f <- focal_strs[5]

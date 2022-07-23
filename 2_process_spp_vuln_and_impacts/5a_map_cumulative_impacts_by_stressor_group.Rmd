@@ -62,7 +62,6 @@ for(str_gp in str_gps) {
   ### str_gp <- str_gps[1]
   spp_outfile <- sprintf(spp_outfile_stem, str_gp)
   
-  if(!file.exists(spp_outfile)) {
     str_vec <- str_gp_df %>% 
       filter(stressor_group == str_gp) %>% 
       .$stressor
@@ -76,7 +75,6 @@ for(str_gp in str_gps) {
     
     writeRaster(gp_chi_species, spp_outfile,
                 overwrite = TRUE)
-  }
 }
 
 ```
@@ -113,7 +111,6 @@ for(str_gp in str_gps) {
   ### str_gp <- str_gps[1]
   fe_outfile <- sprintf(fe_outfile_stem, str_gp)
   
-  if(!file.exists(fe_outfile)) {
     str_vec <- str_gp_df %>% 
       filter(stressor_group == str_gp) %>% 
       .$stressor
@@ -127,7 +124,6 @@ for(str_gp in str_gps) {
     
     writeRaster(gp_chi_fe, fe_outfile,
                 overwrite = TRUE)
-  }
 }
 ```
 

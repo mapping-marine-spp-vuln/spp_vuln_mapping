@@ -67,12 +67,12 @@ Regions of interest:
     * Province 6: Warm temperate NW Atlantic
 * High hab, low FE across all, CC, BUT low hab/high FE for non-climate!
     * Province 37: Hawaii
+    * Province 62: Subantarctic NZ
 * Low hab, high FE across all, CC, BUT high hab/low FE for non-climate
-    * Procince 22: Central Indian Ocean Islands
+    * Province 22: Central Indian Ocean Islands
 * Similar hab, FE across all and CC, BUT low hab/high FE for non-climate
     * Province 53: North New Zealand
     * Province 54: South New Zealand
-    * Province 62: Subantarctic NZ
     
 ### Identify cell IDs for these subregions
 
