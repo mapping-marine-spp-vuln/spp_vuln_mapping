@@ -419,6 +419,7 @@ am_spp_vec <- am_spp_mapped %>%
 
 out_fstem <- here_anx('impacts_by_species/impacts_am_%s.csv')
 ### zxcv <- list.files(dirname(out_fstem), pattern = 'impacts_am_', full.names = TRUE)
+### zxcv <- list.files(dirname(out_fstem), pattern = 'impacts_', full.names = TRUE)
 ### unlink(zxcv)
 
 chunk_size <- 100
