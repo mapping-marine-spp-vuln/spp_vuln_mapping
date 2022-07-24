@@ -100,8 +100,8 @@ chi_df <- data.frame(values(chi_stack),
 meow_prov_df <- foreign::read.dbf(here('_spatial/meow_rgns/meow_rgns.dbf')) %>%
   janitor::clean_names() %>%
   arrange(prov_code) %>%
-  mutate(realm_lbl = str_replace(realm, 'Temperate', 'Tmp'),
-         realm_lbl = str_replace(realm_lbl, 'Tropical', 'Tr'),
+  mutate(realm_lbl = str_replace(realm, 'Temperate', 'Temp'),
+         realm_lbl = str_replace(realm_lbl, 'Tropical', 'Trop'),
          realm_lbl = str_replace(realm_lbl, 'Northern', 'N'),
          realm_lbl = str_replace(realm_lbl, 'Western', 'W'),
          realm_lbl = str_replace(realm_lbl, 'Eastern', 'E'),
