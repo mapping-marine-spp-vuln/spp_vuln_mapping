@@ -121,24 +121,50 @@ For the bivariate color plot, one axis of colors represents climate, the other r
 #        "Brown2", "DkBlue2", "DkCyan2",
 #        "DkViolet2", "GrPink2", "PinkGrn",
 #        "PurpleGrn", "PurpleOr")
-# bi_pal(x[8], dim = 4, preview = TRUE)
+# bi_pal(x[11], dim = 4, preview = TRUE)
 
-pal_name <- 'PinkGrn'
-# zxcv <- biscale:::bi_pal_pull(pal = pal_name, dim = 4, flip_axes = FALSE, rotate_pal = FALSE)
+# pal_raw <- biscale:::bi_pal_pull(pal = 'PurpleGrn', dim = 4, flip_axes = FALSE, rotate_pal = FALSE)
+# 
+# colors_df <- data.frame(bi_class = names(pal_raw), bi_fill = pal_raw) %>%
+#   separate(bi_class, into = c('x', 'y'), sep = '-', 
+#            remove = FALSE, convert = TRUE) %>%
+#   mutate(bi_fill = case_when(bi_class == '1-1' ~ '#ffffee',
+#                              # bi_class %in% c('1-2', '2-1') ~ '#eeeeff',
+#                              # bi_class %in% c('1-3', '3-1', '2-2') ~ '#ddddee',
+#                              # bi_class %in% c('2-3', '3-2') ~ '#ccccdd',
+#                              # bi_class %in% c('3-3') ~ '#bbbbcc',
+#                              bi_class == '4-4' ~ bi_fill,
+#                              TRUE ~ colorspace::lighten(bi_fill, amount = .1, space = 'HCL')))
 
-vir_pal <- hcl.colors(n = 9, palette = 'Inferno', rev = TRUE)
+vir_pal <- hcl.colors(n = 9, palette = 'Viridis', rev = TRUE)
+### use 1, 3, 7, and 9 as seeds for corners; fade the upper left and lower right to
 
 colors_df <- crossing(x = 1:4, y = 1:4) %>%
   mutate(bi_class = paste(x, y, sep = '-')) %>%
-  mutate(bi_fill = case_when(bi_class %in% c('1-2', '1-3', '2-1', '3-1') ~ '#eeeeff',
-                             bi_class %in% c('2-2', '2-3', '3-2', '3-3') ~ '#ddddee',
-                             bi_class %in% c('4-2', '4-3', '2-4', '3-4') ~ '#ccccdd',
-                             bi_class == '1-1' ~ vir_pal[1], ### pale yellow; was ffffee
-                             bi_class == '1-4' ~ vir_pal[4], ### red
-                             bi_class == '4-1' ~ vir_pal[7], ### purple
+  mutate(bi_fill = case_when(bi_class == '1-1' ~ '#ffffee',
+                             bi_class %in% c('1-2', '2-1') ~ '#eeeeff',
+                             bi_class %in% c('1-3', '3-1', '2-2') ~ '#ddddee',
+                             bi_class %in% c('2-3', '3-2') ~ '#ccccdd',
+                             bi_class %in% c('3-3') ~ '#bbbbcc',
+                             bi_class %in% c('1-4') ~ colorspace::lighten(vir_pal[3], .2, space = 'HCL'), ### red
+                             bi_class %in% c('2-4') ~ vir_pal[3], ### red
+                             bi_class %in% c('3-4') ~ colorspace::darken(vir_pal[3], .2), ### red
+                             bi_class %in% c('4-1') ~ colorspace::lighten(vir_pal[7], .4), ### purple
+                             bi_class %in% c('4-2') ~ colorspace::lighten(vir_pal[7], .2), ### purple
+                             bi_class %in% c('4-3') ~ vir_pal[7], ### purple
                              bi_class == '4-4' ~ vir_pal[9], ### black
-                             TRUE ~ 'blue'))  
+                             TRUE ~ 'blue'))
 
+panel_a_lgd_raw <- ggplot(colors_df, aes(x, y, fill = bi_class)) +
+  labs(x = "Climate -->",
+       y = "Nonclimate -->") +
+  geom_tile(show.legend = FALSE, color = 'white', size = .25) +
+  scale_fill_manual(breaks = colors_df$bi_class, values = colors_df$bi_fill) +
+  scale_x_continuous(expand = c(0, 0)) +
+  scale_y_continuous(expand = c(0, 0)) +
+  theme(text = element_text(family = 'bentonbold'),
+        plot.background = element_blank())
+panel_a_lgd_raw
 ```
 
 
@@ -195,18 +221,6 @@ panel_a <- ggplot() +
         axis.title = element_blank())
 ```
 
-``` {r make biscale legend}
-panel_a_lgd_raw <- ggplot(colors_df, aes(x, y, fill = bi_class)) +
-  labs(x = "Climate -->",
-       y = "Nonclimate -->") +
-  geom_tile(show.legend = FALSE, color = 'white', size = .25) +
-  scale_fill_manual(breaks = colors_df$bi_class, values = colors_df$bi_fill) +
-  scale_x_continuous(expand = c(0, 0)) +
-  scale_y_continuous(expand = c(0, 0)) +
-  theme(text = element_text(family = 'bentonbold'),
-        plot.background = element_blank())
-# panel_a_lgd_raw
-```
 
 ### FE impact hot/cool spots overlap with hab impact
 
