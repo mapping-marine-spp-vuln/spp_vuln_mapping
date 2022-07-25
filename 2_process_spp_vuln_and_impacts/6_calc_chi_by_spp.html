@@ -9,7 +9,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
 
 
-<meta name="author" content="Compiled on Sat Jul 23 15:50:48 2022 by ohara" />
+<meta name="author" content="Compiled on Sun Jul 24 17:15:02 2022 by ohara" />
 
 
 <title>Calculate cumulative impacts per species</title>
@@ -361,7 +361,7 @@ div.tocify {
 
 
 <h1 class="title toc-ignore">Calculate cumulative impacts per species</h1>
-<h4 class="author"><em>Compiled on Sat Jul 23 15:50:48 2022 by ohara</em></h4>
+<h4 class="author"><em>Compiled on Sun Jul 24 17:15:02 2022 by ohara</em></h4>
 
 </div>
 
@@ -476,11 +476,6 @@ div.tocify {
 <td align="left">eutrophication_nutrient_pollution</td>
 <td align="left">land_based</td>
 </tr>
-<tr class="odd">
-<td align="left">microplastics</td>
-<td align="left">plastic_pollution_microplastic</td>
-<td align="left">land_based</td>
-</tr>
 </tbody>
 </table>
 <p>In addition, two stressors are scored individually: targeted fishing and sea surface temperature rise.</p>
@@ -511,7 +506,7 @@ div.tocify {
 <span id="cb3-19"><a href="#cb3-19" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(iucn_sid) <span class="sc">%&gt;%</span></span>
 <span id="cb3-20"><a href="#cb3-20" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">n_spp =</span> <span class="fu">n_distinct</span>(species)) <span class="sc">%&gt;%</span></span>
 <span id="cb3-21"><a href="#cb3-21" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(n_ids <span class="sc">&gt;</span> <span class="dv">1</span> <span class="sc">|</span> n_spp <span class="sc">&gt;</span> <span class="dv">1</span>)</span></code></pre></div>
-<p>At this point, we have vulnerability information for 21144 species across 15 stressors.</p>
+<p>At this point, we have vulnerability information for 21144 species across 14 stressors.</p>
 </div>
 <div id="read-in-stressor-layers" class="section level2" number="3.3">
 <h2><span class="header-section-number">3.3</span> Read in stressor layers</h2>
@@ -838,88 +833,89 @@ div.tocify {
 <span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a>out_fstem <span class="ot">&lt;-</span> <span class="fu">here_anx</span>(<span class="st">&#39;impacts_by_species/impacts_am_%s.csv&#39;</span>)</span>
 <span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a><span class="do">### zxcv &lt;- list.files(dirname(out_fstem), pattern = &#39;impacts_am_&#39;, full.names = TRUE)</span></span>
-<span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a><span class="do">### unlink(zxcv)</span></span>
-<span id="cb9-12"><a href="#cb9-12" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-13"><a href="#cb9-13" aria-hidden="true" tabindex="-1"></a>chunk_size <span class="ot">&lt;-</span> <span class="dv">100</span></span>
-<span id="cb9-14"><a href="#cb9-14" aria-hidden="true" tabindex="-1"></a>n_chunks <span class="ot">&lt;-</span> <span class="fu">ceiling</span>(<span class="fu">length</span>(am_spp_vec) <span class="sc">/</span> chunk_size)</span>
-<span id="cb9-15"><a href="#cb9-15" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-16"><a href="#cb9-16" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span>(n_chunks <span class="sc">&gt;</span> <span class="dv">0</span>) {</span>
-<span id="cb9-17"><a href="#cb9-17" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span>(k <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>n_chunks) {</span>
-<span id="cb9-18"><a href="#cb9-18" aria-hidden="true" tabindex="-1"></a>    <span class="do">### k &lt;- 1</span></span>
-<span id="cb9-19"><a href="#cb9-19" aria-hidden="true" tabindex="-1"></a>    ptm_k <span class="ot">&lt;-</span> <span class="fu">proc.time</span>()</span>
-<span id="cb9-20"><a href="#cb9-20" aria-hidden="true" tabindex="-1"></a>    </span>
-<span id="cb9-21"><a href="#cb9-21" aria-hidden="true" tabindex="-1"></a>    <span class="do">### Chunk out large species-cell dataframe into smaller bits for</span></span>
-<span id="cb9-22"><a href="#cb9-22" aria-hidden="true" tabindex="-1"></a>    <span class="do">### quicker filtering at the species level.</span></span>
-<span id="cb9-23"><a href="#cb9-23" aria-hidden="true" tabindex="-1"></a>    i_min <span class="ot">&lt;-</span> (k<span class="dv">-1</span>) <span class="sc">*</span> chunk_size <span class="sc">+</span> <span class="dv">1</span></span>
-<span id="cb9-24"><a href="#cb9-24" aria-hidden="true" tabindex="-1"></a>    i_max <span class="ot">&lt;-</span> <span class="fu">min</span>(k <span class="sc">*</span> chunk_size, <span class="fu">length</span>(am_spp_vec))</span>
-<span id="cb9-25"><a href="#cb9-25" aria-hidden="true" tabindex="-1"></a>    </span>
-<span id="cb9-26"><a href="#cb9-26" aria-hidden="true" tabindex="-1"></a>    chunk_spp_vec <span class="ot">&lt;-</span> am_spp_vec[i_min<span class="sc">:</span>i_max]</span>
-<span id="cb9-27"><a href="#cb9-27" aria-hidden="true" tabindex="-1"></a>    </span>
-<span id="cb9-28"><a href="#cb9-28" aria-hidden="true" tabindex="-1"></a>    <span class="do">### check that some of these spp still need to be processed, otherwise</span></span>
-<span id="cb9-29"><a href="#cb9-29" aria-hidden="true" tabindex="-1"></a>    <span class="do">### skip to the next chunk:</span></span>
-<span id="cb9-30"><a href="#cb9-30" aria-hidden="true" tabindex="-1"></a>    chunk_spp_files <span class="ot">&lt;-</span> <span class="fu">sprintf</span>(out_fstem, <span class="fu">str_replace_all</span>(chunk_spp_vec, <span class="st">&#39; &#39;</span>, <span class="st">&#39;_&#39;</span>))</span>
-<span id="cb9-31"><a href="#cb9-31" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span>(<span class="fu">all</span>(<span class="fu">file.exists</span>(chunk_spp_files))) {</span>
-<span id="cb9-32"><a href="#cb9-32" aria-hidden="true" tabindex="-1"></a>      <span class="fu">message</span>(<span class="st">&#39;All spp in chunk &#39;</span>, k, <span class="st">&#39; already have impact files... skipping!&#39;</span>)</span>
-<span id="cb9-33"><a href="#cb9-33" aria-hidden="true" tabindex="-1"></a>      <span class="cf">next</span>()</span>
-<span id="cb9-34"><a href="#cb9-34" aria-hidden="true" tabindex="-1"></a>    } <span class="cf">else</span> {</span>
-<span id="cb9-35"><a href="#cb9-35" aria-hidden="true" tabindex="-1"></a>      chunk_spp_vec <span class="ot">&lt;-</span> chunk_spp_vec[<span class="sc">!</span><span class="fu">file.exists</span>(chunk_spp_files)]</span>
-<span id="cb9-36"><a href="#cb9-36" aria-hidden="true" tabindex="-1"></a>    }</span>
-<span id="cb9-37"><a href="#cb9-37" aria-hidden="true" tabindex="-1"></a>    </span>
-<span id="cb9-38"><a href="#cb9-38" aria-hidden="true" tabindex="-1"></a>    tmp <span class="ot">&lt;-</span> parallel<span class="sc">::</span><span class="fu">mclapply</span>(<span class="fu">seq_along</span>(chunk_spp_vec),</span>
-<span id="cb9-39"><a href="#cb9-39" aria-hidden="true" tabindex="-1"></a>                              <span class="at">mc.cores =</span> <span class="dv">34</span>,</span>
-<span id="cb9-40"><a href="#cb9-40" aria-hidden="true" tabindex="-1"></a>                              <span class="at">FUN =</span> <span class="cf">function</span>(i) {</span>
-<span id="cb9-41"><a href="#cb9-41" aria-hidden="true" tabindex="-1"></a>        <span class="do">### i &lt;- 1</span></span>
-<span id="cb9-42"><a href="#cb9-42" aria-hidden="true" tabindex="-1"></a>        <span class="do">### i &lt;- which(chunk_spp_vec == &#39;abyssaster planus&#39;)</span></span>
-<span id="cb9-43"><a href="#cb9-43" aria-hidden="true" tabindex="-1"></a>        ptm_i <span class="ot">&lt;-</span> <span class="fu">proc.time</span>()</span>
-<span id="cb9-44"><a href="#cb9-44" aria-hidden="true" tabindex="-1"></a>        spp <span class="ot">&lt;-</span> chunk_spp_vec[i]</span>
-<span id="cb9-45"><a href="#cb9-45" aria-hidden="true" tabindex="-1"></a>        <span class="do">### spp &lt;- &#39;abdopus aculeatus&#39;</span></span>
-<span id="cb9-46"><a href="#cb9-46" aria-hidden="true" tabindex="-1"></a>    </span>
-<span id="cb9-47"><a href="#cb9-47" aria-hidden="true" tabindex="-1"></a>        outfile <span class="ot">&lt;-</span> <span class="fu">sprintf</span>(out_fstem, <span class="fu">str_replace_all</span>(spp, <span class="st">&#39; &#39;</span>, <span class="st">&#39;_&#39;</span>))</span>
-<span id="cb9-48"><a href="#cb9-48" aria-hidden="true" tabindex="-1"></a>        </span>
-<span id="cb9-49"><a href="#cb9-49" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span>(<span class="fu">file.exists</span>(outfile)) {</span>
-<span id="cb9-50"><a href="#cb9-50" aria-hidden="true" tabindex="-1"></a>          <span class="co"># message(&#39;File &#39;, outfile, &#39; exists... skipping!&#39;)</span></span>
-<span id="cb9-51"><a href="#cb9-51" aria-hidden="true" tabindex="-1"></a>          <span class="fu">return</span>()</span>
-<span id="cb9-52"><a href="#cb9-52" aria-hidden="true" tabindex="-1"></a>        }</span>
-<span id="cb9-53"><a href="#cb9-53" aria-hidden="true" tabindex="-1"></a>        </span>
-<span id="cb9-54"><a href="#cb9-54" aria-hidden="true" tabindex="-1"></a>        <span class="fu">message</span>(i, <span class="st">&#39; of &#39;</span>, <span class="fu">length</span>(chunk_spp_vec), <span class="st">&#39;, chunk &#39;</span>, k, <span class="st">&#39; of &#39;</span>, n_chunks, </span>
-<span id="cb9-55"><a href="#cb9-55" aria-hidden="true" tabindex="-1"></a>                <span class="st">&#39;: processing impacts on AM &#39;</span>, spp <span class="sc">%&gt;%</span> <span class="fu">unique</span>(), <span class="st">&#39;...&#39;</span>)</span>
-<span id="cb9-56"><a href="#cb9-56" aria-hidden="true" tabindex="-1"></a>        </span>
-<span id="cb9-57"><a href="#cb9-57" aria-hidden="true" tabindex="-1"></a>        spp_am_vuln <span class="ot">&lt;-</span> am_spp_mapped <span class="sc">%&gt;%</span></span>
-<span id="cb9-58"><a href="#cb9-58" aria-hidden="true" tabindex="-1"></a>          <span class="fu">filter</span>(species <span class="sc">==</span> spp) <span class="sc">%&gt;%</span></span>
-<span id="cb9-59"><a href="#cb9-59" aria-hidden="true" tabindex="-1"></a>          <span class="fu">fill_missing_stressors</span>() <span class="sc">%&gt;%</span></span>
-<span id="cb9-60"><a href="#cb9-60" aria-hidden="true" tabindex="-1"></a>          <span class="do">### drop confounding IDs</span></span>
-<span id="cb9-61"><a href="#cb9-61" aria-hidden="true" tabindex="-1"></a>          <span class="fu">select</span>(<span class="sc">-</span>iucn_sid) <span class="sc">%&gt;%</span></span>
-<span id="cb9-62"><a href="#cb9-62" aria-hidden="true" tabindex="-1"></a>          <span class="fu">distinct</span>()</span>
-<span id="cb9-63"><a href="#cb9-63" aria-hidden="true" tabindex="-1"></a>        </span>
-<span id="cb9-64"><a href="#cb9-64" aria-hidden="true" tabindex="-1"></a>        spp_str_intsx <span class="ot">&lt;-</span> <span class="fu">process_spp_str_intsx</span>(<span class="at">tmp_vuln_df =</span> spp_am_vuln, </span>
-<span id="cb9-65"><a href="#cb9-65" aria-hidden="true" tabindex="-1"></a>                                               <span class="at">str_map_df  =</span> str_map_df) <span class="sc">%&gt;%</span></span>
-<span id="cb9-66"><a href="#cb9-66" aria-hidden="true" tabindex="-1"></a>          oharac<span class="sc">::</span><span class="fu">dt_join</span>(spp_am_vuln <span class="sc">%&gt;%</span> <span class="fu">select</span>(vulnerability, stressor, stressor_group, v_score), </span>
-<span id="cb9-67"><a href="#cb9-67" aria-hidden="true" tabindex="-1"></a>                          <span class="at">by =</span> <span class="st">&#39;stressor&#39;</span>, <span class="at">type =</span> <span class="st">&#39;left&#39;</span>)</span>
-<span id="cb9-68"><a href="#cb9-68" aria-hidden="true" tabindex="-1"></a>        </span>
-<span id="cb9-69"><a href="#cb9-69" aria-hidden="true" tabindex="-1"></a>        <span class="do">### calc sum of impacts by str and cum over full range and coastal range</span></span>
-<span id="cb9-70"><a href="#cb9-70" aria-hidden="true" tabindex="-1"></a>        imp_full_range  <span class="ot">&lt;-</span> <span class="fu">summarize_spp_impact</span>(spp_str_intsx, ocean_a_df, spp) <span class="sc">%&gt;%</span></span>
-<span id="cb9-71"><a href="#cb9-71" aria-hidden="true" tabindex="-1"></a>          <span class="fu">mutate</span>(<span class="at">range =</span> <span class="st">&#39;full&#39;</span>)</span>
-<span id="cb9-72"><a href="#cb9-72" aria-hidden="true" tabindex="-1"></a>        imp_coast_range <span class="ot">&lt;-</span> <span class="fu">summarize_spp_impact</span>(spp_str_intsx, coastal_a_df, spp) <span class="sc">%&gt;%</span></span>
-<span id="cb9-73"><a href="#cb9-73" aria-hidden="true" tabindex="-1"></a>          <span class="fu">mutate</span>(<span class="at">range =</span> <span class="st">&#39;coastal&#39;</span>)</span>
-<span id="cb9-74"><a href="#cb9-74" aria-hidden="true" tabindex="-1"></a>        </span>
-<span id="cb9-75"><a href="#cb9-75" aria-hidden="true" tabindex="-1"></a>        <span class="do">### bind rows, add total and coastal ranges, and write out</span></span>
-<span id="cb9-76"><a href="#cb9-76" aria-hidden="true" tabindex="-1"></a>        zero_score_stressors <span class="ot">&lt;-</span> spp_am_vuln <span class="sc">%&gt;%</span></span>
-<span id="cb9-77"><a href="#cb9-77" aria-hidden="true" tabindex="-1"></a>          <span class="fu">filter</span>(v_score <span class="sc">==</span> <span class="dv">0</span>)</span>
-<span id="cb9-78"><a href="#cb9-78" aria-hidden="true" tabindex="-1"></a>          </span>
-<span id="cb9-79"><a href="#cb9-79" aria-hidden="true" tabindex="-1"></a>        spp_impacts_df <span class="ot">&lt;-</span> <span class="fu">bind_rows</span>(imp_full_range, imp_coast_range) <span class="sc">%&gt;%</span></span>
-<span id="cb9-80"><a href="#cb9-80" aria-hidden="true" tabindex="-1"></a>          <span class="fu">anti_join</span>(zero_score_stressors, <span class="at">by =</span> <span class="fu">c</span>(<span class="st">&#39;vulnerability&#39;</span>, <span class="st">&#39;stressor&#39;</span>)) <span class="sc">%&gt;%</span></span>
-<span id="cb9-81"><a href="#cb9-81" aria-hidden="true" tabindex="-1"></a>          <span class="fu">mutate</span>(<span class="fu">across</span>(<span class="fu">where</span>(is.numeric), <span class="sc">~</span> <span class="fu">round</span>(.x, <span class="dv">3</span>)))</span>
-<span id="cb9-82"><a href="#cb9-82" aria-hidden="true" tabindex="-1"></a>          </span>
-<span id="cb9-83"><a href="#cb9-83" aria-hidden="true" tabindex="-1"></a>        <span class="co"># message(i, &#39; of &#39;, length(chunk_spp_vec), &#39;, chunk &#39;, k, &#39; of &#39;, n_chunks, </span></span>
-<span id="cb9-84"><a href="#cb9-84" aria-hidden="true" tabindex="-1"></a>        <span class="co">#         &#39;: processed impacts on &#39;, spp,</span></span>
-<span id="cb9-85"><a href="#cb9-85" aria-hidden="true" tabindex="-1"></a>        <span class="co">#         &#39;... elapsed time: &#39;, round(proc.time() - ptm_i, 3)[3], &#39;s.&#39;)</span></span>
-<span id="cb9-86"><a href="#cb9-86" aria-hidden="true" tabindex="-1"></a>        <span class="fu">write_csv</span>(spp_impacts_df, outfile)</span>
-<span id="cb9-87"><a href="#cb9-87" aria-hidden="true" tabindex="-1"></a>      })</span>
-<span id="cb9-88"><a href="#cb9-88" aria-hidden="true" tabindex="-1"></a>    </span>
-<span id="cb9-89"><a href="#cb9-89" aria-hidden="true" tabindex="-1"></a>    <span class="fu">message</span>(<span class="st">&#39;Chunk time to process: &#39;</span>, <span class="fu">round</span>(<span class="fu">proc.time</span>() <span class="sc">-</span> ptm_k, <span class="dv">3</span>)[<span class="dv">3</span>], <span class="st">&#39;s.&#39;</span>)</span>
-<span id="cb9-90"><a href="#cb9-90" aria-hidden="true" tabindex="-1"></a>    </span>
-<span id="cb9-91"><a href="#cb9-91" aria-hidden="true" tabindex="-1"></a>  }</span>
-<span id="cb9-92"><a href="#cb9-92" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
+<span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a><span class="do">### zxcv &lt;- list.files(dirname(out_fstem), pattern = &#39;impacts_&#39;, full.names = TRUE)</span></span>
+<span id="cb9-12"><a href="#cb9-12" aria-hidden="true" tabindex="-1"></a><span class="do">### unlink(zxcv)</span></span>
+<span id="cb9-13"><a href="#cb9-13" aria-hidden="true" tabindex="-1"></a> </span>
+<span id="cb9-14"><a href="#cb9-14" aria-hidden="true" tabindex="-1"></a>chunk_size <span class="ot">&lt;-</span> <span class="dv">100</span></span>
+<span id="cb9-15"><a href="#cb9-15" aria-hidden="true" tabindex="-1"></a>n_chunks <span class="ot">&lt;-</span> <span class="fu">ceiling</span>(<span class="fu">length</span>(am_spp_vec) <span class="sc">/</span> chunk_size)</span>
+<span id="cb9-16"><a href="#cb9-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-17"><a href="#cb9-17" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span>(n_chunks <span class="sc">&gt;</span> <span class="dv">0</span>) {</span>
+<span id="cb9-18"><a href="#cb9-18" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span>(k <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>n_chunks) {</span>
+<span id="cb9-19"><a href="#cb9-19" aria-hidden="true" tabindex="-1"></a>    <span class="do">### k &lt;- 1</span></span>
+<span id="cb9-20"><a href="#cb9-20" aria-hidden="true" tabindex="-1"></a>    ptm_k <span class="ot">&lt;-</span> <span class="fu">proc.time</span>()</span>
+<span id="cb9-21"><a href="#cb9-21" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb9-22"><a href="#cb9-22" aria-hidden="true" tabindex="-1"></a>    <span class="do">### Chunk out large species-cell dataframe into smaller bits for</span></span>
+<span id="cb9-23"><a href="#cb9-23" aria-hidden="true" tabindex="-1"></a>    <span class="do">### quicker filtering at the species level.</span></span>
+<span id="cb9-24"><a href="#cb9-24" aria-hidden="true" tabindex="-1"></a>    i_min <span class="ot">&lt;-</span> (k<span class="dv">-1</span>) <span class="sc">*</span> chunk_size <span class="sc">+</span> <span class="dv">1</span></span>
+<span id="cb9-25"><a href="#cb9-25" aria-hidden="true" tabindex="-1"></a>    i_max <span class="ot">&lt;-</span> <span class="fu">min</span>(k <span class="sc">*</span> chunk_size, <span class="fu">length</span>(am_spp_vec))</span>
+<span id="cb9-26"><a href="#cb9-26" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb9-27"><a href="#cb9-27" aria-hidden="true" tabindex="-1"></a>    chunk_spp_vec <span class="ot">&lt;-</span> am_spp_vec[i_min<span class="sc">:</span>i_max]</span>
+<span id="cb9-28"><a href="#cb9-28" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb9-29"><a href="#cb9-29" aria-hidden="true" tabindex="-1"></a>    <span class="do">### check that some of these spp still need to be processed, otherwise</span></span>
+<span id="cb9-30"><a href="#cb9-30" aria-hidden="true" tabindex="-1"></a>    <span class="do">### skip to the next chunk:</span></span>
+<span id="cb9-31"><a href="#cb9-31" aria-hidden="true" tabindex="-1"></a>    chunk_spp_files <span class="ot">&lt;-</span> <span class="fu">sprintf</span>(out_fstem, <span class="fu">str_replace_all</span>(chunk_spp_vec, <span class="st">&#39; &#39;</span>, <span class="st">&#39;_&#39;</span>))</span>
+<span id="cb9-32"><a href="#cb9-32" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span>(<span class="fu">all</span>(<span class="fu">file.exists</span>(chunk_spp_files))) {</span>
+<span id="cb9-33"><a href="#cb9-33" aria-hidden="true" tabindex="-1"></a>      <span class="fu">message</span>(<span class="st">&#39;All spp in chunk &#39;</span>, k, <span class="st">&#39; already have impact files... skipping!&#39;</span>)</span>
+<span id="cb9-34"><a href="#cb9-34" aria-hidden="true" tabindex="-1"></a>      <span class="cf">next</span>()</span>
+<span id="cb9-35"><a href="#cb9-35" aria-hidden="true" tabindex="-1"></a>    } <span class="cf">else</span> {</span>
+<span id="cb9-36"><a href="#cb9-36" aria-hidden="true" tabindex="-1"></a>      chunk_spp_vec <span class="ot">&lt;-</span> chunk_spp_vec[<span class="sc">!</span><span class="fu">file.exists</span>(chunk_spp_files)]</span>
+<span id="cb9-37"><a href="#cb9-37" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb9-38"><a href="#cb9-38" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb9-39"><a href="#cb9-39" aria-hidden="true" tabindex="-1"></a>    tmp <span class="ot">&lt;-</span> parallel<span class="sc">::</span><span class="fu">mclapply</span>(<span class="fu">seq_along</span>(chunk_spp_vec),</span>
+<span id="cb9-40"><a href="#cb9-40" aria-hidden="true" tabindex="-1"></a>                              <span class="at">mc.cores =</span> <span class="dv">34</span>,</span>
+<span id="cb9-41"><a href="#cb9-41" aria-hidden="true" tabindex="-1"></a>                              <span class="at">FUN =</span> <span class="cf">function</span>(i) {</span>
+<span id="cb9-42"><a href="#cb9-42" aria-hidden="true" tabindex="-1"></a>        <span class="do">### i &lt;- 1</span></span>
+<span id="cb9-43"><a href="#cb9-43" aria-hidden="true" tabindex="-1"></a>        <span class="do">### i &lt;- which(chunk_spp_vec == &#39;abyssaster planus&#39;)</span></span>
+<span id="cb9-44"><a href="#cb9-44" aria-hidden="true" tabindex="-1"></a>        ptm_i <span class="ot">&lt;-</span> <span class="fu">proc.time</span>()</span>
+<span id="cb9-45"><a href="#cb9-45" aria-hidden="true" tabindex="-1"></a>        spp <span class="ot">&lt;-</span> chunk_spp_vec[i]</span>
+<span id="cb9-46"><a href="#cb9-46" aria-hidden="true" tabindex="-1"></a>        <span class="do">### spp &lt;- &#39;abdopus aculeatus&#39;</span></span>
+<span id="cb9-47"><a href="#cb9-47" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb9-48"><a href="#cb9-48" aria-hidden="true" tabindex="-1"></a>        outfile <span class="ot">&lt;-</span> <span class="fu">sprintf</span>(out_fstem, <span class="fu">str_replace_all</span>(spp, <span class="st">&#39; &#39;</span>, <span class="st">&#39;_&#39;</span>))</span>
+<span id="cb9-49"><a href="#cb9-49" aria-hidden="true" tabindex="-1"></a>        </span>
+<span id="cb9-50"><a href="#cb9-50" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span>(<span class="fu">file.exists</span>(outfile)) {</span>
+<span id="cb9-51"><a href="#cb9-51" aria-hidden="true" tabindex="-1"></a>          <span class="co"># message(&#39;File &#39;, outfile, &#39; exists... skipping!&#39;)</span></span>
+<span id="cb9-52"><a href="#cb9-52" aria-hidden="true" tabindex="-1"></a>          <span class="fu">return</span>()</span>
+<span id="cb9-53"><a href="#cb9-53" aria-hidden="true" tabindex="-1"></a>        }</span>
+<span id="cb9-54"><a href="#cb9-54" aria-hidden="true" tabindex="-1"></a>        </span>
+<span id="cb9-55"><a href="#cb9-55" aria-hidden="true" tabindex="-1"></a>        <span class="fu">message</span>(i, <span class="st">&#39; of &#39;</span>, <span class="fu">length</span>(chunk_spp_vec), <span class="st">&#39;, chunk &#39;</span>, k, <span class="st">&#39; of &#39;</span>, n_chunks, </span>
+<span id="cb9-56"><a href="#cb9-56" aria-hidden="true" tabindex="-1"></a>                <span class="st">&#39;: processing impacts on AM &#39;</span>, spp <span class="sc">%&gt;%</span> <span class="fu">unique</span>(), <span class="st">&#39;...&#39;</span>)</span>
+<span id="cb9-57"><a href="#cb9-57" aria-hidden="true" tabindex="-1"></a>        </span>
+<span id="cb9-58"><a href="#cb9-58" aria-hidden="true" tabindex="-1"></a>        spp_am_vuln <span class="ot">&lt;-</span> am_spp_mapped <span class="sc">%&gt;%</span></span>
+<span id="cb9-59"><a href="#cb9-59" aria-hidden="true" tabindex="-1"></a>          <span class="fu">filter</span>(species <span class="sc">==</span> spp) <span class="sc">%&gt;%</span></span>
+<span id="cb9-60"><a href="#cb9-60" aria-hidden="true" tabindex="-1"></a>          <span class="fu">fill_missing_stressors</span>() <span class="sc">%&gt;%</span></span>
+<span id="cb9-61"><a href="#cb9-61" aria-hidden="true" tabindex="-1"></a>          <span class="do">### drop confounding IDs</span></span>
+<span id="cb9-62"><a href="#cb9-62" aria-hidden="true" tabindex="-1"></a>          <span class="fu">select</span>(<span class="sc">-</span>iucn_sid) <span class="sc">%&gt;%</span></span>
+<span id="cb9-63"><a href="#cb9-63" aria-hidden="true" tabindex="-1"></a>          <span class="fu">distinct</span>()</span>
+<span id="cb9-64"><a href="#cb9-64" aria-hidden="true" tabindex="-1"></a>        </span>
+<span id="cb9-65"><a href="#cb9-65" aria-hidden="true" tabindex="-1"></a>        spp_str_intsx <span class="ot">&lt;-</span> <span class="fu">process_spp_str_intsx</span>(<span class="at">tmp_vuln_df =</span> spp_am_vuln, </span>
+<span id="cb9-66"><a href="#cb9-66" aria-hidden="true" tabindex="-1"></a>                                               <span class="at">str_map_df  =</span> str_map_df) <span class="sc">%&gt;%</span></span>
+<span id="cb9-67"><a href="#cb9-67" aria-hidden="true" tabindex="-1"></a>          oharac<span class="sc">::</span><span class="fu">dt_join</span>(spp_am_vuln <span class="sc">%&gt;%</span> <span class="fu">select</span>(vulnerability, stressor, stressor_group, v_score), </span>
+<span id="cb9-68"><a href="#cb9-68" aria-hidden="true" tabindex="-1"></a>                          <span class="at">by =</span> <span class="st">&#39;stressor&#39;</span>, <span class="at">type =</span> <span class="st">&#39;left&#39;</span>)</span>
+<span id="cb9-69"><a href="#cb9-69" aria-hidden="true" tabindex="-1"></a>        </span>
+<span id="cb9-70"><a href="#cb9-70" aria-hidden="true" tabindex="-1"></a>        <span class="do">### calc sum of impacts by str and cum over full range and coastal range</span></span>
+<span id="cb9-71"><a href="#cb9-71" aria-hidden="true" tabindex="-1"></a>        imp_full_range  <span class="ot">&lt;-</span> <span class="fu">summarize_spp_impact</span>(spp_str_intsx, ocean_a_df, spp) <span class="sc">%&gt;%</span></span>
+<span id="cb9-72"><a href="#cb9-72" aria-hidden="true" tabindex="-1"></a>          <span class="fu">mutate</span>(<span class="at">range =</span> <span class="st">&#39;full&#39;</span>)</span>
+<span id="cb9-73"><a href="#cb9-73" aria-hidden="true" tabindex="-1"></a>        imp_coast_range <span class="ot">&lt;-</span> <span class="fu">summarize_spp_impact</span>(spp_str_intsx, coastal_a_df, spp) <span class="sc">%&gt;%</span></span>
+<span id="cb9-74"><a href="#cb9-74" aria-hidden="true" tabindex="-1"></a>          <span class="fu">mutate</span>(<span class="at">range =</span> <span class="st">&#39;coastal&#39;</span>)</span>
+<span id="cb9-75"><a href="#cb9-75" aria-hidden="true" tabindex="-1"></a>        </span>
+<span id="cb9-76"><a href="#cb9-76" aria-hidden="true" tabindex="-1"></a>        <span class="do">### bind rows, add total and coastal ranges, and write out</span></span>
+<span id="cb9-77"><a href="#cb9-77" aria-hidden="true" tabindex="-1"></a>        zero_score_stressors <span class="ot">&lt;-</span> spp_am_vuln <span class="sc">%&gt;%</span></span>
+<span id="cb9-78"><a href="#cb9-78" aria-hidden="true" tabindex="-1"></a>          <span class="fu">filter</span>(v_score <span class="sc">==</span> <span class="dv">0</span>)</span>
+<span id="cb9-79"><a href="#cb9-79" aria-hidden="true" tabindex="-1"></a>          </span>
+<span id="cb9-80"><a href="#cb9-80" aria-hidden="true" tabindex="-1"></a>        spp_impacts_df <span class="ot">&lt;-</span> <span class="fu">bind_rows</span>(imp_full_range, imp_coast_range) <span class="sc">%&gt;%</span></span>
+<span id="cb9-81"><a href="#cb9-81" aria-hidden="true" tabindex="-1"></a>          <span class="fu">anti_join</span>(zero_score_stressors, <span class="at">by =</span> <span class="fu">c</span>(<span class="st">&#39;vulnerability&#39;</span>, <span class="st">&#39;stressor&#39;</span>)) <span class="sc">%&gt;%</span></span>
+<span id="cb9-82"><a href="#cb9-82" aria-hidden="true" tabindex="-1"></a>          <span class="fu">mutate</span>(<span class="fu">across</span>(<span class="fu">where</span>(is.numeric), <span class="sc">~</span> <span class="fu">round</span>(.x, <span class="dv">3</span>)))</span>
+<span id="cb9-83"><a href="#cb9-83" aria-hidden="true" tabindex="-1"></a>          </span>
+<span id="cb9-84"><a href="#cb9-84" aria-hidden="true" tabindex="-1"></a>        <span class="co"># message(i, &#39; of &#39;, length(chunk_spp_vec), &#39;, chunk &#39;, k, &#39; of &#39;, n_chunks, </span></span>
+<span id="cb9-85"><a href="#cb9-85" aria-hidden="true" tabindex="-1"></a>        <span class="co">#         &#39;: processed impacts on &#39;, spp,</span></span>
+<span id="cb9-86"><a href="#cb9-86" aria-hidden="true" tabindex="-1"></a>        <span class="co">#         &#39;... elapsed time: &#39;, round(proc.time() - ptm_i, 3)[3], &#39;s.&#39;)</span></span>
+<span id="cb9-87"><a href="#cb9-87" aria-hidden="true" tabindex="-1"></a>        <span class="fu">write_csv</span>(spp_impacts_df, outfile)</span>
+<span id="cb9-88"><a href="#cb9-88" aria-hidden="true" tabindex="-1"></a>      })</span>
+<span id="cb9-89"><a href="#cb9-89" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb9-90"><a href="#cb9-90" aria-hidden="true" tabindex="-1"></a>    <span class="fu">message</span>(<span class="st">&#39;Chunk time to process: &#39;</span>, <span class="fu">round</span>(<span class="fu">proc.time</span>() <span class="sc">-</span> ptm_k, <span class="dv">3</span>)[<span class="dv">3</span>], <span class="st">&#39;s.&#39;</span>)</span>
+<span id="cb9-91"><a href="#cb9-91" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb9-92"><a href="#cb9-92" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb9-93"><a href="#cb9-93" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
 </div>
 <div id="loop-over-iucn-species" class="section level3" number="3.4.3">
 <h3><span class="header-section-number">3.4.3</span> Loop over IUCN species</h3>

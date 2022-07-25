@@ -82,6 +82,7 @@ if(!file.exists(spp_imp_sum_file)) { ### unlink(spp_imp_sum_file)
 }
 
 spp_taxa_sum_file <- here('5_ms_figs/int/fig1_spp_taxa.csv')
+### unlink(spp_taxa_sum_file)
 if(!file.exists(spp_taxa_sum_file)) {
   spp_taxa <- assemble_spp_info_df() %>%
     select(species, iucn_sid, taxon) %>%
