@@ -222,13 +222,6 @@ cc_noncc_fe_df <- dt_join(cc_fe_df, noncc_fe_df,
                           by = c('x', 'y'), type = 'full') %>%
   mutate(bi_class = paste(cc_fe, noncc_fe, sep = '-'))
 
-# fe_overlap_summary <- cc_noncc_fe_df %>%
-#   group_by(bi_class) %>%
-#   summarize(ncell = n(),
-#             pct = n() / nrow(.))
-# knitr::kable(fe_overlap_summary, digits = 4, 
-#              col.names = c('FE CHI overlap', '# of cells', '% of area'))
-
 fe_hotspots <- cc_noncc_fe_df %>%
   filter(bi_class %in% c('1-1', '4-4')) %>%
   select(x, y, fe_bi = bi_class)
@@ -246,22 +239,9 @@ similarity_df <- fe_hotspots %>%
   summarize(n_gp = n()) %>%
   spread(match, n_gp) %>%
   mutate(jaccard = a / (a + b + c),
-         sorensen = 2*a / (2*a + b + c))
-table(similarity_df$match)
-# panel_x <- ggplot() +
-#   ### background for NA cells:
-#   geom_raster(data = ocean_df, aes(x, y), fill = 'grey85') +
-#   ### plot data:
-#   geom_raster(data = cc_noncc_fe_df, aes(x, y, fill = bi_class), show.legend = FALSE) +
-#   bi_scale_fill(pal = pal_name, dim = 4) +
-#   ### continents:
-#   geom_sf(data = land_sf,
-#           fill = 'grey96', color = 'grey40', size = .10) +
-#   scale_x_continuous(expand = c(0, 0)) +
-#   scale_y_continuous(expand = c(0, 0)) +
-#   theme_void() +
-#   theme(axis.text = element_blank(), 
-#         axis.title = element_blank())
+         sorensen = 2*a / (
+           2*a + b + c))
+knitr::kable(similarity_df)
 ```
 
 ### Panel B and C: hab-FE climate and non-climate overlap
@@ -270,20 +250,6 @@ table(similarity_df$match)
 cc_fe_hab_df <- dt_join(cc_hab_df, cc_fe_df, by = c('x', 'y'), type = 'full') %>%
   mutate(bi_class = paste(cc_hab, cc_fe, sep = '-')) %>%
   filter(!is.na(cc_fe) & !is.na(cc_hab))
-
-### Polygon of hot-hot and cool-cool spots for outlines
-# bi_classes <- c('1-1', '4-4', '1-4', '4-1')
-# hot_cool_sf <- cc_fe_hab_df %>%
-#   filter(bi_class %in% bi_classes) %>%
-#   rowwise() %>%
-#   mutate(val = which(bi_class == bi_classes)) %>%
-#   ungroup() %>%
-#   select(x, y, val) %>%
-#   rast(type = 'xyz', crs = crs(cc_qtile_hab)) %>%
-#   as.polygons() %>% 
-#   sf::st_as_sf() %>%
-#   st_simplify(dTolerance = 20000) %>%
-#   mutate(val = as.character(val))
 
 hab_overlap_summary <- cc_fe_hab_df %>%
   group_by(bi_class) %>%
@@ -298,15 +264,10 @@ panel_b <- ggplot() +
   ### plot data:
   geom_raster(data = cc_fe_hab_df, aes(x, y, fill = bi_class), show.legend = FALSE) +
   scale_fill_manual(breaks = colors_df$bi_class, values = colors_df$bi_fill) +
-  # bi_scale_fill(pal = pal_name, dim = 4) +
   ### continents:
   geom_sf(data = land_sf,
           fill = 'grey96', color = 'grey40', 
           size = .1) +
-  # geom_sf(data = hot_cool_sf, aes(color = val), 
-  #         fill = NA, size = .1,
-  #         show.legend = FALSE) +
-  # scale_color_manual(values = c('green', 'yellow', 'red', 'blue')) +
   scale_x_continuous(expand = c(0, 0)) +
   scale_y_continuous(expand = c(0, 0)) +
   theme_void() +
@@ -318,20 +279,6 @@ panel_b <- ggplot() +
 noncc_fe_hab_df <- dt_join(noncc_hab_df, noncc_fe_df, by = c('x', 'y'), type = 'full') %>%
   mutate(bi_class = paste(noncc_hab, noncc_fe, sep = '-')) %>%
   filter(!is.na(noncc_fe) & !is.na(noncc_hab))
-
-### Polygon of hot-hot and cool-cool spots for outlines
-# bi_classes <- c('1-1', '4-4', '1-4', '4-1')
-# hot_cool_sf <- noncc_fe_hab_df %>%
-#   filter(bi_class %in% bi_classes) %>%
-#   rowwise() %>%
-#   mutate(val = which(bi_class == bi_classes)) %>%
-#   ungroup() %>%
-#   select(x, y, val) %>%
-#   rast(type = 'xyz', crs = crs(cc_qtile_hab)) %>%
-#   as.polygons() %>% 
-#   sf::st_as_sf() %>%
-#   st_simplify(dTolerance = 20000) %>%
-#   mutate(val = as.character(val))
 
 hab_overlap_summary <- noncc_fe_hab_df %>%
   group_by(bi_class) %>%
@@ -346,15 +293,10 @@ panel_c <- ggplot() +
   ### plot data:
   geom_raster(data = noncc_fe_hab_df, aes(x, y, fill = bi_class), show.legend = FALSE) +
   scale_fill_manual(breaks = colors_df$bi_class, values = colors_df$bi_fill) +
-  # bi_scale_fill(pal = pal_name, dim = 4) +
   ### continents:
   geom_sf(data = land_sf,
           fill = 'grey96', color = 'grey40', 
           size = .1) +
-  # geom_sf(data = hot_cool_sf, aes(color = val), 
-  #         fill = NA, size = .1,
-  #         show.legend = FALSE) +
-  # scale_color_manual(values = c('green', 'yellow', 'red', 'blue')) +
   scale_x_continuous(expand = c(0, 0)) +
   scale_y_continuous(expand = c(0, 0)) +
   theme_void() +

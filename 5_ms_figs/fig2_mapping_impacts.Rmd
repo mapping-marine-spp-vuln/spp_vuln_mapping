@@ -232,7 +232,8 @@ similarity_df <- fe_hotspots %>%
   spread(match, n_gp) %>%
   mutate(jaccard = a / (a + b + c),
          sorensen = 2*a / (2*a + b + c))
-table(similarity_df$match)
+
+knitr::kable(similarity_df)
 
 ```
 
@@ -369,9 +370,6 @@ fig_2 <- ggdraw() +
   draw_label('Climate vs. non-climate\nimpacts (quartiles)',
              x = 0.99, y = 0.92, hjust = 1, vjust = 0, angle = 0,
              size = 8, color = 'black', fontfamily = 'bentonbold') +
-  # draw_label(latex2exp::TeX('$I_{spp}^C$ vs $I_{FE}^C$') %>% unname(),
-  #            x = 0.99, y = 0.45, hjust = 1, vjust = 0, angle = 0,
-  #            size = 8, color = 'black', fontfamily = 'bentonbold') +
   draw_label('Spp vs. FE\nrelative impacts',
              x = 0.99, y = 0.42, hjust = 1, vjust = 0, angle = 0,
              size = 8, color = 'black', fontfamily = 'bentonbold') +
