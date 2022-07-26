@@ -158,7 +158,7 @@ all_avg_med <- tx_avg_med %>%
   filter(stressor == 'all')
 
 # vals <- hcl.colors(4)[c(1, 2, 4)][c(2, 3)]
-vals <- c('black', 'grey70')
+vals <- c('grey70', 'black')
 brks <- c('Unweighted mean', 'NPP-weighted mean')
 lbls <- c('Unweighted mean', 'NPP-weighted mean')
 
@@ -167,6 +167,7 @@ panel_a <- ggplot(all_imp, aes(x = imp, y = taxon)) +
                width = .3, position = position_dodge(width = -.6),
                size = .25,
                outlier.color = 'grey80', outlier.size = .02) +
+  geom_vline(xintercept = 0, color = 'black') +
   geom_point(data = all_avg_med, aes(x = med, group = type),
              position = position_dodge(width = -.6),
              shape = 21, color = 'black', fill = 'black', size = 1.5,
@@ -175,7 +176,8 @@ panel_a <- ggplot(all_imp, aes(x = imp, y = taxon)) +
              position = position_dodge(width = -.6),
              shape = 21, color = 'black', fill = 'white', size = 1.5,
              show.legend = FALSE) +
-  scale_x_continuous(expand = c(0, 0), limits = c(0, 1), breaks = seq(0, 1, .2)) +
+  scale_x_continuous(expand = c(0, 0), limits = c(0, 1), 
+                     breaks = seq(0, 1, .2)) +
   scale_fill_manual(values = vals, breaks = brks, labels = lbls) +
   scale_color_manual(values = vals, breaks = brks, labels = lbls) +
   theme_ohara() +
@@ -187,7 +189,9 @@ panel_a <- ggplot(all_imp, aes(x = imp, y = taxon)) +
         legend.key.size = unit(.25, 'cm'),
         legend.title = element_blank(),
         legend.text = element_text(family = 'benton', size = 7),
-        legend.background = element_blank()) +
+        legend.position = 'bottom',
+        legend.margin = margin(1, 1, 1, 1, 'pt'),
+        legend.background = element_rect(fill = 'white', color = 'grey70', size = .1)) +
   labs(x = 'Mean cumulative impact')
 ```
 
@@ -200,16 +204,12 @@ cc_imp <- tx_imp_df %>%
 cc_avg_med <- tx_avg_med %>%
   filter(stressor == 'climate')
 
-# vals <- hcl.colors(4)[c(1, 2, 4)][c(2, 3)]
-vals <- c('black', 'grey70')
-brks <- c('Unweighted mean', 'NPP-weighted mean')
-lbls <- c('Unweighted mean', 'NPP-weighted mean')
-
 panel_b <- ggplot(cc_imp, aes(x = imp, y = taxon)) +
   geom_boxplot(aes(color = type, fill = type, color = type),
                width = .3, position = position_dodge(width = -.6),
                size = .25,
                outlier.color = 'grey80', outlier.size = .02) +
+  geom_vline(xintercept = 0, color = 'black') +
   geom_point(data = cc_avg_med, aes(x = med, group = type),
              position = position_dodge(width = -.6),
              shape = 21, color = 'black', fill = 'black', size = 1.5,
@@ -226,11 +226,7 @@ panel_b <- ggplot(cc_imp, aes(x = imp, y = taxon)) +
         axis.text.y = element_blank(),
         axis.title.y = element_blank(),
         axis.text.x = element_text(family = 'benton', size = 7),
-        axis.title.x = element_text(family = 'bentonbold', size = 7),
-        legend.key.size = unit(.25, 'cm'),
-        legend.title = element_blank(),
-        legend.text = element_text(family = 'benton', size = 7),
-        legend.background = element_blank()) +
+        axis.title.x = element_text(family = 'bentonbold', size = 7)) +
   labs(x = 'Mean climate impact')
 ```
 
@@ -246,6 +242,7 @@ panel_c <- ggplot(noncc_imp, aes(x = imp, y = taxon)) +
   geom_boxplot(aes(color = type, fill = type, color = type),
                width = .3, position = position_dodge(width = -.6), size = .25,
                outlier.color = 'grey80', outlier.size = .02) +
+  geom_vline(xintercept = 0, color = 'black') +
   geom_point(data = noncc_avg_med, aes(x = med, group = type),
              position = position_dodge(width = -.6),
              shape = 21, color = 'black', fill = 'black', size = 1.5,
@@ -255,12 +252,12 @@ panel_c <- ggplot(noncc_imp, aes(x = imp, y = taxon)) +
              shape = 21, color = 'black', fill = 'white', size = 1.5,
              show.legend = FALSE) +
   annotate('rect',
-           xmin = .30, xmax = .37, ymin = 0.5, ymax = 13.5,
+           xmin = .30, xmax = .40, ymin = 0.5, ymax = 13.5,
            fill = 'white', color = 'white') +
   geom_text(data = tx_spp_counts, aes(label = n_spp),
-            x = .31, hjust = 0, color = 'black', fill = NA, 
+            x = .305, hjust = 0, color = 'black', fill = NA, 
             family = 'benton', size = 1.9) +
-  scale_x_continuous(expand = c(0, 0), limits = c(0, .37)) +
+  scale_x_continuous(expand = c(0, 0), limits = c(0, .40), breaks = c(0, .1, .2, .3)) +
   scale_fill_manual(values = vals, breaks = brks, labels = lbls) +
   scale_color_manual(values = vals, breaks = brks, labels = lbls) +
   theme_ohara() +
@@ -279,26 +276,26 @@ panel_c <- ggplot(noncc_imp, aes(x = imp, y = taxon)) +
 fig1_file <- here('5_ms_figs/fig1_taxon_impact_summaries.png')
 panel_a_plot <- panel_a + theme(legend.position = 'none')
 panel_b_plot <- panel_b + theme(legend.position = 'none')
-panel_c_plot <- panel_b + theme(legend.position = 'none')
+panel_c_plot <- panel_c + theme(legend.position = 'none')
 panel_a_lgd  <- get_legend(panel_a)
 
 ### parameterize legends for easier changing of label positions:
-lgd_a_xy <- c(x = .42, y = .12, h = .09, w = .12)
+lgd_a_xy <- c(x = .25, y = 0.01, h = .03, w = .50)
 
 fig1 <- ggdraw() +
   ### draw panels:
-  draw_plot(panel_a_plot,  x = 0.00, y = 0.00, height = 1.00, width = 0.40) +
-  draw_plot(panel_b_plot,  x = 0.40, y = 0.00, height = 1.00, width = 0.28) +
-  draw_plot(panel_c_plot,  x = 0.68, y = 0.00, height = 1.00, width = 0.32) +
+  draw_plot(panel_a_plot,  x = 0.00, y = 0.03, height = .97, width = 0.415) +
+  draw_plot(panel_b_plot,  x = 0.415, y = 0.03, height = .97, width = 0.255) +
+  draw_plot(panel_c_plot,  x = 0.67, y = 0.03, height = .97, width = 0.33) +
   ### draw legends:
   draw_plot(panel_a_lgd, x = lgd_a_xy['x'], y = lgd_a_xy['y'], 
             height = lgd_a_xy['h'], width = lgd_a_xy['w']) +
   ### Panel labels:
-  draw_label('A', x = 0.002, y = .99, hjust = 0, vjust = 1, 
+  draw_label('A', x = 0.03, y = .99, hjust = 0, vjust = 1, 
              size = 10, fontfamily = 'bentonbold') +
-  draw_label('B', x = 0.40, y = .99, hjust = 0, vjust = 1, 
-             size = 10, fontfamily = 'bentonbold')
-  draw_label('C', x = 0.68, y = .99, hjust = 0, vjust = 1, 
+  draw_label('B', x = 0.41, y = .99, hjust = 0, vjust = 1, 
+             size = 10, fontfamily = 'bentonbold') +
+  draw_label('C', x = 0.665, y = .99, hjust = 0, vjust = 1, 
              size = 10, fontfamily = 'bentonbold')
 
 ggsave(fig1_file, width = 12, height = 8, units = 'cm', dpi = 300)
