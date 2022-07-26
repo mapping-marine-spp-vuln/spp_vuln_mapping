@@ -63,11 +63,13 @@ if(!file.exists(spp_imp_sum_file)) { ### unlink(spp_imp_sum_file)
     rename(vuln = vulnerability)
   
   spp_imp_scores <- spp_imp_raw_df %>%
-    filter(vuln == 'stressor_group') %>%
+    filter(vuln %in% c('stressor_group', 'cumulative')) %>%
     filter(range == 'full') %>%
     filter(range_km2 > 0) %>%
     select(f, stressor, impact_tot, impact_npp_tot, range_km2) %>%
-    mutate(stressor = ifelse(stressor != 'climate', 'non-climate', stressor)) %>%
+    mutate(stressor = case_when(stressor =='cumulative' ~ 'all',
+                                stressor != 'climate' ~ 'non-climate', 
+                                TRUE ~ stressor)) %>%
     group_by(f, stressor) %>%
     summarize(mean_imp = sum(impact_tot/range_km2), 
               mean_imp_npp = sum(impact_npp_tot/range_km2),
@@ -91,7 +93,11 @@ if(!file.exists(spp_taxa_sum_file)) {
 }
 
 spp_imp_scores <- read_csv(spp_imp_sum_file)
-spp_taxa <- read_csv(spp_taxa_sum_file)
+spp_taxa <- read_csv(spp_taxa_sum_file) %>%
+  mutate(taxon = str_replace(taxon, 'crustacea_arthropods', 'crustaceans'),
+         taxon = str_replace(taxon, 'reptiles', 'marine reptiles'),
+         taxon = str_replace(taxon, '_', ' '),
+         taxon = str_to_sentence(taxon))
 
 ```
 
@@ -104,19 +110,21 @@ taxa_imp_scores <- spp_imp_scores %>%
               left_join(spp_taxa %>% select(-iucn_sid), by = 'species')) %>%
   gather(type, imp, mean_imp, mean_imp_npp) %>%
   mutate(type = ifelse(type == 'mean_imp', 'Unweighted mean', 'NPP-weighted mean'))
+
   
 ### create an "all" taxa that just plops the data frame on top of itself
 all_tx_imp_scores <- taxa_imp_scores %>%
-  mutate(taxon = 'all') %>%
+  mutate(taxon = 'All') %>%
   bind_rows(taxa_imp_scores)
 
 tx_order <- all_tx_imp_scores %>%
-  filter(type == 'Unweighted mean') %>%
+  filter(type == 'NPP-weighted mean') %>%
+  filter(stressor == 'all') %>%
   group_by(taxon) %>%
   summarize(m = mean(imp)) %>%
   arrange(m) %>%
   mutate(taxon = fct_inorder(taxon),
-         taxon = fct_relevel(taxon, 'all', after = Inf)) %>%
+         taxon = fct_relevel(taxon, 'All', after = Inf)) %>%
   pull(taxon) %>% levels()
 
 tx_imp_df <- all_tx_imp_scores %>%
@@ -130,7 +138,7 @@ tx_avg_med <- tx_imp_df %>%
             .groups = 'drop')
 
 tx_spp_counts <- spp_taxa %>%
-  bind_rows(spp_taxa %>% mutate(taxon = 'all')) %>%
+  bind_rows(spp_taxa %>% mutate(taxon = 'All')) %>%
   group_by(taxon) %>%
   summarize(n_spp = paste0('n = ', n())) %>%
   mutate(taxon = factor(taxon, levels = tx_order))
@@ -139,9 +147,52 @@ tx_spp_counts <- spp_taxa %>%
 
 ## Create panels
 
-One panel for climate stressors, another for non-climate.
+One panel each for total stressors (CHI), climate stressors,  non-climate.
 
-### Panel A: climate stressors
+### Panel A: total stressors
+
+```{r}
+all_imp <- tx_imp_df %>%
+  filter(stressor == 'all')
+all_avg_med <- tx_avg_med %>%
+  filter(stressor == 'all')
+
+# vals <- hcl.colors(4)[c(1, 2, 4)][c(2, 3)]
+vals <- c('black', 'grey70')
+brks <- c('Unweighted mean', 'NPP-weighted mean')
+lbls <- c('Unweighted mean', 'NPP-weighted mean')
+
+panel_a <- ggplot(all_imp, aes(x = imp, y = taxon)) +
+  geom_boxplot(aes(color = type, fill = type, color = type),
+               width = .3, position = position_dodge(width = -.6),
+               size = .25,
+               outlier.color = 'grey80', outlier.size = .02) +
+  geom_point(data = all_avg_med, aes(x = med, group = type),
+             position = position_dodge(width = -.6),
+             shape = 21, color = 'black', fill = 'black', size = 1.5,
+             show.legend = FALSE) +
+  geom_point(data = all_avg_med, aes(x = avg, group = type),
+             position = position_dodge(width = -.6),
+             shape = 21, color = 'black', fill = 'white', size = 1.5,
+             show.legend = FALSE) +
+  scale_x_continuous(expand = c(0, 0), limits = c(0, 1), breaks = seq(0, 1, .2)) +
+  scale_fill_manual(values = vals, breaks = brks, labels = lbls) +
+  scale_color_manual(values = vals, breaks = brks, labels = lbls) +
+  theme_ohara() +
+  theme(panel.background = element_blank(),
+        axis.text.y = element_text(family = 'bentonbold', size = 7),
+        axis.title.y = element_blank(),
+        axis.text.x = element_text(family = 'benton', size = 7),
+        axis.title.x = element_text(family = 'bentonbold', size = 7),
+        legend.key.size = unit(.25, 'cm'),
+        legend.title = element_blank(),
+        legend.text = element_text(family = 'benton', size = 7),
+        legend.background = element_blank()) +
+  labs(x = 'Mean cumulative impact')
+```
+
+
+### Panel B: climate stressors
 
 ```{r}
 cc_imp <- tx_imp_df %>%
@@ -154,7 +205,7 @@ vals <- c('black', 'grey70')
 brks <- c('Unweighted mean', 'NPP-weighted mean')
 lbls <- c('Unweighted mean', 'NPP-weighted mean')
 
-panel_a <- ggplot(cc_imp, aes(x = imp, y = taxon)) +
+panel_b <- ggplot(cc_imp, aes(x = imp, y = taxon)) +
   geom_boxplot(aes(color = type, fill = type, color = type),
                width = .3, position = position_dodge(width = -.6),
                size = .25,
@@ -172,7 +223,7 @@ panel_a <- ggplot(cc_imp, aes(x = imp, y = taxon)) +
   scale_color_manual(values = vals, breaks = brks, labels = lbls) +
   theme_ohara() +
   theme(panel.background = element_blank(),
-        axis.text.y = element_text(family = 'bentonbold', size = 7),
+        axis.text.y = element_blank(),
         axis.title.y = element_blank(),
         axis.text.x = element_text(family = 'benton', size = 7),
         axis.title.x = element_text(family = 'bentonbold', size = 7),
@@ -183,7 +234,7 @@ panel_a <- ggplot(cc_imp, aes(x = imp, y = taxon)) +
   labs(x = 'Mean climate impact')
 ```
 
-### Panel B: climate stressors
+### Panel C: Non-climate stressors
 
 ```{r}
 noncc_imp <- tx_imp_df %>%
@@ -191,7 +242,7 @@ noncc_imp <- tx_imp_df %>%
 noncc_avg_med <- tx_avg_med %>%
   filter(stressor == 'non-climate')
 
-panel_b <- ggplot(noncc_imp, aes(x = imp, y = taxon)) +
+panel_c <- ggplot(noncc_imp, aes(x = imp, y = taxon)) +
   geom_boxplot(aes(color = type, fill = type, color = type),
                width = .3, position = position_dodge(width = -.6), size = .25,
                outlier.color = 'grey80', outlier.size = .02) +
@@ -228,6 +279,7 @@ panel_b <- ggplot(noncc_imp, aes(x = imp, y = taxon)) +
 fig1_file <- here('5_ms_figs/fig1_taxon_impact_summaries.png')
 panel_a_plot <- panel_a + theme(legend.position = 'none')
 panel_b_plot <- panel_b + theme(legend.position = 'none')
+panel_c_plot <- panel_b + theme(legend.position = 'none')
 panel_a_lgd  <- get_legend(panel_a)
 
 ### parameterize legends for easier changing of label positions:
@@ -235,15 +287,18 @@ lgd_a_xy <- c(x = .42, y = .12, h = .09, w = .12)
 
 fig1 <- ggdraw() +
   ### draw panels:
-  draw_plot(panel_a_plot,  x = 0.00, y = 0.00, height = 1.00, width = 0.56) +
-  draw_plot(panel_b_plot,  x = 0.56, y = 0.00, height = 1.00, width = 0.44) +
+  draw_plot(panel_a_plot,  x = 0.00, y = 0.00, height = 1.00, width = 0.40) +
+  draw_plot(panel_b_plot,  x = 0.40, y = 0.00, height = 1.00, width = 0.28) +
+  draw_plot(panel_c_plot,  x = 0.68, y = 0.00, height = 1.00, width = 0.32) +
   ### draw legends:
   draw_plot(panel_a_lgd, x = lgd_a_xy['x'], y = lgd_a_xy['y'], 
             height = lgd_a_xy['h'], width = lgd_a_xy['w']) +
   ### Panel labels:
   draw_label('A', x = 0.002, y = .99, hjust = 0, vjust = 1, 
              size = 10, fontfamily = 'bentonbold') +
-  draw_label('B', x = 0.56, y = .99, hjust = 0, vjust = 1, 
+  draw_label('B', x = 0.40, y = .99, hjust = 0, vjust = 1, 
+             size = 10, fontfamily = 'bentonbold')
+  draw_label('C', x = 0.68, y = .99, hjust = 0, vjust = 1, 
              size = 10, fontfamily = 'bentonbold')
 
 ggsave(fig1_file, width = 12, height = 8, units = 'cm', dpi = 300)
