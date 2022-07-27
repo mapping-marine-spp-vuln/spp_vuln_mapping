@@ -88,30 +88,71 @@ spp_taxa_sum_file <- here('5_ms_figs/int/fig1_spp_taxa.csv')
 if(!file.exists(spp_taxa_sum_file)) {
   spp_taxa <- assemble_spp_info_df() %>%
     select(species, iucn_sid, taxon) %>%
-    distinct()
+    distinct() %>%
+    mutate(taxon = str_replace(taxon, 'crustacea_arthropods', 'crustaceans'),
+           taxon = str_replace(taxon, 'reptiles', 'marine reptiles'),
+           taxon = str_replace(taxon, '_', ' '),
+           taxon = str_to_sentence(taxon))
   write_csv(spp_taxa, spp_taxa_sum_file)
 }
 
+spp_taxa <- read_csv(spp_taxa_sum_file)
+
 spp_imp_scores <- read_csv(spp_imp_sum_file)
-spp_taxa <- read_csv(spp_taxa_sum_file) %>%
-  mutate(taxon = str_replace(taxon, 'crustacea_arthropods', 'crustaceans'),
-         taxon = str_replace(taxon, 'reptiles', 'marine reptiles'),
-         taxon = str_replace(taxon, '_', ' '),
-         taxon = str_to_sentence(taxon))
 
 ```
 
 ``` {r}
 taxa_imp_scores <- spp_imp_scores %>%
   filter(!is.na(iucn_sid)) %>%
-  left_join(spp_taxa %>% select(-species), by = 'iucn_sid') %>%
+  left_join(spp_taxa %>% rename(sciname = species), by = 'iucn_sid') %>%
   bind_rows(spp_imp_scores %>%
               filter(is.na(iucn_sid)) %>%
               left_join(spp_taxa %>% select(-iucn_sid), by = 'species')) %>%
   gather(type, imp, mean_imp, mean_imp_npp) %>%
-  mutate(type = ifelse(type == 'mean_imp', 'Unweighted mean', 'NPP-weighted mean'))
-
+  mutate(type = ifelse(type == 'mean_imp', 'Unweighted mean', 'NPP-weighted mean')) %>%
+  mutate(species = ifelse(is.na(species), sciname, species)) %>%
+  select(-sciname) %>%
+  distinct()
   
+unwt_df <- taxa_imp_scores %>%
+  filter(type == 'Unweighted mean') %>%
+  pivot_wider(names_from = 'stressor', values_from = 'imp')
+nppwt_df <- taxa_imp_scores %>%
+  filter(type == 'NPP-weighted mean') %>%
+  pivot_wider(names_from = 'stressor', values_from = 'imp')
+
+taxa_pcts <- taxa_imp_scores %>%
+  select(taxon, species, iucn_sid) %>%
+  distinct() %>%
+  group_by(taxon) %>%
+  summarize(pct_overall = round(n() / nrow(.), 3))
+
+nppwt_top1pct <- nppwt_df %>%
+  arrange(desc(all)) %>%
+  head(as.integer(nrow(.) * .01))
+nppwt_top1pct %>%
+  group_by(taxon) %>%
+  summarize(n = n(),
+            npp_pct = n() / nrow(.)) %>%
+  left_join(taxa_pcts, by = 'taxon') %>%
+  mutate(repr = npp_pct / pct_overall)
+
+nppwt_btm1pct <- nppwt_df %>%
+  arrange(all) %>%
+  head(as.integer(nrow(.) * .01))
+nppwt_btm1pct %>%
+  group_by(taxon) %>%
+  summarize(n = n(),
+            npp_pct = n() / nrow(.)) %>%
+  left_join(taxa_pcts, by = 'taxon') %>%
+  mutate(repr = npp_pct / pct_overall)
+
+```
+
+
+``` {r combine for figure}
+
 ### create an "all" taxa that just plops the data frame on top of itself
 all_tx_imp_scores <- taxa_imp_scores %>%
   mutate(taxon = 'All') %>%
@@ -137,11 +178,11 @@ tx_avg_med <- tx_imp_df %>%
             med = median(imp),
             .groups = 'drop')
 
-tx_spp_counts <- spp_taxa %>%
-  bind_rows(spp_taxa %>% mutate(taxon = 'All')) %>%
+tx_spp_counts <- all_tx_imp_scores %>%
+  select(iucn_sid, species, taxon) %>%
+  distinct() %>%
   group_by(taxon) %>%
-  summarize(n_spp = paste0('n = ', n())) %>%
-  mutate(taxon = factor(taxon, levels = tx_order))
+  summarize(n_spp = paste0('n = ', n()))
 
 ```
 
