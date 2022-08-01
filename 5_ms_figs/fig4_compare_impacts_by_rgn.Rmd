@@ -89,7 +89,8 @@ chi_df <- data.frame(values(chi_stack),
                      values(coastal_r),
                      values(eez_r),
                      values(meow_r)) %>%
-  mutate(cell_id = 1:n()) %>%
+  mutate(cell_id = 1:n(),
+         coastal = ifelse(!is.na(coastal), 'neritic', 'oceanic')) %>%
   ### note this also filters out cells where nspp is NA:
   filter(nspp >= 20)
 ```
@@ -129,7 +130,7 @@ meow_prov_df <- foreign::read.dbf(here('_spatial/meow_rgns/meow_rgns.dbf')) %>%
          # prov_lbl = str_replace(prov_lbl, 'Australasia', 'Aus'),
          prov_lbl = fct_inorder(prov_lbl))
 
-meow_prov_chi_df <- chi_df %>%
+meow_prov_chi_df_unordered <- chi_df %>%
   left_join(meow_prov_df, by = c('meow' = 'eco_code_x')) %>%
   mutate(chi_fe          = ntile(chi_fe, n = 1000) / 10,
          chi_hab         = ntile(chi_hab, n = 1000) / 10,
@@ -137,15 +138,24 @@ meow_prov_chi_df <- chi_df %>%
          chi_hab_climate = ntile(chi_hab_climate, n = 1000) / 10,
          chi_fe_noncc    = ntile(chi_fe_noncc, n = 1000) / 10,
          chi_hab_noncc   = ntile(chi_hab_noncc, n = 1000) / 10) %>%
-  ### In each realm, order by highest to lowest mean impact
-  group_by(prov_lbl) %>%
-  mutate(mean_fe = mean(chi_fe)) %>%
-  ungroup() %>%
-  arrange(realm_lbl, mean_fe) %>%
+  select(starts_with('chi_'), cell_id, coastal, prov_lbl, realm_lbl) %>%
   filter(!is.na(prov_lbl)) %>%
-  mutate(prov_lbl = fct_inorder(prov_lbl)) %>%
-  select(starts_with('chi_'), cell_id, prov_lbl, realm_lbl) %>%
-  pivot_longer(names_to = 'method', values_to = 'chi', starts_with('chi'))
+  pivot_longer(names_to = 'method', values_to = 'chi', 
+               starts_with('chi')) %>%
+  mutate(method_zone = paste(method, coastal, sep = '_'))
+
+### Within each realm, order by highest to lowest 
+### mean overall coastal FE impact
+prov_order <- meow_prov_chi_df_unordered %>%
+  filter(method_zone == 'chi_fe_neritic') %>%
+  group_by(prov_lbl, realm_lbl) %>%
+  summarize(mean_chi = mean(chi)) %>%
+  ungroup() %>%
+  arrange(realm_lbl, mean_chi) %>%
+  pull(prov_lbl)
+
+meow_prov_chi_df <- meow_prov_chi_df_unordered %>%
+  mutate(prov_lbl = factor(prov_lbl, levels = prov_order))
 
 prov_means_df <- meow_prov_chi_df %>%
   group_by(realm_lbl, prov_lbl, method) %>%
@@ -155,50 +165,66 @@ prov_means_df <- meow_prov_chi_df %>%
 ### Plot by realm
 
 ```{r figure 4 meow by realm, fig.height = 8}
+### Order realms by highest to lowest mean overall coastal FE impact
+realm_order <- meow_prov_chi_df %>%
+  filter(method_zone == 'chi_fe_neritic') %>%
+  group_by(realm_lbl) %>%
+  summarize(mean_chi = mean(chi)) %>%
+  ungroup() %>%
+  arrange(mean_chi) %>%
+  pull(realm_lbl)
 
 meow_realm_chi_df <- meow_prov_chi_df %>%
   select(-prov_lbl) %>%
-  ### In each realm, order by highest to lowest mean impact
-  pivot_wider(names_from = 'method', values_from = 'chi') %>%
-  group_by(realm_lbl) %>%
-  mutate(mean_fe = mean(chi_fe)) %>%
-  ungroup() %>%
-  arrange(mean_fe) %>%
-  mutate(realm_lbl = fct_inorder(realm_lbl)) %>%
-  select(starts_with('chi_'), cell_id, realm_lbl) %>%
-  pivot_longer(names_to = 'method', values_to = 'chi', starts_with('chi_')) %>%
-  filter(!is.na(realm_lbl))
-
-realm_means_df <- meow_realm_chi_df %>%
-  group_by(realm_lbl, method) %>%
-  summarize(mean = mean(chi, na.rm = TRUE), med = median(chi, na.rm = TRUE))
+  mutate(realm_lbl = factor(realm_lbl, levels = realm_order))
 
 ```
 
 ``` {r plot for overall chi by realm}
-plot_realm <- function(df, methods, labels, x_label) {
+plot_realm <- function(df, methods, x_label) {
   
-  if(length(methods) != length(labels)) stop('Break and label vectors must be same length!')
+  fills <- c('grey90', 'grey40', 'grey70', 'black') ### fills for methods
+  clrs  <- c('black',  'grey40', 'grey70', 'black') ### colors for methods
+  lbls <- c(fe_n  = latex2exp::TeX('$FE_N$'),
+            fe_o  = latex2exp::TeX('$FE_O$'),
+            hab_n = latex2exp::TeX('$Hab_N$'),
+            hab_o = latex2exp::TeX('$Hab_O$')) %>%
+    rev()
+  lvls <- names(lbls)
+
+  plot_df <- df %>% 
+    filter(method %in% methods) %>%
+    mutate(method_zone = str_remove_all(method_zone, 'chi_|_climate|_noncc|eritic|ceanic')) %>%
+    mutate(method_zone = factor(method_zone, levels = lvls))
+  means_df <- plot_df %>%
+    group_by(realm_lbl, method_zone) %>%
+    summarize(mean = mean(chi, na.rm = TRUE), 
+              med  = median(chi, na.rm = TRUE))
   
-  vals <- c('grey70', 'black') ### colors for methods
-  plot_df <- df %>% filter(method %in% methods)
-  means_df <- realm_means_df %>% filter(method %in% methods)
   
   p <- ggplot(plot_df, 
-              aes(y = realm_lbl, x = chi, fill = method, color = method)) +
+              aes(y = realm_lbl, x = chi, 
+                  fill = method_zone, color = method_zone)) +
     # geom_hline(yintercept = 100, color = 'black', size = 2) +
-    geom_boxplot(width = .25, position = position_dodge(width = .75),
-                 outlier.shape = NA, size = .25) +
+    geom_boxplot(width = .4, position = position_dodge(width = .75),
+                 outlier.shape = NA, 
+                 size = .15) +
     geom_point(data = means_df,
-               aes(x = med, group = method),
+               aes(x = med, group = method_zone),
                position = position_dodge(width = .75),
-               size = 1.5, shape = 21, color = 'black', fill = 'white') +
-    geom_point(data = realm_means_df %>% filter(method %in% methods),
-               aes(x = mean, group = method),
+               size = 1, shape = 21, color = 'black', fill = 'white') +
+    geom_point(data = means_df,
+               aes(x = mean, group = method_zone),
                position = position_dodge(width = .75),
-               size = 1.5, shape = 21, color = 'black', fill = 'black') +
-    scale_fill_manual(values = vals, breaks = methods, labels = labels) +
-    scale_color_manual(values = vals, breaks = methods, labels = labels) +
+               size = 1, shape = 21, color = 'black', fill = 'black') +
+    scale_fill_manual(values = fills, 
+                      breaks = lvls, 
+                      labels = lbls,
+                      guide = guide_legend(reverse = TRUE)) +
+    scale_color_manual(values = clrs, 
+                       breaks = lvls, 
+                       labels = lbls,
+                       guide = guide_legend(reverse = TRUE) ) +
     scale_x_continuous(limits = c(0, 100), expand = c(0, 0)) +
     theme_minimal() +
     labs(x = x_label) +
@@ -207,6 +233,7 @@ plot_realm <- function(df, methods, labels, x_label) {
           axis.text  = element_text(family = 'benton', size = 7),
           panel.grid.major.y = element_blank(),
           panel.grid.minor.y = element_blank(),
+          panel.grid.minor.x = element_blank(),
           legend.text  = element_text(family = 'bentonbold', size = 7),
           legend.key.size = unit(.25, 'cm'),
           legend.title = element_blank())
@@ -215,18 +242,14 @@ plot_realm <- function(df, methods, labels, x_label) {
 }
 
 # lbls <- unname(latex2exp::TeX(c("$I_{FE}^C$", "$I_{Hab}^C$")))
-lbls <- c('FE', 'Hab')
 panel_a <- plot_realm(df = meow_realm_chi_df, 
                       methods = c('chi_fe', 'chi_hab'), 
-                      labels = lbls,
                       x_label = 'Cumulative (%ile)')
 panel_b <- plot_realm(df = meow_realm_chi_df, 
                       methods = c('chi_fe_climate', 'chi_hab_climate'), 
-                      labels = lbls,
                       x_label = 'Climate (%ile)')
 panel_c <- plot_realm(df = meow_realm_chi_df, 
                       methods = c('chi_fe_noncc', 'chi_hab_noncc'), 
-                      labels = lbls,
                       x_label = 'Non-climate (%ile)')
 
 # panel_a; panel_b; panel_c
@@ -273,30 +296,51 @@ knitr::include_graphics(fig4_file)
 ### Plot by province (SI)
 
 ``` {r plot for overall chi by province}
-plot_prov <- function(df, methods, labels, x_label, strips) {
+plot_prov <- function(df, methods, x_label, strips) {
   
-  if(length(methods) > 2) stop('Function designed for two methods (e.g., FE/Hab)!')
+  fills <- c('grey90', 'grey40', 'grey70', 'black') ### fills for methods
+  clrs  <- c('black',  'grey40', 'grey70', 'black') ### colors for methods
+  lbls <- c(fe_n  = latex2exp::TeX('$FE_N$'),
+            fe_o  = latex2exp::TeX('$FE_O$'),
+            hab_n = latex2exp::TeX('$Hab_N$'),
+            hab_o = latex2exp::TeX('$Hab_O$')) %>%
+    rev()
+  lvls <- names(lbls)
+
+  plot_df <- df %>% 
+    filter(method %in% methods) %>%
+    mutate(method_zone = str_remove_all(method_zone, 'chi_|_climate|_noncc|eritic|ceanic')) %>%
+    mutate(method_zone = factor(method_zone, levels = lvls))
+  means_df <- plot_df %>%
+    group_by(realm_lbl, prov_lbl, method_zone) %>%
+    summarize(mean = mean(chi, na.rm = TRUE), 
+              med  = median(chi, na.rm = TRUE))
   
-  vals <- c('grey70', 'black') ### colors for methods
-  p <- ggplot(df %>% filter(method %in% methods), 
-              aes(y = prov_lbl, x = chi, fill = method, color = method))
+  p <- ggplot(plot_df, 
+              aes(y = prov_lbl, x = chi, fill = method_zone, color = method_zone))
   if(strips) {
     p <- p + geom_vline(xintercept = 100, color = 'black', size = 2)
   }
   
   p <- p +
-    geom_boxplot(width = .25, position = position_dodge(width = .75),
-                 outlier.shape = NA, size = .25) +
-    geom_point(data = prov_means_df %>% filter(method %in% methods),
-               aes(x = med, group = method), 
+    geom_boxplot(width = .4, position = position_dodge(width = .75),
+                 outlier.shape = NA, size = .15) +
+    geom_point(data = means_df,
+               aes(x = med, group = method_zone), 
                position = position_dodge(width = .75),
-               size = 1.5, shape = 21, color = 'black', fill = 'white') +
-    geom_point(data = prov_means_df %>% filter(method %in% methods),
-               aes(x = mean, group = method), 
+               size = 1, shape = 21, color = 'black', fill = 'white') +
+    geom_point(data = means_df,
+               aes(x = mean, group = method_zone), 
                position = position_dodge(width = .75),
-               size = 1.5, shape = 21, color = 'black', fill = 'black') +
-    scale_fill_manual(values = vals, breaks = methods, labels = lbls) +
-    scale_color_manual(values = vals, breaks = methods, labels = lbls) +
+               size = 1, shape = 21, color = 'black', fill = 'black') +
+    scale_fill_manual(values = fills, 
+                      breaks = lvls, 
+                      labels = lbls,
+                      guide = guide_legend(reverse = TRUE)) +
+    scale_color_manual(values = clrs, 
+                       breaks = lvls, 
+                       labels = lbls,
+                       guide = guide_legend(reverse = TRUE) ) +
     scale_x_continuous(limits = c(0, 100), expand = c(0, 0)) +
     theme_minimal() +
     theme(axis.title.y = element_blank(),
@@ -326,17 +370,17 @@ plot_prov <- function(df, methods, labels, x_label, strips) {
 
 panel_a_SI <- plot_prov(df = meow_prov_chi_df, 
                         methods = c('chi_fe', 'chi_hab'), 
-                        labels = lbls, x_label = 'Cumulative (%ile)',
+                        x_label = 'Cumulative (%ile)',
                         strips = FALSE)
 
 panel_b_SI <- plot_prov(df = meow_prov_chi_df, 
                         methods = c('chi_fe_climate', 'chi_hab_climate'), 
-                        labels = lbls, x_label = 'Climate (%ile)',
+                        x_label = 'Climate (%ile)',
                         strips = FALSE)
 
 panel_c_SI <- plot_prov(df = meow_prov_chi_df, 
                         methods = c('chi_fe_noncc', 'chi_hab_noncc'), 
-                        labels = lbls, x_label = 'Non-climate (%ile)',
+                        x_label = 'Non-climate (%ile)',
                         strips = TRUE)
 
 ```
