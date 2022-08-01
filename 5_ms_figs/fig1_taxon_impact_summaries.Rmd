@@ -63,12 +63,11 @@ if(!file.exists(spp_imp_sum_file)) { ### unlink(spp_imp_sum_file)
     rename(vuln = vulnerability)
   
   spp_imp_scores <- spp_imp_raw_df %>%
-    filter(vuln %in% c('stressor_group', 'cumulative')) %>%
+    # filter(vuln %in% c('stressor_group', 'cumulative')) %>%
     filter(range == 'full') %>%
     filter(range_km2 > 0) %>%
-    select(f, stressor, impact_tot, impact_npp_tot, range_km2) %>%
     mutate(stressor = case_when(stressor =='cumulative' ~ 'all',
-                                stressor != 'climate' ~ 'non-climate', 
+                                vuln == 'stressor_group' & stressor != 'climate' ~ 'non-climate', 
                                 TRUE ~ stressor)) %>%
     group_by(f, stressor) %>%
     summarize(mean_imp = sum(impact_tot/range_km2), 
@@ -115,9 +114,13 @@ taxa_imp_scores <- spp_imp_scores %>%
   select(-sciname) %>%
   distinct()
   
-unwt_df <- taxa_imp_scores %>%
-  filter(type == 'Unweighted mean') %>%
-  pivot_wider(names_from = 'stressor', values_from = 'imp')
+taxa_means <- taxa_imp_scores %>%
+  group_by(taxon, stressor, type) %>%
+  summarize(m = mean(imp), s = sd(imp), r1 = min(imp), r2 = max(imp))
+all_means <- taxa_imp_scores %>%
+  group_by(stressor, type) %>%
+  summarize(m = mean(imp), v = var(imp))
+
 nppwt_df <- taxa_imp_scores %>%
   filter(type == 'NPP-weighted mean') %>%
   pivot_wider(names_from = 'stressor', values_from = 'imp')

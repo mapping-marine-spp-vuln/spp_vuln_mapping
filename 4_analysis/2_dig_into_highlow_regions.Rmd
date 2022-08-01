@@ -62,22 +62,38 @@ Central Indian Ocean and Andaman Islands (near one another) appear to have very 
 
 Regions of interest:
 
-* High hab, low FE across all, CC, and non-CC
-    * Province 5: Cold temperate NW Atlantic
-    * Province 6: Warm temperate NW Atlantic
-* High hab, low FE across all, CC, BUT low hab/high FE for non-climate!
-    * Province 37: Hawaii
-    * Province 62: Subantarctic NZ
-* Low hab, high FE across all, CC, BUT high hab/low FE for non-climate
-    * Province 22: Central Indian Ocean Islands
-* Similar hab, FE across all and CC, BUT low hab/high FE for non-climate
-    * Province 53: North New Zealand
-    * Province 54: South New Zealand
-    
+* High hab/low FE climate:
+    * Hawaii (37)
+* Low hab/high FE climate:
+    * N Brazil Shelf (13)
+    * Andaman Islands (24)
+    * Central Indian Ocean Islands (22)
+    * West/South Indian Shelf (21)
+    * Red Sea/Gulf of Aden (18)
+    * Bay of Bengal (23)
+    * Sunda Shelf (26)
+    * Sahul Shelf (32)
+    * W Coral Triangle (30)
+    * E Coral Triangle (31)
+    * NE Australian Shelf (33)
+    * NW Australian Shelf (34)
+    * Marshall/Gilbert/Ellis Islands (38)
+    * Central Polynesia (39)
+* High hab/low FE non-climate
+    * no big differences apparent
+* Low hab/high FE non-climate
+    * S New Zealand (54)
+    * Subantarctic New Zealand (62)
+
 ### Identify cell IDs for these subregions
 
 ```{r}
-prov_vec <- c(5, 6, 37, 22, 53, 54, 62)
+prov_vec <- c(37, 13, 18, 21:24, 26, 30:34, 38, 39, 54, 62)
+prov_compare_df <- data.frame(prov_code = prov_vec) %>%
+  mutate(compare = case_when(prov_code == 37 ~ 'cc_hab',
+                             prov_code %in% c(54, 62) ~ 'noncc_fe',
+                             TRUE ~ 'cc_fe'))
+
 rgn_ids_raw <- foreign::read.dbf(here('_spatial/meow_rgns/meow_rgns.dbf')) %>%
   janitor::clean_names() %>%
   filter(prov_code %in% prov_vec)
@@ -130,11 +146,14 @@ fe_noncc  <- rast(fe_rasts[!str_detect(fe_rasts, 'climate.tif')]) %>%
 hab_noncc <- rast(hab_rasts[!str_detect(hab_rasts, 'climate.tif')]) %>%
   sum(na.rm = TRUE)
 
+coastal_rast <- rast(here('_spatial/bathy_mol_neritic.tif'))
+
 diff_df_all <- data.frame(
   fe_cc     = as.vector(values(fe_cc)),
   hab_cc    = as.vector(values(hab_cc)),
   fe_noncc  = as.vector(values(fe_noncc)),
   hab_noncc = as.vector(values(hab_noncc)),
+  coastal   = as.vector(values(coastal_rast)),
   cell_id = 1:ncell(fe_cc)
 ) %>%
   ### convert to percentiles for comparison of two methods
@@ -150,23 +169,28 @@ diff_df_all <- data.frame(
 # x <- map_to_mol(diff_df, by = 'cell_id', which = 'cc_diff'); plot(x)
 # y <- map_to_mol(diff_df, by = 'cell_id', which = 'noncc_diff'); plot(y)
 
-n_q <- 8
+n_q <- 20 ### how many quantiles? - take top (max FE > Hab) and bottom (max Hab > FE)
 
 diff_df <- diff_df_all %>%
   dt_join(meow_prov_df, by = 'cell_id', type = 'inner') %>%
   group_by(prov_code) %>%
-  mutate(cc_q = ntile(abs(cc_diff), n_q),
-         noncc_q = ntile(abs(noncc_diff), n_q)) %>%
+  mutate(cc_q = ntile(cc_diff, n_q),
+         noncc_q = ntile(noncc_diff, n_q)) %>%
   ungroup()
 
 
 diff_top10 <- diff_df %>%
-  filter(cc_q == n_q & noncc_q == n_q) %>%
-  select(cell_id,
+  left_join(prov_compare_df, by = 'prov_code') %>%
+  filter(compare == 'cc_hab' & cc_q == 1 | ### negative climate difference
+         compare == 'cc_fe'  & cc_q == n_q | ### positive climate diff
+         compare == 'noncc_fe' & noncc_q == n_q) %>% ### positive non-cc diff
+  select(cell_id, coastal,
          fe_cc_pct, fe_noncc_pct, hab_cc_pct, hab_noncc_pct,
-         cc_diff, noncc_diff, prov_code)
+         cc_diff, noncc_diff, prov_code, province) %>%
+  mutate(coastal = !is.na(coastal)) %>%
+  filter(coastal | prov_code %in% c(37, 54, 62))
 
-diff_top10$prov_code %>% table()
+diff_top10 %>% select(prov_code) %>% table()
 
 ```
 
@@ -176,7 +200,8 @@ diff_top10$prov_code %>% table()
 stressor_f_df <- data.frame(f = list.files(here('_data/stressors_mol'), full.names = TRUE)) %>%
   mutate(stressor = basename(f) %>% str_remove('_[0-9]{4}.tif'),
          stressor_match = str_remove(stressor, '_pelagic$|_benthic$')) %>%
-  inner_join(read_csv(here('_raw/stressor_vulnerability_lookup.csv')), by = c('stressor_match' = 'stressor')) %>%
+  inner_join(read_csv(here('_raw/stressor_vulnerability_lookup.csv')), 
+             by = c('stressor_match' = 'stressor')) %>%
   select(-stressor_match)
 
 stressor_stack <- rast(stressor_f_df$f) %>%
@@ -227,11 +252,11 @@ read_cellvec_rangemap <- function(f, cell_vec) {
   if(nrow(df) == 0) {
     return(NULL) 
   } else {
-    return(df)
+    return(df %>% distinct())
   }
 }
 
-bind_maps_list <- function(maps_list, spp_for_calc, join_col = 'map_f') {
+bind_maps_list <- function(maps_list, spp_for_calc) {
   ### NOTE: for some reason, the bind_rows() in here sometimes causes
   ### unrecoverable errors when knitting, but seems OK when running chunks
   ### individually... try subbing with data.table::rbindlist 
@@ -241,14 +266,15 @@ bind_maps_list <- function(maps_list, spp_for_calc, join_col = 'map_f') {
   maps_bound <- maps_list %>%
     ### drop NULL instances (no spp cells - helps keep things from crashing)
     purrr::compact() %>% 
-    data.table::rbindlist() %>%
-    rename(!!join_col := map_f)
+    data.table::rbindlist()
   
   if(nrow(maps_bound) > 0) {
     ### if no spp-cell data for this chunk, skip bind and return 0-length df
-    maps_bound <- maps_bound %>%
-      oharac::dt_join(spp_for_calc, by = join_col, type = 'left') %>%
-      select(-all_of(join_col)) %>%
+    dt1 <- data.table::data.table(maps_bound, key = 'map_f')
+    dt2 <- data.table::data.table(spp_for_calc, key = 'map_f')
+    maps_bound <- merge(dt1, dt2, all.x = TRUE, allow.cartesian = TRUE) %>%
+      as.data.frame() %>%
+      select(-map_f) %>%
       distinct()
   }
   return(maps_bound)
@@ -266,6 +292,8 @@ spp_info_df <- assemble_spp_info_df() %>%
 
 spp_map_fs <- spp_info_df %>%
   select(species, map_f) %>%
+  group_by(map_f) %>%
+  filter(species == first(species)) %>%
   distinct() 
 spp_fe <- spp_info_df %>%
   select(species, fe_id, mob:wcol, taxon) %>%
@@ -280,7 +308,7 @@ prov_spp_list <- parallel::mclapply(spp_map_fs$map_f, cell_vec = cell_vec,
                                     mc.cores = 40,
                                     FUN = read_cellvec_rangemap)
 
-prov_spp_df <- bind_maps_list(prov_spp_list, spp_map_fs, join_col = 'map_f') %>%
+prov_spp_df <- bind_maps_list(prov_spp_list, spp_map_fs) %>%
   left_join(diff_top10, by = 'cell_id')
 ```
 
@@ -379,12 +407,17 @@ sst_mapfile_df <- spp_info_df %>%
 spp_sst_vuln_df <- spp_info_df %>%
   filter(vulnerability == 'sst_rise')
 
-spp_sst_rise_maps <- collect_sst_rise_maps(sst_mapfile_df, sst_rise_cells = cell_vec) %>%
-  left_join(spp_sst_vuln_df, by = 'species') %>%
-  select(species, cell_id, vulnerability, v_score, intensity = therm_prs) %>%
-  group_by_at(vars(-intensity)) %>%
-  summarize(intensity = mean(intensity, na.rm = TRUE), .groups = 'drop') %>%
+spp_sst_rise_maps_raw <- collect_sst_rise_maps(sst_mapfile_df, sst_rise_cells = cell_vec) %>%
+  oharac::dt_join(spp_sst_vuln_df, by = 'species', type = 'left', allow.cartesian = TRUE) %>%
+  select(species, cell_id, vulnerability, v_score, intensity = therm_prs)
+
+spp_sst_rise_maps <- spp_sst_rise_maps_raw %>%
+  as.data.table() %>%
+  .[, .(intensity = mean(intensity, na.rm = TRUE)),
+      by = .(species, cell_id, vulnerability, v_score)] %>%
+  as.data.frame() %>%
   mutate(impact = ifelse(!is.na(intensity), v_score * intensity, 0))
+
   
 ```
 
@@ -392,7 +425,7 @@ spp_sst_rise_maps <- collect_sst_rise_maps(sst_mapfile_df, sst_rise_cells = cell
 
 ### Hawaii
 
-* High hab, low FE across all & CC (diff < 0), but low hab/high FE for non-CC (diff > 0)
+* High hab, low FE across all & CC (diff < 0), but similar values for non-CC (diff ~ 0)
     * Province 37: Hawaii
 
 In province 37 (Hawaii), several species that might be interesting, as members of large FEs but the only (or one of few) local species to represent the FE:
@@ -541,8 +574,6 @@ high_impact_spp_37 <- coi_impact_df_37 %>%
 DT::datatable(high_impact_spp_37)
 ```
 
-Most high non-cc impacts are due to microplastics (Pacific Gyre, but plastics not in hab approach).
-
 #### High non-climate impacts on vulnerable FEs: Hawaii
 
 ```{r}
@@ -561,7 +592,6 @@ high_impact_spp_37 <- coi_impact_df_37 %>%
 DT::datatable(high_impact_spp_37)
 ```
 
-Most high non-cc impacts are due to microplastics (Pacific Gyre, but plastics not in hab approach).
 
 ### Central Indian Ocean Islands
 
@@ -721,7 +751,7 @@ DT::datatable(high_impact_spp_22)
 
 ### South New Zealand
 
-* High hab, low FE across all & CC (diff < 0), but low hab/high FE for non-CC (diff > 0)
+* High hab and FE across all & CC (diff ~ 0), but low hab/high FE for non-CC (diff > 0)
     * Province 54: Southern New Zealand
     
 Individual species may be less impacted by climate change, but more impacted by non-climate stressors compared to average.
