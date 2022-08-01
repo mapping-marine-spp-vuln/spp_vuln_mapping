@@ -279,8 +279,6 @@ panel_b_plot <- panel_b + theme(legend.position = 'none')
 panel_c_plot <- panel_c + theme(legend.position = 'none')
 panel_a_lgd  <- get_legend(panel_a)
 
-### parameterize legends for easier changing of label positions:
-lgd_a_xy <- c(x = .25, y = 0.01, h = .03, w = .50)
 
 fig1 <- ggdraw() +
   ### draw panels:
@@ -288,8 +286,7 @@ fig1 <- ggdraw() +
   draw_plot(panel_b_plot,  x = 0.415, y = 0.03, height = .97, width = 0.255) +
   draw_plot(panel_c_plot,  x = 0.67, y = 0.03, height = .97, width = 0.33) +
   ### draw legends:
-  draw_plot(panel_a_lgd, x = lgd_a_xy['x'], y = lgd_a_xy['y'], 
-            height = lgd_a_xy['h'], width = lgd_a_xy['w']) +
+  draw_plot(panel_a_lgd, x = .33, y = .01, height = .03, width = .50) +
   ### Panel labels:
   draw_label('A', x = 0.03, y = .99, hjust = 0, vjust = 1, 
              size = 10, fontfamily = 'bentonbold') +
