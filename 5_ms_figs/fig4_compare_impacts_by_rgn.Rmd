@@ -209,12 +209,12 @@ plot_realm <- function(df, methods, x_label) {
     geom_boxplot(width = .4, position = position_dodge(width = .75),
                  outlier.shape = NA, 
                  size = .15) +
+    # geom_point(data = means_df,
+    #            aes(x = med, group = method_zone),
+    #            position = position_dodge(width = .75),
+    #            size = 1, shape = 21, color = 'black', fill = 'white') +
     geom_point(data = means_df,
                aes(x = med, group = method_zone),
-               position = position_dodge(width = .75),
-               size = 1, shape = 21, color = 'black', fill = 'white') +
-    geom_point(data = means_df,
-               aes(x = mean, group = method_zone),
                position = position_dodge(width = .75),
                size = 1, shape = 21, color = 'black', fill = 'black') +
     scale_fill_manual(values = fills, 
@@ -325,12 +325,12 @@ plot_prov <- function(df, methods, x_label, strips) {
   p <- p +
     geom_boxplot(width = .4, position = position_dodge(width = .75),
                  outlier.shape = NA, size = .15) +
+    # geom_point(data = means_df,
+    #            aes(x = med, group = method_zone), 
+    #            position = position_dodge(width = .75),
+    #            size = 1, shape = 21, color = 'black', fill = 'white') +
     geom_point(data = means_df,
                aes(x = med, group = method_zone), 
-               position = position_dodge(width = .75),
-               size = 1, shape = 21, color = 'black', fill = 'white') +
-    geom_point(data = means_df,
-               aes(x = mean, group = method_zone), 
                position = position_dodge(width = .75),
                size = 1, shape = 21, color = 'black', fill = 'black') +
     scale_fill_manual(values = fills, 
