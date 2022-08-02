@@ -149,9 +149,9 @@ meow_prov_chi_df_unordered <- chi_df %>%
 prov_order <- meow_prov_chi_df_unordered %>%
   filter(method_zone == 'chi_fe_neritic') %>%
   group_by(prov_lbl, realm_lbl) %>%
-  summarize(mean_chi = mean(chi)) %>%
+  summarize(med_chi = median(chi)) %>%
   ungroup() %>%
-  arrange(realm_lbl, mean_chi) %>%
+  arrange(realm_lbl, med_chi) %>%
   pull(prov_lbl)
 
 meow_prov_chi_df <- meow_prov_chi_df_unordered %>%
@@ -169,9 +169,9 @@ prov_means_df <- meow_prov_chi_df %>%
 realm_order <- meow_prov_chi_df %>%
   filter(method_zone == 'chi_fe_neritic') %>%
   group_by(realm_lbl) %>%
-  summarize(mean_chi = mean(chi)) %>%
+  summarize(med_chi = median(chi)) %>%
   ungroup() %>%
-  arrange(mean_chi) %>%
+  arrange(med_chi) %>%
   pull(realm_lbl)
 
 meow_realm_chi_df <- meow_prov_chi_df %>%
