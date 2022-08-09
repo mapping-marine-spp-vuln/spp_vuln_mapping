@@ -220,11 +220,13 @@ plot_realm <- function(df, methods, x_label) {
     scale_fill_manual(values = fills, 
                       breaks = lvls, 
                       labels = lbls,
-                      guide = guide_legend(reverse = TRUE)) +
+                      guide = guide_legend(reverse = TRUE,
+                                           label.position = 'left')) +
     scale_color_manual(values = clrs, 
                        breaks = lvls, 
                        labels = lbls,
-                       guide = guide_legend(reverse = TRUE) ) +
+                       guide = guide_legend(reverse = TRUE,
+                                            label.position = 'left') ) +
     scale_x_continuous(limits = c(0, 100), expand = c(0, 0)) +
     theme_minimal() +
     labs(x = x_label) +
@@ -336,11 +338,13 @@ plot_prov <- function(df, methods, x_label, strips) {
     scale_fill_manual(values = fills, 
                       breaks = lvls, 
                       labels = lbls,
-                      guide = guide_legend(reverse = TRUE)) +
+                      guide = guide_legend(reverse = TRUE,
+                                           label.position = 'left')) +
     scale_color_manual(values = clrs, 
                        breaks = lvls, 
                        labels = lbls,
-                       guide = guide_legend(reverse = TRUE) ) +
+                       guide = guide_legend(reverse = TRUE,
+                                            label.position = 'left')) +
     scale_x_continuous(limits = c(0, 100), expand = c(0, 0)) +
     theme_minimal() +
     theme(axis.title.y = element_blank(),

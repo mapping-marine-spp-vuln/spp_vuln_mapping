@@ -256,12 +256,12 @@ diff_df <- spp_vs_fe_df %>%
          noncc_diff = (fe_noncc - spp_noncc) / spp_noncc * 100) %>%
   select(x, y, cc_diff, noncc_diff) %>%
   pivot_longer(names_to = 'type', values_to = 'diff', cols = c(cc_diff, noncc_diff)) %>%
-  mutate(diff_cat = case_when(diff <  -50 ~ '$I_{spp}^C > 1.5 I_{FE}^C$',
-                              diff <  -20 ~ '$I_{spp}^C > 1.2 I_{FE}^C$',
-                              diff <  -10 ~ '$I_{spp}^C > 1.1 I_{FE}^C$',
-                              diff >  +50 ~ '$I_{FE}^C > 1.5 I_{spp}^C$',
-                              diff >  +20 ~ '$I_{FE}^C > 1.2 I_{spp}^C$',
-                              diff >  +10 ~ '$I_{FE}^C > 1.1 I_{spp}^C$',
+  mutate(diff_cat = case_when(diff <= -50 ~ '< -50%',
+                              diff <= -20 ~ '< -20%',
+                              diff <= -10 ~ '< -10%',
+                              diff >= +50 ~ '> +50%',
+                              diff >= +20 ~ '> +20%',
+                              diff >= +10 ~ '> +10%',
                               TRUE ~ NA_character_))
 
 diff_df %>% select(diff_cat, type) %>% table()
@@ -269,13 +269,15 @@ diff_df %>% select(diff_cat, type) %>% table()
 
 
 ``` {r}
-brks <- c('$I_{spp}^C > 1.5 I_{FE}^C$',
-          '$I_{spp}^C > 1.2 I_{FE}^C$',
-          '$I_{spp}^C > 1.1 I_{FE}^C$',
-          '$I_{FE}^C > 1.1 I_{spp}^C$',
-          '$I_{FE}^C > 1.2 I_{spp}^C$',
-          '$I_{FE}^C > 1.5 I_{spp}^C$')
-lbls <- latex2exp::TeX(brks) %>% unname()
+### these need to be in the correct order!
+brks <- c('< -50%',
+          '< -20%',
+          '< -10%',
+          '> +10%',
+          '> +20%',
+          '> +50%')
+# lbls <- latex2exp::TeX(brks) %>% unname()
+lbls <- brks
 
 clrs <- hcl.colors(palette = 'Red-Green', rev = TRUE, n = 6)
 
@@ -286,7 +288,8 @@ panel_b <- ggplot() +
   geom_raster(data = diff_df %>% filter(type == 'cc_diff'), 
               aes(x, y, fill = diff_cat)) +
   scale_fill_manual(breaks = brks, labels = lbls, values = clrs,
-                    na.value = 'grey95') +
+                    guide = guide_legend(reverse = TRUE),
+                    na.value = 'grey96') +
   ### continents:
   geom_sf(data = land_sf,
           fill = 'grey96', color = 'grey40', 
@@ -296,10 +299,10 @@ panel_b <- ggplot() +
   theme_void() +
   theme(axis.text = element_blank(), 
         axis.title = element_blank(),
-        legend.key.width = unit(.25, 'cm'),
+        legend.key.size = unit(.30, 'cm'),
         legend.margin = margin(0, 0, 0, 0, unit = 'pt'),
         legend.text = element_text(size = 6.5, color = 'black', 
-                                   # family = 'benton', 
+                                   family = 'benton',
                                    hjust = 0),
         legend.title = element_blank())
 
@@ -310,7 +313,7 @@ panel_c <- ggplot() +
   geom_raster(data = diff_df %>% filter(type == 'noncc_diff'), 
               aes(x, y, fill = diff_cat)) +
   scale_fill_manual(breaks = brks, labels = lbls, values = clrs,
-                    na.value = 'grey95') +
+                    na.value = 'grey96') +
   ### continents:
   geom_sf(data = land_sf,
           fill = 'grey96', color = 'grey40', 
@@ -320,12 +323,7 @@ panel_c <- ggplot() +
   theme_void() +
   theme(axis.text = element_blank(), 
         axis.title = element_blank(),
-        legend.key.width = unit(.25, 'cm'),
-        legend.margin = margin(0, 0, 0, 0, unit = 'pt'),
-        legend.text = element_text(size = 6.5, color = 'black', 
-                                   # family = 'benton', 
-                                   hjust = 0),
-        legend.title = element_blank())
+        legend.position = 'none')
 
 # panel_b; panel_c
 ```
@@ -337,13 +335,12 @@ fig2_file <- here('5_ms_figs/fig2_mapping_impacts.png')
 panel_a_map  <- get_panel(panel_a)
 panel_b_map  <- get_panel(panel_b)
 panel_c_map  <- get_panel(panel_c)
-# panel_d_map  <- get_panel(panel_d)
 panel_a_lgd <- get_panel(panel_a_lgd_raw)
-panel_bc_lgd <- get_legend(panel_c)
+panel_bc_lgd <- get_legend(panel_b)
  
 ### parameterize legends for easier changing of label positions:
 lgd_a_xy <- c(x = .875, y = .80, h = .09, w = .12)
-lgd_b_xy <- c(x = .870, y = .25, h = .09, w = .12)
+lgd_b_xy <- c(x = .870, y = .25, h = .07, w = .12)
 
 fig_2 <- ggdraw() +
   ### draw panels:
@@ -356,22 +353,22 @@ fig_2 <- ggdraw() +
   draw_plot(panel_bc_lgd, x = lgd_b_xy['x'], y = lgd_b_xy['y'], 
             height = lgd_b_xy['h'], width = lgd_b_xy['w']) +
   ### Panel labels:
-  draw_label('A', x = 0.002, y = .99, hjust = 0, vjust = 1, 
+  draw_label('A', x = 0.002, y = .97, hjust = 0, vjust = 1, 
              size = 10, fontfamily = 'bentonbold') +
-  draw_label('B', x = 0.002, y = .64, hjust = 0, vjust = 0, 
+  draw_label('B', x = 0.002, y = .63, hjust = 0, vjust = 0, 
              size = 10, fontfamily = 'bentonbold') +
   draw_label('C', x = 0.002, y = .31, hjust = 0, vjust = 0, 
              size = 10, fontfamily = 'bentonbold') +
-  draw_label('Climate', x = 0.05, y = .64, hjust = 0, vjust = 0, 
+  draw_label('Climate', x = 0.05, y = .63, hjust = 0, vjust = 0, 
              size = 8, fontfamily = 'bentonbold') +
   draw_label('Non-climate', x = 0.05, y = .31, hjust = 0, vjust = 0, 
              size = 8, fontfamily = 'bentonbold') +
   ### Legend labels for biscale:
-  draw_label('Climate vs. non-climate\nimpacts (quartiles)',
-             x = 0.99, y = 0.92, hjust = 1, vjust = 0, angle = 0,
+  draw_label('Functional entity:\nClimate v. non-\nclimate impacts\n(quartiles)',
+             x = 0.99, y = 0.90, hjust = 1, vjust = 0, angle = 0,
              size = 8, color = 'black', fontfamily = 'bentonbold') +
-  draw_label('Spp vs. FE\nrelative impacts',
-             x = 0.99, y = 0.42, hjust = 1, vjust = 0, angle = 0,
+  draw_label('FE v. species\nimpacts\n(% difference)',
+             x = 0.98, y = 0.35, hjust = 1, vjust = 0, angle = 0,
              size = 8, color = 'black', fontfamily = 'bentonbold') +
   draw_label('Climate ->', 
              x = lgd_a_xy['x'], y = lgd_a_xy['y'] - .005, 
