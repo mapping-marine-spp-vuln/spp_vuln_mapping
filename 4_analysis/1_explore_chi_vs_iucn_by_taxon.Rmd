@@ -67,11 +67,23 @@ if(!file.exists(spp_chi_file)) { ### unlink(spp_chi_file)
     rename(vuln = vulnerability)
   
   spp_ranges <- spp_imp_raw_df %>%
-    select(f, range_km2, range) %>%
+    select(f, range_a_km2, range) %>%
     distinct() %>%
-    spread(range, range_km2) %>%
+    spread(range, range_a_km2) %>%
     rename(range_cst_km2 = coastal, range_tot_km2 = full)
   
+  spp_npp_ranges <- spp_imp_raw_df %>%
+    select(f, npp_range_km2, range) %>%
+    distinct() %>%
+    spread(range, npp_range_km2) %>%
+    rename(npp_range_cst_km2 = coastal, npp_range_tot_km2 = full)
+
+  spp_ln_npp_ranges <- spp_imp_raw_df %>%
+    select(f, ln_npp_range_km2, range) %>%
+    distinct() %>%
+    spread(range, ln_npp_range_km2) %>%
+    rename(ln_npp_range_cst_km2 = coastal, ln_npp_range_tot_km2 = full)
+
   spp_intensity_df <- spp_imp_raw_df %>%
     select(f, vuln, stressor, intensity_tot, range) %>%
     spread(range, intensity_tot) %>%
@@ -102,15 +114,29 @@ if(!file.exists(spp_chi_file)) { ### unlink(spp_chi_file)
     spread(range, impact_npp_cv) %>%
     rename(impact_npp_cv_tot = full, impact_npp_cv_cst = coastal)
 
+  spp_impacts_ln_npp_df <- spp_imp_raw_df %>%
+    select(f, vuln, stressor, imp_ln_npp_tot, range) %>%
+    spread(range, imp_ln_npp_tot) %>%
+    rename(impact_ln_npp_tot = full, impact_ln_npp_cst = coastal)
+    
+  spp_ln_npp_cv_df <- spp_imp_raw_df %>%
+    select(f, vuln, stressor, imp_ln_npp_cv, range) %>%
+    spread(range, imp_ln_npp_cv) %>%
+    rename(impact_ln_npp_cv_tot = full, impact_ln_npp_cv_cst = coastal)
+
   iucn_worms_lookup <- read_csv(here('_data/iucn_spp', 'iucn_to_worms_match.csv'))
 
   spp_imp_cv_df <- full_join(spp_impacts_df, spp_cv_df, 
                              by = c('f', 'vuln', 'stressor')) %>%
     full_join(spp_impacts_npp_df, by = c('f', 'vuln', 'stressor')) %>%
     full_join(spp_npp_cv_df, by = c('f', 'vuln', 'stressor')) %>%
+    full_join(spp_impacts_ln_npp_df, by = c('f', 'vuln', 'stressor')) %>%
+    full_join(spp_ln_npp_cv_df, by = c('f', 'vuln', 'stressor')) %>%
     full_join(spp_intensity_df, by = c('f', 'vuln', 'stressor')) %>%
     full_join(spp_intens_cv_df, by = c('f', 'vuln', 'stressor')) %>%
     left_join(spp_ranges, by = 'f') %>%
+    left_join(spp_npp_ranges, by = 'f') %>%
+    left_join(spp_ln_npp_ranges, by = 'f') %>%
     ### extract species and map info from filename
     mutate(map_src = str_extract(f, '_iucn_|_am_') %>% str_remove_all('_'),
            iucn_sid = str_extract(f, '[0-9]+') %>% as.integer(),
@@ -127,9 +153,13 @@ if(!file.exists(spp_chi_file)) { ### unlink(spp_chi_file)
            impact_cst, impact_tot, impact_cv_cst, impact_cv_tot,
            impact_npp_cst, impact_npp_tot, 
            impact_npp_cv_cst, impact_npp_cv_tot,
+           impact_ln_npp_cst, impact_ln_npp_tot, 
+           impact_ln_npp_cv_cst, impact_ln_npp_cv_tot,
            intensity_cst, intensity_tot, 
            intensity_cv_cst, intensity_cv_tot,
-           range_cst_km2, range_tot_km2) %>%
+           range_cst_km2, range_tot_km2,
+           npp_range_cst_km2, npp_range_tot_km2,
+           ln_npp_range_cst_km2, ln_npp_range_tot_km2) %>%
     distinct() %>%
     filter(range_tot_km2 > 0 & !is.na(impact_tot))
     
@@ -150,17 +180,17 @@ spp_impacts <- read_csv(spp_chi_file) %>%
 spp_chi <- spp_impacts %>%
   filter(stressor == 'cumulative') %>%
   mutate(eq_wt  = impact_tot / range_tot_km2,
-         npp_wt = impact_npp_tot / range_tot_km2) %>%
+         npp_wt = impact_npp_tot / npp_range_tot_km2) %>%
   select(sciname, eq_wt, npp_wt, range_tot_km2) %>%
   distinct() %>%
   mutate(group = 'cumulative')
 
 spp_no_cc <- spp_impacts %>%
   filter(vuln == 'stressor_group' & stressor != 'climate') %>%
-  select(sciname, impact_tot, impact_npp_tot, range_tot_km2) %>%
+  select(sciname, impact_tot, impact_npp_tot, range_tot_km2, npp_range_tot_km2) %>%
   distinct() %>%
   mutate(imp_unwt_tot = impact_tot / range_tot_km2,
-         imp_nppwt_tot = impact_npp_tot / range_tot_km2) %>%
+         imp_nppwt_tot = impact_npp_tot / npp_range_tot_km2) %>%
   group_by(sciname) %>%
   summarize(eq_wt  = sum(imp_unwt_tot), 
             npp_wt = sum(imp_nppwt_tot),
@@ -263,8 +293,10 @@ spp_chi_iucn_clean <- iucn_impacts_df %>%
   filter(stressor == 'cumulative') %>%
   mutate(chi_rel_tot = impact_tot / range_tot_km2,
          chi_rel_cst = impact_cst / range_cst_km2,
-         chi_npp_tot = impact_npp_tot / range_tot_km2,
-         chi_npp_cst = impact_npp_cst / range_cst_km2) %>%
+         chi_npp_tot = impact_npp_tot / npp_range_tot_km2,
+         chi_npp_cst = impact_npp_cst / npp_range_cst_km2,
+         chi_ln_npp_tot = impact_ln_npp_tot / ln_npp_range_tot_km2,
+         chi_ln_npp_cst = impact_ln_npp_cst / ln_npp_range_cst_km2) %>%
   filter(!is.na(threatened)) %>%
   left_join(spp_taxa, by = 'sciname') %>%
   left_join(fished_spp, by = c('sciname', 'iucn_sid'))
@@ -286,10 +318,6 @@ chi_threatened_valid <- spp_chi_iucn_clean %>%
 
 ```
 
-```{r}
-
-```
-
 ``` {r}
 df_for_blr_chi <- chi_threatened_valid %>%
   select(sciname, taxon, phylum, class, atrisk, threatened, 
@@ -306,39 +334,50 @@ df_for_blr_chi %>% group_by(qtile_r) %>% summarize(r = max(range_tot_km2))
 mdl1 <- glm(threatened ~ chi_npp_cst + impact_npp_cv_cst + log_r_cst, 
            data = df_for_blr_chi %>% filter(qtile_r <= 4),
            family = 'binomial')
-summary(mdl1) ### AIC 3952.8
-#                   Estimate Std. Error z value Pr(>|z|)    
-# (Intercept)       -1.57527    0.27181  -5.795 6.81e-09 ***
-# chi_npp_cst        0.83270    0.14445   5.765 8.18e-09 ***
-# impact_npp_cv_cst  0.20509    0.04959   4.136 3.53e-05 ***
-# log_r_cst         -0.06907    0.01770  -3.902 9.52e-05 ***
+summary(mdl1) 
 with(summary(mdl1), 1 - deviance/null.deviance) ### McFadden's R^2
-# 0.01617018
+
+mdl1_ln <- glm(threatened ~ chi_ln_npp_cst + impact_ln_npp_cv_cst + log_r_cst, 
+           data = df_for_blr_chi %>% filter(qtile_r <= 4),
+           family = 'binomial')
+summary(mdl1_ln)
+with(summary(mdl1_ln), 1 - deviance/null.deviance) ### McFadden's R^2
+```
+
+```{r}
 
 ### similar but total ranges rather than coastal ranges
 mdl2 <- glm(threatened ~ chi_npp_tot + impact_npp_cv_tot + log_r_tot, 
            data = df_for_blr_chi %>% filter(qtile_r <= 4),
            family = 'binomial')
-summary(mdl2) ### AIC 3942.1
-#                  Estimate Std. Error z value Pr(>|z|)    
-# (Intercept)       -1.14481    0.26082  -4.389 1.14e-05 ***
-# chi_npp_tot        0.95255    0.15677   6.076 1.23e-09 ***
-# impact_npp_cv_tot  0.13939    0.03849   3.622 0.000293 ***
-# log_r_tot         -0.08957    0.01853  -4.835 1.33e-06 ***
+summary(mdl2) 
 with(summary(mdl2), 1 - deviance/null.deviance)
-# 0.01885638
+
+mdl2_ln <- glm(threatened ~ chi_ln_npp_tot + impact_ln_npp_cv_tot + log_r_tot, 
+           data = df_for_blr_chi %>% filter(qtile_r <= 4),
+           family = 'binomial')
+summary(mdl2_ln) 
+with(summary(mdl2_ln), 1 - deviance/null.deviance)
+
+```
+
+```{r}
 
 mdl2a <- glm(threatened ~ chi_npp_tot + impact_npp_cv_tot + log_r_tot, 
            data = df_for_blr_chi %>% filter(qtile_r <= 5),
            family = 'binomial')
-summary(mdl2a) ### AIC not comparable to qtile <= 4 version...
-#                   Estimate Std. Error z value Pr(>|z|)    
-# (Intercept)       -2.17066    0.21657 -10.023  < 2e-16 ***
-# chi_npp_tot        0.98133    0.15286   6.420 1.37e-10 ***
-# impact_npp_cv_tot  0.23103    0.02869   8.053 8.05e-16 ***
-# log_r_tot         -0.02551    0.01462  -1.745    0.081 .  
+summary(mdl2a) 
 with(summary(mdl2a), 1 - deviance/null.deviance)
-# 0.01651841
+
+mdl2a_ln <- glm(threatened ~ chi_ln_npp_tot + impact_ln_npp_cv_tot + log_r_tot, 
+           data = df_for_blr_chi %>% filter(qtile_r <= 5),
+           family = 'binomial')
+summary(mdl2a_ln) 
+with(summary(mdl2a_ln), 1 - deviance/null.deviance)
+
+```
+
+```{r}
 
 ### NPP-weighted mean CHI, drop CV term, (log_r term
 ### becomes insignificant when including top 20%)
@@ -346,26 +385,28 @@ mdl3 <- glm(threatened ~ chi_npp_tot + log_r_tot,
            data = df_for_blr_chi %>% 
              filter(qtile_r <= 4),
            family = 'binomial')
-summary(mdl3) ### AIC 3952.4
-#             Estimate Std. Error z value Pr(>|z|)    
-# (Intercept) -0.77482    0.23767  -3.260  0.00111 ** 
-# chi_npp_tot  0.83066    0.15098   5.502 3.76e-08 ***
-# log_r_tot   -0.08170    0.01825  -4.478 7.55e-06 ***
+summary(mdl3) 
 with(summary(mdl3), 1 - deviance/null.deviance)
-# 0.01578526
+
+
+mdl3_ln <- glm(threatened ~ chi_ln_npp_tot + log_r_tot, 
+           data = df_for_blr_chi %>% 
+             filter(qtile_r <= 4),
+           family = 'binomial')
+summary(mdl3_ln) 
+with(summary(mdl3_ln), 1 - deviance/null.deviance)
+
+```
+
+```{r}
 
 ### Unweighted CHI (not NPP weighted), with no CV term - flips sign on CHI
 mdl4 <- glm(threatened ~ chi_rel_tot + log_r_tot, 
            data = df_for_blr_chi %>% 
              filter(qtile_r <= 4),
            family = 'binomial')
-summary(mdl4) ### AIC 3978.1
-#             Estimate Std. Error z value Pr(>|z|)    
-# (Intercept)  0.10585    0.28015   0.378   0.7056    
-# chi_rel_tot -0.50470    0.22148  -2.279   0.0227 *  
-# log_r_tot   -0.12226    0.01978  -6.180 6.42e-10 ***
+summary(mdl4) 
 with(summary(mdl4), 1 - deviance/null.deviance)
-# 0.009358484
 
 ```
 
@@ -417,11 +458,11 @@ table(pred_3 %>% select(pred_thr, threatened))
 
 ### Proportion correct
 prop_correct1 <- sum(pred_1$correct) / nrow(pred_1)
-# .825
-prop_correct2 <- sum(pred_2$correct) / nrow(pred_2)
 # .824
+prop_correct2 <- sum(pred_2$correct) / nrow(pred_2)
+# .825
 prop_correct3 <- sum(pred_3$correct) / nrow(pred_3)
-# .826
+# .825
 
 ### does it predict better than random guessing given the proportion of
 ### threatened being known?

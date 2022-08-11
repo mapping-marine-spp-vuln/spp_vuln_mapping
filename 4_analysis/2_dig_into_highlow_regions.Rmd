@@ -146,6 +146,10 @@ fe_noncc  <- rast(fe_rasts[!str_detect(fe_rasts, 'climate.tif')]) %>%
 hab_noncc <- rast(hab_rasts[!str_detect(hab_rasts, 'climate.tif')]) %>%
   sum(na.rm = TRUE)
 
+sst_mean_rast <- rast(here_anx('../../stressors_2021/_dataprep/SST_past_present', 
+                               'final_avg_tmp/sst_avg_2016-2020.tif'))
+sst_extr_rast <- rast(here('_data/stressors_mol/sst_extremes_2020.tif'))
+
 coastal_rast <- rast(here('_spatial/bathy_mol_neritic.tif'))
 
 diff_df_all <- data.frame(
@@ -154,8 +158,11 @@ diff_df_all <- data.frame(
   fe_noncc  = as.vector(values(fe_noncc)),
   hab_noncc = as.vector(values(hab_noncc)),
   coastal   = as.vector(values(coastal_rast)),
+  sst_mean  = as.vector(values(sst_mean_rast)),
+  sst_extr  = as.vector(values(sst_extr_rast)),
   cell_id = 1:ncell(fe_cc)
 ) %>%
+  mutate(coastal = !is.na(coastal)) %>%
   ### convert to percentiles for comparison of two methods
   mutate(fe_cc_pct     = ntile(fe_cc, 1000) / 10,
          fe_noncc_pct  = ntile(fe_noncc, 1000) / 10,
@@ -173,22 +180,29 @@ n_q <- 20 ### how many quantiles? - take top (max FE > Hab) and bottom (max Hab 
 
 diff_df <- diff_df_all %>%
   dt_join(meow_prov_df, by = 'cell_id', type = 'inner') %>%
-  group_by(prov_code) %>%
+  group_by(prov_code, coastal) %>%
   mutate(cc_q = ntile(cc_diff, n_q),
          noncc_q = ntile(noncc_diff, n_q)) %>%
   ungroup()
 
+### any regions with very different coastal and non-coastal?
+coastal_v_noncoastal <- diff_df %>%
+  group_by(province, prov_code, coastal) %>%
+  summarize(across(ends_with('pct'), 
+                   .fns = list(mean = mean, sd = sd), 
+                   .names = "{.col}_{.fn}"),
+            area_km2 = round(n_distinct(cell_id) * 100))
+
 
 diff_top10 <- diff_df %>%
   left_join(prov_compare_df, by = 'prov_code') %>%
-  filter(compare == 'cc_hab' & cc_q == 1 | ### negative climate difference
+  filter(compare == 'cc_hab' & (cc_q == 1 | cc_q == n_q) | 
+           ### Hawaii - negative climate difference? check coastal as well
          compare == 'cc_fe'  & cc_q == n_q | ### positive climate diff
          compare == 'noncc_fe' & noncc_q == n_q) %>% ### positive non-cc diff
-  select(cell_id, coastal,
+  select(cell_id, coastal, sst_extr, sst_mean,
          fe_cc_pct, fe_noncc_pct, hab_cc_pct, hab_noncc_pct,
-         cc_diff, noncc_diff, prov_code, province) %>%
-  mutate(coastal = !is.na(coastal)) %>%
-  filter(coastal | prov_code %in% c(37, 54, 62))
+         cc_diff, noncc_diff, prov_code, province)
 
 diff_top10 %>% select(prov_code) %>% table()
 
@@ -294,7 +308,7 @@ spp_map_fs <- spp_info_df %>%
   select(species, map_f) %>%
   group_by(map_f) %>%
   filter(species == first(species)) %>%
-  distinct() 
+  distinct()
 spp_fe <- spp_info_df %>%
   select(species, fe_id, mob:wcol, taxon) %>%
   distinct() %>%
@@ -421,6 +435,52 @@ spp_sst_rise_maps <- spp_sst_rise_maps_raw %>%
   
 ```
 
+```{r get extra info}
+worms_names <- assemble_worms()
+am_spp_names <- fread(here_anx('../aquamaps_2021/ver10_2019_speciesoccursum_iucn.csv')) %>%
+  janitor::clean_names() %>%
+  mutate(species = paste(genus, species) %>% tolower()) %>%
+  select(am_sid = species_id, species) %>%
+  filter(species %in% worms_names$species)
+
+spp_depth_df <- read_csv(here_anx('../aquamaps_2021/species_envelope_summary.csv')) %>%
+  filter(param == 'log10_depth') %>%
+  filter(dist %in% c('max', 'min')) %>%
+  mutate(d = round(10^value)) %>%
+  select(am_sid, dist, d) %>%
+  inner_join(am_spp_names, by = 'am_sid') %>%
+  spread(dist, d)
+
+am_spp_info <- get_am_spp_info()
+
+am_T_env <- get_am_spp_envelopes() %>%
+  filter(param == 'temp' & dist %in% c('max', 'pref_max')) %>%
+  spread(dist, value) %>%
+  left_join(am_spp_info, by = 'am_sid') %>%
+  select(am_sid, sciname, T_max_a = max, T_max_p = pref_max)
+
+iucn_spp_info <- read_csv(here('_data/iucn_spp', 'iucn_to_worms_match.csv'))
+iucn_maps <- read_csv(here('_data/iucn_spp/spp_marine_maps_2021-3.csv'))
+iucn_derived_T_envs <- read_csv(here('1_setup/stressors/int/iucn_spp_thermal_env.csv')) %>%
+  select(iucn_sid, iucn_tmaxa = T_max_a, iucn_tmaxp = T_max_p)
+
+iucn_T_env <- iucn_spp_info %>%
+  filter(iucn_sid %in% iucn_maps$iucn_sid) %>%
+  ### first try to join AquaMaps temp profiles
+  left_join(am_T_env, by = c('worms_name' = 'sciname')) %>%
+  left_join(iucn_derived_T_envs, by = 'iucn_sid') %>%
+  mutate(T_max_a = ifelse(is.na(T_max_a), iucn_tmaxa, T_max_a),
+         T_max_p = ifelse(is.na(T_max_p), iucn_tmaxp, T_max_p)) %>%
+  select(iucn_sid, sciname, T_max_a, T_max_p) %>%
+  filter(!is.na(T_max_a) & !is.na(T_max_p))
+
+spp_therm_env_df <- bind_rows(am_T_env, iucn_T_env) %>%
+  select(species = sciname, T_max_a, T_max_p) %>%
+  mutate(t_range = T_max_a - T_max_p)
+
+
+```
+
 ## Examine regions
 
 ### Hawaii
@@ -428,28 +488,13 @@ spp_sst_rise_maps <- spp_sst_rise_maps_raw %>%
 * High hab, low FE across all & CC (diff < 0), but similar values for non-CC (diff ~ 0)
     * Province 37: Hawaii
 
-In province 37 (Hawaii), several species that might be interesting, as members of large FEs but the only (or one of few) local species to represent the FE:
-
-* Bodianus sanguineus, Sunrise wrasse - endemic to Hawai'i
-* Canthigaster rivulata, Brown-lined puffer
-* Hexatrygon bickelli, Sixgill stingray
-* Etmopterus pusillus, Smooth lanternshark - very deep
-* Iniistius baldwini, Baldwin's razorfish
-* Anous stolidus (Brown Noddy) - bird
-* Dalatias licha, Kitefin shark - VU, fished by Japanese
-* Carcharhinus falciformis, Silky shark - VU
-* Carcharhinus galapagensis, Galapagos shark - LC
-* Loggerhead Sea Turtle - Caretta caretta
-* Mobula alfredi, reef manta - VU
-* Eretmochelys imbricata - Hawksbill - CR (FE 229)
-
 ```{r examine province 37}
 prov_37_df <- prov_spp_df %>%
   filter(prov_code == 37)
 
 prov_37_cells <- prov_37_df %>%
   group_by_at(vars(-species)) %>%
-  summarize(n_spp = n_distinct(species))
+  summarize(n_spp = n_distinct(species), .groups = 'drop')
 
 spp_37_df <- prov_37_df %>%
   left_join(spp_fe, by = 'species') %>%
@@ -470,11 +515,11 @@ spp_37_df <- prov_37_df %>%
 y <- prov_37_df %>%
   select(cell_id, cc_diff, noncc_diff) %>%
   distinct() %>%
-  arrange(desc(noncc_diff), cc_diff)
+  arrange(cc_diff)
 
 knitr::kable(head(y))
 
-coi_vec <- y$cell_id %>% head()
+coi_vec <- y$cell_id %>% head(10)
 ```
 
 #### Identify high-diff cells
@@ -495,7 +540,7 @@ Build stressor impact maps for cells of interest.
 coi_sst_impact_df <- spp_37_df %>%
   filter(cell_id %in% coi_vec) %>%
   left_join(spp_sst_rise_maps, by = c('species', 'cell_id')) %>%
-  select(cell_id, species, cc_diff, noncc_diff, 
+  select(cell_id, species, cc_diff, noncc_diff, sst_mean, sst_extr,
          prov_code, taxon, mob:wcol,
          vulnerability, v_score, fe_id, impact) %>%
   mutate(stressor = 'sst_rise', stressor_group = 'climate')
@@ -521,7 +566,7 @@ coi_other_impact_df <- prov_37_df %>%
   filter(keep) %>%
   mutate(impact = v_score * intensity) %>%
   select(cell_id, species, cc_diff, noncc_diff, 
-         prov_code, taxon, mob:wcol, stressor, stressor_group,
+         prov_code, taxon, mob:wcol, stressor, stressor_group, sst_mean, sst_extr,
          vulnerability, v_score, fe_id, impact)
   
 coi_impact_df_37 <- bind_rows(coi_sst_impact_df, coi_catch_impact_df, coi_other_impact_df) %>%
@@ -552,67 +597,41 @@ check2_df <- diff_df %>%
 knitr::kable(check1_df, caption = 'calculated from scratch')
 knitr::kable(check2_df, caption = 'from impact rasts')
 
-### all impacts match up perfectly, yay!
+### climate impacts match up perfectly, why not noncc?
 ```
 
-#### High climate impacts on vulnerable FEs: Hawaii
+#### Low FE-based climate impacts on vulnerable FEs: Hawaii
+
 
 ```{r}
-high_impact_fes_37 <- coi_fe_impacts_37 %>% 
-  filter(fv > .25 & fe_impact > mean(fe_impact)) %>% 
+low_impact_fes_37 <- coi_fe_impacts_37 %>% 
+  filter(fv > .25) %>% 
   filter(stressor_group == 'climate') %>%
   arrange(desc(fe_impact))
 
-high_impact_spp_37 <- coi_impact_df_37 %>%
+low_impact_spp_37 <- coi_impact_df_37 %>%
   filter(stressor_group == 'climate') %>%
-  filter(fe_id %in% high_impact_fes_37$fe_id) %>%
+  filter(fe_id %in% low_impact_fes_37$fe_id) %>%
   filter(!is.na(impact)) %>%
   mutate(across(where(is.numeric), round, 5)) %>%
-  select(cell_id, species, fe_id, taxon, impact, stressor, mob:wcol) %>%
-  left_join(high_impact_fes_37 %>% select(fe_id, fv) %>% distinct())
+  select(cell_id, species, fe_id, taxon, impact, stressor, mob:wcol, sst_mean, sst_extr) %>%
+  inner_join(low_impact_fes_37 %>% select(fe_id, fv) %>% distinct()) %>%
+  left_join(spp_depth_df, by = 'species') %>%
+  left_join(spp_therm_env_df, by = 'species')
 
-DT::datatable(high_impact_spp_37)
+DT::datatable(low_impact_spp_37)
 ```
 
-#### High non-climate impacts on vulnerable FEs: Hawaii
+### Andaman Islands
 
-```{r}
-high_impact_fes_37 <- coi_fe_impacts_37 %>% 
-  filter(fv > .25 & fe_impact > mean(fe_impact)) %>% 
-  filter(stressor_group != 'climate') %>%
-  arrange(desc(fe_impact))
-high_impact_spp_37 <- coi_impact_df_37 %>%
-  filter(stressor_group != 'climate') %>%
-  filter(fe_id %in% high_impact_fes_37$fe_id) %>%
-  filter(!is.na(impact)) %>%
-  mutate(across(where(is.numeric), round, 5)) %>%
-  select(cell_id, species, fe_id, taxon, impact, stressor, mob:wcol) %>%
-  left_join(high_impact_fes_37 %>% select(fe_id, fv) %>% distinct())
+* Low hab, high FE across all & CC (diff > 0)
+    * Province 24: Andaman Islands
 
-DT::datatable(high_impact_spp_37)
-```
+```{r examine province 24}
+prov_24_df <- prov_spp_df %>%
+  filter(prov_code == 24)
 
-
-### Central Indian Ocean Islands
-
-* Low hab, high FE across all & CC (diff > 0), but high hab/low FE for non-CC (diff < 0)
-    * Province 22: Central Indian Ocean Islands
-    
-For CC, indicates that species present may be more vulnerable individually to climate change than the habitat model predicts.
-
-In province 22, several species that might be interesting, as members of large FEs but the only (or one of few) local species to represent the FE:
-
-* Carcharhinus falciformis, Silky shark - VU
-* Eretmochelys imbricata - Hawksbill - CR (FE 229)
-* Lepidochelys olivacea - Olive ridley
-* Loggerhead Sea Turtle - Caretta caretta
-* Mobula alfredi, reef manta - VU
-
-```{r examine province 22}
-prov_22_df <- prov_spp_df %>%
-  filter(prov_code == 22)
-
-spp_22_df <- prov_22_df %>%
+spp_24_df <- prov_24_df %>%
   left_join(spp_fe, by = 'species') %>%
   group_by(cell_id) %>%
   mutate(n_spp = n_distinct(species)) %>%
@@ -621,7 +640,7 @@ spp_22_df <- prov_22_df %>%
   ungroup()
 
 ### df to check for spp with locally few FE members
-# x <- spp_22_df %>%
+# x <- spp_24_df %>%
 #   select(species, fe_id, nspp_fe, nspp_fe_present) %>%
 #   distinct() %>%
 #   left_join(spp_info_df %>%
@@ -629,10 +648,10 @@ spp_22_df <- prov_22_df %>%
 #             by = c('species'))
 
 ### focus just on the cells that best match our idea: neg noncc_diff, pos cc_diff
-y <- prov_22_df %>%
+y <- prov_24_df %>%
   select(cell_id, cc_diff, noncc_diff) %>%
   distinct() %>%
-  arrange(noncc_diff, desc(cc_diff))
+  arrange(desc(cc_diff))
 
 coi_vec <- y$cell_id %>% head()
 ```
@@ -650,14 +669,14 @@ ggplot() +
 ```
 
 ```{r}
-coi_sst_impact_df <- spp_22_df %>%
+coi_sst_impact_df <- spp_24_df %>%
   filter(cell_id %in% coi_vec) %>%
   left_join(spp_sst_rise_maps, by = c('species', 'cell_id')) %>%
   select(cell_id, species, cc_diff, noncc_diff, 
-         prov_code, taxon, mob:wcol,
+         prov_code, taxon, mob:wcol, sst_mean, sst_extr,
          vulnerability, v_score, fe_id, impact) %>%
   mutate(stressor = 'sst_rise', stressor_group = 'climate')
-coi_catch_impact_df <- spp_22_df %>%
+coi_catch_impact_df <- spp_24_df %>%
   filter(cell_id %in% coi_vec) %>%
   left_join(spp_catch_maps, by = c('species', 'cell_id')) %>%
   select(cell_id, species, cc_diff, noncc_diff, 
@@ -665,7 +684,7 @@ coi_catch_impact_df <- spp_22_df %>%
          vulnerability, v_score, fe_id, impact) %>%
   mutate(stressor = 'biomass_removal', stressor_group = 'fishing',
          impact = ifelse(is.na(impact), 0, impact))
-coi_other_impact_df <- prov_22_df %>%
+coi_other_impact_df <- prov_24_df %>%
   filter(cell_id %in% coi_vec) %>%
   left_join(spp_info_df, by = c('species')) %>%
   left_join(stressor_df %>% filter(cell_id %in% coi_vec), 
@@ -678,32 +697,32 @@ coi_other_impact_df <- prov_22_df %>%
                           TRUE ~ (vulnerability != 'bycatch'))) %>%
   filter(keep) %>%
   mutate(impact = v_score * intensity) %>%
-  select(cell_id, species, cc_diff, noncc_diff, 
+  select(cell_id, species, cc_diff, noncc_diff, sst_mean, sst_extr,
          prov_code, taxon, mob:wcol, stressor, stressor_group,
          vulnerability, v_score, fe_id, impact)
   
-coi_impact_df_22 <- bind_rows(coi_sst_impact_df, coi_catch_impact_df, coi_other_impact_df) %>%
+coi_impact_df_24 <- bind_rows(coi_sst_impact_df, coi_catch_impact_df, coi_other_impact_df) %>%
   distinct()
 # coi_impact_df$stressor %>% table()
 
-coi_fe_impacts_22 <- coi_impact_df_22 %>%
+coi_fe_impacts_24 <- coi_impact_df_24 %>%
   group_by(cell_id, fe_id, mob, trp, len, wcol, stressor, stressor_group) %>%
   summarize(fe_impact = mean(impact, na.rm = TRUE),
             fv = calc_fe(n_distinct(species)), 
             .groups = 'drop') %>%
   filter(!is.na(fe_impact))
 
-coi_fvwt_impact_22 <- coi_fe_impacts_22 %>%
+coi_fvwt_impact_24 <- coi_fe_impacts_24 %>%
   group_by(cell_id, stressor, stressor_group) %>%
   summarize(fvwt_impact = Hmisc::wtd.mean(fe_impact, weights = fv))
 
-check1_df <- coi_fvwt_impact_22 %>%
+check1_df <- coi_fvwt_impact_24 %>%
   mutate(t = ifelse(stressor_group == 'climate', 'fe_cc', 'fe_noncc')) %>%
   group_by(t, cell_id) %>%
   summarize(impact = sum(fvwt_impact)) %>%
   spread(t, impact)
 check2_df <- diff_df %>%
-  filter(cell_id %in% coi_fvwt_impact_22$cell_id) %>%
+  filter(cell_id %in% coi_fvwt_impact_24$cell_id) %>%
   select(cell_id, fe_cc, fe_noncc)
 
 knitr::kable(check1_df, caption = 'calculated from scratch')
@@ -711,52 +730,33 @@ knitr::kable(check2_df, caption = 'from impact rasts')
 
 ```
 
-#### High climate impacts on vulnerable FEs: Central Indian Ocean Islands
+still off for non-cc, but we're looking at climate anyway
+
+#### High climate impacts on vulnerable FEs: Andaman Islands
 
 ```{r}
-high_impact_fes_22 <- coi_fe_impacts_22 %>% 
+high_impact_fes_24 <- coi_fe_impacts_24 %>% 
   filter(fv > .25 & fe_impact > mean(fe_impact)) %>% 
-  filter(stressor_group == 'climate') %>%
+  # filter(stressor_group == 'climate') %>%
   arrange(desc(fe_impact))
-high_impact_spp_22 <- coi_impact_df_22 %>%
-  filter(stressor_group == 'climate') %>%
-  filter(fe_id %in% high_impact_fes_37$fe_id) %>%
+high_impact_spp_24 <- coi_impact_df_24 %>%
+  # filter(stressor_group == 'climate') %>%
+  filter(fe_id %in% high_impact_fes_24$fe_id) %>%
   filter(!is.na(impact)) %>%
   mutate(across(where(is.numeric), round, 5)) %>%
-  select(cell_id, species, fe_id, taxon, impact, stressor, mob:wcol) %>%
-  left_join(high_impact_fes_22 %>% select(fe_id, fv) %>% distinct())
+  select(cell_id, species, fe_id, taxon, impact, stressor, mob:wcol, sst_mean, sst_extr) %>%
+  left_join(high_impact_fes_24 %>% select(fe_id, fv) %>% distinct()) %>%
+  left_join(spp_depth_df, by = 'species') %>%
+  left_join(spp_therm_env_df, by = 'species')
 
-DT::datatable(high_impact_spp_22)
-```
-
-
-#### High non-climate impacts on vulnerable FEs: Central Indian Ocean Islands
-
-```{r}
-high_impact_fes_22 <- coi_fe_impacts_22 %>% 
-  filter(fv > .25 & fe_impact > mean(fe_impact)) %>% 
-  filter(stressor_group != 'climate') %>%
-  arrange(desc(fe_impact))
-high_impact_spp_22 <- coi_impact_df_22 %>%
-  filter(stressor_group != 'climate') %>%
-  filter(fe_id %in% high_impact_fes_37$fe_id) %>%
-  filter(!is.na(impact)) %>%
-  mutate(across(where(is.numeric), round, 5)) %>%
-  select(cell_id, species, fe_id, taxon, impact, stressor, mob:wcol) %>%
-  left_join(high_impact_fes_22 %>% select(fe_id, fv) %>% distinct())
-
-DT::datatable(high_impact_spp_22)
+DT::datatable(high_impact_spp_24)
 ```
 
 
 ### South New Zealand
 
-* High hab and FE across all & CC (diff ~ 0), but low hab/high FE for non-CC (diff > 0)
+* high FE/low Hab for non-climate offshore
     * Province 54: Southern New Zealand
-    
-Individual species may be less impacted by climate change, but more impacted by non-climate stressors compared to average.
-
-In province 54, several species that might be interesting, as members of large FEs but the only (or one of few) local species to represent the FE:
 
 ```{r examine province 54}
 prov_54_df <- prov_spp_df %>%
@@ -859,24 +859,6 @@ check2_df <- diff_df %>%
 
 knitr::kable(check1_df, caption = 'calculated from scratch')
 knitr::kable(check2_df, caption = 'from impact rasts')
-```
-
-#### High climate impacts on vulnerable FEs: South New Zealand
-
-```{r}
-high_impact_fes_54 <- coi_fe_impacts_54 %>% 
-  filter(fv > .25 & fe_impact > mean(fe_impact)) %>% 
-  filter(stressor_group == 'climate') %>%
-  arrange(desc(fe_impact))
-high_impact_spp_54 <- coi_impact_df_54 %>%
-  filter(stressor_group == 'climate') %>%
-  filter(fe_id %in% high_impact_fes_54$fe_id) %>%
-  filter(!is.na(impact)) %>%
-  mutate(across(where(is.numeric), round, 5)) %>%
-  select(cell_id, species, fe_id, taxon, impact, stressor, mob:wcol) %>%
-  left_join(high_impact_fes_54 %>% select(fe_id, fv) %>% distinct())
-
-DT::datatable(high_impact_spp_54)
 ```
 
 #### High non-climate impacts on vulnerable FEs: South New Zealand

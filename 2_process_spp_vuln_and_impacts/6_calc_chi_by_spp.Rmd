@@ -225,8 +225,8 @@ get_spp_sst_rise <- function(spp_id, src) {
 ### these are created in _setup/stressors/3_process_fishing_bycatch.Rmd:
 surface_npp <- rast(here_anx('stressors/fishing/npp', 'log_npp_present_surf_gf_mol.tif'))
 benthic_npp <- rast(here_anx('stressors/fishing/npp', 'log_npp_present_benth_gf_mol.tif'))
-npp_df <- data.frame(surface_npp = as.vector(values(surface_npp)),
-                     benthic_npp = as.vector(values(benthic_npp)),
+npp_df <- data.frame(surface_npp = exp(as.vector(values(surface_npp))),
+                     benthic_npp = exp(as.vector(values(benthic_npp))),
                      cell_id = 1:ncell(benthic_npp)) %>%
   filter(!is.na(surface_npp))
 
@@ -337,13 +337,16 @@ summarize_spp_impact <- function(spp_str_intsx, area_df, spp_name) {
     oharac::dt_join(spp_npp, by = 'cell_id', type = 'left') %>%
     mutate(intensity  = intensity * ocean_a_km2, ### "intensity" in stressor per 100 km^2
            impact     = intensity * v_score,
-           impact_npp = intensity * v_score * npp)
+           impact_npp = intensity * v_score * npp,
+           imp_ln_npp = intensity * v_score * log(npp))
   
   spp_range_km2 <- spp_intsx_area_df %>%
-    select(cell_id, ocean_a_km2) %>%
+    select(cell_id, ocean_a_km2, npp) %>%
     distinct() %>%
-    summarize(range_a_km2 = sum(ocean_a_km2), .groups = 'drop') %>%
-    .$range_a_km2
+    summarize(range_a_km2 = sum(ocean_a_km2), 
+              npp_range_km2 = sum(npp * ocean_a_km2),
+              ln_npp_range_km2 = sum(log(npp) * ocean_a_km2),
+              .groups = 'drop')
   
   imp_by_str <- spp_intsx_area_df %>%
     group_by(vulnerability, stressor) %>%
@@ -353,6 +356,8 @@ summarize_spp_impact <- function(spp_str_intsx, area_df, spp_name) {
               impact_cv      = sd(impact) / mean(impact),
               impact_npp_tot = sum(impact_npp), 
               impact_npp_cv  = sd(impact_npp) / mean(impact_npp),
+              imp_ln_npp_tot = sum(imp_ln_npp), 
+              imp_ln_npp_cv  = sd(imp_ln_npp) / mean(imp_ln_npp),
               .groups = 'drop')
   
   imp_gps <- spp_intsx_area_df %>%
@@ -365,6 +370,8 @@ summarize_spp_impact <- function(spp_str_intsx, area_df, spp_name) {
               impact_cv      = sd(impact[v_score > 0]) / mean(impact[v_score > 0]),
               impact_npp_tot = sum(impact_npp), 
               impact_npp_cv  = sd(impact_npp[v_score > 0]) / mean(impact_npp[v_score > 0]),
+              imp_ln_npp_tot = sum(imp_ln_npp), 
+              imp_ln_npp_cv  = sd(imp_ln_npp[v_score > 0]) / mean(imp_ln_npp[v_score > 0]),
                 ### (don't include 0 scored stressors in cum CV)
               .groups = 'drop')
 
@@ -377,10 +384,13 @@ summarize_spp_impact <- function(spp_str_intsx, area_df, spp_name) {
               impact_npp_tot = sum(impact_npp), 
               impact_npp_cv  = sd(impact_npp[v_score > 0]) / mean(impact_npp[v_score > 0]),
                 ### (don't include 0 scored stressors in cum CV)
+              imp_ln_npp_tot = sum(imp_ln_npp), 
+              imp_ln_npp_cv  = sd(imp_ln_npp[v_score > 0]) / mean(imp_ln_npp[v_score > 0]),
               .groups = 'drop')
   impact_df <- imp_by_str %>%
     bind_rows(imp_gps, imp_cum) %>%
-    mutate(range_km2 = spp_range_km2) %>%
+    cbind(spp_range_km2) %>%
+    # mutate(range_km2 = spp_range_km2) %>%
     select(-stressor_group)
 
   return(impact_df)
@@ -479,9 +489,13 @@ if(n_chunks > 0) {
                           by = 'stressor', type = 'left')
         
         ### calc sum of impacts by str and cum over full range and coastal range
-        imp_full_range  <- summarize_spp_impact(spp_str_intsx, ocean_a_df, spp) %>%
+        imp_full_range  <- summarize_spp_impact(spp_str_intsx = spp_str_intsx, 
+                                                area_df = ocean_a_df, 
+                                                spp_name = spp) %>%
           mutate(range = 'full')
-        imp_coast_range <- summarize_spp_impact(spp_str_intsx, coastal_a_df, spp) %>%
+        imp_coast_range <- summarize_spp_impact(spp_str_intsx = spp_str_intsx, 
+                                                area_df = coastal_a_df, 
+                                                spp_name = spp) %>%
           mutate(range = 'coastal')
         
         ### bind rows, add total and coastal ranges, and write out
