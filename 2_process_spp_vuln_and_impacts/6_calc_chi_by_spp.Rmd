@@ -335,10 +335,12 @@ summarize_spp_impact <- function(spp_str_intsx, area_df, spp_name) {
     resolve_bycatch() %>%
     oharac::dt_join(area_df, by = 'cell_id', type = 'inner') %>%
     oharac::dt_join(spp_npp, by = 'cell_id', type = 'left') %>%
-    mutate(intensity  = intensity * ocean_a_km2, ### "intensity" in stressor per 100 km^2
-           impact     = intensity * v_score,
-           impact_npp = intensity * v_score * npp,
-           imp_ln_npp = intensity * v_score * log(npp))
+    mutate(intensity   = intensity * ocean_a_km2, ### "intensity" in stressor per 100 km^2
+           int_npp     = intensity * npp, 
+           int_ln_npp  = intensity * log(npp),
+           impact      = intensity * v_score,
+           impact_npp  = intensity * v_score * npp,
+           imp_ln_npp  = intensity * v_score * log(npp))
   
   spp_range_km2 <- spp_intsx_area_df %>%
     select(cell_id, ocean_a_km2, npp) %>%
@@ -350,8 +352,14 @@ summarize_spp_impact <- function(spp_str_intsx, area_df, spp_name) {
   
   imp_by_str <- spp_intsx_area_df %>%
     group_by(vulnerability, stressor) %>%
-    summarize(intensity_tot  = sum(intensity),
+    summarize(### Intensity:
+              intensity_tot  = sum(intensity),
               intensity_cv   = sd(intensity) / mean(intensity),
+              int_npp_tot    = sum(int_npp), 
+              int_npp_cv     = sd(int_npp) / mean(int_npp),
+              int_ln_npp_tot = sum(int_ln_npp), 
+              int_ln_npp_cv  = sd(int_ln_npp) / mean(int_ln_npp),
+              ### Impacts:
               impact_tot     = sum(impact), 
               impact_cv      = sd(impact) / mean(impact),
               impact_npp_tot = sum(impact_npp), 
@@ -364,8 +372,14 @@ summarize_spp_impact <- function(spp_str_intsx, area_df, spp_name) {
     group_by(stressor_group) %>%
     summarize(vulnerability  = 'stressor_group', 
               stressor       = first(stressor_group),
+              ### intensity:
               intensity_tot  = sum(intensity),
               intensity_cv   = sd(intensity) / mean(intensity),
+              int_npp_tot    = sum(int_npp), 
+              int_npp_cv     = sd(int_npp) / mean(int_npp),
+              int_ln_npp_tot = sum(int_ln_npp), 
+              int_ln_npp_cv  = sd(int_ln_npp) / mean(int_ln_npp),
+              ### impacts:
               impact_tot     = sum(impact), 
               impact_cv      = sd(impact[v_score > 0]) / mean(impact[v_score > 0]),
               impact_npp_tot = sum(impact_npp), 
@@ -377,8 +391,14 @@ summarize_spp_impact <- function(spp_str_intsx, area_df, spp_name) {
 
   imp_cum <- spp_intsx_area_df %>%
     summarize(vulnerability = 'cumulative', stressor = 'cumulative',
+              ### intensity:
               intensity_tot  = sum(intensity),
               intensity_cv   = sd(intensity) / mean(intensity),
+              int_npp_tot    = sum(int_npp), 
+              int_npp_cv     = sd(int_npp) / mean(int_npp),
+              int_ln_npp_tot = sum(int_ln_npp), 
+              int_ln_npp_cv  = sd(int_ln_npp) / mean(int_ln_npp),
+              ### impacts:
               impact_tot     = sum(impact), 
               impact_cv      = sd(impact[v_score > 0]) / mean(impact[v_score > 0]),
               impact_npp_tot = sum(impact_npp), 

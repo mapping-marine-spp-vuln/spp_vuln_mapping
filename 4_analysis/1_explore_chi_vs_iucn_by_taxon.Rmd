@@ -94,6 +94,26 @@ if(!file.exists(spp_chi_file)) { ### unlink(spp_chi_file)
     spread(range, intensity_cv) %>%
     rename(intensity_cv_tot = full, intensity_cv_cst = coastal)
 
+  spp_npp_intensity_df <- spp_imp_raw_df %>%
+    select(f, vuln, stressor, int_npp_tot, range) %>%
+    spread(range, int_npp_tot) %>%
+    rename(int_npp_tot = full, int_npp_cst = coastal)
+    
+  spp_npp_intens_cv_df <- spp_imp_raw_df %>%
+    select(f, vuln, stressor, int_npp_cv, range) %>%
+    spread(range, int_npp_cv) %>%
+    rename(int_npp_cv_tot = full, int_npp_cv_cst = coastal)
+
+  spp_ln_npp_intensity_df <- spp_imp_raw_df %>%
+    select(f, vuln, stressor, int_ln_npp_tot, range) %>%
+    spread(range, int_ln_npp_tot) %>%
+    rename(int_ln_npp_tot = full, int_ln_npp_cst = coastal)
+    
+  spp_ln_npp_intens_cv_df <- spp_imp_raw_df %>%
+    select(f, vuln, stressor, int_ln_npp_cv, range) %>%
+    spread(range, int_ln_npp_cv) %>%
+    rename(int_ln_npp_cv_tot = full, int_ln_npp_cv_cst = coastal)
+
   spp_impacts_df <- spp_imp_raw_df %>%
     select(f, vuln, stressor, impact_tot, range) %>%
     spread(range, impact_tot) %>%
@@ -134,6 +154,10 @@ if(!file.exists(spp_chi_file)) { ### unlink(spp_chi_file)
     full_join(spp_ln_npp_cv_df, by = c('f', 'vuln', 'stressor')) %>%
     full_join(spp_intensity_df, by = c('f', 'vuln', 'stressor')) %>%
     full_join(spp_intens_cv_df, by = c('f', 'vuln', 'stressor')) %>%
+    full_join(spp_npp_intensity_df, by = c('f', 'vuln', 'stressor')) %>%
+    full_join(spp_npp_intens_cv_df, by = c('f', 'vuln', 'stressor')) %>%
+    full_join(spp_ln_npp_intensity_df, by = c('f', 'vuln', 'stressor')) %>%
+    full_join(spp_ln_npp_intens_cv_df, by = c('f', 'vuln', 'stressor')) %>%
     left_join(spp_ranges, by = 'f') %>%
     left_join(spp_npp_ranges, by = 'f') %>%
     left_join(spp_ln_npp_ranges, by = 'f') %>%
@@ -157,6 +181,10 @@ if(!file.exists(spp_chi_file)) { ### unlink(spp_chi_file)
            impact_ln_npp_cv_cst, impact_ln_npp_cv_tot,
            intensity_cst, intensity_tot, 
            intensity_cv_cst, intensity_cv_tot,
+           int_npp_cst, int_npp_tot, 
+           int_npp_cv_cst, int_npp_cv_tot,
+           int_ln_npp_cst, int_ln_npp_tot, 
+           int_ln_npp_cv_cst, int_ln_npp_cv_tot,
            range_cst_km2, range_tot_km2,
            npp_range_cst_km2, npp_range_tot_km2,
            ln_npp_range_cst_km2, ln_npp_range_tot_km2) %>%
@@ -268,7 +296,10 @@ iucn_impacts_df <- read_csv(spp_chi_file,
                             show_col_types = FALSE) %>%
   inner_join(iucn_assessed, by = c('iucn_sid', 'sciname')) %>%
   mutate(iucn_fct = toupper(cat),
-         iucn_fct = factor(iucn_fct, levels = c('LC', 'NT', 'VU', 'EN', 'CR', 'EX', 'DD')))
+         iucn_fct = factor(iucn_fct, levels = c('LC', 'NT', 'VU', 'EN', 'CR', 'EX', 'DD'))) %>%
+  group_by(sciname, iucn_sid, vuln, stressor) %>%
+  filter((n() == 1) | (map_src == 'iucn')) %>%
+  ungroup()
 
 check_df <- iucn_impacts_df %>%
   select(sciname, iucn_sid, map_src) %>%

@@ -9,7 +9,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
 
 
-<meta name="author" content="Compiled on Wed Aug 10 16:08:47 2022 by ohara" />
+<meta name="author" content="Compiled on Sat Sep 3 12:20:24 2022 by ohara" />
 
 
 <title>Calculate cumulative impacts per species</title>
@@ -1684,7 +1684,7 @@ div.tocify {
 
 <h1 class="title toc-ignore">Calculate cumulative impacts per
 species</h1>
-<h4 class="author"><em>Compiled on Wed Aug 10 16:08:47 2022 by
+<h4 class="author"><em>Compiled on Sat Sep 3 12:20:24 2022 by
 ohara</em></h4>
 
 </div>
@@ -2138,66 +2138,86 @@ intensity * vulnerability * cell area * NPP.</li>
 <span id="cb7-72"><a href="#cb7-72" aria-hidden="true" tabindex="-1"></a>    <span class="fu">resolve_bycatch</span>() <span class="sc">%&gt;%</span></span>
 <span id="cb7-73"><a href="#cb7-73" aria-hidden="true" tabindex="-1"></a>    oharac<span class="sc">::</span><span class="fu">dt_join</span>(area_df, <span class="at">by =</span> <span class="st">&#39;cell_id&#39;</span>, <span class="at">type =</span> <span class="st">&#39;inner&#39;</span>) <span class="sc">%&gt;%</span></span>
 <span id="cb7-74"><a href="#cb7-74" aria-hidden="true" tabindex="-1"></a>    oharac<span class="sc">::</span><span class="fu">dt_join</span>(spp_npp, <span class="at">by =</span> <span class="st">&#39;cell_id&#39;</span>, <span class="at">type =</span> <span class="st">&#39;left&#39;</span>) <span class="sc">%&gt;%</span></span>
-<span id="cb7-75"><a href="#cb7-75" aria-hidden="true" tabindex="-1"></a>    <span class="fu">mutate</span>(<span class="at">intensity  =</span> intensity <span class="sc">*</span> ocean_a_km2, <span class="do">### &quot;intensity&quot; in stressor per 100 km^2</span></span>
-<span id="cb7-76"><a href="#cb7-76" aria-hidden="true" tabindex="-1"></a>           <span class="at">impact     =</span> intensity <span class="sc">*</span> v_score,</span>
-<span id="cb7-77"><a href="#cb7-77" aria-hidden="true" tabindex="-1"></a>           <span class="at">impact_npp =</span> intensity <span class="sc">*</span> v_score <span class="sc">*</span> npp,</span>
-<span id="cb7-78"><a href="#cb7-78" aria-hidden="true" tabindex="-1"></a>           <span class="at">imp_ln_npp =</span> intensity <span class="sc">*</span> v_score <span class="sc">*</span> <span class="fu">log</span>(npp))</span>
-<span id="cb7-79"><a href="#cb7-79" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb7-80"><a href="#cb7-80" aria-hidden="true" tabindex="-1"></a>  spp_range_km2 <span class="ot">&lt;-</span> spp_intsx_area_df <span class="sc">%&gt;%</span></span>
-<span id="cb7-81"><a href="#cb7-81" aria-hidden="true" tabindex="-1"></a>    <span class="fu">select</span>(cell_id, ocean_a_km2, npp) <span class="sc">%&gt;%</span></span>
-<span id="cb7-82"><a href="#cb7-82" aria-hidden="true" tabindex="-1"></a>    <span class="fu">distinct</span>() <span class="sc">%&gt;%</span></span>
-<span id="cb7-83"><a href="#cb7-83" aria-hidden="true" tabindex="-1"></a>    <span class="fu">summarize</span>(<span class="at">range_a_km2 =</span> <span class="fu">sum</span>(ocean_a_km2), </span>
-<span id="cb7-84"><a href="#cb7-84" aria-hidden="true" tabindex="-1"></a>              <span class="at">npp_range_km2 =</span> <span class="fu">sum</span>(npp <span class="sc">*</span> ocean_a_km2),</span>
-<span id="cb7-85"><a href="#cb7-85" aria-hidden="true" tabindex="-1"></a>              <span class="at">ln_npp_range_km2 =</span> <span class="fu">sum</span>(<span class="fu">log</span>(npp) <span class="sc">*</span> ocean_a_km2),</span>
-<span id="cb7-86"><a href="#cb7-86" aria-hidden="true" tabindex="-1"></a>              <span class="at">.groups =</span> <span class="st">&#39;drop&#39;</span>)</span>
-<span id="cb7-87"><a href="#cb7-87" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb7-88"><a href="#cb7-88" aria-hidden="true" tabindex="-1"></a>  imp_by_str <span class="ot">&lt;-</span> spp_intsx_area_df <span class="sc">%&gt;%</span></span>
-<span id="cb7-89"><a href="#cb7-89" aria-hidden="true" tabindex="-1"></a>    <span class="fu">group_by</span>(vulnerability, stressor) <span class="sc">%&gt;%</span></span>
-<span id="cb7-90"><a href="#cb7-90" aria-hidden="true" tabindex="-1"></a>    <span class="fu">summarize</span>(<span class="at">intensity_tot  =</span> <span class="fu">sum</span>(intensity),</span>
-<span id="cb7-91"><a href="#cb7-91" aria-hidden="true" tabindex="-1"></a>              <span class="at">intensity_cv   =</span> <span class="fu">sd</span>(intensity) <span class="sc">/</span> <span class="fu">mean</span>(intensity),</span>
-<span id="cb7-92"><a href="#cb7-92" aria-hidden="true" tabindex="-1"></a>              <span class="at">impact_tot     =</span> <span class="fu">sum</span>(impact), </span>
-<span id="cb7-93"><a href="#cb7-93" aria-hidden="true" tabindex="-1"></a>              <span class="at">impact_cv      =</span> <span class="fu">sd</span>(impact) <span class="sc">/</span> <span class="fu">mean</span>(impact),</span>
-<span id="cb7-94"><a href="#cb7-94" aria-hidden="true" tabindex="-1"></a>              <span class="at">impact_npp_tot =</span> <span class="fu">sum</span>(impact_npp), </span>
-<span id="cb7-95"><a href="#cb7-95" aria-hidden="true" tabindex="-1"></a>              <span class="at">impact_npp_cv  =</span> <span class="fu">sd</span>(impact_npp) <span class="sc">/</span> <span class="fu">mean</span>(impact_npp),</span>
-<span id="cb7-96"><a href="#cb7-96" aria-hidden="true" tabindex="-1"></a>              <span class="at">imp_ln_npp_tot =</span> <span class="fu">sum</span>(imp_ln_npp), </span>
-<span id="cb7-97"><a href="#cb7-97" aria-hidden="true" tabindex="-1"></a>              <span class="at">imp_ln_npp_cv  =</span> <span class="fu">sd</span>(imp_ln_npp) <span class="sc">/</span> <span class="fu">mean</span>(imp_ln_npp),</span>
-<span id="cb7-98"><a href="#cb7-98" aria-hidden="true" tabindex="-1"></a>              <span class="at">.groups =</span> <span class="st">&#39;drop&#39;</span>)</span>
-<span id="cb7-99"><a href="#cb7-99" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb7-100"><a href="#cb7-100" aria-hidden="true" tabindex="-1"></a>  imp_gps <span class="ot">&lt;-</span> spp_intsx_area_df <span class="sc">%&gt;%</span></span>
-<span id="cb7-101"><a href="#cb7-101" aria-hidden="true" tabindex="-1"></a>    <span class="fu">group_by</span>(stressor_group) <span class="sc">%&gt;%</span></span>
-<span id="cb7-102"><a href="#cb7-102" aria-hidden="true" tabindex="-1"></a>    <span class="fu">summarize</span>(<span class="at">vulnerability  =</span> <span class="st">&#39;stressor_group&#39;</span>, </span>
-<span id="cb7-103"><a href="#cb7-103" aria-hidden="true" tabindex="-1"></a>              <span class="at">stressor       =</span> <span class="fu">first</span>(stressor_group),</span>
-<span id="cb7-104"><a href="#cb7-104" aria-hidden="true" tabindex="-1"></a>              <span class="at">intensity_tot  =</span> <span class="fu">sum</span>(intensity),</span>
-<span id="cb7-105"><a href="#cb7-105" aria-hidden="true" tabindex="-1"></a>              <span class="at">intensity_cv   =</span> <span class="fu">sd</span>(intensity) <span class="sc">/</span> <span class="fu">mean</span>(intensity),</span>
-<span id="cb7-106"><a href="#cb7-106" aria-hidden="true" tabindex="-1"></a>              <span class="at">impact_tot     =</span> <span class="fu">sum</span>(impact), </span>
-<span id="cb7-107"><a href="#cb7-107" aria-hidden="true" tabindex="-1"></a>              <span class="at">impact_cv      =</span> <span class="fu">sd</span>(impact[v_score <span class="sc">&gt;</span> <span class="dv">0</span>]) <span class="sc">/</span> <span class="fu">mean</span>(impact[v_score <span class="sc">&gt;</span> <span class="dv">0</span>]),</span>
-<span id="cb7-108"><a href="#cb7-108" aria-hidden="true" tabindex="-1"></a>              <span class="at">impact_npp_tot =</span> <span class="fu">sum</span>(impact_npp), </span>
-<span id="cb7-109"><a href="#cb7-109" aria-hidden="true" tabindex="-1"></a>              <span class="at">impact_npp_cv  =</span> <span class="fu">sd</span>(impact_npp[v_score <span class="sc">&gt;</span> <span class="dv">0</span>]) <span class="sc">/</span> <span class="fu">mean</span>(impact_npp[v_score <span class="sc">&gt;</span> <span class="dv">0</span>]),</span>
-<span id="cb7-110"><a href="#cb7-110" aria-hidden="true" tabindex="-1"></a>              <span class="at">imp_ln_npp_tot =</span> <span class="fu">sum</span>(imp_ln_npp), </span>
-<span id="cb7-111"><a href="#cb7-111" aria-hidden="true" tabindex="-1"></a>              <span class="at">imp_ln_npp_cv  =</span> <span class="fu">sd</span>(imp_ln_npp[v_score <span class="sc">&gt;</span> <span class="dv">0</span>]) <span class="sc">/</span> <span class="fu">mean</span>(imp_ln_npp[v_score <span class="sc">&gt;</span> <span class="dv">0</span>]),</span>
-<span id="cb7-112"><a href="#cb7-112" aria-hidden="true" tabindex="-1"></a>                <span class="do">### (don&#39;t include 0 scored stressors in cum CV)</span></span>
-<span id="cb7-113"><a href="#cb7-113" aria-hidden="true" tabindex="-1"></a>              <span class="at">.groups =</span> <span class="st">&#39;drop&#39;</span>)</span>
-<span id="cb7-114"><a href="#cb7-114" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-115"><a href="#cb7-115" aria-hidden="true" tabindex="-1"></a>  imp_cum <span class="ot">&lt;-</span> spp_intsx_area_df <span class="sc">%&gt;%</span></span>
-<span id="cb7-116"><a href="#cb7-116" aria-hidden="true" tabindex="-1"></a>    <span class="fu">summarize</span>(<span class="at">vulnerability =</span> <span class="st">&#39;cumulative&#39;</span>, <span class="at">stressor =</span> <span class="st">&#39;cumulative&#39;</span>,</span>
-<span id="cb7-117"><a href="#cb7-117" aria-hidden="true" tabindex="-1"></a>              <span class="at">intensity_tot  =</span> <span class="fu">sum</span>(intensity),</span>
-<span id="cb7-118"><a href="#cb7-118" aria-hidden="true" tabindex="-1"></a>              <span class="at">intensity_cv   =</span> <span class="fu">sd</span>(intensity) <span class="sc">/</span> <span class="fu">mean</span>(intensity),</span>
-<span id="cb7-119"><a href="#cb7-119" aria-hidden="true" tabindex="-1"></a>              <span class="at">impact_tot     =</span> <span class="fu">sum</span>(impact), </span>
-<span id="cb7-120"><a href="#cb7-120" aria-hidden="true" tabindex="-1"></a>              <span class="at">impact_cv      =</span> <span class="fu">sd</span>(impact[v_score <span class="sc">&gt;</span> <span class="dv">0</span>]) <span class="sc">/</span> <span class="fu">mean</span>(impact[v_score <span class="sc">&gt;</span> <span class="dv">0</span>]),</span>
-<span id="cb7-121"><a href="#cb7-121" aria-hidden="true" tabindex="-1"></a>              <span class="at">impact_npp_tot =</span> <span class="fu">sum</span>(impact_npp), </span>
-<span id="cb7-122"><a href="#cb7-122" aria-hidden="true" tabindex="-1"></a>              <span class="at">impact_npp_cv  =</span> <span class="fu">sd</span>(impact_npp[v_score <span class="sc">&gt;</span> <span class="dv">0</span>]) <span class="sc">/</span> <span class="fu">mean</span>(impact_npp[v_score <span class="sc">&gt;</span> <span class="dv">0</span>]),</span>
-<span id="cb7-123"><a href="#cb7-123" aria-hidden="true" tabindex="-1"></a>                <span class="do">### (don&#39;t include 0 scored stressors in cum CV)</span></span>
+<span id="cb7-75"><a href="#cb7-75" aria-hidden="true" tabindex="-1"></a>    <span class="fu">mutate</span>(<span class="at">intensity   =</span> intensity <span class="sc">*</span> ocean_a_km2, <span class="do">### &quot;intensity&quot; in stressor per 100 km^2</span></span>
+<span id="cb7-76"><a href="#cb7-76" aria-hidden="true" tabindex="-1"></a>           <span class="at">int_npp     =</span> intensity <span class="sc">*</span> npp, </span>
+<span id="cb7-77"><a href="#cb7-77" aria-hidden="true" tabindex="-1"></a>           <span class="at">int_ln_npp  =</span> intensity <span class="sc">*</span> <span class="fu">log</span>(npp),</span>
+<span id="cb7-78"><a href="#cb7-78" aria-hidden="true" tabindex="-1"></a>           <span class="at">impact      =</span> intensity <span class="sc">*</span> v_score,</span>
+<span id="cb7-79"><a href="#cb7-79" aria-hidden="true" tabindex="-1"></a>           <span class="at">impact_npp  =</span> intensity <span class="sc">*</span> v_score <span class="sc">*</span> npp,</span>
+<span id="cb7-80"><a href="#cb7-80" aria-hidden="true" tabindex="-1"></a>           <span class="at">imp_ln_npp  =</span> intensity <span class="sc">*</span> v_score <span class="sc">*</span> <span class="fu">log</span>(npp))</span>
+<span id="cb7-81"><a href="#cb7-81" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb7-82"><a href="#cb7-82" aria-hidden="true" tabindex="-1"></a>  spp_range_km2 <span class="ot">&lt;-</span> spp_intsx_area_df <span class="sc">%&gt;%</span></span>
+<span id="cb7-83"><a href="#cb7-83" aria-hidden="true" tabindex="-1"></a>    <span class="fu">select</span>(cell_id, ocean_a_km2, npp) <span class="sc">%&gt;%</span></span>
+<span id="cb7-84"><a href="#cb7-84" aria-hidden="true" tabindex="-1"></a>    <span class="fu">distinct</span>() <span class="sc">%&gt;%</span></span>
+<span id="cb7-85"><a href="#cb7-85" aria-hidden="true" tabindex="-1"></a>    <span class="fu">summarize</span>(<span class="at">range_a_km2 =</span> <span class="fu">sum</span>(ocean_a_km2), </span>
+<span id="cb7-86"><a href="#cb7-86" aria-hidden="true" tabindex="-1"></a>              <span class="at">npp_range_km2 =</span> <span class="fu">sum</span>(npp <span class="sc">*</span> ocean_a_km2),</span>
+<span id="cb7-87"><a href="#cb7-87" aria-hidden="true" tabindex="-1"></a>              <span class="at">ln_npp_range_km2 =</span> <span class="fu">sum</span>(<span class="fu">log</span>(npp) <span class="sc">*</span> ocean_a_km2),</span>
+<span id="cb7-88"><a href="#cb7-88" aria-hidden="true" tabindex="-1"></a>              <span class="at">.groups =</span> <span class="st">&#39;drop&#39;</span>)</span>
+<span id="cb7-89"><a href="#cb7-89" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb7-90"><a href="#cb7-90" aria-hidden="true" tabindex="-1"></a>  imp_by_str <span class="ot">&lt;-</span> spp_intsx_area_df <span class="sc">%&gt;%</span></span>
+<span id="cb7-91"><a href="#cb7-91" aria-hidden="true" tabindex="-1"></a>    <span class="fu">group_by</span>(vulnerability, stressor) <span class="sc">%&gt;%</span></span>
+<span id="cb7-92"><a href="#cb7-92" aria-hidden="true" tabindex="-1"></a>    <span class="fu">summarize</span>(<span class="do">### Intensity:</span></span>
+<span id="cb7-93"><a href="#cb7-93" aria-hidden="true" tabindex="-1"></a>              <span class="at">intensity_tot  =</span> <span class="fu">sum</span>(intensity),</span>
+<span id="cb7-94"><a href="#cb7-94" aria-hidden="true" tabindex="-1"></a>              <span class="at">intensity_cv   =</span> <span class="fu">sd</span>(intensity) <span class="sc">/</span> <span class="fu">mean</span>(intensity),</span>
+<span id="cb7-95"><a href="#cb7-95" aria-hidden="true" tabindex="-1"></a>              <span class="at">int_npp_tot    =</span> <span class="fu">sum</span>(int_npp), </span>
+<span id="cb7-96"><a href="#cb7-96" aria-hidden="true" tabindex="-1"></a>              <span class="at">int_npp_cv     =</span> <span class="fu">sd</span>(int_npp) <span class="sc">/</span> <span class="fu">mean</span>(int_npp),</span>
+<span id="cb7-97"><a href="#cb7-97" aria-hidden="true" tabindex="-1"></a>              <span class="at">int_ln_npp_tot =</span> <span class="fu">sum</span>(int_ln_npp), </span>
+<span id="cb7-98"><a href="#cb7-98" aria-hidden="true" tabindex="-1"></a>              <span class="at">int_ln_npp_cv  =</span> <span class="fu">sd</span>(int_ln_npp) <span class="sc">/</span> <span class="fu">mean</span>(int_ln_npp),</span>
+<span id="cb7-99"><a href="#cb7-99" aria-hidden="true" tabindex="-1"></a>              <span class="do">### Impacts:</span></span>
+<span id="cb7-100"><a href="#cb7-100" aria-hidden="true" tabindex="-1"></a>              <span class="at">impact_tot     =</span> <span class="fu">sum</span>(impact), </span>
+<span id="cb7-101"><a href="#cb7-101" aria-hidden="true" tabindex="-1"></a>              <span class="at">impact_cv      =</span> <span class="fu">sd</span>(impact) <span class="sc">/</span> <span class="fu">mean</span>(impact),</span>
+<span id="cb7-102"><a href="#cb7-102" aria-hidden="true" tabindex="-1"></a>              <span class="at">impact_npp_tot =</span> <span class="fu">sum</span>(impact_npp), </span>
+<span id="cb7-103"><a href="#cb7-103" aria-hidden="true" tabindex="-1"></a>              <span class="at">impact_npp_cv  =</span> <span class="fu">sd</span>(impact_npp) <span class="sc">/</span> <span class="fu">mean</span>(impact_npp),</span>
+<span id="cb7-104"><a href="#cb7-104" aria-hidden="true" tabindex="-1"></a>              <span class="at">imp_ln_npp_tot =</span> <span class="fu">sum</span>(imp_ln_npp), </span>
+<span id="cb7-105"><a href="#cb7-105" aria-hidden="true" tabindex="-1"></a>              <span class="at">imp_ln_npp_cv  =</span> <span class="fu">sd</span>(imp_ln_npp) <span class="sc">/</span> <span class="fu">mean</span>(imp_ln_npp),</span>
+<span id="cb7-106"><a href="#cb7-106" aria-hidden="true" tabindex="-1"></a>              <span class="at">.groups =</span> <span class="st">&#39;drop&#39;</span>)</span>
+<span id="cb7-107"><a href="#cb7-107" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb7-108"><a href="#cb7-108" aria-hidden="true" tabindex="-1"></a>  imp_gps <span class="ot">&lt;-</span> spp_intsx_area_df <span class="sc">%&gt;%</span></span>
+<span id="cb7-109"><a href="#cb7-109" aria-hidden="true" tabindex="-1"></a>    <span class="fu">group_by</span>(stressor_group) <span class="sc">%&gt;%</span></span>
+<span id="cb7-110"><a href="#cb7-110" aria-hidden="true" tabindex="-1"></a>    <span class="fu">summarize</span>(<span class="at">vulnerability  =</span> <span class="st">&#39;stressor_group&#39;</span>, </span>
+<span id="cb7-111"><a href="#cb7-111" aria-hidden="true" tabindex="-1"></a>              <span class="at">stressor       =</span> <span class="fu">first</span>(stressor_group),</span>
+<span id="cb7-112"><a href="#cb7-112" aria-hidden="true" tabindex="-1"></a>              <span class="do">### intensity:</span></span>
+<span id="cb7-113"><a href="#cb7-113" aria-hidden="true" tabindex="-1"></a>              <span class="at">intensity_tot  =</span> <span class="fu">sum</span>(intensity),</span>
+<span id="cb7-114"><a href="#cb7-114" aria-hidden="true" tabindex="-1"></a>              <span class="at">intensity_cv   =</span> <span class="fu">sd</span>(intensity) <span class="sc">/</span> <span class="fu">mean</span>(intensity),</span>
+<span id="cb7-115"><a href="#cb7-115" aria-hidden="true" tabindex="-1"></a>              <span class="at">int_npp_tot    =</span> <span class="fu">sum</span>(int_npp), </span>
+<span id="cb7-116"><a href="#cb7-116" aria-hidden="true" tabindex="-1"></a>              <span class="at">int_npp_cv     =</span> <span class="fu">sd</span>(int_npp) <span class="sc">/</span> <span class="fu">mean</span>(int_npp),</span>
+<span id="cb7-117"><a href="#cb7-117" aria-hidden="true" tabindex="-1"></a>              <span class="at">int_ln_npp_tot =</span> <span class="fu">sum</span>(int_ln_npp), </span>
+<span id="cb7-118"><a href="#cb7-118" aria-hidden="true" tabindex="-1"></a>              <span class="at">int_ln_npp_cv  =</span> <span class="fu">sd</span>(int_ln_npp) <span class="sc">/</span> <span class="fu">mean</span>(int_ln_npp),</span>
+<span id="cb7-119"><a href="#cb7-119" aria-hidden="true" tabindex="-1"></a>              <span class="do">### impacts:</span></span>
+<span id="cb7-120"><a href="#cb7-120" aria-hidden="true" tabindex="-1"></a>              <span class="at">impact_tot     =</span> <span class="fu">sum</span>(impact), </span>
+<span id="cb7-121"><a href="#cb7-121" aria-hidden="true" tabindex="-1"></a>              <span class="at">impact_cv      =</span> <span class="fu">sd</span>(impact[v_score <span class="sc">&gt;</span> <span class="dv">0</span>]) <span class="sc">/</span> <span class="fu">mean</span>(impact[v_score <span class="sc">&gt;</span> <span class="dv">0</span>]),</span>
+<span id="cb7-122"><a href="#cb7-122" aria-hidden="true" tabindex="-1"></a>              <span class="at">impact_npp_tot =</span> <span class="fu">sum</span>(impact_npp), </span>
+<span id="cb7-123"><a href="#cb7-123" aria-hidden="true" tabindex="-1"></a>              <span class="at">impact_npp_cv  =</span> <span class="fu">sd</span>(impact_npp[v_score <span class="sc">&gt;</span> <span class="dv">0</span>]) <span class="sc">/</span> <span class="fu">mean</span>(impact_npp[v_score <span class="sc">&gt;</span> <span class="dv">0</span>]),</span>
 <span id="cb7-124"><a href="#cb7-124" aria-hidden="true" tabindex="-1"></a>              <span class="at">imp_ln_npp_tot =</span> <span class="fu">sum</span>(imp_ln_npp), </span>
 <span id="cb7-125"><a href="#cb7-125" aria-hidden="true" tabindex="-1"></a>              <span class="at">imp_ln_npp_cv  =</span> <span class="fu">sd</span>(imp_ln_npp[v_score <span class="sc">&gt;</span> <span class="dv">0</span>]) <span class="sc">/</span> <span class="fu">mean</span>(imp_ln_npp[v_score <span class="sc">&gt;</span> <span class="dv">0</span>]),</span>
-<span id="cb7-126"><a href="#cb7-126" aria-hidden="true" tabindex="-1"></a>              <span class="at">.groups =</span> <span class="st">&#39;drop&#39;</span>)</span>
-<span id="cb7-127"><a href="#cb7-127" aria-hidden="true" tabindex="-1"></a>  impact_df <span class="ot">&lt;-</span> imp_by_str <span class="sc">%&gt;%</span></span>
-<span id="cb7-128"><a href="#cb7-128" aria-hidden="true" tabindex="-1"></a>    <span class="fu">bind_rows</span>(imp_gps, imp_cum) <span class="sc">%&gt;%</span></span>
-<span id="cb7-129"><a href="#cb7-129" aria-hidden="true" tabindex="-1"></a>    <span class="fu">cbind</span>(spp_range_km2) <span class="sc">%&gt;%</span></span>
-<span id="cb7-130"><a href="#cb7-130" aria-hidden="true" tabindex="-1"></a>    <span class="co"># mutate(range_km2 = spp_range_km2) %&gt;%</span></span>
-<span id="cb7-131"><a href="#cb7-131" aria-hidden="true" tabindex="-1"></a>    <span class="fu">select</span>(<span class="sc">-</span>stressor_group)</span>
-<span id="cb7-132"><a href="#cb7-132" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-133"><a href="#cb7-133" aria-hidden="true" tabindex="-1"></a>  <span class="fu">return</span>(impact_df)</span>
-<span id="cb7-134"><a href="#cb7-134" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
+<span id="cb7-126"><a href="#cb7-126" aria-hidden="true" tabindex="-1"></a>                <span class="do">### (don&#39;t include 0 scored stressors in cum CV)</span></span>
+<span id="cb7-127"><a href="#cb7-127" aria-hidden="true" tabindex="-1"></a>              <span class="at">.groups =</span> <span class="st">&#39;drop&#39;</span>)</span>
+<span id="cb7-128"><a href="#cb7-128" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-129"><a href="#cb7-129" aria-hidden="true" tabindex="-1"></a>  imp_cum <span class="ot">&lt;-</span> spp_intsx_area_df <span class="sc">%&gt;%</span></span>
+<span id="cb7-130"><a href="#cb7-130" aria-hidden="true" tabindex="-1"></a>    <span class="fu">summarize</span>(<span class="at">vulnerability =</span> <span class="st">&#39;cumulative&#39;</span>, <span class="at">stressor =</span> <span class="st">&#39;cumulative&#39;</span>,</span>
+<span id="cb7-131"><a href="#cb7-131" aria-hidden="true" tabindex="-1"></a>              <span class="do">### intensity:</span></span>
+<span id="cb7-132"><a href="#cb7-132" aria-hidden="true" tabindex="-1"></a>              <span class="at">intensity_tot  =</span> <span class="fu">sum</span>(intensity),</span>
+<span id="cb7-133"><a href="#cb7-133" aria-hidden="true" tabindex="-1"></a>              <span class="at">intensity_cv   =</span> <span class="fu">sd</span>(intensity) <span class="sc">/</span> <span class="fu">mean</span>(intensity),</span>
+<span id="cb7-134"><a href="#cb7-134" aria-hidden="true" tabindex="-1"></a>              <span class="at">int_npp_tot    =</span> <span class="fu">sum</span>(int_npp), </span>
+<span id="cb7-135"><a href="#cb7-135" aria-hidden="true" tabindex="-1"></a>              <span class="at">int_npp_cv     =</span> <span class="fu">sd</span>(int_npp) <span class="sc">/</span> <span class="fu">mean</span>(int_npp),</span>
+<span id="cb7-136"><a href="#cb7-136" aria-hidden="true" tabindex="-1"></a>              <span class="at">int_ln_npp_tot =</span> <span class="fu">sum</span>(int_ln_npp), </span>
+<span id="cb7-137"><a href="#cb7-137" aria-hidden="true" tabindex="-1"></a>              <span class="at">int_ln_npp_cv  =</span> <span class="fu">sd</span>(int_ln_npp) <span class="sc">/</span> <span class="fu">mean</span>(int_ln_npp),</span>
+<span id="cb7-138"><a href="#cb7-138" aria-hidden="true" tabindex="-1"></a>              <span class="do">### impacts:</span></span>
+<span id="cb7-139"><a href="#cb7-139" aria-hidden="true" tabindex="-1"></a>              <span class="at">impact_tot     =</span> <span class="fu">sum</span>(impact), </span>
+<span id="cb7-140"><a href="#cb7-140" aria-hidden="true" tabindex="-1"></a>              <span class="at">impact_cv      =</span> <span class="fu">sd</span>(impact[v_score <span class="sc">&gt;</span> <span class="dv">0</span>]) <span class="sc">/</span> <span class="fu">mean</span>(impact[v_score <span class="sc">&gt;</span> <span class="dv">0</span>]),</span>
+<span id="cb7-141"><a href="#cb7-141" aria-hidden="true" tabindex="-1"></a>              <span class="at">impact_npp_tot =</span> <span class="fu">sum</span>(impact_npp), </span>
+<span id="cb7-142"><a href="#cb7-142" aria-hidden="true" tabindex="-1"></a>              <span class="at">impact_npp_cv  =</span> <span class="fu">sd</span>(impact_npp[v_score <span class="sc">&gt;</span> <span class="dv">0</span>]) <span class="sc">/</span> <span class="fu">mean</span>(impact_npp[v_score <span class="sc">&gt;</span> <span class="dv">0</span>]),</span>
+<span id="cb7-143"><a href="#cb7-143" aria-hidden="true" tabindex="-1"></a>                <span class="do">### (don&#39;t include 0 scored stressors in cum CV)</span></span>
+<span id="cb7-144"><a href="#cb7-144" aria-hidden="true" tabindex="-1"></a>              <span class="at">imp_ln_npp_tot =</span> <span class="fu">sum</span>(imp_ln_npp), </span>
+<span id="cb7-145"><a href="#cb7-145" aria-hidden="true" tabindex="-1"></a>              <span class="at">imp_ln_npp_cv  =</span> <span class="fu">sd</span>(imp_ln_npp[v_score <span class="sc">&gt;</span> <span class="dv">0</span>]) <span class="sc">/</span> <span class="fu">mean</span>(imp_ln_npp[v_score <span class="sc">&gt;</span> <span class="dv">0</span>]),</span>
+<span id="cb7-146"><a href="#cb7-146" aria-hidden="true" tabindex="-1"></a>              <span class="at">.groups =</span> <span class="st">&#39;drop&#39;</span>)</span>
+<span id="cb7-147"><a href="#cb7-147" aria-hidden="true" tabindex="-1"></a>  impact_df <span class="ot">&lt;-</span> imp_by_str <span class="sc">%&gt;%</span></span>
+<span id="cb7-148"><a href="#cb7-148" aria-hidden="true" tabindex="-1"></a>    <span class="fu">bind_rows</span>(imp_gps, imp_cum) <span class="sc">%&gt;%</span></span>
+<span id="cb7-149"><a href="#cb7-149" aria-hidden="true" tabindex="-1"></a>    <span class="fu">cbind</span>(spp_range_km2) <span class="sc">%&gt;%</span></span>
+<span id="cb7-150"><a href="#cb7-150" aria-hidden="true" tabindex="-1"></a>    <span class="co"># mutate(range_km2 = spp_range_km2) %&gt;%</span></span>
+<span id="cb7-151"><a href="#cb7-151" aria-hidden="true" tabindex="-1"></a>    <span class="fu">select</span>(<span class="sc">-</span>stressor_group)</span>
+<span id="cb7-152"><a href="#cb7-152" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-153"><a href="#cb7-153" aria-hidden="true" tabindex="-1"></a>  <span class="fu">return</span>(impact_df)</span>
+<span id="cb7-154"><a href="#cb7-154" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
 <div class="sourceCode" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>ocean_a_rast <span class="ot">&lt;-</span> <span class="fu">rast</span>(<span class="fu">here</span>(<span class="st">&#39;_spatial/ocean_area_mol.tif&#39;</span>))</span>
 <span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>ocean_a_df <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(<span class="at">ocean_a_km2 =</span> <span class="fu">as.vector</span>(<span class="fu">values</span>(ocean_a_rast) <span class="sc">*</span> <span class="dv">100</span>)) <span class="sc">%&gt;%</span></span>
 <span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">cell_id =</span> <span class="dv">1</span><span class="sc">:</span><span class="fu">n</span>()) <span class="sc">%&gt;%</span></span>

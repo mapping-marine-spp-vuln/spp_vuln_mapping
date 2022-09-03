@@ -879,3 +879,80 @@ high_impact_spp_54 <- coi_impact_df_54 %>%
 DT::datatable(high_impact_spp_54)
 ```
 
+## Check habitats by cell
+
+```{r}
+hab_fs <- list.files(here('_data/habitat_maps'), pattern = '.tif', full.names = TRUE)
+hab_stack <- rast(hab_fs)
+
+cell_vec <- c(low_impact_fes_37$cell_id, high_impact_fes_24$cell_id, high_impact_fes_54$cell_id) %>%
+  unique()
+info_df <- diff_df %>%
+  select(cell_id, realm, province, coastal) %>%
+  distinct()
+
+hab_vuln_on_github <- 'https://raw.githubusercontent.com/OHI-Science/impact_acceleration/master/vulnerability_weighting_matrix.csv'
+hab_vulns <- read_csv(hab_vuln_on_github) %>%
+  janitor::clean_names() %>%
+  slice(-1) %>%                       ### drop descriptive name row
+  mutate(across(-1, as.numeric)) %>%  ### convert all but first col (pressure) to numeric
+  gather(hab, vuln, -pressure)
+
+hab_df <- data.frame(values(hab_stack)) %>%
+  mutate(cell_id = 1:n()) %>%
+  filter(cell_id %in% cell_vec) %>%
+  gather(hab, presence, -cell_id) %>%
+  filter(!is.na(presence) & presence > 0) %>%
+  left_join(info_df, by = 'cell_id') %>%
+  left_join(hab_vulns, by = 'hab')
+
+DT::datatable(hab_df)
+```
+
+## Check fishing pressure by cell
+
+```{r}
+w_dir <- here_anx('../../git-annex/globalprep/_raw_data', 
+                  'IMAS_GlobalFisheriesLandings/d2020')
+
+w_codes_xlsx <- file.path(w_dir, 'Codes_raw.xlsx')
+# codes_sheets <- readxl::excel_sheets(codes_xlsx)
+w_cell_df <- readxl::read_excel(w_codes_xlsx, sheet = 'Cell') %>%
+  janitor::clean_names() %>%
+  select(-c(x5:x7))
+
+w_gear_df <- readxl::read_excel(w_codes_xlsx, sheet = 'Gear') %>%
+  janitor::clean_names() %>%
+  select(-x9, -x10)
+### Benthic gears: trap (f_gear_code = 4), dredge (5), trawl (6)
+
+w_taxa_raw_df <- readxl::read_excel(w_codes_xlsx, sheet = 'Taxa') %>% 
+  janitor::clean_names() %>%
+  select(-c(x8:taxonkey_11), taxonkey = taxonkey_1)
+
+w_catch_df <- readRDS(file.path(w_dir, 'Catch2015_2019.rds')) %>%
+  janitor::clean_names() %>%
+  mutate(benthic = f_gear_code %in% 4:6)
+
+cell_id_to_loiczid <- data.frame(loiczid = as.vector(values(rast(here('_spatial/loiczid_mol.tif'))))) %>%
+  mutate(cell_id = 1:n()) %>%
+  filter(cell_id %in% cell_vec)
+
+watson_df <- w_catch_df %>%
+  inner_join(cell_id_to_loiczid, by = c('cell' = 'loiczid')) %>%
+  left_join(w_gear_df, by = 'gear') %>%
+  left_join(w_taxa_raw_df, by = 'taxonkey') %>%
+  left_join(info_df, by = 'cell_id') %>%
+  select(i_year, 
+         reported_ind, iuuind, discards_ind, reported_nind, iuunind, discards_nind,
+         benthic, vb_desc, fao_gear_name, fleet_gear_name,
+         taxon_name, common_name, descript,
+         cell_id, realm, province, coastal) %>%
+  distinct() %>%
+  gather(catch_type, catch, ends_with('ind')) %>%
+  filter(catch > 0)
+
+andaman_catch <- watson_df %>%
+  filter(province == 'Andaman')
+```
+
