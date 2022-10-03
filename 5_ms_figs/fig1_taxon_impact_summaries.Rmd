@@ -216,19 +216,19 @@ plot_panel <- function(df, means_df,
   p <- ggplot(df, aes(x = imp)) +
     ### draw the base boxplot
       geom_boxplot(aes(y = taxon, fill = range, color = range),
-                   width = .25, position = position_dodge(width = -.6),
-                   size = .25, # color = 'black', fill = 'black',
-                   outlier.color = 'grey80', 
+                   width = 0.3, position = position_dodge(width = -.7),
+                   size = 0.3, # color = 'black', fill = 'black',
+                   outlier.color = NA, # 'grey80', 
                    outlier.size = .02) +
     ### draw a vertical line for left-hand axis (impact = 0)
       geom_vline(xintercept = 0, color = 'black') +
     ### add points for mean and median
       geom_point(data = means_df, aes(x = avg, y = taxon, group = range),
-                 position = position_dodge(width = -.6),
-                 shape = '|', color = 'black', size = 1.5, stroke = 2.5) +
+                 position = position_dodge(width = -.7),
+                 shape = '|', color = 'black', size = 1, stroke = 2.5) +
       geom_point(data = means_df, aes(x = med, y = taxon, group = range),
-                 position = position_dodge(width = -.6),
-                 shape = 21, color = 'black', fill = 'white', size = 1.2) +
+                 position = position_dodge(width = -.7),
+                 shape = 21, color = 'black', fill = 'white', size = 1.0) +
     ### clean up scales
       scale_fill_manual(values = range_cols, breaks = names(range_cols),
                         guide = guide_legend(reverse = FALSE)) +
@@ -241,6 +241,8 @@ plot_panel <- function(df, means_df,
       theme(panel.background = element_blank(),
             legend.text = element_text(family = 'benton', size = 7),
             legend.title = element_text(family = 'bentonbold', size = 7),
+            legend.key.size = unit(.20, 'cm'),
+            legend.background = element_blank(),
             axis.title.y = element_blank(),
             axis.text.x = element_text(family = 'benton', size = 7),
             axis.title.x = element_text(family = 'bentonbold', size = 7, hjust = 0)) +
@@ -276,6 +278,7 @@ all_avg_med <- tx_avg_med %>%
   filter(type == 'NPP-weighted mean')
 
 panel_a <- plot_panel(df = all_imp, means_df = all_avg_med, 
+                      x_lims = c(0, .8),
                       x_lab = 'Mean cumulative impact')
 
 ```
@@ -293,7 +296,11 @@ cc_avg_med <- tx_avg_med %>%
 
 panel_b <- plot_panel(df = cc_imp, means_df = cc_avg_med, 
                       x_lab = 'Mean climate impact',
-                      y_text = FALSE)
+                      x_lims = c(0, .8),
+                      y_text = FALSE) +
+  ### blank spot for the legend
+  annotate('rect', fill = 'white', color = 'grey90', size = .25,
+           xmin = 0.4, xmax = 0.8, ymin = 1, ymax = 4)
 ```
 
 ### Panel C: Non-climate stressors
@@ -374,8 +381,8 @@ pal <- c(pal_mtx)[-9]
 
 panel_d <- ggplot(tx_imp_by_str, aes(x = mean_prop, y = taxon)) +
   geom_col(aes(fill = str_lbl)) +
-  scale_fill_manual(values = pal,
-                    guide = guide_legend(ncol = 2)) +
+  scale_fill_manual(values = pal) +
+                    #guide = guide_legend(ncol = 2)) +
   scale_x_continuous(expand = c(0, 0), limits = c(0, 1), 
                      breaks = seq(0, 1, .2)) +
   ### draw a vertical line for left-hand axis (impact = 0)
@@ -385,7 +392,7 @@ panel_d <- ggplot(tx_imp_by_str, aes(x = mean_prop, y = taxon)) +
   theme(panel.background = element_blank(),
         legend.text = element_text(family = 'benton', size = 7),
         legend.title = element_text(family = 'bentonbold', size = 7),
-        legend.key.size = unit(.25, 'cm'),
+        legend.key.size = unit(.22, 'cm'),
         axis.title.y = element_blank(),
         axis.text.x = element_text(family = 'benton', size = 7),
         axis.text.y = element_text(family = 'bentonbold', size = 7),
@@ -400,7 +407,7 @@ panel_d <- ggplot(tx_imp_by_str, aes(x = mean_prop, y = taxon)) +
 panel_a_plot <- panel_a + theme(legend.position = 'none')
 panel_b_plot <- panel_b + theme(legend.position = 'none')
 panel_c_plot <- panel_c + theme(legend.position = 'none')
-# panel_a_lgd  <- get_legend(panel_a)
+panel_a_lgd  <- get_legend(panel_a)
 
 
 fig1 <- ggdraw() +
@@ -409,7 +416,7 @@ fig1 <- ggdraw() +
   draw_plot(panel_b_plot,  x = 0.415, y = 0.00, height = 1, width = 0.255) +
   draw_plot(panel_c_plot,  x = 0.67, y = 0.00, height = 1, width = 0.33) +
   ### draw legends:
-  # draw_plot(panel_a_lgd, x = .33, y = .01, height = .03, width = .50) +
+  draw_plot(panel_a_lgd, x = .533, y = .24, height = .10, width = .15) +
   ### Panel labels:
   draw_label('A', x = 0.03, y = .99, hjust = 0, vjust = 1, 
              size = 10, fontfamily = 'bentonbold') +
@@ -425,11 +432,13 @@ ggsave(fig1_file, width = 12, height = 5, units = 'cm', dpi = 300)
 knitr::include_graphics(fig1_file)
 
 fig1_fourpanel <- ggdraw() +
-  draw_plot(fig1, x = 0, y = .35, height = .65, width = 1) +
-  draw_plot(panel_d, x = 0, y = 0, height = .35, width = 1)
+  draw_plot(fig1, x = 0, y = .5, height = .5, width = 1) +
+  draw_plot(panel_d, x = 0, y = 0, height = .49, width = 1.06) +
+  draw_label('D', x = 0.03, y = .48, hjust = 0, vjust = 1,  
+             size = 10, fontfamily = 'bentonbold')
 
 fig1_fourpanel_file <- here('5_ms_figs/fig1_taxon_impact_summaries_fourpanel.png')
-ggsave(fig1_fourpanel_file, width = 12, height = 9, units = 'cm', dpi = 300)
+ggsave(fig1_fourpanel_file, width = 12, height = 10, units = 'cm', dpi = 300)
 
 knitr::include_graphics(fig1_fourpanel_file)
 
