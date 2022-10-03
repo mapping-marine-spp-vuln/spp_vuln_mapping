@@ -64,12 +64,14 @@ if(!file.exists(spp_imp_sum_file)) { ### unlink(spp_imp_sum_file)
   
   spp_imp_scores <- spp_imp_raw_df %>%
     # filter(vuln %in% c('stressor_group', 'cumulative')) %>%
-    filter(range == 'full') %>%
-    filter(range_a_km2 > 0) %>%
+    # filter(range == 'full') %>%
+    group_by(f) %>%
+    filter(!all(range_a_km2 == 0)) %>%
+    ungroup()  %>%
     mutate(stressor = case_when(stressor =='cumulative' ~ 'all',
                                 vuln == 'stressor_group' & stressor != 'climate' ~ 'non-climate', 
                                 TRUE ~ stressor)) %>%
-    group_by(f, stressor) %>%
+    group_by(f, stressor, range) %>%
     summarize(mean_imp = sum(impact_tot/range_a_km2), 
               mean_imp_npp = sum(impact_npp_tot/npp_range_km2),
               .groups = 'drop') %>%
@@ -90,6 +92,7 @@ if(!file.exists(spp_taxa_sum_file)) {
     distinct() %>%
     mutate(taxon = str_replace(taxon, 'crustacea_arthropods', 'crustaceans'),
            taxon = str_replace(taxon, 'reptiles', 'marine reptiles'),
+           taxon = str_replace(taxon, 'fish', 'bony fishes'),
            taxon = str_replace(taxon, '_', ' '),
            taxon = str_to_sentence(taxon))
   write_csv(spp_taxa, spp_taxa_sum_file)
@@ -115,14 +118,15 @@ taxa_imp_scores <- spp_imp_scores %>%
   distinct()
   
 taxa_means <- taxa_imp_scores %>%
-  group_by(taxon, stressor, type) %>%
+  group_by(taxon, stressor, type, range) %>%
   summarize(m = mean(imp), s = sd(imp), r1 = min(imp), r2 = max(imp))
 all_means <- taxa_imp_scores %>%
-  group_by(stressor, type) %>%
+  group_by(stressor, type, range) %>%
   summarize(m = mean(imp), v = var(imp))
 
 nppwt_df <- taxa_imp_scores %>%
   filter(type == 'NPP-weighted mean') %>%
+  filter(range == 'full') %>%
   pivot_wider(names_from = 'stressor', values_from = 'imp')
 
 taxa_pcts <- taxa_imp_scores %>%
@@ -134,6 +138,7 @@ taxa_pcts <- taxa_imp_scores %>%
 nppwt_top1pct <- nppwt_df %>%
   arrange(desc(all)) %>%
   head(as.integer(nrow(.) * .01))
+
 nppwt_top1pct %>%
   group_by(taxon) %>%
   summarize(n = n(),
@@ -166,6 +171,7 @@ all_tx_imp_scores <- taxa_imp_scores %>%
 tx_order <- all_tx_imp_scores %>%
   filter(type == 'NPP-weighted mean') %>%
   filter(stressor == 'all') %>%
+  filter(range == 'full') %>%
   group_by(taxon) %>%
   summarize(m = mean(imp)) %>%
   arrange(m) %>%
@@ -175,12 +181,13 @@ tx_order <- all_tx_imp_scores %>%
 
 tx_imp_df <- all_tx_imp_scores %>%
   mutate(taxon = factor(taxon, levels = tx_order),
-         type = factor(type, levels = c('NPP-weighted mean', 'Unweighted mean')))
+         type = factor(type, levels = c('NPP-weighted mean', 'Unweighted mean')),
+         range = factor(range, levels = c('full', 'coastal')))
 
 tx_avg_med <- tx_imp_df %>%
-  group_by(taxon, type, stressor) %>%
-  summarize(avg = mean(imp),
-            med = median(imp),
+  group_by(taxon, type, stressor, range) %>%
+  summarize(avg = mean(imp, na.rm = TRUE),   ### non-coastal spp have NA coastal impacts
+            med = median(imp, na.rm = TRUE),
             .groups = 'drop')
 
 tx_spp_counts <- all_tx_imp_scores %>%
@@ -203,36 +210,41 @@ plot_panel <- function(df, means_df,
                        n_labs = FALSE,
                        x_lims = c(0, 1),
                        x_brks = seq(0, 1, .2)) {
+  
+  range_cols <- c('full' = 'black', 'coastal' = 'grey50')
 
   p <- ggplot(df, aes(x = imp)) +
-    geom_boxplot(aes(y = taxon),
-                 width = .25, position = position_dodge(width = -.6),
-                 size = .25, color = 'black', fill = 'black',
-                 outlier.color = 'grey80', outlier.size = .02) +
-    geom_vline(xintercept = 0, color = 'black') +
-    # geom_point(data = means_df, aes(x = med, group = type),
-    #            position = position_dodge(width = -.6),
-    #            shape = 23, color = 'black', fill = 'black', size = 1.5,
-    #            show.legend = FALSE) +
-    # geom_point(data = means_df, aes(x = avg, group = type),
-    #            position = position_dodge(width = -.6),
-    #            shape = 21, color = 'black', fill = 'white', size = 1.5,
-    #            show.legend = FALSE) +
-    geom_point(data = means_df, aes(x = avg, y = taxon),
-               position = position_dodge(width = -.6),
-               shape = '|', color = 'black', size = 1.5, stroke = 2.5) +
-    geom_point(data = means_df, aes(x = med, y = taxon),
-               position = position_dodge(width = -.6),
-               shape = 21, color = 'black', fill = 'white', size = 1.2) +
-    scale_x_continuous(expand = c(0, 0), limits = x_lims, 
-                       breaks = x_brks) +
-    theme_ohara() +
-    theme(panel.background = element_blank(),
-          legend.position = 'none',
-          axis.title.y = element_blank(),
-          axis.text.x = element_text(family = 'benton', size = 7),
-          axis.title.x = element_text(family = 'bentonbold', size = 7, hjust = 0)) +
-    labs(x = x_lab)
+    ### draw the base boxplot
+      geom_boxplot(aes(y = taxon, fill = range, color = range),
+                   width = .25, position = position_dodge(width = -.6),
+                   size = .25, # color = 'black', fill = 'black',
+                   outlier.color = 'grey80', 
+                   outlier.size = .02) +
+    ### draw a vertical line for left-hand axis (impact = 0)
+      geom_vline(xintercept = 0, color = 'black') +
+    ### add points for mean and median
+      geom_point(data = means_df, aes(x = avg, y = taxon, group = range),
+                 position = position_dodge(width = -.6),
+                 shape = '|', color = 'black', size = 1.5, stroke = 2.5) +
+      geom_point(data = means_df, aes(x = med, y = taxon, group = range),
+                 position = position_dodge(width = -.6),
+                 shape = 21, color = 'black', fill = 'white', size = 1.2) +
+    ### clean up scales
+      scale_fill_manual(values = range_cols, breaks = names(range_cols),
+                        guide = guide_legend(reverse = FALSE)) +
+      scale_color_manual(values = range_cols, breaks = names(range_cols),
+                         guide = guide_legend(reverse = FALSE)) +
+      scale_x_continuous(expand = c(0, 0), limits = x_lims, 
+                         breaks = x_brks) +
+    ### clean up theme
+      theme_ohara() +
+      theme(panel.background = element_blank(),
+            legend.text = element_text(family = 'benton', size = 7),
+            legend.title = element_text(family = 'bentonbold', size = 7),
+            axis.title.y = element_blank(),
+            axis.text.x = element_text(family = 'benton', size = 7),
+            axis.title.x = element_text(family = 'bentonbold', size = 7, hjust = 0)) +
+      labs(x = x_lab, fill = 'Range', color = 'Range')
   
   if(y_text) {
     p <- p + 
@@ -301,11 +313,90 @@ panel_c <- plot_panel(df = noncc_imp, means_df = noncc_avg_med,
                       x_lims = c(0, .4), x_brks = c(0, .1, .2, .3))
 ```
 
+## Panel D: Proportion of impacts per stressor
+
+For each taxon, what is the (average) proportion of overall impact attributed to each stressor?
+
+```{r}
+spp_imp_tots <- tx_imp_df %>%
+  filter(type == 'NPP-weighted mean') %>%
+  filter(stressor == 'all') %>%
+  select(-stressor, -type, tot_imp = imp)
+  
+spp_imp_strs_clean <- tx_imp_df %>%
+  filter(type == 'NPP-weighted mean') %>%
+  select(-type) %>%
+  filter(!stressor %in% c('all', 'climate', 'non-climate')) %>%
+  left_join(spp_imp_tots) %>%
+  mutate(str_lbl = case_when(stressor == 'benth_str' ~ 'benthic structures',
+                             stressor == 'shipping_large' ~ 'shipping',
+                             stressor == 'fishing_benthic_dest' ~ 'benthic destr. fishing',
+                             stressor %in% c('light', 'nutrient') ~ paste(stressor, 'pollution'),
+                             TRUE ~ str_replace_all(stressor, '_', ' '))) %>%
+  mutate(str_lbl = str_to_sentence(str_lbl),
+         str_lbl = str_replace(str_lbl, 'Sst', 'SST'),
+         str_lbl = str_replace(str_lbl, 'Uv', 'UV'))
+
+spp_imp_by_str <- spp_imp_strs_clean %>%
+  filter(!is.na(imp)) %>%
+  mutate(prop_str = imp / tot_imp)
+
+check <- spp_imp_by_str %>%
+  group_by(species, iucn_sid, range, taxon) %>%
+  summarize(sum_imp = sum(prop_str))
+### some aren't *exactly* 1, but close enough
+
+tx_imp_by_str <- spp_imp_by_str %>%
+  filter(range == 'full') %>%
+  group_by(taxon) %>%
+  mutate(tot_imp = sum(imp)) %>%
+  group_by(taxon, stressor, str_lbl) %>%
+  summarize(mean_prop = sum(imp) / mean(tot_imp)) %>%
+  ungroup() %>%
+  arrange(desc(mean_prop)) %>%
+  mutate(str_lbl = fct_inorder(str_lbl))
+  
+
+check2 <- tx_imp_by_str %>%
+  group_by(taxon) %>%
+  summarize(sum_imp = sum(mean_prop))
+
+```
+
+```{r}
+pal_raw <- hcl.colors(n = 5, palette = 'viridis')[c(1, 3, 5, 2, 4)]
+pal_mtx <- rbind(colorspace::darken(pal_raw, .3),
+                 colorspace::lighten(pal_raw, .2),
+                 colorspace::lighten(pal_raw, .6))
+pal <- c(pal_mtx)[-9]
+
+
+
+panel_d <- ggplot(tx_imp_by_str, aes(x = mean_prop, y = taxon)) +
+  geom_col(aes(fill = str_lbl)) +
+  scale_fill_manual(values = pal,
+                    guide = guide_legend(ncol = 2)) +
+  scale_x_continuous(expand = c(0, 0), limits = c(0, 1), 
+                     breaks = seq(0, 1, .2)) +
+  ### draw a vertical line for left-hand axis (impact = 0)
+  geom_vline(xintercept = 0, color = 'black') +
+  ### clean up theme
+  theme_ohara() +
+  theme(panel.background = element_blank(),
+        legend.text = element_text(family = 'benton', size = 7),
+        legend.title = element_text(family = 'bentonbold', size = 7),
+        legend.key.size = unit(.25, 'cm'),
+        axis.title.y = element_blank(),
+        axis.text.x = element_text(family = 'benton', size = 7),
+        axis.text.y = element_text(family = 'bentonbold', size = 7),
+        axis.title.x = element_text(family = 'bentonbold', size = 7, hjust = 0)) +
+  labs(x = 'Proportion of cumulative impact', fill = 'Stressor')
+```
+
 
 ## Assemble figure
 
 ```{r assemble figure}
-fig1_file <- here('5_ms_figs/fig1_taxon_impact_summaries.png')
 panel_a_plot <- panel_a + theme(legend.position = 'none')
 panel_b_plot <- panel_b + theme(legend.position = 'none')
 panel_c_plot <- panel_c + theme(legend.position = 'none')
@@ -324,11 +415,24 @@ fig1 <- ggdraw() +
              size = 10, fontfamily = 'bentonbold') +
   draw_label('B', x = 0.41, y = .99, hjust = 0, vjust = 1, 
              size = 10, fontfamily = 'bentonbold') +
-  draw_label('C', x = 0.665, y = .99, hjust = 0, vjust = 1, 
+  draw_label('C', x = 0.665, y = .99, hjust = 0, vjust = 1,  
              size = 10, fontfamily = 'bentonbold')
 
+
+fig1_file <- here('5_ms_figs/fig1_taxon_impact_summaries.png')
 ggsave(fig1_file, width = 12, height = 5, units = 'cm', dpi = 300)
 
 knitr::include_graphics(fig1_file)
+
+fig1_fourpanel <- ggdraw() +
+  draw_plot(fig1, x = 0, y = .35, height = .65, width = 1) +
+  draw_plot(panel_d, x = 0, y = 0, height = .35, width = 1)
+
+fig1_fourpanel_file <- here('5_ms_figs/fig1_taxon_impact_summaries_fourpanel.png')
+ggsave(fig1_fourpanel_file, width = 12, height = 9, units = 'cm', dpi = 300)
+
+knitr::include_graphics(fig1_fourpanel_file)
+
+
 ```
 
