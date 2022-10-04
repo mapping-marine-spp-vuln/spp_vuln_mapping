@@ -159,7 +159,7 @@ knitr::kable(similarity_df)
 
 ### Panel A and B: hab-FE climate and non-climate overlap
 
-``` {r make biscale legend for panels b and c}
+``` {r make biscale legend}
 # div_clr <- c('#7b3294', '#008837', 'black')
 # div_clr <- c('#a6611a', '#018571', 'black')
 div_clr <- c('#e66101', '#5e3c99', 'black')
