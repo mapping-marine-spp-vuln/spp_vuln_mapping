@@ -79,7 +79,7 @@ if(!file.exists(spp_imp_sum_file)) { ### unlink(spp_imp_sum_file)
                             str_remove_all(f, 'impacts_am_|.csv') %>% 
                               str_replace_all('_', ' '))) %>%
     select(-f) %>%
-    unite(s_r, stressor, range, sep = '-') %>%
+    unite(s_r, stressor, range, sep = 'X') %>%
     pivot_wider(names_from = 's_r', values_from = 'mean_imp_npp')
   
   write_csv(spp_imp_scores, spp_imp_sum_file)
@@ -103,8 +103,8 @@ spp_taxa <- read_csv(spp_taxa_sum_file)
 
 spp_imp_scores <- read_csv(spp_imp_sum_file) %>%
   pivot_longer(names_to = 's_r', values_to = 'mean_imp_npp', cols = -c(species, iucn_sid)) %>%
-  mutate(stressor = str_remove(s_r, '-.+'),
-         range = str_remove(s_r, '.+-')) %>%
+  mutate(stressor = str_remove(s_r, 'X.+'),
+         range = str_remove(s_r, '.+X')) %>%
   select(-s_r) %>%
   mutate(mean_imp_npp = ifelse(is.na(mean_imp_npp) & range == 'full', 0, mean_imp_npp))
 
