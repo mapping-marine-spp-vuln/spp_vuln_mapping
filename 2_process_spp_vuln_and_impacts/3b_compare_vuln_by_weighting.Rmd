@@ -66,7 +66,7 @@ mean_fs_fe <- list.files(vuln_fe_dir, pattern = '_mean.tif', full.names = TRUE)
 # sdev_fs_fe <- list.files(vuln_fe_dir, pattern = '_sdev.tif', full.names = TRUE)
 
 focal_strs <- c('biomass_removal', 'bycatch', 
-                'microplastic', 'wildlife_strike',
+                'wildlife_strike',
                 'habitat_loss_degradation',
                 'nutrient_pollution', 'ocean_acidification', 
                 'sst_rise', 'marine_heat_wave',
