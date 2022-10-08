@@ -1,5 +1,5 @@
 ---
-title: "Figure 2: Map of spp-level CHI"
+title: "Figure 2: Maps of spp and FE CHI"
 author: "*Compiled on `r date()` by `r Sys.info()['user']`*"
 output: 
   html_document:
