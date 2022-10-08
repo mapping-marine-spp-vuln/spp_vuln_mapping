@@ -106,7 +106,8 @@ spp_imp_scores <- read_csv(spp_imp_sum_file) %>%
   mutate(stressor = str_remove(s_r, 'X.+'),
          range = str_remove(s_r, '.+X')) %>%
   select(-s_r) %>%
-  mutate(mean_imp_npp = ifelse(is.na(mean_imp_npp) & range == 'full', 0, mean_imp_npp))
+  mutate(mean_imp_npp = ifelse(is.na(mean_imp_npp) & range == 'full', 0, mean_imp_npp)) %>%
+  rename(imp = mean_imp_npp)
 
 ```
 
@@ -117,21 +118,18 @@ taxa_imp_scores <- spp_imp_scores %>%
   bind_rows(spp_imp_scores %>%
               filter(is.na(iucn_sid)) %>%
               left_join(spp_taxa %>% select(-iucn_sid), by = 'species')) %>%
-  gather(type, imp, mean_imp, mean_imp_npp) %>%
-  mutate(type = ifelse(type == 'mean_imp', 'Unweighted mean', 'NPP-weighted mean')) %>%
   mutate(species = ifelse(is.na(species), sciname, species)) %>%
   select(-sciname) %>%
   distinct()
   
 taxa_means <- taxa_imp_scores %>%
-  group_by(taxon, stressor, type, range) %>%
+  group_by(taxon, stressor, range) %>%
   summarize(m = mean(imp), s = sd(imp), r1 = min(imp), r2 = max(imp))
 all_means <- taxa_imp_scores %>%
-  group_by(stressor, type, range) %>%
+  group_by(stressor, range) %>%
   summarize(m = mean(imp), v = var(imp))
 
 nppwt_df <- taxa_imp_scores %>%
-  filter(type == 'NPP-weighted mean') %>%
   filter(range == 'full') %>%
   pivot_wider(names_from = 'stressor', values_from = 'imp')
 
@@ -175,7 +173,6 @@ all_tx_imp_scores <- taxa_imp_scores %>%
   bind_rows(taxa_imp_scores)
 
 tx_order <- all_tx_imp_scores %>%
-  filter(type == 'NPP-weighted mean') %>%
   filter(stressor == 'all') %>%
   filter(range == 'full') %>%
   group_by(taxon) %>%
@@ -187,11 +184,10 @@ tx_order <- all_tx_imp_scores %>%
 
 tx_imp_df <- all_tx_imp_scores %>%
   mutate(taxon = factor(taxon, levels = tx_order),
-         type = factor(type, levels = c('NPP-weighted mean', 'Unweighted mean')),
          range = factor(range, levels = c('full', 'coastal')))
 
 tx_avg_med <- tx_imp_df %>%
-  group_by(taxon, type, stressor, range) %>%
+  group_by(taxon, stressor, range) %>%
   summarize(avg = mean(imp, na.rm = TRUE),   ### non-coastal spp have NA coastal impacts
             med = median(imp, na.rm = TRUE),
             .groups = 'drop')
@@ -277,11 +273,9 @@ plot_panel <- function(df, means_df,
 
 ```{r}
 all_imp <- tx_imp_df %>%
-  filter(stressor == 'all') %>%
-  filter(type == 'NPP-weighted mean')
+  filter(stressor == 'all')
 all_avg_med <- tx_avg_med %>%
-  filter(stressor == 'all') %>%
-  filter(type == 'NPP-weighted mean')
+  filter(stressor == 'all')
 
 panel_a <- plot_panel(df = all_imp, means_df = all_avg_med, 
                       x_lims = c(0, .8),
@@ -294,11 +288,9 @@ panel_a <- plot_panel(df = all_imp, means_df = all_avg_med,
 
 ```{r}
 cc_imp <- tx_imp_df %>%
-  filter(stressor == 'climate') %>%
-  filter(type == 'NPP-weighted mean')
+  filter(stressor == 'climate')
 cc_avg_med <- tx_avg_med %>%
-  filter(stressor == 'climate') %>%
-  filter(type == 'NPP-weighted mean')
+  filter(stressor == 'climate')
 
 panel_b <- plot_panel(df = cc_imp, means_df = cc_avg_med, 
                       x_lab = 'Mean climate impact',
@@ -313,11 +305,9 @@ panel_b <- plot_panel(df = cc_imp, means_df = cc_avg_med,
 
 ```{r}
 noncc_imp <- tx_imp_df %>%
-  filter(stressor == 'non-climate') %>%
-  filter(type == 'NPP-weighted mean')
+  filter(stressor == 'non-climate')
 noncc_avg_med <- tx_avg_med %>%
-  filter(stressor == 'non-climate') %>%
-  filter(type == 'NPP-weighted mean')
+  filter(stressor == 'non-climate')
 
 
 panel_c <- plot_panel(df = noncc_imp, means_df = noncc_avg_med, 
@@ -332,13 +322,10 @@ For each taxon, what is the (average) proportion of overall impact attributed to
 
 ```{r}
 spp_imp_tots <- tx_imp_df %>%
-  filter(type == 'NPP-weighted mean') %>%
   filter(stressor == 'all') %>%
-  select(-stressor, -type, tot_imp = imp)
+  select(-stressor, tot_imp = imp)
   
 spp_imp_strs_clean <- tx_imp_df %>%
-  filter(type == 'NPP-weighted mean') %>%
-  select(-type) %>%
   filter(!stressor %in% c('all', 'climate', 'non-climate')) %>%
   left_join(spp_imp_tots) %>%
   mutate(str_lbl = case_when(stressor == 'benth_str' ~ 'benthic structures',
