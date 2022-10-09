@@ -327,8 +327,12 @@ spp_imp_tots <- tx_imp_df %>%
   
 spp_imp_strs_clean <- tx_imp_df %>%
   filter(!stressor %in% c('all', 'climate', 'non-climate')) %>%
+  mutate(stressor = ifelse(str_detect(stressor, 'bycatch'), 'bycatch', stressor)) %>%
+  group_by(iucn_sid, species, stressor, range, taxon) %>%
+  summarize(imp = sum(imp, na.rm = TRUE), .groups = 'drop') %>%
   left_join(spp_imp_tots) %>%
-  mutate(str_lbl = case_when(stressor == 'benth_str' ~ 'benthic structures',
+  mutate(str_lbl = case_when(str_detect(stressor, 'bycatch') ~ 'bycatch',
+                             stressor == 'benth_str' ~ 'benthic structures',
                              stressor == 'shipping_large' ~ 'shipping',
                              stressor == 'fishing_benthic_dest' ~ 'benthic destr. fishing',
                              stressor %in% c('light', 'nutrient') ~ paste(stressor, 'pollution'),
@@ -344,7 +348,7 @@ spp_imp_by_str <- spp_imp_strs_clean %>%
 check <- spp_imp_by_str %>%
   group_by(species, iucn_sid, range, taxon) %>%
   summarize(sum_imp = sum(prop_str))
-### some aren't *exactly* 1, but close enough
+### some aren't *exactly* 1, but rounding error
 
 tx_imp_by_str <- spp_imp_by_str %>%
   filter(range == 'full') %>%
