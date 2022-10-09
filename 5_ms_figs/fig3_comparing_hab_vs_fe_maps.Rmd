@@ -1,5 +1,5 @@
 ---
-title: "Figure 3: Comparing spp/FE and habitat impacts"
+title: "Figure 3: Comparing FE and habitat impacts"
 author: "*Compiled on `r date()` by `r Sys.info()['user']`*"
 output: 
   html_document:
