@@ -483,11 +483,12 @@ if(!file.exists(slr_f)) {
   combo <- raw_r
   values(combo)[is.na(values(combo))] <- values(gf_r)[is.na(values(combo))]
   
-  ### Project to Mollweide 10km and masking to coastal cells
+  ### Project to Mollweide 10km and masking to coastal 1 km cells
   slr_moll_r <- projectRaster(combo, ocean_rast, progress = 'text')
-  coastal_r  <- raster(here('_spatial/coastal_3nmi_area_mol.tif'))
+  coastal_r  <- raster(here('_spatial/coastal_1km_area_mol.tif'))
 
-  slr_coastal_r <- mask(slr_moll_r, coastal_r, progress = 'text')
+  # slr_coastal_r <- mask(slr_moll_r, coastal_r, progress = 'text')
+  slr_coastal_r <- slr_moll_r * coastal_r
   # missing <- coastal_r
   # values(missing)[!is.na(values(slr_coastal_r))] <- NA
   # plot(missing, col = 'red')
@@ -499,7 +500,7 @@ if(!file.exists(slr_f)) {
 
   ### round to drop ludicrous precision then save out
   values(slr_coastal_r) <- round(values(slr_coastal_r), 5)
-  writeRaster(slr_coastal_r, slr_f)
+  writeRaster(slr_coastal_r, slr_f, overwrite = TRUE)
   
   ### to identify post-mask gapfilled cells
   # gf_map_wgs84 <- mask(gf_r, orig_r, inverse = TRUE)
