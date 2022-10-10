@@ -148,18 +148,18 @@ plot(ocean_moll_10km, main = 'ocean area')
 ```
 
 
-## Coastal zone raster
+## Coastal zone rasters
 
-* Reproject NE land shapefile to Mollweide.  Buffer to 3 km.
+* Reproject NE land shapefile to Mollweide.  Buffer to 3 nmi.
 * Use `fasterize::fasterize` to rasterize the reprojected buffered land shapefile to Mollweide CRS with a 1 km resolution.
     * This will be saved on the server, too large for Github.
     * Values will be 1 (land) and 0 (not land).
-* Mask with the ocean 1 km raster to include only ocean-based cells that fall within the 3 km buffer.
+* Mask with the ocean 1 km raster to include only ocean-based cells that fall within the 3 nmi buffer.
 * Aggregate the 1 km raster to 10 km cells, taking the sum of remaining cells and divide by 100 to result in values $\in$ (0, 1].
-* Coastal cells bordering land will contain the proportion of ocean area within 3 km of land.  
+* Coastal cells bordering land will contain the proportion of ocean area within 3 nmi of land.  
     * Verify that this should always be less than or equal to ocean proportion in the cell.
 
-```{r coastal 1 km}
+```{r coastal 3nmi 1 km}
 coastal_3nmi_buffer_1km_file <- here_anx('_spatial/coastal_3nmi_buffer_moll_1km.tif')
 # unlink(coastal_3nmi_buffer_1km_file)
 
@@ -191,7 +191,7 @@ if(!file.exists(coastal_3nmi_buffer_1km_file)) {
 
 ```
 
-```{r coastal 10 km}
+```{r coastal 3nmi 10 km}
 coastal_3nmi_10km_file <- here('_spatial', 'coastal_3nmi_area_mol.tif')
 # unlink(coastal_3nmi_10km_file)
 if(!file.exists(coastal_3nmi_10km_file)) {
@@ -209,6 +209,58 @@ coastal_moll_10km <- raster(coastal_3nmi_10km_file)
 plot(coastal_moll_10km, main = '3nmi coastal area')
 
 ```
+
+```{r coastal 1 km buffer 1 km res}
+coastal_1km_buffer_1km_file <- here_anx('_spatial/coastal_1km_buffer_moll_1km.tif')
+# unlink(coastal_1km_buffer_1km_file)
+
+if(!file.exists(coastal_1km_buffer_1km_file)) {
+  message('Processing 1 km coastal buffer at 1 km resolution...')
+  land_sf <- read_sf(here('_spatial', 'ne_10m_land', 'ne_10m_land.shp'))
+  
+  land_moll_sf <- land_sf %>%
+    st_transform(crs = moll_crs) 
+  
+  land_1km_moll_sf <- land_moll_sf %>%
+    st_buffer(dist = 1000) %>% ###
+    st_cast('MULTIPOLYGON')
+
+  rast_base_moll_1km <- raster(rast_base_1km_file)
+  
+  land_moll_1km <- fasterize::fasterize(land_1km_moll_sf, 
+                                        rast_base_moll_1km, 
+                                        field = NULL, ### NULL sets all polygons to 1
+                                        background = NA)
+  
+  ocean_moll_1km <- raster(here_anx('_spatial/ocean_moll_1km.tif'))
+
+  coastal_1km_buffer_1km <- mask(land_moll_1km, ocean_moll_1km, progress = 'text')
+
+  writeRaster(coastal_1km_buffer_1km, 
+              filename = coastal_1km_buffer_1km_file)
+}
+
+```
+
+```{r coastal 1 km buffer 10 km}
+coastal_1km_10km_file <- here('_spatial', 'coastal_1km_area_mol.tif')
+# unlink(coastal_1km_10km_file)
+if(!file.exists(coastal_1km_10km_file)) {
+  message('Processing coastal 1 km buffer area at 10 km resolution...')
+  coastal_moll_1km <- raster(coastal_1km_buffer_1km_file)
+  
+  coastal_moll_10km <- aggregate(coastal_moll_1km, fact = 10, fun = sum, progress = 'text')
+  
+  coastal_moll_10km <- coastal_moll_10km / 100
+  
+  writeRaster(coastal_moll_10km, coastal_1km_10km_file)
+}
+
+coastal_1km_moll_10km <- raster(coastal_1km_10km_file)
+plot(coastal_1km_moll_10km, main = '1km coastal area')
+
+```
+
 
 ## LOICZID raster
 
