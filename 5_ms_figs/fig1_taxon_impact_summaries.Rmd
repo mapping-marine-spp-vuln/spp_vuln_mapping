@@ -318,7 +318,7 @@ panel_c <- plot_panel(df = noncc_imp, means_df = noncc_avg_med,
 
 ## Panel D: Proportion of impacts per stressor
 
-For each taxon, what is the (average) proportion of overall impact attributed to each stressor?
+For each taxon, what is the (average) proportion of overall impact attributed to each stressor?  Combine pelagic and benthic bycatch into a single stressor...
 
 ```{r}
 spp_imp_tots <- tx_imp_df %>%
@@ -342,22 +342,24 @@ spp_imp_strs_clean <- tx_imp_df %>%
          str_lbl = str_replace(str_lbl, 'Uv', 'UV'))
 
 spp_imp_by_str <- spp_imp_strs_clean %>%
+  filter(range == 'full') %>%
+  select(-range) %>%
   filter(!is.na(imp)) %>%
   mutate(prop_str = imp / tot_imp)
 
 check <- spp_imp_by_str %>%
-  group_by(species, iucn_sid, range, taxon) %>%
+  group_by(species, iucn_sid, taxon) %>%
   summarize(sum_imp = sum(prop_str))
 ### some aren't *exactly* 1, but rounding error
-
+  
 tx_imp_by_str <- spp_imp_by_str %>%
-  filter(range == 'full') %>%
   group_by(taxon) %>%
   mutate(tot_imp = sum(imp)) %>%
   group_by(taxon, stressor, str_lbl) %>%
   summarize(mean_prop = sum(imp) / mean(tot_imp)) %>%
   ungroup() %>%
-  arrange(desc(mean_prop)) %>%
+  ### arrange by taxon first ("all" on top), then descending order
+  arrange(desc(taxon), desc(mean_prop)) %>%
   mutate(str_lbl = fct_inorder(str_lbl))
   
 

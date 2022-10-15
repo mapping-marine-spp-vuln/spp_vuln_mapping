@@ -183,8 +183,8 @@ plot_realm <- function(df, methods, x_label) {
   fills <- c('grey90', 'grey40', 'grey70', 'black') ### fills for methods
   clrs  <- c('black',  'grey40', 'grey70', 'black') ### colors for methods
   lbls <- c(fe_n  = latex2exp::TeX('$FE_N$'),
-            fe_o  = latex2exp::TeX('$FE_O$'),
             hab_n = latex2exp::TeX('$Hab_N$'),
+            fe_o  = latex2exp::TeX('$FE_O$'),
             hab_o = latex2exp::TeX('$Hab_O$')) %>%
     rev()
   lvls <- names(lbls)
@@ -300,8 +300,8 @@ plot_prov <- function(df, methods, x_label, strips) {
   fills <- c('grey90', 'grey40', 'grey70', 'black') ### fills for methods
   clrs  <- c('black',  'grey40', 'grey70', 'black') ### colors for methods
   lbls <- c(fe_n  = latex2exp::TeX('$FE_N$'),
-            fe_o  = latex2exp::TeX('$FE_O$'),
             hab_n = latex2exp::TeX('$Hab_N$'),
+            fe_o  = latex2exp::TeX('$FE_O$'),
             hab_o = latex2exp::TeX('$Hab_O$')) %>%
     rev()
   lvls <- names(lbls)
