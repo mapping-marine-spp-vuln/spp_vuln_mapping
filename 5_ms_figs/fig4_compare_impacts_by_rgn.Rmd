@@ -165,18 +165,15 @@ prov_means_df <- meow_prov_chi_df %>%
 ### Plot by realm
 
 ```{r figure 4 meow by realm, fig.height = 8}
-### Order realms by highest to lowest mean overall coastal FE impact
-realm_order <- meow_prov_chi_df %>%
-  filter(method_zone == 'chi_fe_neritic') %>%
-  group_by(realm_lbl) %>%
-  summarize(med_chi = median(chi)) %>%
-  ungroup() %>%
-  arrange(med_chi) %>%
-  pull(realm_lbl)
+### Order realms by latitude - in original order
 
-meow_realm_chi_df <- meow_prov_chi_df %>%
+global_chi_df <- meow_prov_chi_df %>%
+  mutate(realm_lbl = 'Global')
+
+meow_realm_chi_df <- global_chi_df %>%
+  bind_rows(meow_prov_chi_df) %>%
   select(-prov_lbl) %>%
-  mutate(realm_lbl = factor(realm_lbl, levels = realm_order))
+  mutate(realm_lbl = fct_inorder(realm_lbl) %>% fct_rev())
 
 ```
 
