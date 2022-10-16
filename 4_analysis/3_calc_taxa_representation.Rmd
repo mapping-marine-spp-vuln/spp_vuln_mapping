@@ -44,15 +44,23 @@ df <- w %>%
   mutate(repr = species %in% x$species)
 
 phylum_df <- df %>%
-  group_by(phylum) %>%
+  group_by(phylum, class) %>%
   summarize(n_tot = n_distinct(species),
             n_repr = sum(repr),
             p_repr = round(n_repr / n_tot, 3)) %>%
   arrange(desc(p_repr))
 
-class_df <- df %>%
+chord_df <- df %>%
   filter(phylum == 'chordata') %>%
-  group_by(class) %>%
+  group_by(class, order) %>%
+  summarize(n_tot = n_distinct(species),
+            n_repr = sum(repr),
+            p_repr = round(n_repr / n_tot, 3)) %>%
+  arrange(desc(p_repr))
+
+cnid_df <- df %>%
+  filter(phylum == 'cnidaria') %>%
+  group_by(class, order) %>%
   summarize(n_tot = n_distinct(species),
             n_repr = sum(repr),
             p_repr = round(n_repr / n_tot, 3)) %>%
@@ -64,7 +72,7 @@ DT::datatable(class_df)
 
 mamm_df <- df %>%
   filter(class == 'mammalia') %>%
-  group_by(order) %>%
+  group_by(order, family) %>%
   summarize(n_tot = n_distinct(species),
             n_repr = sum(repr),
             p_repr = round(n_repr / n_tot, 3)) %>%
