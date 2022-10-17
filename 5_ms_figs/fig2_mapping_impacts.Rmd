@@ -278,12 +278,13 @@ fe_vs_spp_stack <- rast(list(spp_cc = climate_map_spp,
                              spp_noncc = nonclimate_map_spp,
                              fe_cc = climate_map_fe,
                              fe_noncc = nonclimate_map_fe))
-spp_vs_fe_df <- as.data.frame(fe_vs_spp_stack, xy = TRUE)
+spp_vs_fe_df <- as.data.frame(fe_vs_spp_stack, xy = TRUE) %>%
+  mutate(cell_num = 1:n())
 
 diff_df <- spp_vs_fe_df %>%
   mutate(cc_diff = (fe_cc - spp_cc) / spp_cc * 100,
          noncc_diff = (fe_noncc - spp_noncc) / spp_noncc * 100) %>%
-  select(x, y, cc_diff, noncc_diff) %>%
+  select(cell_num, x, y, cc_diff, noncc_diff) %>%
   pivot_longer(names_to = 'type', values_to = 'diff', cols = c(cc_diff, noncc_diff)) %>%
   mutate(diff_cat = case_when(diff <= -50 ~ '< -50%',
                               diff <= -20 ~ '< -20%',
@@ -293,7 +294,13 @@ diff_df <- spp_vs_fe_df %>%
                               diff >= +10 ~ '> +10%',
                               TRUE ~ NA_character_))
 
-diff_df %>% select(diff_cat, type) %>% table()
+diff_df %>% 
+  select(diff_cat, type) %>% table()
+
+diff_df %>%
+  mutate(diff_sign = ifelse(sign(diff) > 0, 'FE dominant', 'Spp dominant')) %>%
+  group_by(diff_sign, type) %>%
+  summarize(pct = sum(!is.na(diff_sign)) / n_distinct(diff_df$cell_num))
 ```
 
 
