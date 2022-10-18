@@ -1,0 +1,95 @@
+---
+title: "prepare Table S2 for manuscript - species inclusion by phylum/class/order"
+author: "*Compiled on `r date()` by `r Sys.info()['user']`*"
+output: 
+  html_document:
+    code_folding: hide
+    toc: true
+    toc_depth: 3
+    toc_float: yes
+    number_sections: true
+    theme: cerulean
+    highlight: haddock
+    includes: 
+      in_header: '~/github/src/templates/ohara_hdr.html'
+  pdf_document:
+    toc: true
+---
+
+``` {r setup, echo = TRUE, message = FALSE, warning = FALSE}
+
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE, fig.height = 4, fig.width = 7)
+
+library(terra)
+library(oharac)
+library(data.table)
+library(tidyverse)
+library(cowplot)
+library(here)
+source(here('common_fxns.R'))
+
+```
+
+# Summary
+
+Prep table for supplement
+
+# Methods
+
+Load in species info; group by phylum, class, order and count species inclusion.  Use prepped data from Fig. 1 plot.
+
+```{r}
+all_spp_info <- assemble_spp_info_df()
+
+iucn_sciname_to_id <- all_spp_info %>%
+  select(sciname = species, iucn_sid) %>%
+  distinct() %>%
+  filter(!is.na(iucn_sid))
+spp_df <- read_csv(here('5_ms_figs/int/fig1_spp_summary.csv')) %>%
+  select(species, iucn_sid) %>%
+  distinct() %>%
+  left_join(iucn_sciname_to_id, by = 'iucn_sid') %>%
+  mutate(species = ifelse(is.na(species), sciname, species)) %>%
+  select(-sciname) %>%
+  left_join(assemble_worms(), by = 'species') %>%
+  unique()
+
+summary_df <- spp_df %>%
+  group_by(phylum, class, order, species) %>%
+  summarize(subpops = n() - 1) %>%
+  mutate(order = ifelse(phylum == 'chordata', order, '-')) %>%
+  group_by(phylum) %>%
+  mutate(n_phl = n_distinct(species)) %>%
+  group_by(class) %>%
+  mutate(n_cls = n_distinct(species)) %>%
+  group_by(order) %>%
+  mutate(order = ifelse(n_distinct(species) < 50 & class == 'actinopterygii', 'other actinopt.', order)) %>%
+  group_by(order) %>%
+  mutate(n_ord = n_distinct(species)) %>%
+  group_by(phylum, class, order) %>%
+  summarize(n_phl = unique(n_phl),
+            n_cls = unique(n_cls),
+            n_ord = unique(n_ord),
+            subpops = sum(subpops), .groups = 'drop') %>%
+  mutate(n_ord = ifelse(order == '-', NA, n_ord),
+         subpops = ifelse(subpops == 0, '-', as.character(subpops)))
+  
+phylum_df <- summary_df %>%
+  arrange(phylum, desc(n_cls)) %>%
+  select(phylum, class, n_cls) %>%
+  distinct()
+
+
+vert_df <- summary_df %>%
+  filter(phylum == 'chordata') %>%
+  mutate(class = factor(class, levels = phylum_df$class) %>% fct_drop()) %>%
+  arrange(class, desc(n_ord)) %>%
+  mutate(order = fct_inorder(order),
+         order = fct_relevel(order, 'other actinopt.', after = Inf)) %>%
+  arrange(class, order) %>%
+  select(class, order, n_cls, n_ord, subpops)
+
+write_csv(phylum_df, here('5_ms_figs/tableS2_spp_by_phylum.csv'))
+write_csv(vert_df, here('5_ms_figs/tableS2_spp_verts_by_class.csv'))
+```
+

@@ -53,12 +53,23 @@ Read in the species impact summaries; summarize to climate and non-climate impac
 ```{r}
 spp_imp_sum_file <- here('5_ms_figs/int/fig1_spp_summary.csv')
 if(!file.exists(spp_imp_sum_file)) { ### unlink(spp_imp_sum_file)
+  spp_fs_valid <- assemble_spp_info_df() %>%
+    select(src, species, iucn_sid) %>%
+    distinct() %>%
+    mutate(name = ifelse(src == 'am', str_replace_all(species, ' ', '_'), iucn_sid),
+           f = sprintf('impacts_%s_%s.csv', src, name)) %>%
+    group_by(species) %>%
+    filter(all(src == 'am') | src == 'iucn') %>%
+      ### if all sources are AquaMaps, keep those; if any IUCN, keep only those
+    ungroup()
+  
   spp_imp_fs <- list.files(here_anx('impacts_by_species'), 
                            pattern = '^impacts_.+.csv', full.names = TRUE)
+  spp_imp_fs_clean <- spp_imp_fs[basename(spp_imp_fs) %in% spp_fs_valid$f]
   
-  spp_imp_raw_df <- parallel::mclapply(spp_imp_fs, mc.cores = 40,
+  spp_imp_raw_df <- parallel::mclapply(spp_imp_fs_clean, mc.cores = 40,
                                        data.table::fread) %>%
-    setNames(basename(spp_imp_fs)) %>%
+    setNames(basename(spp_imp_fs_clean)) %>%
     data.table::rbindlist(idcol = 'f') %>%
     rename(vuln = vulnerability)
   
