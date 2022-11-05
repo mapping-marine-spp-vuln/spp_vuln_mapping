@@ -209,7 +209,7 @@ plot_realm <- function(df, methods, x_label) {
     # geom_hline(yintercept = 100, color = 'black', size = 2) +
     geom_boxplot(width = .4, position = position_dodge(width = .75),
                  outlier.shape = NA, 
-                 size = .15) +
+                 size = .25) +
     # geom_point(data = means_df,
     #            aes(x = med, group = method_zone),
     #            position = position_dodge(width = .75),
@@ -331,7 +331,7 @@ plot_prov <- function(df, methods, x_label, strips) {
   
   p <- p +
     geom_boxplot(width = .4, position = position_dodge(width = .75),
-                 outlier.shape = NA, size = .15) +
+                 outlier.shape = NA, size = .25) +
     # geom_point(data = means_df,
     #            aes(x = med, group = method_zone), 
     #            position = position_dodge(width = .75),
