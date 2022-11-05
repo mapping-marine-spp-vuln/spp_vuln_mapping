@@ -75,8 +75,12 @@ summary_df <- spp_df %>%
          subpops = ifelse(subpops == 0, '-', as.character(subpops)))
   
 phylum_df <- summary_df %>%
+  group_by(phylum, class, n_cls) %>%
+  summarize(subpops = sum(as.numeric(subpops), na.rm = TRUE)) %>%
+  ungroup() %>%
   arrange(phylum, desc(n_cls)) %>%
-  select(phylum, class, n_cls) %>%
+  select(phylum, class, n_cls, subpops) %>%
+  mutate(subpops = ifelse(subpops == 0, '-', as.character(subpops))) %>%
   distinct()
 
 

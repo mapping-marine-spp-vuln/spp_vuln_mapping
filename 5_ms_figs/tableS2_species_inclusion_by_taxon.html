@@ -9,7 +9,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
 
 
-<meta name="author" content="Compiled on Mon Oct 17 20:41:39 2022 by ohara" />
+<meta name="author" content="Compiled on Fri Nov 4 20:58:26 2022 by ohara" />
 
 
 <title>prepare Table S2 for manuscript - species inclusion by phylum/class/order</title>
@@ -1684,7 +1684,7 @@ div.tocify {
 
 <h1 class="title toc-ignore">prepare Table S2 for manuscript - species
 inclusion by phylum/class/order</h1>
-<h4 class="author"><em>Compiled on Mon Oct 17 20:41:39 2022 by
+<h4 class="author"><em>Compiled on Fri Nov 4 20:58:26 2022 by
 ohara</em></h4>
 
 </div>
@@ -1743,22 +1743,26 @@ inclusion. Use prepped data from Fig. 1 plot.</p>
 <span id="cb2-34"><a href="#cb2-34" aria-hidden="true" tabindex="-1"></a>         <span class="at">subpops =</span> <span class="fu">ifelse</span>(subpops <span class="sc">==</span> <span class="dv">0</span>, <span class="st">&#39;-&#39;</span>, <span class="fu">as.character</span>(subpops)))</span>
 <span id="cb2-35"><a href="#cb2-35" aria-hidden="true" tabindex="-1"></a>  </span>
 <span id="cb2-36"><a href="#cb2-36" aria-hidden="true" tabindex="-1"></a>phylum_df <span class="ot">&lt;-</span> summary_df <span class="sc">%&gt;%</span></span>
-<span id="cb2-37"><a href="#cb2-37" aria-hidden="true" tabindex="-1"></a>  <span class="fu">arrange</span>(phylum, <span class="fu">desc</span>(n_cls)) <span class="sc">%&gt;%</span></span>
-<span id="cb2-38"><a href="#cb2-38" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(phylum, class, n_cls) <span class="sc">%&gt;%</span></span>
-<span id="cb2-39"><a href="#cb2-39" aria-hidden="true" tabindex="-1"></a>  <span class="fu">distinct</span>()</span>
-<span id="cb2-40"><a href="#cb2-40" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-41"><a href="#cb2-41" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-42"><a href="#cb2-42" aria-hidden="true" tabindex="-1"></a>vert_df <span class="ot">&lt;-</span> summary_df <span class="sc">%&gt;%</span></span>
-<span id="cb2-43"><a href="#cb2-43" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(phylum <span class="sc">==</span> <span class="st">&#39;chordata&#39;</span>) <span class="sc">%&gt;%</span></span>
-<span id="cb2-44"><a href="#cb2-44" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">class =</span> <span class="fu">factor</span>(class, <span class="at">levels =</span> phylum_df<span class="sc">$</span>class) <span class="sc">%&gt;%</span> <span class="fu">fct_drop</span>()) <span class="sc">%&gt;%</span></span>
-<span id="cb2-45"><a href="#cb2-45" aria-hidden="true" tabindex="-1"></a>  <span class="fu">arrange</span>(class, <span class="fu">desc</span>(n_ord)) <span class="sc">%&gt;%</span></span>
-<span id="cb2-46"><a href="#cb2-46" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">order =</span> <span class="fu">fct_inorder</span>(order),</span>
-<span id="cb2-47"><a href="#cb2-47" aria-hidden="true" tabindex="-1"></a>         <span class="at">order =</span> <span class="fu">fct_relevel</span>(order, <span class="st">&#39;other actinopt.&#39;</span>, <span class="at">after =</span> <span class="cn">Inf</span>)) <span class="sc">%&gt;%</span></span>
-<span id="cb2-48"><a href="#cb2-48" aria-hidden="true" tabindex="-1"></a>  <span class="fu">arrange</span>(class, order) <span class="sc">%&gt;%</span></span>
-<span id="cb2-49"><a href="#cb2-49" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(class, order, n_cls, n_ord, subpops)</span>
-<span id="cb2-50"><a href="#cb2-50" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-51"><a href="#cb2-51" aria-hidden="true" tabindex="-1"></a><span class="fu">write_csv</span>(phylum_df, <span class="fu">here</span>(<span class="st">&#39;5_ms_figs/tableS2_spp_by_phylum.csv&#39;</span>))</span>
-<span id="cb2-52"><a href="#cb2-52" aria-hidden="true" tabindex="-1"></a><span class="fu">write_csv</span>(vert_df, <span class="fu">here</span>(<span class="st">&#39;5_ms_figs/tableS2_spp_verts_by_class.csv&#39;</span>))</span></code></pre></div>
+<span id="cb2-37"><a href="#cb2-37" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(phylum, class, n_cls) <span class="sc">%&gt;%</span></span>
+<span id="cb2-38"><a href="#cb2-38" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarize</span>(<span class="at">subpops =</span> <span class="fu">sum</span>(<span class="fu">as.numeric</span>(subpops), <span class="at">na.rm =</span> <span class="cn">TRUE</span>)) <span class="sc">%&gt;%</span></span>
+<span id="cb2-39"><a href="#cb2-39" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ungroup</span>() <span class="sc">%&gt;%</span></span>
+<span id="cb2-40"><a href="#cb2-40" aria-hidden="true" tabindex="-1"></a>  <span class="fu">arrange</span>(phylum, <span class="fu">desc</span>(n_cls)) <span class="sc">%&gt;%</span></span>
+<span id="cb2-41"><a href="#cb2-41" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(phylum, class, n_cls, subpops) <span class="sc">%&gt;%</span></span>
+<span id="cb2-42"><a href="#cb2-42" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">subpops =</span> <span class="fu">ifelse</span>(subpops <span class="sc">==</span> <span class="dv">0</span>, <span class="st">&#39;-&#39;</span>, <span class="fu">as.character</span>(subpops))) <span class="sc">%&gt;%</span></span>
+<span id="cb2-43"><a href="#cb2-43" aria-hidden="true" tabindex="-1"></a>  <span class="fu">distinct</span>()</span>
+<span id="cb2-44"><a href="#cb2-44" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-45"><a href="#cb2-45" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-46"><a href="#cb2-46" aria-hidden="true" tabindex="-1"></a>vert_df <span class="ot">&lt;-</span> summary_df <span class="sc">%&gt;%</span></span>
+<span id="cb2-47"><a href="#cb2-47" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(phylum <span class="sc">==</span> <span class="st">&#39;chordata&#39;</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb2-48"><a href="#cb2-48" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">class =</span> <span class="fu">factor</span>(class, <span class="at">levels =</span> phylum_df<span class="sc">$</span>class) <span class="sc">%&gt;%</span> <span class="fu">fct_drop</span>()) <span class="sc">%&gt;%</span></span>
+<span id="cb2-49"><a href="#cb2-49" aria-hidden="true" tabindex="-1"></a>  <span class="fu">arrange</span>(class, <span class="fu">desc</span>(n_ord)) <span class="sc">%&gt;%</span></span>
+<span id="cb2-50"><a href="#cb2-50" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">order =</span> <span class="fu">fct_inorder</span>(order),</span>
+<span id="cb2-51"><a href="#cb2-51" aria-hidden="true" tabindex="-1"></a>         <span class="at">order =</span> <span class="fu">fct_relevel</span>(order, <span class="st">&#39;other actinopt.&#39;</span>, <span class="at">after =</span> <span class="cn">Inf</span>)) <span class="sc">%&gt;%</span></span>
+<span id="cb2-52"><a href="#cb2-52" aria-hidden="true" tabindex="-1"></a>  <span class="fu">arrange</span>(class, order) <span class="sc">%&gt;%</span></span>
+<span id="cb2-53"><a href="#cb2-53" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(class, order, n_cls, n_ord, subpops)</span>
+<span id="cb2-54"><a href="#cb2-54" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-55"><a href="#cb2-55" aria-hidden="true" tabindex="-1"></a><span class="fu">write_csv</span>(phylum_df, <span class="fu">here</span>(<span class="st">&#39;5_ms_figs/tableS2_spp_by_phylum.csv&#39;</span>))</span>
+<span id="cb2-56"><a href="#cb2-56" aria-hidden="true" tabindex="-1"></a><span class="fu">write_csv</span>(vert_df, <span class="fu">here</span>(<span class="st">&#39;5_ms_figs/tableS2_spp_verts_by_class.csv&#39;</span>))</span></code></pre></div>
 </div>
 
 
