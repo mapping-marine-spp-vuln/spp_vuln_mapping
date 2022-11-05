@@ -180,12 +180,16 @@ meow_realm_chi_df <- global_chi_df %>%
 ``` {r plot for overall chi by realm}
 plot_realm <- function(df, methods, x_label) {
   
-  fills <- c('grey90', 'grey40', 'grey70', 'black') ### fills for methods
-  clrs  <- c('black',  'grey40', 'grey70', 'black') ### colors for methods
-  lbls <- c(fe_n  = latex2exp::TeX('$FE_N$'),
-            hab_n = latex2exp::TeX('$Hab_N$'),
-            fe_o  = latex2exp::TeX('$FE_O$'),
-            hab_o = latex2exp::TeX('$Hab_O$')) %>%
+  div_clr <- c('#e66101', '#5e3c99')
+  fills <- c('white', 'white', div_clr[2], div_clr[1]) ### fills for methods
+  clrs  <- c(div_clr[2], div_clr[1], div_clr[2], div_clr[1]) ### colors for methods
+  # fills <- c('grey90', 'grey40', 'grey70', 'black') ### fills for methods
+  # clrs  <- c('black',  'grey40', 'grey70', 'black') ### colors for methods
+  
+  lbls <- c(fe_n  = latex2exp::TeX('$FE_c$'),
+            hab_n = latex2exp::TeX('$Hab_c$'),
+            fe_o  = latex2exp::TeX('$FE_o$'),
+            hab_o = latex2exp::TeX('$Hab_o$')) %>%
     rev()
   lvls <- names(lbls)
 
@@ -287,7 +291,7 @@ fig4 <- ggdraw() +
 
 
 fig4_file <- here('5_ms_figs/fig4_impacts_by_ecoregion.png')
-ggsave(fig4_file, width = 12, height = 8, units = 'cm', dpi = 300)
+ggsave(fig4_file, width = 12, height = 10, units = 'cm', dpi = 300)
 
 knitr::include_graphics(fig4_file)
 ```
@@ -296,13 +300,17 @@ knitr::include_graphics(fig4_file)
 
 ``` {r plot for overall chi by province}
 plot_prov <- function(df, methods, x_label, strips) {
-  
-  fills <- c('grey90', 'grey40', 'grey70', 'black') ### fills for methods
-  clrs  <- c('black',  'grey40', 'grey70', 'black') ### colors for methods
-  lbls <- c(fe_n  = latex2exp::TeX('$FE_N$'),
-            hab_n = latex2exp::TeX('$Hab_N$'),
-            fe_o  = latex2exp::TeX('$FE_O$'),
-            hab_o = latex2exp::TeX('$Hab_O$')) %>%
+
+  div_clr <- c('#e66101', '#5e3c99')
+  fills <- c('white', 'white', div_clr[2], div_clr[1]) ### fills for methods
+  clrs  <- c(div_clr[2], div_clr[1], div_clr[2], div_clr[1]) ### colors for methods
+  # fills <- c('grey90', 'grey40', 'grey70', 'black') ### fills for methods
+  # clrs  <- c('black',  'grey40', 'grey70', 'black') ### colors for methods
+
+  lbls <- c(fe_n  = latex2exp::TeX('$FE_c$'),
+            hab_n = latex2exp::TeX('$Hab_c$'),
+            fe_o  = latex2exp::TeX('$FE_o$'),
+            hab_o = latex2exp::TeX('$Hab_o$')) %>%
     rev()
   lvls <- names(lbls)
 
