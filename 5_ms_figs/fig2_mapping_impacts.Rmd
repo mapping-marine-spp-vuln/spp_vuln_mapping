@@ -165,7 +165,7 @@ cc_spp_df <- as.data.frame(cc_qtile_spp, xy = TRUE) %>%
 noncc_spp_df <- as.data.frame(noncc_qtile_spp, xy = TRUE) %>%
   setNames(c('x', 'y', 'noncc_spp'))
 
-cc_noncc_spp_df <- dt_join(cc_spp_df, noncc_spp_df, by = c('x', 'y'), type = 'full') %>%
+cc_noncc_spp_df <- full_join(cc_spp_df, noncc_spp_df, by = c('x', 'y'), type = 'full') %>%
   mutate(bi_class = paste(cc_spp, noncc_spp, sep = '-'))
 ```
 
@@ -198,7 +198,7 @@ cc_fe_df <- as.data.frame(cc_qtile_fe, xy = TRUE) %>%
 noncc_fe_df <- as.data.frame(noncc_qtile_fe, xy = TRUE) %>%
   setNames(c('x', 'y', 'noncc_fe'))
 
-cc_noncc_fe_df <- dt_join(cc_fe_df, noncc_fe_df, by = c('x', 'y'), type = 'full') %>%
+cc_noncc_fe_df <- full_join(cc_fe_df, noncc_fe_df, by = c('x', 'y'), type = 'full') %>%
   mutate(bi_class = paste(cc_fe, noncc_fe, sep = '-'))
 ```
 
