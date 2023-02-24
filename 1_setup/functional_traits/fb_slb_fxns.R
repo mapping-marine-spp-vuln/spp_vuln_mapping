@@ -1,6 +1,14 @@
 #######################################################.
 #### Helper functions for FishBase and SeaLifeBase ####
 #######################################################.
+
+### Get vulnerability traits by species
+get_vuln_traits <- function() {
+  x <- data.table::fread(here('_data/traits_vulnerability/spp_traits_valid.csv'))
+  return(x)
+}
+
+### get traits from FishBase/SeaLifeBase, keeping or dropping columns as needed
 get_fb_slb <- function(fxn = species, 
                        keep_cols = NULL, keep_fxn = contains, 
                        drop_cols = NULL, drop_fxn = all_of) {
