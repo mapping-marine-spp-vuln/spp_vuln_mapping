@@ -37,6 +37,30 @@ Convert HCAF maps from AquaMaps into the Mollweide 10 km x 10 km projection.
 
 For each species, bind the AquaMaps HCAF cell presence values with a lookup dataframe of LOICZID to Mollweide cell ID.  Save out a vector of just the new Mollweide ID cell values, per species (rather than per AquaMaps species ID).
 
+## Read and examine species cell occurrences
+
+```{r clean am spp cells}
+  spp_cell_file <- file.path(am_dir, 'hcaf_species_native_clean.csv')
+  
+  ### create a cleaner version  of spp native file for speed and size!
+  if(!file.exists(spp_cell_file)) {
+    csq_loiczid <- get_hcaf_info() %>%
+      select(loiczid, csquare_code) %>%
+      distinct()
+    spp_cells <- data.table::fread(file.path(am_dir, 'hcaf_species_native.csv')) %>%
+      janitor::clean_names() %>%
+      oharac::dt_join(csq_loiczid, by = 'csquare_code', type = 'left') %>%
+      select(am_sid = species_id, loiczid, prob = probability) %>%
+      distinct() %>%
+      mutate(am_sid = tolower(am_sid))
+
+    write_csv(spp_cells, spp_cell_file)
+  }
+
+```
+
+## Create a LOICZID to Mollweide cell ID lookup
+
 ```{r create cell id lookup}
 loiczid_mol_r <- raster(here('_spatial/loiczid_mol.tif'))
 ocean_mol_r <- raster(here('_spatial/ocean_area_mol.tif'))

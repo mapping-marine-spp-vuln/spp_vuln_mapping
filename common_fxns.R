@@ -211,21 +211,7 @@ map_to_hcaf <- function(df, by = 'loiczid', which, xfm = NULL, ocean_mask = FALS
 get_am_spp_cells <- function(occurcells_cut = 0, prob_cut = 0) {
   
   spp_cell_file <- file.path(am_dir, 'hcaf_species_native_clean.csv')
-  
-  ### create a cleaner version  of spp native file for speed and size!
-  # if(!file.exists(spp_cell_file)) {
-  #   csq_loiczid <- get_hcaf_info() %>%
-  #     select(loiczid, csquare_code) %>%
-  #     distinct()
-  #   spp_cells <- data.table::fread(file.path(am_dir, 'hcaf_species_native.csv')) %>%
-  #     janitor::clean_names() %>%
-  #     oharac::dt_join(csq_loiczid, by = 'csquare_code', type = 'left') %>%
-  #     select(am_sid = species_id, loiczid, prob = probability) %>%
-  #     distinct() %>%
-  #     mutate(am_sid = tolower(am_sid))
-  # 
-  #   write_csv(spp_cells, spp_cell_file)
-  # }
+  ### file created in _setup/species/aquamaps/2_map_aquamaps_to_moll.Rmd
   
   spp_cells <- data.table::fread(spp_cell_file)
   
