@@ -23,19 +23,9 @@ knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
 library(oharac)
 library(tidyverse)
 library(cowplot)
-library(showtext) ### for custom fonts
 library(here)
 source(here('common_fxns.R'))
 
-font_add(family = 'bentonbold', 
-         regular = file.path('~/fonts', 
-                             'BentonSans Condensed Bold', 
-                             'BentonSans Condensed Bold.otf'))
-font_add(family = 'benton', 
-         regular = file.path('~/fonts', 
-                             'BentonSans Condensed Book', 
-                             'BentonSans Condensed Book.otf'))
-showtext_auto()
 ```
 
 # Summary
@@ -255,18 +245,18 @@ plot_panel <- function(df, means_df,
     ### clean up theme
       theme_ohara() +
       theme(panel.background = element_blank(),
-            legend.text = element_text(family = 'benton', size = 7),
-            legend.title = element_text(family = 'bentonbold', size = 7),
+            legend.text = element_text(size = 6),
+            legend.title = element_text(face = 'bold', size = 6),
             legend.key.size = unit(.20, 'cm'),
             legend.background = element_blank(),
             axis.title.y = element_blank(),
-            axis.text.x = element_text(family = 'benton', size = 7),
-            axis.title.x = element_text(family = 'bentonbold', size = 7, hjust = 0)) +
+            axis.text.x = element_text(size = 6),
+            axis.title.x = element_text(face = 'bold', size = 6, hjust = 0)) +
       labs(x = x_lab, fill = 'Range', color = 'Range')
   
   if(y_text) {
     p <- p + 
-      theme(axis.text.y = element_text(family = 'bentonbold', size = 7))
+      theme(axis.text.y = element_text(face = 'bold', size = 6))
   } else {
     p <- p + theme(axis.text.y = element_blank())
   }
@@ -278,7 +268,7 @@ plot_panel <- function(df, means_df,
                fill = 'white', color = 'white') +
       geom_text(data = tx_spp_counts, aes(label = n_spp, y = taxon),
                 x = .305, hjust = 0, color = 'black', fill = NA, 
-                family = 'benton', size = 1.9)
+                size = 1.8)
   }
 
   return(p)
@@ -413,13 +403,13 @@ panel_d <- ggplot(tx_imp_by_str, aes(x = mean_prop, y = taxon)) +
   ### clean up theme
   theme_ohara() +
   theme(panel.background = element_blank(),
-        legend.text = element_text(family = 'benton', size = 7),
-        legend.title = element_text(family = 'bentonbold', size = 7),
+        legend.text = element_text(size = 6),
+        legend.title = element_text(face = 'bold', size = 6),
         legend.key.size = unit(.22, 'cm'),
         axis.title.y = element_blank(),
-        axis.text.x = element_text(family = 'benton', size = 7),
-        axis.text.y = element_text(family = 'bentonbold', size = 7),
-        axis.title.x = element_text(family = 'bentonbold', size = 7, hjust = 0)) +
+        axis.text.x = element_text(size = 6),
+        axis.text.y = element_text(face = 'bold', size = 6),
+        axis.title.x = element_text(face = 'bold', size = 6, hjust = 0)) +
   labs(x = 'Proportion of cumulative impact', fill = 'Stressor', color = 'Stressor')
 ```
 
@@ -442,11 +432,11 @@ fig1 <- ggdraw() +
   draw_plot(panel_a_lgd, x = .533, y = .24, height = .10, width = .15) +
   ### Panel labels:
   draw_label('A', x = 0.03, y = .99, hjust = 0, vjust = 1, 
-             size = 10, fontfamily = 'bentonbold') +
+             size = 9, fontface = 'bold') +
   draw_label('B', x = 0.41, y = .99, hjust = 0, vjust = 1, 
-             size = 10, fontfamily = 'bentonbold') +
+             size = 9, fontface = 'bold') +
   draw_label('C', x = 0.665, y = .99, hjust = 0, vjust = 1,  
-             size = 10, fontfamily = 'bentonbold')
+             size = 9, fontface = 'bold')
 
 
 fig1_file <- here('5_ms_figs/fig1_taxon_impact_summaries.png')
@@ -456,9 +446,9 @@ knitr::include_graphics(fig1_file)
 
 fig1_fourpanel <- ggdraw() +
   draw_plot(fig1, x = 0, y = .5, height = .5, width = 1) +
-  draw_plot(panel_d, x = 0, y = 0, height = .49, width = 1.06) +
+  draw_plot(panel_d, x = 0, y = 0, height = .49, width = 1.0) +
   draw_label('D', x = 0.03, y = .48, hjust = 0, vjust = 1,  
-             size = 10, fontfamily = 'bentonbold')
+             size = 9, fontface = 'bold')
 
 fig1_fourpanel_file <- here('5_ms_figs/fig1_taxon_impact_summaries_fourpanel.png')
 ggsave(fig1_fourpanel_file, width = 12, height = 10, units = 'cm', dpi = 300)

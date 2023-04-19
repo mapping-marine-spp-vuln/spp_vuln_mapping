@@ -27,19 +27,9 @@ library(data.table)
 library(tidyverse)
 library(biscale)  ### for bivariate legend
 library(cowplot)
-library(showtext) ### for custom fonts
 library(here)
 source(here('common_fxns.R'))
 
-font_add(family = 'bentonbold', 
-         regular = file.path('~/fonts', 
-                             'BentonSans Condensed Bold', 
-                             'BentonSans Condensed Bold.otf'))
-font_add(family = 'benton', 
-         regular = file.path('~/fonts', 
-                             'BentonSans Condensed Book', 
-                             'BentonSans Condensed Book.otf'))
-showtext_auto()
 ```
 
 # Summary
@@ -125,7 +115,7 @@ panel_lgd_raw <- ggplot(colors_df, aes(x, y, fill = bi_class)) +
   scale_fill_manual(breaks = colors_df$bi_class, values = colors_df$bi_fill) +
   scale_x_continuous(expand = c(0, 0)) +
   scale_y_continuous(expand = c(0, 0)) +
-  theme(text = element_text(family = 'bentonbold'),
+  theme(text = element_text(face = 'bold'),
         plot.background = element_blank())
 ```
 
@@ -186,15 +176,15 @@ figS1_panel <- ggdraw() +
   draw_label('Climate vs. non-\nclimate impacts\n(quartiles)',
              x = lgd_p['x'] + lgd_p['w'], y = lgd_p['y'] + lgd_p['h'] + .03, 
              hjust = 1, vjust = 0, angle = 0,
-             size = 8, color = 'black', fontfamily = 'bentonbold') +
+             size = 7, color = 'black', fontface = 'bold') +
   draw_label('Climate ->',
              x = lgd_p['x'], y = lgd_p['y'] - .005,
              hjust = 0, vjust = 1, angle = 0,
-             size = 6, color = 'black', fontfamily = 'bentonbold') +
+             size = 5, color = 'black', fontface = 'bold') +
   draw_label('Non-climate ->',
              x = lgd_p['x'] - .005, y = lgd_p['y'],
              hjust = 0, vjust = 0, angle = 90,
-             size = 6, color = 'black', fontfamily = 'bentonbold')
+             size = 5, color = 'black', fontface = 'bold')
 
 
 ggsave(figS1_file, width = 12, height = 5, units = 'cm', dpi = 300)
