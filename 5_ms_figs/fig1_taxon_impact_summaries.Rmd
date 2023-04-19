@@ -149,11 +149,12 @@ taxa_pcts <- taxa_imp_scores %>%
   select(taxon, species, iucn_sid) %>%
   distinct() %>%
   group_by(taxon) %>%
-  summarize(pct_overall = round(n() / nrow(.), 3))
+  summarize(n_overall = n(),
+            pct_overall = round(n() / nrow(.), 3))
 
 nppwt_top1pct <- nppwt_df %>%
-  arrange(desc(all)) %>%
-  head(as.integer(nrow(.) * .01))
+  select(iucn_sid:all) %>%
+  slice_max(order_by = all, prop = 0.01)
 
 nppwt_top1pct %>%
   group_by(taxon) %>%
@@ -173,7 +174,7 @@ nppwt_btm1pct %>%
   left_join(taxa_pcts, by = 'taxon') %>%
   mutate(repr = npp_pct / pct_overall) %>%
   arrange(desc(repr))
-
+# x <- nppwt_top1pct %>% filter(taxon == 'Elasmobranchs')
 ```
 
 
@@ -182,7 +183,8 @@ nppwt_btm1pct %>%
 ### create an "all" taxa that just plops the data frame on top of itself
 all_tx_imp_scores <- taxa_imp_scores %>%
   mutate(taxon = 'All') %>%
-  bind_rows(taxa_imp_scores)
+  bind_rows(taxa_imp_scores) %>%
+  filter(species %in% x$species)
 
 tx_order <- all_tx_imp_scores %>%
   filter(stressor == 'all') %>%

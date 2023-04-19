@@ -61,7 +61,7 @@ check_tryerror <- function(l) {
   x <- sapply(l, class) %>% 
     unlist() %>% as.vector()
   return(any(stringr::str_detect(tolower(x), 'error')))
-}
+} 
 
 get_one_map <- function(f) {
   if(file.exists(f)) {

@@ -503,7 +503,7 @@ spp_fe <- spp_info_df %>% select(species, fe_id) %>% distinct()
 
 tmp_stem_fe <- here_anx('impact_maps_by_taxon/impacts_tx_biomass_removal', 
                         'imp_fvwt_biomass_removal_chunk_%s_to_%s.tif')
-### zxcv <- list.files(dirname(tmp_stem_fv), pattern = 'imp_fvwt', full.names = TRUE)
+### zxcv <- list.files(dirname(tmp_stem_fe), pattern = 'imp_fvwt', full.names = TRUE)
 ### unlink(zxcv)
 
 for(chunk_i in 1:n_chunks) { 
