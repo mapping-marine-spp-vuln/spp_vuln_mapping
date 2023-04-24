@@ -183,7 +183,7 @@ panel_lgd_raw <- ggplot(colors_df, aes(x, y, fill = bi_class)) +
   scale_fill_manual(breaks = colors_df$bi_class, values = colors_df$bi_fill) +
   scale_x_continuous(expand = c(0, 0)) +
   scale_y_continuous(expand = c(0, 0)) +
-  theme(text = element_text(face = 'bold'),
+  theme(text = element_text(face = 'bold', family = 'Helvetica'),
         plot.background = element_blank())
 # panel_bc_lgd_raw
 ```
@@ -269,21 +269,21 @@ fig_3 <- ggdraw() +
             height = lgd_xy['h'], width = lgd_xy['w']) +
   ### Panel labels:
   draw_label('A   Climate', x = 0.002, y = .97, hjust = 0, vjust = 1, 
-             size = 9, fontface = 'bold') +
+             size = 9, fontfamily = 'Helvetica', fontface = 'bold') +
   draw_label('B   Non-climate', x = 0.002, y = .47, hjust = 0, vjust = 0, 
-             size = 9, fontface = 'bold') +
+             size = 9, fontfamily = 'Helvetica', fontface = 'bold') +
   ### Legend labels:
   draw_label('Functional\nEntity vs. Habitat\nimpacts (quartiles)',
              x = 0.99, y = .55, hjust = 1, vjust = 0, angle = 0,
-             size = 7, color = 'black', fontface = 'bold') +
+             size = 7, color = 'black', fontfamily = 'Helvetica', fontface = 'bold') +
   draw_label('Habitat ->', 
              x = lgd_xy['x'], y = lgd_xy['y'] - .005, 
              hjust = 0, vjust = 1, angle = 0,
-             size = 6, color = 'black', fontface = 'bold') +
+             size = 6, color = 'black', fontfamily = 'Helvetica', fontface = 'bold') +
   draw_label('Func Entity ->', 
              x = lgd_xy['x'] - .005, y = lgd_xy['y'], 
              hjust = 0, vjust = 0, angle = 90,
-             size = 6, color = 'black', fontface = 'bold')
+             size = 6, color = 'black', fontfamily = 'Helvetica', fontface = 'bold')
 
 ggsave(fig3_file, width = 12, height = 10, units = 'cm', dpi = 300)
 
@@ -357,15 +357,15 @@ fig_SI <- ggdraw() +
   ### panel A labels:
   draw_label('Climate v. non-\nclimate impacts\n(quartiles)',
              x = 0.99, y = .70, hjust = 1, vjust = 0, angle = 0,
-             size = 7, color = 'black', fontface = 'bold') +
+             size = 7, color = 'black', fontfamily = 'Helvetica', fontface = 'bold') +
   draw_label('Climate ->', 
              x = lgd_xy['x'], y = lgd_xy['y'] - .005, 
              hjust = 0, vjust = 1, angle = 0,
-             size = 6, color = 'black', fontface = 'bold') +
+             size = 6, color = 'black', fontfamily = 'Helvetica', fontface = 'bold') +
   draw_label('Non-climate ->', 
              x = lgd_xy['x'] - .005, y = lgd_xy['y'], 
              hjust = 0, vjust = 0, angle = 90,
-             size = 6, color = 'black', fontface = 'bold')
+             size = 6, color = 'black', fontfamily = 'Helvetica', fontface = 'bold')
 
 fig_si_file <- here('5_ms_figs/figSI_map_hab_cc_noncc.png')
 ggsave(fig_si_file, width = 12, height = 5, units = 'cm', dpi = 300)

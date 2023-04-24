@@ -38,7 +38,7 @@ Results from scripts in folder `2_process_spp_vuln_and_impacts`
 
 # Methods
 
-Read in the species impact summaries; summarize to climate and non-climate impacts, attach taxonomic groups, create boxplots - one for climate stressors, one for non-climate.  This summarization must be done on the server, as the individual species stressor files are stored there.  This should be saved in the Github repo for use on the Mac, to generate a well-formatted figure.
+Read in the species impact summaries; summarize to climate and non-climate impacts, attach taxonomic groups, create boxplots - one for climate stressors, one for non-climate.  This summarization must be done on the server, as the individual species stressor files are stored there.
 
 ```{r}
 spp_imp_sum_file <- here('5_ms_figs/int/fig1_spp_summary.csv')
@@ -173,8 +173,7 @@ nppwt_btm1pct %>%
 ### create an "all" taxa that just plops the data frame on top of itself
 all_tx_imp_scores <- taxa_imp_scores %>%
   mutate(taxon = 'All') %>%
-  bind_rows(taxa_imp_scores) %>%
-  filter(species %in% x$species)
+  bind_rows(taxa_imp_scores)
 
 tx_order <- all_tx_imp_scores %>%
   filter(stressor == 'all') %>%
@@ -268,6 +267,7 @@ plot_panel <- function(df, means_df,
                fill = 'white', color = 'white') +
       geom_text(data = tx_spp_counts, aes(label = n_spp, y = taxon),
                 x = .305, hjust = 0, color = 'black', fill = NA, 
+                family = 'Helvetica',
                 size = 1.8)
   }
 
@@ -403,6 +403,7 @@ panel_d <- ggplot(tx_imp_by_str, aes(x = mean_prop, y = taxon)) +
   ### clean up theme
   theme_ohara() +
   theme(panel.background = element_blank(),
+        text = element_text(family = 'Helvetica'),
         legend.text = element_text(size = 6),
         legend.title = element_text(face = 'bold', size = 6),
         legend.key.size = unit(.22, 'cm'),
@@ -432,11 +433,11 @@ fig1 <- ggdraw() +
   draw_plot(panel_a_lgd, x = .533, y = .24, height = .10, width = .15) +
   ### Panel labels:
   draw_label('A', x = 0.03, y = .99, hjust = 0, vjust = 1, 
-             size = 9, fontface = 'bold') +
+             size = 9, fontfamily = 'Helvetica', fontface = 'bold') +
   draw_label('B', x = 0.41, y = .99, hjust = 0, vjust = 1, 
-             size = 9, fontface = 'bold') +
+             size = 9, fontfamily = 'Helvetica', fontface = 'bold') +
   draw_label('C', x = 0.665, y = .99, hjust = 0, vjust = 1,  
-             size = 9, fontface = 'bold')
+             size = 9, fontfamily = 'Helvetica', fontface = 'bold')
 
 
 fig1_file <- here('5_ms_figs/fig1_taxon_impact_summaries.png')
@@ -448,7 +449,7 @@ fig1_fourpanel <- ggdraw() +
   draw_plot(fig1, x = 0, y = .5, height = .5, width = 1) +
   draw_plot(panel_d, x = 0, y = 0, height = .49, width = 1.0) +
   draw_label('D', x = 0.03, y = .48, hjust = 0, vjust = 1,  
-             size = 9, fontface = 'bold')
+             size = 9, fontfamily = 'Helvetica', fontface = 'bold')
 
 fig1_fourpanel_file <- here('5_ms_figs/fig1_taxon_impact_summaries_fourpanel.png')
 ggsave(fig1_fourpanel_file, width = 12, height = 10, units = 'cm', dpi = 300)

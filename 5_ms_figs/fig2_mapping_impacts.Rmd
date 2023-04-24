@@ -140,7 +140,7 @@ panel_lgd_raw <- ggplot(colors_df, aes(x, y, fill = bi_class)) +
   scale_fill_manual(breaks = colors_df$bi_class, values = colors_df$bi_fill) +
   scale_x_continuous(expand = c(0, 0)) +
   scale_y_continuous(expand = c(0, 0)) +
-  theme(text = element_text(face = 'bold'),
+  theme(text = element_text(family = 'Helvetica', face = 'bold'),
         plot.background = element_blank())
 # panel_bc_lgd_raw
 ```
@@ -323,7 +323,8 @@ panel_c_cc <- ggplot() +
   scale_x_continuous(expand = c(0, 0)) +
   scale_y_continuous(expand = c(0, 0)) +
   theme_void() +
-  theme(axis.text = element_blank(), 
+  theme(text = element_text(family = 'Helvetica'),
+        axis.text = element_blank(), 
         axis.title = element_blank(),
         legend.key.height = unit(.25, 'cm'),
         legend.key.width = unit(.75, 'cm'),
@@ -388,21 +389,21 @@ fig2_panels <- ggdraw() +
 
 fig2_labels <- fig2_panels +
   draw_label('A', x = a['x'], y = a['y'] + p_h,  hjust = 0, vjust = 0, 
-             size = 9, fontface = 'bold') +
+             size = 9, fontfamily = 'Helvetica', fontface = 'bold') +
   draw_label('B', x = 1,      y = b['y'] + p_h,  hjust = 1, vjust = 0, 
-             size = 9, fontface = 'bold') +
+             size = 9, fontfamily = 'Helvetica', fontface = 'bold') +
   draw_label('C', x = c['x'], y = c['y'] + p_h,  hjust = 0, vjust = 0, 
-             size = 9, fontface = 'bold') +
+             size = 9, fontfamily = 'Helvetica', fontface = 'bold') +
   draw_label('D', x = 1,      y = d['y'] + p_h,  hjust = 1, vjust = 0, 
-             size = 9, fontface = 'bold') +
+             size = 9, fontfamily = 'Helvetica', fontface = 'bold') +
   draw_label('Species', x = a['x'] + .04,  y = a['y'] + p_h,  hjust = 0, vjust = 0, 
-             size = 7) +
+             size = 7, fontfamily = 'Helvetica') +
   draw_label('Funct. entity', x = 1 - .04, y = b['y'] + p_h,  hjust = 1, vjust = 0, 
-             size = 7) +
+             size = 7, fontfamily = 'Helvetica') +
   draw_label('Climate', x = c['x'] + .04,  y = c['y'] + p_h,  hjust = 0, vjust = 0, 
-             size = 7) +
+             size = 7, fontfamily = 'Helvetica') +
   draw_label('Non-climate', x = 1 - .04,   y = d['y'] + p_h,  hjust = 1, vjust = 0, 
-             size = 7)
+             size = 7, fontfamily = 'Helvetica')
 
 ### parameterize legends for easier changing of label positions:
 l1 <- c(x = .68, y = 0.80, h = .144, w = .12)
@@ -418,19 +419,19 @@ fig2_legends <- fig2_labels +
   draw_label('Climate vs. non-\nclimate impacts\n(quartiles)',
              x = l1['x'] + l1['w'] + .01, y = l1['y'] + l1['h'] - .01, 
              hjust = 0, vjust = 1, angle = 0,
-             size = 7, color = 'black', fontface = 'bold') +
+             size = 7, color = 'black', fontfamily = 'Helvetica', fontface = 'bold') +
   draw_label('Climate ->',
              x = l1['x'], y = l1['y'] - .005,
              hjust = 0, vjust = 1, angle = 0,
-             size = 6, color = 'black', fontface = 'bold') +
+             size = 6, color = 'black', fontfamily = 'Helvetica', fontface = 'bold') +
   draw_label('Non-climate ->',
              x = l1['x'] - .005, y = l1['y'],
              hjust = 0, vjust = 0, angle = 90,
-             size = 6, color = 'black', fontface = 'bold') +
+             size = 6, color = 'black', fontfamily = 'Helvetica', fontface = 'bold') +
   ### Legend label for diff plots
   draw_label('Funct. entity vs. species\nimpacts (percent difference)',
              x = 0, y = .15, hjust = 0, vjust = 1, angle = 0,
-             size = 7, color = 'black', fontface = 'bold')
+             size = 7, color = 'black', fontfamily = 'Helvetica', fontface = 'bold')
 
 
 ggsave(fig2_file, width = 12, height = 10, units = 'cm', dpi = 300)

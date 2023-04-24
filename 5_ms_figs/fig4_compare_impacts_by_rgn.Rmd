@@ -221,7 +221,8 @@ plot_realm <- function(df, methods, x_label) {
     scale_x_continuous(limits = c(0, 100), expand = c(0, 0)) +
     theme_minimal() +
     labs(x = x_label) +
-    theme(axis.title.y = element_blank(),
+    theme(text = element_text(family = 'Helvetica'),
+          axis.title.y = element_blank(),
           axis.title.x = element_text(size = 6),
           axis.text  = element_text(size = 6),
           panel.grid.major.y = element_blank(),
@@ -273,11 +274,11 @@ fig4 <- ggdraw() +
             height = lgd_a_xy['h'], width = lgd_a_xy['w']) +
   ### Panel labels:
   draw_label('A', x = 0.002, y = .99, hjust = 0, vjust = 1, 
-             size = 9, fontface = 'bold') +
+             size = 9, fontfamily = 'Helvetica', fontface = 'bold') +
   draw_label('B', x = 0.37, y = .99, hjust = 0, vjust = 1, 
-             size = 9, fontface = 'bold') +
+             size = 9, fontfamily = 'Helvetica', fontface = 'bold') +
   draw_label('C', x = 0.64, y = .99, hjust = 0, vjust = 1, 
-             size = 9, fontface = 'bold')
+             size = 9, fontfamily = 'Helvetica', fontface = 'bold')
 
 
 fig4_file <- here('5_ms_figs/fig4_impacts_by_ecoregion.png')
@@ -409,11 +410,11 @@ fig_SI <- ggdraw() +
             height = lgd_a_xy['h'], width = lgd_a_xy['w']) +
   ### Panel labels:
   draw_label('A', x = 0.002, y = .99, hjust = 0, vjust = 1, 
-             size = 9, fontface = 'bold') +
+             size = 9, fontfamily = 'Helvetica', fontface = 'bold') +
   draw_label('B', x = 0.44, y = .99, hjust = .5, vjust = 1, 
-             size = 9, fontface = 'bold') +
+             size = 9, fontfamily = 'Helvetica', fontface = 'bold') +
   draw_label('C', x = 0.68, y = .99, hjust = .5, vjust = 1, 
-             size = 9, fontface = 'bold')
+             size = 9, fontfamily = 'Helvetica', fontface = 'bold')
 
 
 figSI_file <- here('5_ms_figs/figSI_impacts_by_ecoregion_province.png')
