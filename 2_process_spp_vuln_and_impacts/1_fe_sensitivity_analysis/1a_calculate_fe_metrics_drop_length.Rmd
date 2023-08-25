@@ -1,0 +1,267 @@
+---
+title: "Calculate functional diversity metrics dropping length - sensitivity analysis"
+author: "*Compiled on `r date()` by `r Sys.info()['user']`*"
+output: 
+  html_document:
+    code_folding: hide
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include = TRUE, message = FALSE, warning = FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE, 
+                      fig.height = 4, fig.width = 7)
+
+library(terra)
+library(sf)
+library(data.table)
+library(tidyverse)
+library(here)
+library(oharac)
+source(here('common_fxns.R'))
+```
+
+# Summary
+
+Using functional entities defined in a prior script based on a suite of categorical traits, in combination with spatial distribution of species from AquaMaps and IUCN, calculate functional diversity metrics based on Mouillot et al (2014) and code from Sebastien Villeger: functional richness, functional vulnerability, functional redundancy, and functional over-redundancy.  Here we drop one trait at a time and compare to the full trait set to see how sensitive our functional entity approach is to trait selection.
+
+# Methods
+
+## Summarize functional entity membership per cell across IUCN and AquaMaps
+
+Included species are:
+
+* coded for functional entity membership
+* mapped in one (or both) of the species distribution mapsets
+* included the trait-based vulnerability set
+
+### Inspect bin membership for FE traits
+
+```{r}
+spp_info <- assemble_spp_info_df() %>%
+  select(species, taxon, map_f,
+         mob, trp, 
+         # len, 
+         wcol) %>%
+  distinct() %>%
+  mutate(fe = paste(mob, trp, wcol, sep = '_')) %>%
+  group_by(fe) %>%
+  mutate(n_fe = n()) %>%
+  ungroup() %>%
+  arrange(desc(n_fe)) %>%
+  mutate(fe = fct_inorder(fe),
+         fe_id = as.integer(fe))
+         
+n_fes_possible <- n_distinct(spp_info$mob) * 
+  n_distinct(spp_info$trp) * 
+  # n_distinct(spp_info$len) * 
+  n_distinct(spp_info$wcol)
+n_fes_realized <- spp_info$fe_id %>% n_distinct()
+```
+
+Overall, with this set of traits used to define functional entities, we could have up to `r n_fes_possible` FEs, only `r n_fes_realized` (`r round(n_fes_realized / n_fes_possible, 3) * 100`%) of which are realized in this set of species. With the full trait set, we have 512 possible FEs, 339 (66.2%) of which are populated.
+
+### Load species ranges and summarize to functional entities per cell
+
+Here we use the IUCN species range maps rasterized to 10 km Mollweide, and AquaMaps species distributions reprojected to 10 km Mollweide.  Priority: IUCN species maps, then AquaMaps with occur_cells ≥ 10.  These map filenames are already set up in the `assemble_spp_info_df()` function.
+
+Read in functional entity assignments and join to spatial ranges.  Per cell per FE, calculate the number of species for later calculation into functional richness, redundancy, vulnerability.  Break the process into chunks to avoid overloading memory.
+
+```{r}
+process_spp_to_fe <- function(fe, spp_maps) { ### fe <- fe_vec[1]
+  dt_out <- spp_maps %>%
+    filter(fe_id == fe) %>%
+    data.table() %>%
+    .[ , .(n_spp_fe = length(unique(species))),
+       by = .(cell_id, fe_id)]
+  return(dt_out)
+}
+```
+
+```{r summarize species fe by cell}
+
+fe_summary_file <- here_anx('func_entities', 'sens_analysis', 'fe_drop_length_cell_summary.csv')
+# unlink(fe_summary_file)
+if(!file.exists(fe_summary_file)) {
+
+  ### Chunk out and save smaller files to avoid loading in EVERY spp map
+  ### all at once!
+  n_chunks <- 10
+  spp_to_chunks <- spp_info %>%
+    select(species) %>%
+    distinct() %>%
+    mutate(chunk = rep(1:n_chunks, length.out = n()))
+  
+  spp_clean <- spp_info %>%
+    select(species, fe_id, map_f, taxon) %>%
+    distinct() %>%
+    left_join(spp_to_chunks, by = 'species')
+  
+  spp_fes <- spp_clean %>%
+    select(species, fe_id) %>%
+    distinct()
+
+  tmp_chunk_filestem <- here('tmp/fe_drop_length_summary_chunk_%s.csv')
+  for(i in 1:n_chunks) { ### i <- 1
+    tmp_chunk_f <- sprintf(tmp_chunk_filestem, i)
+    if(file.exists(tmp_chunk_f)) {
+      message('Temp file ', basename(tmp_chunk_f), ' exists... skipping!')
+      next()
+    }
+    message('Assembling species maps and binding FEs for chunk ', i, ' of ', n_chunks, '...')
+    spp_chunk <- spp_clean %>% filter(chunk == i)
+    chunk_spp_maps <- collect_spp_rangemaps(spp_vec  = spp_chunk$species, 
+                                            file_vec = spp_chunk$map_f,
+                                            idcol = 'species',
+                                            ) %>%
+      dt_join(spp_fes, by = 'species', type = 'left') %>%
+      distinct()
+    
+    fe_vec <- chunk_spp_maps$fe_id %>% unique() %>% sort()
+    
+    message('... summarizing FR map for chunk ', i, ': ', length(fe_vec), ' FEs in ', 
+      nrow(chunk_spp_maps), ' cell observations...')
+    chunk_fe_sumlist <- parallel::mclapply(fe_vec, mc.cores = 40,
+                                           FUN = process_spp_to_fe,
+                                           spp_maps = chunk_spp_maps)
+    if(check_tryerror(chunk_fe_sumlist)) {
+      stop('Try-errors detected in FE summary loop!')
+    }
+    
+    message('... binding chunk and writing chunk summary to ', basename(tmp_chunk_f), '...')
+    chunk_fe_summary <- chunk_fe_sumlist %>% data.table::rbindlist()
+    fwrite(chunk_fe_summary, tmp_chunk_f)
+  }
+  
+  message('... reading temp chunks, binding, and summarizing by fe and cell...')
+  fe_tmp_fs <- list.files(dirname(tmp_chunk_filestem), 
+                          pattern = 'fe_drop_length_summary_chunk', full.names = TRUE)
+  fe_summary_list <- parallel::mclapply(fe_tmp_fs, FUN = fread, mc.cores = 10)
+  fe_summary <- rbindlist(fe_summary_list) %>%
+    .[ , .(n_spp_fe = sum(n_spp_fe)),
+       by = .(cell_id, fe_id)]
+  
+  message('... writing summary to ', basename(fe_summary_file), '...')
+  fwrite(fe_summary, fe_summary_file)
+  ### unlink(fe_tmp_fs)
+}
+
+```
+
+## Calculate functional diversity metrics 
+
+Calculate functional diversity metrics from IUCN and AquaMaps summaries of functional entity membership per cell.
+
+This set of calculations replicates the results of Villeger's function but without resorting to a presence/absence matrix, instead just relying on the original AquaMaps species-cell table.
+
+* spp_fe_df joined to am_spp_cell; 
+* group by cell and functional group;
+* calculate number of spp per functional group;
+* group by cell;
+* calculate functional entity metrics - 
+    * Functional entity richness
+    * Functional vulnerability (% of FEs represented by a single spp)
+    * Weighted functional vulnerability (new: vuln of an FE is $\frac{1}{2^{n-1}}$, take average over all FE)
+    * Functional redundancy (mean spp count per FE)
+    * Functional over-redundancy (sum of spp per FE above mean, divided by total number of spp)
+    
+
+```{r calc fe metrics}
+
+fe_metrics_file <- here_anx('func_entities/sens_analysis/fe_drop_length_metrics_per_cell.csv')
+
+### unlink(fe_metrics_file)
+if(!file.exists(fe_metrics_file)) {
+  # system.time({
+  fe_sum_total <- data.table::fread(fe_summary_file)
+
+  ### there are 6.5 million cells.  Chop into 500k instances and mclapply to summarize
+  # cell_id_vec <- 1:ncell(raster::raster(here('_spatial/ocean_area_mol.tif')))
+  chunk_size <- 500000
+  n_cell <- ncell(rast(here('_spatial/ocean_area_mol.tif')))
+  n_chunks <- ceiling(n_cell / chunk_size)
+
+  message('Calculating functional richness map...')
+  n_fe_list <- parallel::mclapply(1:n_chunks, mc.cores = n_chunks,
+                 FUN = function(n) { ### n <- 1
+                   cell_id_min <- (n - 1) * chunk_size + 1
+                   cell_id_max <- n * chunk_size
+                   nspp_sum <- fe_sum_total %>%
+                     filter(between(cell_id, cell_id_min, cell_id_max)) %>%
+                     data.table() %>%
+                     .[ , .(n_fe  = n_distinct(fe_id)),
+                        by = 'cell_id']
+                   }) 
+  
+  if(check_tryerror(n_fe_list)) stop('Try errors detected!')
+  n_fe_df <- n_fe_list %>%
+    data.table::rbindlist()
+
+  message('Calculating functional vulnerability map...')
+  fv_list <- parallel::mclapply(1:n_chunks, mc.cores = n_chunks,
+                 FUN = function(n) { ### n <- 1
+                   cell_id_min <- (n - 1) * chunk_size + 1
+                   cell_id_max <- n * chunk_size
+                   f_vuln <- fe_sum_total %>%
+                     filter(between(cell_id, cell_id_min, cell_id_max)) %>%
+                     data.table() %>%
+                     .[ , .(f_wvuln = mean(0.5^(n_spp_fe - 1)),
+                            f_red   = mean(n_spp_fe)),
+                     by = .(cell_id)]
+                 }) 
+  if(check_tryerror(fv_list)) stop('Try errors detected!')
+  f_vuln_df <- fv_list %>%
+    data.table::rbindlist()
+
+  message('Calculating functional overredundancy map...')
+  f_overred_list <- parallel::mclapply(1:n_chunks, mc.cores = n_chunks,
+              FUN = function(n) { ### n <- 1
+                cell_id_min <- (n - 1) * chunk_size + 1
+                cell_id_max <- n * chunk_size
+                f_overred <- fe_sum_total %>%
+                  filter(between(cell_id, cell_id_min, cell_id_max)) %>%
+                  oharac::dt_join(f_vuln_df, by = 'cell_id', type = 'left') %>%
+                  data.table() %>%
+                  .[ , f_over := ifelse(n_spp_fe > f_red, n_spp_fe - f_red, 0)] %>%
+                  .[ , .(f_overred = sum(f_over) / sum(n_spp_fe)),
+                     by = 'cell_id']
+              })
+  if(check_tryerror(f_overred_list)) stop('Try errors detected!')
+  f_overred_df <- f_overred_list %>%
+    data.table::rbindlist()
+
+  message('Combining functional diversity metrics maps...')
+  fe_metrics_df <- n_fe_df %>%
+    oharac::dt_join(f_vuln_df, by = 'cell_id', type = 'full') %>%
+    oharac::dt_join(f_overred_df, by = 'cell_id', type = 'full')
+  
+  write_csv(fe_metrics_df, fe_metrics_file)
+}
+
+```
+
+## Map functional diversity metrics
+
+Create and save rasters of functional diversity metrics
+
+```{r create rasts}
+fe_metrics_df <- data.table::fread(fe_metrics_file)
+### note that while there are 3,684,273 cells in this dataframe,
+### 4273 of those are the Caspian Sea, so when those are dropped,
+### it results in 3,680,000 exactly... ugh, weird
+
+n_fe_rast    <- map_to_mol(fe_metrics_df, which = 'n_fe')
+f_wvuln_rast <- map_to_mol(fe_metrics_df, which = 'f_wvuln')
+f_red_rast   <- map_to_mol(fe_metrics_df, which = 'f_red')
+f_overred_rast <- map_to_mol(fe_metrics_df, which = 'f_overred')
+
+writeRaster(n_fe_rast,    here('_output/func_entities/sens_analysis/n_fe_drop_length.tif'),    
+            overwrite = TRUE)
+writeRaster(f_wvuln_rast, here('_output/func_entities/sens_analysis/f_wvuln_drop_length.tif'), 
+            overwrite = TRUE)
+writeRaster(f_red_rast,   here('_output/func_entities/sens_analysis/f_red_drop_length.tif'),   
+            overwrite = TRUE)
+writeRaster(f_overred_rast, here('_output/func_entities/sens_analysis/f_overred_drop_length.tif'), 
+            overwrite = TRUE)
+```
+

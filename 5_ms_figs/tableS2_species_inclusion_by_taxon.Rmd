@@ -58,12 +58,16 @@ summary_df <- spp_df %>%
   group_by(phylum, class, order, species) %>%
   summarize(subpops = n() - 1) %>%
   mutate(order = ifelse(phylum == 'chordata', order, '-')) %>%
+  ### update actinopterygii giga class to classes
+  mutate(class = case_when(class == 'actinopterygii' & order == 'acipenseriformes' ~ 'condrostei',
+                           class == 'actinopterygii' ~ 'teleostei',
+                           TRUE ~ class)) %>%
   group_by(phylum) %>%
   mutate(n_phl = n_distinct(species)) %>%
   group_by(class) %>%
   mutate(n_cls = n_distinct(species)) %>%
   group_by(order) %>%
-  mutate(order = ifelse(n_distinct(species) < 50 & class == 'actinopterygii', 'other actinopt.', order)) %>%
+  mutate(order = ifelse(n_distinct(species) < 50 & class == 'teleostei', 'other teleostei', order)) %>%
   group_by(order) %>%
   mutate(n_ord = n_distinct(species)) %>%
   group_by(phylum, class, order) %>%
@@ -89,7 +93,7 @@ vert_df <- summary_df %>%
   mutate(class = factor(class, levels = phylum_df$class) %>% fct_drop()) %>%
   arrange(class, desc(n_ord)) %>%
   mutate(order = fct_inorder(order),
-         order = fct_relevel(order, 'other actinopt.', after = Inf)) %>%
+         order = fct_relevel(order, 'other teleostei', after = Inf)) %>%
   arrange(class, order) %>%
   select(class, order, n_cls, n_ord, subpops)
 

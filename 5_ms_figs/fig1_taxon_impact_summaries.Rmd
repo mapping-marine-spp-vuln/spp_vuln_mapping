@@ -73,15 +73,17 @@ if(!file.exists(spp_imp_sum_file)) { ### unlink(spp_imp_sum_file)
                                 vuln == 'stressor_group' & stressor != 'climate' ~ 'non-climate', 
                                 TRUE ~ stressor)) %>%
     group_by(f, stressor, range) %>%
-    summarize(mean_imp_npp = sum(impact_npp_tot/npp_range_km2),
+    summarize(mean_imp = sum(impact_tot/range_a_km2),
               .groups = 'drop') %>%
+    # summarize(mean_imp_npp = sum(impact_npp_tot/npp_range_km2),
+    #           .groups = 'drop') %>%
     mutate(iucn_sid = str_extract(f, '[0-9]+') %>% as.integer(),
            species = ifelse(!str_detect(f, '_am_'), NA,
                             str_remove_all(f, 'impacts_am_|.csv') %>% 
                               str_replace_all('_', ' '))) %>%
     select(-f) %>%
     unite(s_r, stressor, range, sep = 'X') %>%
-    pivot_wider(names_from = 's_r', values_from = 'mean_imp_npp')
+    pivot_wider(names_from = 's_r', values_from = 'mean_imp')
   
   write_csv(spp_imp_scores, spp_imp_sum_file)
 }
@@ -94,7 +96,7 @@ if(!file.exists(spp_taxa_sum_file)) {
     distinct() %>%
     mutate(taxon = str_replace(taxon, 'crustacea_arthropods', 'crustaceans'),
            taxon = str_replace(taxon, 'reptiles', 'marine reptiles'),
-           taxon = str_replace(taxon, 'fish', 'bony fishes'),
+           taxon = str_replace(taxon, 'fish', 'ray-finned fishes'),
            taxon = str_replace(taxon, '_', ' '),
            taxon = str_to_sentence(taxon))
   write_csv(spp_taxa, spp_taxa_sum_file)
@@ -103,13 +105,13 @@ if(!file.exists(spp_taxa_sum_file)) {
 spp_taxa <- read_csv(spp_taxa_sum_file)
 
 spp_imp_scores <- read_csv(spp_imp_sum_file) %>%
-  pivot_longer(names_to = 's_r', values_to = 'mean_imp_npp', cols = -c(species, iucn_sid)) %>%
+  pivot_longer(names_to = 's_r', values_to = 'mean_imp', cols = -c(species, iucn_sid)) %>%
   mutate(stressor = str_remove(s_r, 'X.+'),
          stressor = str_replace(stressor, 'biomass_removal', 'targeted_fishing'),
          range = str_remove(s_r, '.+X')) %>%
   select(-s_r) %>%
-  mutate(mean_imp_npp = ifelse(is.na(mean_imp_npp) & range == 'full', 0, mean_imp_npp)) %>%
-  rename(imp = mean_imp_npp)
+  mutate(mean_imp = ifelse(is.na(mean_imp) & range == 'full', 0, mean_imp)) %>%
+  rename(imp = mean_imp)
 
 ```
 
@@ -131,7 +133,7 @@ all_means <- taxa_imp_scores %>%
   group_by(stressor, range) %>%
   summarize(m = mean(imp), v = var(imp))
 
-nppwt_df <- taxa_imp_scores %>%
+unwt_df <- taxa_imp_scores %>%
   filter(range == 'full') %>%
   pivot_wider(names_from = 'stressor', values_from = 'imp')
 
@@ -142,29 +144,29 @@ taxa_pcts <- taxa_imp_scores %>%
   summarize(n_overall = n(),
             pct_overall = round(n() / nrow(.), 3))
 
-nppwt_top1pct <- nppwt_df %>%
+unwt_top1pct <- unwt_df %>%
   select(iucn_sid:all) %>%
   slice_max(order_by = all, prop = 0.01)
 
-nppwt_top1pct %>%
+unwt_top1pct %>%
   group_by(taxon) %>%
   summarize(n = n(),
-            npp_pct = n() / nrow(.)) %>%
+            pct = n() / nrow(.)) %>%
   left_join(taxa_pcts, by = 'taxon') %>%
-  mutate(repr = npp_pct / pct_overall) %>%
+  mutate(repr = pct / pct_overall) %>%
   arrange(desc(repr))
 
-nppwt_btm1pct <- nppwt_df %>%
+unwt_btm1pct <- unwt_df %>%
   arrange(all) %>%
   head(as.integer(nrow(.) * .01))
-nppwt_btm1pct %>%
+unwt_btm1pct %>%
   group_by(taxon) %>%
   summarize(n = n(),
-            npp_pct = n() / nrow(.)) %>%
+            pct = n() / nrow(.)) %>%
   left_join(taxa_pcts, by = 'taxon') %>%
-  mutate(repr = npp_pct / pct_overall) %>%
+  mutate(repr = pct / pct_overall) %>%
   arrange(desc(repr))
-# x <- nppwt_top1pct %>% filter(taxon == 'Elasmobranchs')
+# x <- unwt_top1pct %>% filter(taxon == 'Elasmobranchs')
 ```
 
 

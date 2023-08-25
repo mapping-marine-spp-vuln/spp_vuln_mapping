@@ -1,37 +1,37 @@
 class,order,n_cls,n_ord,subpops
-actinopterygii,perciformes,10223,1573,2
-actinopterygii,eupercaria incertae sedis,10223,1344,2
-actinopterygii,blenniiformes,10223,910,1
-actinopterygii,gobiiformes,10223,625,-
-actinopterygii,anguilliformes,10223,442,-
-actinopterygii,pleuronectiformes,10223,436,-
-actinopterygii,ovalentaria incertae sedis,10223,410,-
-actinopterygii,acanthuriformes,10223,380,-
-actinopterygii,tetraodontiformes,10223,337,-
-actinopterygii,gadiformes,10223,324,-
-actinopterygii,clupeiformes,10223,301,6
-actinopterygii,syngnathiformes,10223,279,-
-actinopterygii,stomiiformes,10223,249,-
-actinopterygii,kurtiformes,10223,229,-
-actinopterygii,myctophiformes,10223,216,-
-actinopterygii,ophidiiformes,10223,210,-
-actinopterygii,lophiiformes,10223,191,-
-actinopterygii,scombriformes,10223,182,-
-actinopterygii,aulopiformes,10223,175,-
-actinopterygii,carangiformes,10223,161,-
-actinopterygii,beloniformes,10223,130,-
-actinopterygii,acropomatiformes,10223,120,-
-actinopterygii,centrarchiformes,10223,107,-
-actinopterygii,callionymiformes,10223,83,-
-actinopterygii,alepocephaliformes,10223,69,-
-actinopterygii,holocentriformes,10223,61,-
-actinopterygii,carangaria incertae sedis,10223,59,-
-actinopterygii,mulliformes,10223,58,-
-actinopterygii,siluriformes,10223,56,-
-actinopterygii,beryciformes,10223,55,-
-actinopterygii,gobiesociformes,10223,53,-
-actinopterygii,argentiniformes,10223,52,-
-actinopterygii,other actinopt.,10223,346,-
+teleostei,perciformes,10216,1573,2
+teleostei,eupercaria incertae sedis,10216,1344,2
+teleostei,blenniiformes,10216,910,1
+teleostei,gobiiformes,10216,625,-
+teleostei,anguilliformes,10216,442,-
+teleostei,pleuronectiformes,10216,436,-
+teleostei,ovalentaria incertae sedis,10216,410,-
+teleostei,acanthuriformes,10216,380,-
+teleostei,tetraodontiformes,10216,337,-
+teleostei,gadiformes,10216,324,-
+teleostei,clupeiformes,10216,301,6
+teleostei,syngnathiformes,10216,279,-
+teleostei,stomiiformes,10216,249,-
+teleostei,kurtiformes,10216,229,-
+teleostei,myctophiformes,10216,216,-
+teleostei,ophidiiformes,10216,210,-
+teleostei,lophiiformes,10216,191,-
+teleostei,scombriformes,10216,182,-
+teleostei,aulopiformes,10216,175,-
+teleostei,carangiformes,10216,161,-
+teleostei,beloniformes,10216,130,-
+teleostei,acropomatiformes,10216,120,-
+teleostei,centrarchiformes,10216,107,-
+teleostei,callionymiformes,10216,83,-
+teleostei,alepocephaliformes,10216,69,-
+teleostei,holocentriformes,10216,61,-
+teleostei,carangaria incertae sedis,10216,59,-
+teleostei,mulliformes,10216,58,-
+teleostei,siluriformes,10216,56,-
+teleostei,beryciformes,10216,55,-
+teleostei,gobiesociformes,10216,53,-
+teleostei,argentiniformes,10216,52,-
+teleostei,other teleostei,10216,339,-
 elasmobranchii,rajiformes,1118,281,2
 elasmobranchii,carcharhiniformes,1118,280,-
 elasmobranchii,myliobatiformes,1118,181,1
@@ -60,3 +60,4 @@ reptilia,testudines,81,7,17
 reptilia,crocodilia,81,2,-
 reptilia,sauria,81,1,-
 myxini,myxiniformes,74,74,2
+condrostei,acipenseriformes,7,7,-

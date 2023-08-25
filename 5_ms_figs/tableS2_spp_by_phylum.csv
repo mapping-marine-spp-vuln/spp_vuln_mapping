@@ -2,12 +2,13 @@ phylum,class,n_cls,subpops
 annelida,polychaeta,568,-
 arthropoda,malacostraca,2957,3
 arthropoda,pycnogonida,234,-
-chordata,actinopterygii,10223,11
+chordata,teleostei,10216,11
 chordata,elasmobranchii,1118,9
 chordata,aves,310,2
 chordata,mammalia,121,25
 chordata,reptilia,81,17
 chordata,myxini,74,2
+chordata,condrostei,7,-
 cnidaria,anthozoa,997,43
 echinodermata,ophiuroidea,300,-
 echinodermata,asteroidea,276,-

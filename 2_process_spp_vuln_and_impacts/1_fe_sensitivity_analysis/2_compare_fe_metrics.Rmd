@@ -1,0 +1,176 @@
+---
+title: "Calculate functional diversity metrics dropping water column position - sensitivity analysis"
+author: "*Compiled on `r date()` by `r Sys.info()['user']`*"
+output: 
+  html_document:
+    code_folding: hide
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include = TRUE, message = FALSE, warning = FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE, 
+                      fig.height = 4, fig.width = 7)
+
+library(terra)
+library(sf)
+library(data.table)
+library(tidyverse)
+library(here)
+library(oharac)
+source(here('common_fxns.R'))
+```
+
+# Summary
+
+Compare FE metrics using all four functional traits (adult mobility, trophic level, adult body length, and position in water column) to metrics generated using only three traits at a time.  This can give some sense of the sensitivity of FE definition to the selection of traits.
+
+# Methods
+
+## Read in rasters of functional entity metrics
+
+```{r read rasts}
+sens_fs <- list.files(here('_output/func_entities/sens_analysis'), full.names = TRUE)
+
+drop_trp_r <- rast(sens_fs[str_detect(sens_fs, 'drop_trophic')])
+drop_pos_r <- rast(sens_fs[str_detect(sens_fs, 'drop_wcol')])
+drop_len_r <- rast(sens_fs[str_detect(sens_fs, 'drop_length')])
+drop_mob_r <- rast(sens_fs[str_detect(sens_fs, 'drop_mobility')])
+
+full_fs <- list.files(here('_output/func_entities'), pattern = '.tif', full.names = TRUE)
+full_fs <- full_fs[str_detect(full_fs, 'red|n_fe|wvuln')]
+
+full_r <- rast(full_fs)
+```
+
+## Examine maps of difference in FE count
+
+Normalize by maximum value in each dataset; then plot difference between the full version and each of the variations.
+
+```{r}
+
+norm_r <- function(r, q = .999) {
+  ref <- quantile(values(r), probs = q, na.rm = TRUE)
+  r_norm <- r / ref
+  return(r_norm)
+}
+
+full_n_fe <- full_r['n_fe'] %>% norm_r()
+
+drop_trp_n_fe <- drop_trp_r['n_fe'] %>% norm_r()
+drop_mob_n_fe <- drop_mob_r['n_fe'] %>% norm_r()
+drop_len_n_fe <- drop_len_r['n_fe'] %>% norm_r()
+drop_pos_n_fe <- drop_pos_r['n_fe'] %>% norm_r()
+
+diff_r <- c(drop_trp_n_fe - full_n_fe,
+            drop_mob_n_fe - full_n_fe,
+            drop_len_n_fe - full_n_fe,
+            drop_pos_n_fe - full_n_fe) %>%
+  setNames(c('drop trophic', 'drop mobility', 'drop length', 'drop water pos'))
+
+plot(full_n_fe, main = 'Full trait set, FE count (normalized)', axes = FALSE)
+
+plot(diff_r, axes = FALSE)
+hist(diff_r)
+```
+
+## Examine maps of difference in functional vulnerability
+
+Normalize by maximum value in each dataset; then plot difference between the full version and each of the variations.
+
+```{r}
+full_wvuln <- full_r['f_wvuln'] %>% norm_r()
+
+drop_trp_wvuln <- drop_trp_r['f_wvuln'] %>% norm_r()
+drop_mob_wvuln <- drop_mob_r['f_wvuln'] %>% norm_r()
+drop_len_wvuln <- drop_len_r['f_wvuln'] %>% norm_r()
+drop_pos_wvuln <- drop_pos_r['f_wvuln'] %>% norm_r()
+
+diff_r <- c(drop_trp_wvuln - full_wvuln,
+            drop_mob_wvuln - full_wvuln,
+            drop_len_wvuln - full_wvuln,
+            drop_pos_wvuln - full_wvuln) %>%
+  setNames(c('drop trophic', 'drop mobility', 'drop length', 'drop water pos'))
+
+plot(full_wvuln, main = 'Full trait set, functional vulnerability (normalized)', axes = FALSE)
+
+plot(diff_r, axes = FALSE)
+hist(diff_r)
+
+mean_diff_r <- mean(diff_r)
+plot(mean_diff_r, axes = FALSE, main = 'mean difference in FV')
+hist(mean_diff_r, main = 'mean difference')
+```
+
+## Examine maps of difference in functional redundancy
+
+Normalize by maximum value in each dataset; then plot difference between the full version and each of the variations.
+
+```{r}
+full_red <- full_r['f_red'] %>% norm_r()
+
+drop_trp_red <- drop_trp_r['f_red'] %>% norm_r()
+drop_mob_red <- drop_mob_r['f_red'] %>% norm_r()
+drop_len_red <- drop_len_r['f_red'] %>% norm_r()
+drop_pos_red <- drop_pos_r['f_red'] %>% norm_r()
+
+diff_r <- c(drop_trp_red - full_red,
+            drop_mob_red - full_red,
+            drop_len_red - full_red,
+            drop_pos_red - full_red) %>%
+  setNames(c('drop trophic', 'drop mobility', 'drop length', 'drop water pos'))
+
+plot(full_red, main = 'Full trait set, functional redundancy (normalized)', axes = FALSE)
+
+plot(diff_r, axes = FALSE)
+hist(diff_r)
+```
+
+
+## Examine maps of difference in functional OVERredundancy
+
+Normalize by maximum value in each dataset; then plot difference between the full version and each of the variations.
+
+```{r}
+full_overred <- full_r['f_overred'] %>% norm_r()
+
+drop_trp_overred <- drop_trp_r['f_overred'] %>% norm_r()
+drop_mob_overred <- drop_mob_r['f_overred'] %>% norm_r()
+drop_len_overred <- drop_len_r['f_overred'] %>% norm_r()
+drop_pos_overred <- drop_pos_r['f_overred'] %>% norm_r()
+
+diff_r <- c(drop_trp_overred - full_overred,
+            drop_mob_overred - full_overred,
+            drop_len_overred - full_overred,
+            drop_pos_overred - full_overred) %>%
+  setNames(c('drop trophic', 'drop mobility', 'drop length', 'drop water pos'))
+
+plot(full_overred, main = 'Full trait set, functional overredundancy (normalized)', axes = FALSE)
+
+plot(diff_r, axes = FALSE)
+hist(diff_r)
+```
+
+## Replicate fig S1a and b from Mouillot et al. 2014
+
+Fig. S1a shows bars with # of total FEs for each combination.  Fig. S1b shows functional entity richness by region, both full traits and mean across all dropped traits.  Could we do this by marine realm?  Additionally, we could do something similar to S1b with functional vulnerability scores.
+
+```{r}
+full_overred <- full_r['f_overred'] %>% norm_r()
+
+drop_trp_overred <- drop_trp_r['f_overred'] %>% norm_r()
+drop_mob_overred <- drop_mob_r['f_overred'] %>% norm_r()
+drop_len_overred <- drop_len_r['f_overred'] %>% norm_r()
+drop_pos_overred <- drop_pos_r['f_overred'] %>% norm_r()
+
+diff_r <- c(drop_trp_overred - full_overred,
+            drop_mob_overred - full_overred,
+            drop_len_overred - full_overred,
+            drop_pos_overred - full_overred) %>%
+  setNames(c('drop trophic', 'drop mobility', 'drop length', 'drop water pos'))
+
+plot(full_overred, main = 'Full trait set, functional overredundancy (normalized)', axes = FALSE)
+
+plot(diff_r, axes = FALSE)
+hist(diff_r)
+```
