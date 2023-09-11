@@ -478,7 +478,7 @@ if(n_chunks > 0) {
     }
     
     tmp <- parallel::mclapply(seq_along(chunk_spp_vec),
-                              mc.cores = 34,
+                              mc.cores = 16,
                               FUN = function(i) {
         ### i <- 1
         ### i <- which(chunk_spp_vec == 'abyssaster planus')
@@ -582,7 +582,7 @@ if(n_chunks > 0) {
     }
     
     tmp <- parallel::mclapply(seq_along(chunk_spp_vec),
-                              mc.cores = 34,
+                              mc.cores = 16,
                               FUN = function(i) {
         ### i <- 1
         ### i <- which(chunk_spp_vec == 192271)

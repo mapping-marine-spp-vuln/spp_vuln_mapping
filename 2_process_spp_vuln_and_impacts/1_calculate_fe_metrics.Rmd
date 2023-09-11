@@ -110,7 +110,7 @@ if(!file.exists(fe_summary_file)) {
 
   ### Chunk out and save smaller files to avoid loading in EVERY spp map
   ### all at once!
-  n_chunks <- 10
+  n_chunks <- 40
   spp_to_chunks <- spp_info_df %>%
     select(species) %>%
     distinct() %>%
@@ -145,7 +145,7 @@ if(!file.exists(fe_summary_file)) {
     
     message('... summarizing FR map for chunk ', i, ': ', length(fe_vec), ' FEs in ', 
       nrow(chunk_spp_maps), ' cell observations...')
-    chunk_fe_sumlist <- parallel::mclapply(fe_vec, mc.cores = 40,
+    chunk_fe_sumlist <- parallel::mclapply(fe_vec, mc.cores = 20,
                                            FUN = process_spp_to_fe,
                                            spp_maps = chunk_spp_maps)
     if(check_tryerror(chunk_fe_sumlist)) {
@@ -201,65 +201,93 @@ if(!file.exists(fe_metrics_file)) {
 
   ### there are 6.5 million cells.  Chop into 500k instances and mclapply to summarize
   # cell_id_vec <- 1:ncell(raster::raster(here('_spatial/ocean_area_mol.tif')))
-  chunk_size <- 500000
+  chunk_size <- 250000
   n_chunks <- 6.5e6 / chunk_size
 
-  message('Calculating species richness map...')
-  nspp_list <- parallel::mclapply(1:n_chunks, mc.cores = n_chunks,
-                 FUN = function(n) { ### n <- 1
-                   cell_id_min <- (n - 1) * chunk_size + 1
-                   cell_id_max <- n * chunk_size
-                   nspp_sum <- fe_sum_total %>%
-                     filter(between(cell_id, cell_id_min, cell_id_max)) %>%
-                     data.table() %>%
-                     .[ , .(n_spp = sum(n_spp_fe, na.rm = TRUE),
-                            n_fe  = n_distinct(fe_id)),
-                        by = 'cell_id']
-                   }) 
+  nspp_tmp_f <- here('tmp/nspp_df_tmp.csv')
+  if(!file.exists(nspp_tmp_f)) {
+    message('Calculating species richness map...')
+    nspp_list <- parallel::mclapply(1:n_chunks, mc.cores = ceiling(n_chunks / 4),
+                   FUN = function(n) { ### n <- 1
+                     message('... spp richness chunk ', n, ' of ', n_chunks, '...')
+                     cell_id_min <- (n - 1) * chunk_size + 1
+                     cell_id_max <- n * chunk_size
+                     nspp_sum <- fe_sum_total %>%
+                       filter(between(cell_id, cell_id_min, cell_id_max)) %>%
+                       data.table() %>%
+                       .[ , .(n_spp = sum(n_spp_fe, na.rm = TRUE),
+                              n_fe  = n_distinct(fe_id)),
+                          by = 'cell_id']
+                     }) 
+    
+    if(check_tryerror(nspp_list)) stop('Try errors detected!')
+    nspp_df <- nspp_list %>%
+      data.table::rbindlist()
+    
+    write_csv(nspp_df, nspp_tmp_f)
+  } else { 
+    message('File exists: ', basename(nspp_tmp_f))
+    nspp_df <- data.table::fread(nspp_tmp_f)
+  }
   
-  if(check_tryerror(nspp_list)) stop('Try errors detected!')
-  nspp_df <- nspp_list %>%
-    data.table::rbindlist()
+  fvuln_tmp_f <- here('tmp/fvuln_df_tmp.csv')
+  if(!file.exists(fvuln_tmp_f)) {
 
-  message('Calculating functional vulnerability map...')
-  fv_list <- parallel::mclapply(1:n_chunks, mc.cores = n_chunks,
-                 FUN = function(n) { ### n <- 1
-                   cell_id_min <- (n - 1) * chunk_size + 1
-                   cell_id_max <- n * chunk_size
-                   f_vuln <- fe_sum_total %>%
-                     filter(between(cell_id, cell_id_min, cell_id_max)) %>%
-                     oharac::dt_join(nspp_df, by = 'cell_id', type = 'left') %>%
-                     data.table() %>%
-                     .[ , .(f_vuln  = sum(n_spp_fe == 1) / n_fe, 
-                            f_wvuln = mean(0.5^(n_spp_fe - 1)),
-                            f_red   = mean(n_spp_fe)),
-                     by = .(cell_id, n_fe, n_spp)]
-                 }) 
-  if(check_tryerror(fv_list)) stop('Try errors detected!')
-  f_vuln_df <- fv_list %>%
-    data.table::rbindlist()
+    message('Calculating functional vulnerability map...')
+    fv_list <- parallel::mclapply(1:n_chunks, mc.cores = ceiling(n_chunks / 4),
+                   FUN = function(n) { ### n <- 1
+                     message('... funct vuln chunk ', n, ' of ', n_chunks, '...')
+                     cell_id_min <- (n - 1) * chunk_size + 1
+                     cell_id_max <- n * chunk_size
+                     f_vuln <- fe_sum_total %>%
+                       filter(between(cell_id, cell_id_min, cell_id_max)) %>%
+                       oharac::dt_join(nspp_df, by = 'cell_id', type = 'left') %>%
+                       data.table() %>%
+                       .[ , .(f_vuln  = sum(n_spp_fe == 1) / n_fe, 
+                              f_wvuln = mean(0.5^(n_spp_fe - 1)),
+                              f_red   = mean(n_spp_fe)),
+                       by = .(cell_id, n_fe, n_spp)]
+                   }) 
+    if(check_tryerror(fv_list)) stop('Try errors detected!')
+    f_vuln_df <- fv_list %>%
+      data.table::rbindlist()
+    write_csv(f_vuln_df, fvuln_tmp_f)
+  } else { 
+    message('File exists: ', basename(fvuln_tmp_f))
+    f_vuln_df <- data.table::fread(fvuln_tmp_f)
+  }
+  
 
-  message('Calculating functional overredundancy map...')
-  f_overred_list <- parallel::mclapply(1:n_chunks, mc.cores = n_chunks,
-              FUN = function(n) { ### n <- 1
-                cell_id_min <- (n - 1) * chunk_size + 1
-                cell_id_max <- n * chunk_size
-                f_overred <- fe_sum_total %>%
-                  filter(between(cell_id, cell_id_min, cell_id_max)) %>%
-                  oharac::dt_join(f_vuln_df, by = 'cell_id', type = 'left') %>%
-                  data.table() %>%
-                  .[ , f_over := ifelse(n_spp_fe > f_red, n_spp_fe - f_red, 0)] %>%
-                  .[ , .(f_overred = sum(f_over) / sum(n_spp_fe)),
-                     by = 'cell_id']
-              })
-  if(check_tryerror(f_overred_list)) stop('Try errors detected!')
-  f_overred_df <- f_overred_list %>%
-    data.table::rbindlist()
+  fred_tmp_f <- here('tmp/f_red_df_tmp.csv')
+  if(!file.exists(fred_tmp_f)) {
+    message('Calculating functional overredundancy map...')
+    f_overred_list <- parallel::mclapply(1:n_chunks, mc.cores = ceiling(n_chunks / 4),
+                FUN = function(n) { ### n <- 1
+                  message('... funct overredundancy chunk ', n, ' of ', n_chunks, '...')
+                  cell_id_min <- (n - 1) * chunk_size + 1
+                  cell_id_max <- n * chunk_size
+                  f_overred <- fe_sum_total %>%
+                    filter(between(cell_id, cell_id_min, cell_id_max)) %>%
+                    oharac::dt_join(f_vuln_df, by = 'cell_id', type = 'left') %>%
+                    data.table() %>%
+                    .[ , f_over := ifelse(n_spp_fe > f_red, n_spp_fe - f_red, 0)] %>%
+                    .[ , .(f_overred = sum(f_over) / sum(n_spp_fe)),
+                       by = 'cell_id']
+                })
+    if(check_tryerror(f_overred_list)) stop('Try errors detected!')
+    f_overred_df <- f_overred_list %>%
+      data.table::rbindlist()
+    write_csv(f_overred_df, fred_tmp_f)
+  } else { 
+    message('File exists: ', basename(fred_tmp_f))
+    f_overred_df <- data.table::fread(fred_tmp_f)
+  }
 
   message('Combining functional diversity metrics maps...')
   fe_metrics_df <- f_vuln_df %>%
     oharac::dt_join(f_overred_df, by = 'cell_id', type = 'full')
   
+  message('Combined set: ', nrow(fe_metrics_df), ' rows!')
   write_csv(fe_metrics_df, fe_metrics_file)
 }
 

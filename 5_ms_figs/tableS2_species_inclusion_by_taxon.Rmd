@@ -36,6 +36,16 @@ Prep table for supplement
 
 # Methods
 
+Load in WoRMS species list.
+
+```{r}
+worms_df <- assemble_worms() %>%
+  mutate(class = case_when(class == 'actinopterygii' & order == 'acipenseriformes' ~ 'chondrostei',
+                           class == 'actinopterygii' ~ 'teleostei',
+                           TRUE ~ class))
+
+```
+
 Load in species info; group by phylum, class, order and count species inclusion.  Use prepped data from Fig. 1 plot.
 
 ```{r}
@@ -51,7 +61,7 @@ spp_df <- read_csv(here('5_ms_figs/int/fig1_spp_summary.csv')) %>%
   left_join(iucn_sciname_to_id, by = 'iucn_sid') %>%
   mutate(species = ifelse(is.na(species), sciname, species)) %>%
   select(-sciname) %>%
-  left_join(assemble_worms(), by = 'species') %>%
+  left_join(worms_df, by = 'species') %>%
   unique()
 
 summary_df <- spp_df %>%
@@ -59,9 +69,6 @@ summary_df <- spp_df %>%
   summarize(subpops = n() - 1) %>%
   mutate(order = ifelse(phylum == 'chordata', order, '-')) %>%
   ### update actinopterygii giga class to classes
-  mutate(class = case_when(class == 'actinopterygii' & order == 'acipenseriformes' ~ 'condrostei',
-                           class == 'actinopterygii' ~ 'teleostei',
-                           TRUE ~ class)) %>%
   group_by(phylum) %>%
   mutate(n_phl = n_distinct(species)) %>%
   group_by(class) %>%
@@ -96,8 +103,46 @@ vert_df <- summary_df %>%
          order = fct_relevel(order, 'other teleostei', after = Inf)) %>%
   arrange(class, order) %>%
   select(class, order, n_cls, n_ord, subpops)
+```
 
-write_csv(phylum_df, here('5_ms_figs/tableS2_spp_by_phylum.csv'))
-write_csv(vert_df, here('5_ms_figs/tableS2_spp_verts_by_class.csv'))
+Create summaries of total count in WoRMS by phylum, class, order.  Note: need to account for "other teleostei" in its own category for the order summary.
+
+```{r}
+worms_phyl_sum <- worms_df %>% 
+  group_by(phylum) %>% 
+  summarize(n_phy_worms = n_distinct(species))
+worms_class_sum <- worms_df %>% 
+  group_by(class) %>% 
+  summarize(n_cls_worms = n_distinct(species))
+worms_order_sum <- worms_df %>% 
+  mutate(order = ifelse(class == 'teleostei' & !order %in% vert_df$order,
+                        'other teleostei', order)) %>%
+  group_by(order) %>% 
+  summarize(n_ord_worms = n_distinct(species))
+```
+
+Finalize tables and write out
+```{r}
+phylum_out_df <- phylum_df %>%
+  left_join(worms_class_sum, by = 'class') %>%
+  mutate(repr = paste0(round(n_cls / n_cls_worms * 100, 1), '%'))
+vert_out_df <- vert_df %>%
+  left_join(worms_order_sum, by = 'order') %>%
+  mutate(repr = paste0(round(n_ord / n_ord_worms * 100, 1), '%'))
+
+write_csv(phylum_out_df, here('5_ms_figs/tableS2_spp_by_phylum.csv'))
+write_csv(vert_out_df, here('5_ms_figs/tableS2_spp_verts_by_class.csv'))
+```
+
+## Representation by phylum and class
+
+```{r}
+DT::datatable(phylum_out_df)
+```
+
+## Representation by class and order (for vertebrates)
+
+```{r}
+DT::datatable(vert_out_df)
 ```
 

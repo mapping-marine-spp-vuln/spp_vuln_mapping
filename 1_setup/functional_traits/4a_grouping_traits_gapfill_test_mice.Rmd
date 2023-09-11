@@ -1,5 +1,5 @@
 ---
-title: "Assemble grouping traits and gapfill using MICE"
+title: "Test MICE to impute grouping traits - cross validation"
 author: "*Compiled on `r date()` by `r Sys.info()['user']`*"
 output: 
   html_document:
@@ -228,7 +228,10 @@ for(p in unique(invert_traits$gp)) {
 
 ```{r compare outputs with and without family as predictor, eval = FALSE, include = FALSE}
 gps <- c('annelida', 'arthropoda', 'cnidaria', 'echinodermata')
-fs <- list.files(here_anx('mice/mice_out'), pattern = paste0(gps, collapse = '|'), full.names = TRUE)
+fs <- list.files(here_anx('mice/mice_out'), 
+                 pattern = paste0(gps, collapse = '|'), 
+                 full.names = TRUE)
+
 df <- lapply(fs, read.csv) %>% 
   setNames(basename(fs)) %>%
   bind_rows(.id = 'f') %>%
@@ -434,7 +437,7 @@ for(cls in chordates) {
   ### plot results for inspection
   load(impute_object_f) ### stored as imp
   
-  cat('\n\n#### Mollusca: ', cls, '\n\n') ### put in a header line
+  cat('\n\n#### Chordata: ', cls, '\n\n') ### put in a header line
   
   # print(summary(imp))
   

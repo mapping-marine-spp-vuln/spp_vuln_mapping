@@ -1,0 +1,215 @@
+---
+title: "Regress richness and vulnerability metrics to examine collinearity"
+author: "*Compiled on `r date()` by `r Sys.info()['user']`*"
+output: 
+  html_document:
+    code_folding: hide
+    toc: true
+    toc_depth: 3
+    toc_float: yes
+    number_sections: true
+    theme: cerulean
+    highlight: haddock
+    includes: 
+      in_header: '~/github/src/templates/ohara_hdr.html'
+  pdf_document:
+    toc: true
+---
+
+``` {r setup, echo = TRUE, message = FALSE, warning = FALSE}
+
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE, fig.height = 4, fig.width = 7)
+
+library(terra)
+library(oharac)
+library(data.table)
+library(tidyverse)
+library(here)
+source(here('common_fxns.R'))
+```
+
+# Summary
+
+Generate various plots and analyses to address reviewer comments:
+
+* Species richness vs. functional richness
+    * hypothesis: for each species added, there is a chance it will represent a previously-unrepresented entity.  As species richness increases, this chance of a new entity decreases, until (potentially) all FEs are populated.
+    * expect: positive, monotonic, decreasing on margin
+* Species richness vs. functional vulnerability
+    * Hypothesis: for each species added, its contribution will depend on whether it adds to an existing FE (decreasing overall FV for small but pre-existing FEs, negligible change for large pre-existing FEs) or to a new FE (by adding an FE with FV = 1).
+    * The first spp (and likely the first few) adds to a new FE, for max FV; as FEs become more full, mean FV will necessarily drop 
+    * expect: start at FV = 1 for one spp, dropping steadily as number of species increases
+* Species-based CHI vs. FE-based CHI
+
+
+# Methods
+
+For each combination, pull in the requisite rasters, perform regression on perhaps a small(ish) sample.
+
+## Spp richness vs. functional richness
+
+```{r}
+nspp_r <- rast(here('_output/func_entities/n_spp.tif'))
+n_fe_r <- rast(here('_output/func_entities/n_fe.tif'))
+
+regr_df <- data.frame(c(nspp_r, n_fe_r))
+
+set.seed(42)
+regr_sample_df <- regr_df %>%
+  sample_n(10000)
+
+tot_fes_repr <- 339
+max_fes_repr <- minmax(n_fe_r)[2]
+
+ggplot(regr_sample_df, aes(x = n_spp, y = n_fe)) +
+  geom_point() +
+  geom_hline(yintercept = tot_fes_repr, color = 'red') +
+  geom_hline(yintercept = max_fes_repr, color = 'blue')
+
+ggplot(regr_sample_df, aes(x = log(n_spp), y = log(n_fe))) +
+  geom_point() +
+  geom_hline(yintercept = log(tot_fes_repr), color = 'red') +
+  geom_hline(yintercept = log(max_fes_repr), color = 'blue')
+
+nls_mdl <- nls(n_fe ~ a * n_spp^b, data = regr_sample_df, start = list(a = 1, b = .5))
+
+summary(nls_mdl)
+
+ggplot(regr_sample_df, aes(x = n_spp, y = n_fe)) +
+  geom_point() +
+  geom_point(aes(y = 1.497 * n_spp^.6141), color = 'green') +
+  geom_hline(yintercept = tot_fes_repr, color = 'red') +
+  geom_hline(yintercept = max_fes_repr, color = 'blue')
+
+```
+
+$$N_{FE} = 1.6N_{spp}^{0.6}$$
+
+But that doesn't look like a great fit!  Try something like this
+
+$$f(x) = 1 - \frac{1}{x+1}$$
+
+
+```{r}
+nls_mdl <- nls(n_fe ~ a * n_spp / (n_spp + b), 
+               data = regr_sample_df %>% sample_n(100), 
+               start = list(a = 200, b = 1))
+
+summary(nls_mdl)
+
+ggplot(regr_sample_df, aes(x = n_spp, y = n_fe)) +
+  geom_point() +
+  geom_point(aes(y = 380 * (n_spp / (n_spp + 2000))), color = 'green') +
+  geom_hline(yintercept = tot_fes_repr, color = 'red') +
+  geom_hline(yintercept = max_fes_repr, color = 'blue')
+```
+or
+
+$$N_{FE} = a \arctan (b \cdot N_{spp})$$
+```{r}
+nls_mdl <- nls(n_fe ~ a * atan(b * n_spp), 
+               data = regr_sample_df, 
+               start = list(a = 200, b = 1))
+
+summary(nls_mdl)
+
+ggplot(regr_sample_df, aes(x = n_spp, y = n_fe)) +
+  geom_point() +
+  geom_point(aes(y = 207 * atan(7.2e-4 * n_spp)), color = 'green') +
+  geom_hline(yintercept = tot_fes_repr, color = 'red') +
+  geom_hline(yintercept = max_fes_repr, color = 'blue')
+```
+
+
+## Spp richness vs. functional vulnerability
+
+```{r}
+nspp_r  <- rast(here('_output/func_entities/n_spp.tif'))
+fvuln_r <- rast(here('_output/func_entities/f_wvuln.tif'))
+
+nspp_v_vuln_df <- data.frame(c(nspp_r, n_fe_r, fvuln_r))
+
+regr_sample_df <- nspp_v_vuln_df %>%
+  sample_n(10000)
+
+ggplot(regr_sample_df, aes(x = n_spp, y = f_wvuln, color = n_fe)) +
+  geom_point()
+
+```
+
+## Spp richness vs. CHI
+
+```{r}
+nspp_r  <- rast(here('_output/func_entities/n_spp.tif'))
+chi_spp_r <- rast(here('_output/cumulative_impact_maps/chi_species.tif'))
+chi_fe_r  <- rast(here('_output/cumulative_impact_maps/chi_funct_entity.tif'))
+chi_hab_r <- rast(here('_output/cumulative_impact_maps/chi_habitat.tif')) / 5
+
+nspp_v_chi_df <- data.frame(c(nspp_r, chi_spp_r, chi_fe_r, chi_hab_r))
+regr_sample_df <- nspp_v_chi_df %>%
+  sample_n(100000) 
+
+plot_df <- regr_sample_df %>%
+  pivot_longer(names_to = 'chi', values_to = 'val', -n_spp)
+
+
+ggplot(plot_df, aes(x = n_spp, y = val)) +
+  geom_point(aes(color = chi)) +
+  scale_x_log10() + 
+  facet_wrap(~chi)
+
+spp_mdl <- lm(chi_spp ~ n_spp, data = regr_sample_df)
+fe_mdl  <- lm(chi_fe  ~ n_spp, data = regr_sample_df)
+hab_mdl <- lm(chi_hab ~ n_spp, data = regr_sample_df)
+summary(spp_mdl)
+summary(fe_mdl)
+summary(hab_mdl)
+```
+
+## FV vs. CHI
+
+```{r}
+fv_r  <- rast(here('_output/func_entities/f_wvuln.tif'))
+chi_spp_r <- rast(here('_output/cumulative_impact_maps/chi_species.tif'))
+chi_fe_r  <- rast(here('_output/cumulative_impact_maps/chi_funct_entity.tif'))
+chi_hab_r <- rast(here('_output/cumulative_impact_maps/chi_habitat.tif')) / 5
+
+fv_v_chi_df <- data.frame(c(fv_r, chi_spp_r, chi_fe_r, chi_hab_r))
+regr_sample_df <- fv_v_chi_df %>%
+  sample_n(100000) 
+
+plot_df <- regr_sample_df %>%
+  pivot_longer(names_to = 'chi', values_to = 'val', -f_wvuln)
+
+
+ggplot(plot_df, aes(x = f_wvuln, y = val)) +
+  geom_point(aes(color = chi)) +
+  scale_x_log10() + 
+  facet_wrap(~chi)
+
+spp_mdl <- lm(chi_spp ~ f_wvuln, data = regr_sample_df)
+fe_mdl  <- lm(chi_fe  ~ f_wvuln, data = regr_sample_df)
+hab_mdl <- lm(chi_hab ~ f_wvuln, data = regr_sample_df)
+summary(spp_mdl)
+summary(fe_mdl)
+summary(hab_mdl)
+```
+
+## FE vs. spp vs. hab CHI
+
+```{r}
+chi_spp_r <- rast(here('_output/cumulative_impact_maps/chi_species.tif'))
+chi_fe_r  <- rast(here('_output/cumulative_impact_maps/chi_funct_entity.tif'))
+chi_hab_r <- rast(here('_output/cumulative_impact_maps/chi_habitat.tif')) / 5
+
+chi_v_chi_df <- data.frame(c(chi_spp_r, chi_fe_r, chi_hab_r))
+regr_sample_df <- chi_v_chi_df # %>%
+  # sample_n(100000) 
+
+spp_fe_mdl  <- lm(chi_spp ~ chi_fe, data = regr_sample_df)
+fe_hab_mdl  <- lm(chi_fe  ~ chi_hab, data = regr_sample_df)
+spp_hab_mdl <- lm(chi_spp ~ chi_hab, data = regr_sample_df)
+summary(spp_fe_mdl)
+summary(fe_hab_mdl)
+summary(spp_hab_mdl)
+```

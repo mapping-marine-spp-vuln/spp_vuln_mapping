@@ -110,14 +110,17 @@ collect_catch_maps <- function(tx_catch_mapfiles) {
 ```
 
 ```{r unweighted mean}
-taxa <- spp_info_df$taxon %>% unique() %>% sort()
+taxa <- spp_info_df$taxon %>%
+  unique() %>% 
+  sort() %>% 
+  rev()
 
 out_stem <- here_anx('impact_maps_by_taxon/impacts_tx_biomass_removal', 
                      'imp_unwt_biomass_removal_%s_%s.tif')
 ### zxcv <- list.files(dirname(out_stem), pattern = 'imp_unwt', full.names = TRUE)
 ### unlink(zxcv)
 for(t in taxa) {
-  ### t <- taxa[4]
+  ### t <- taxa[10]
   tx_imp_df <- spp_info_df %>%
     filter(taxon == t) %>%
     select(species, v_score) %>%
@@ -159,7 +162,8 @@ for(t in taxa) {
       oharac::dt_join(tx_catch_maps, by = c('species', 'cell_id'), type = 'left') %>%
       mutate(rescaled_catch = ifelse(is.na(rescaled_catch), 0, rescaled_catch))
   }
-  message('Processing mean/sd vulnerability by species in taxon ', t, ' to biomass removal stressor...')
+  message('Processing mean/sd vulnerability by species in taxon ', t, 
+          ' to biomass removal stressor...')
 
   ### because failures might occur with summarizing a huge dataset,
   ### let's break this into chunks by cell_id - there are 6.6e+06 cells total
@@ -168,7 +172,14 @@ for(t in taxa) {
   n_cores <- max(1, floor(n_chunks / ceiling(nrow(tx_catch_maps)/3e7)))
   # system.time({
   result_list <- parallel::mclapply(1:n_chunks, mc.cores = n_cores,
-                 FUN = function(n) { ###  n <- 2
+                 FUN = function(n) { ###  n <- 6
+                   out_f <- sprintf(here('tmp/tmp_biomass_rem_unwt_%s_chunk_%s.csv'), t, n)
+                   if(file.exists(out_f)) {
+                     chunk_sum <- data.table::fread(out_f)
+                     return(chunk_sum)
+                   }
+                   
+                   ### if file doesn't exist, create it, save it, return it:
                    cell_id_min <- as.integer((n - 1) * chunk_size + 1)
                    cell_id_max <- as.integer(n * chunk_size)
                    message('Summarizing biomass removal stressor on taxon ', t, 
@@ -183,6 +194,8 @@ for(t in taxa) {
                             impact_sd   = sd(impact),
                             n_spp       = n_distinct(species)),
                         by = .(cell_id)]
+                   data.table::fwrite(chunk_sum, out_f)
+                   return(chunk_sum)
                    }) 
 
   if(check_tryerror(result_list)) {
@@ -203,6 +216,12 @@ for(t in taxa) {
   writeRaster(rast_mean, outf_mean, overwrite = TRUE)
   writeRaster(rast_sd,   outf_sdev, overwrite = TRUE)
   writeRaster(rast_nspp, outf_nspp, overwrite = TRUE)
+  
+  ### clean up tmp:
+  tmp_out_fs <- list.files(here('tmp'), 
+                           pattern = sprintf('tmp_biomass_rem_unwt_%s', t), 
+                           full.names = TRUE)
+  unlink(tmp_out_fs)
 }
 
 ```
@@ -630,6 +649,9 @@ if(any(!file.exists(rast_mean_impact_fe_f, rast_sdev_impact_fe_f))) {
   # n_fe_rast_main <- raster(here('_output/nspp_maps/n_fe_in_fvwt_vuln.tif'))
   # n_fe_rast_fvwt <- map_to_mol(impact_map_df, by = 'cell_id', which = 'n_fe')
   # compareRaster(n_fe_rast_main, n_fe_rast_fvwt, values = TRUE)
+  
+  ### After writing mean and sdev rasts, ditch the tmp files
+  unlink(chunk_files)
 }
 ```
 

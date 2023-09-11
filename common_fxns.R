@@ -48,7 +48,10 @@ assemble_spp_info_df <- function(fe_only = TRUE, vuln_only = TRUE) {
     filter(!is.na(v_score) | !vuln_only) %>%
     ### mapped in AquaMaps and/or IUCN
     filter(am_mapped | iucn_mapped) %>%
-    mutate(src = ifelse(iucn_mapped & !is.na(iucn_mapped), 'iucn', 'am'),
+    # mutate(src = ifelse(iucn_mapped & !is.na(iucn_mapped), 'iucn', 'am'),
+    #        id  = ifelse(src == 'iucn', iucn_sid, str_replace_all(species, ' ', '_')),
+    #        map_f = sprintf(spp_map_fstem, src, id)) %>%
+    mutate(src = ifelse(am_mapped & !is.na(am_mapped), 'am', 'iucn'),
            id  = ifelse(src == 'iucn', iucn_sid, str_replace_all(species, ' ', '_')),
            map_f = sprintf(spp_map_fstem, src, id)) %>%
     distinct()
