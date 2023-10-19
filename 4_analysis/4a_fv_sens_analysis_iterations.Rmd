@@ -1,0 +1,952 @@
+---
+title: 'Sensitivity analysis: Functional Entity grouping traits'
+author: "*Compiled on `r date()` by `r Sys.info()['user']`*"
+output: 
+  html_document:
+    code_folding: hide
+    toc: true
+    toc_depth: 3
+    toc_float: yes
+    number_sections: true
+    theme: cerulean
+    highlight: haddock
+    includes: 
+      in_header: '~/github/src/templates/ohara_hdr.html'
+  pdf_document:
+    toc: true
+---
+
+``` {r setup, echo = TRUE, message = FALSE, warning = FALSE}
+
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE,
+                      fig.height = 4, fig.width = 7)
+
+library(terra)
+library(oharac)
+library(data.table)
+library(tidyverse)
+library(here)
+source(here('common_fxns.R'))
+```
+
+# Summary
+
+Sensitivity analysis to determine how drastically scores change with different values of functional traits.  
+
+1.  Identify a set of sample cells for analysis (maybe 10,000? 100,000? what is analytically tractable?).  
+    * For each cell, identify the species found in that location.
+    * Determine spp richness, functional richness and vulnerability.  Spp richness will not change, but others probably will.
+    * Determine FE-weighted mean impacts.  Spp-weighted will not change, but FE-weighted may change depending on how FV changes.
+2.  For each trait (max body length, trophic level, adult mobility, position in water column), for each sample cell:
+    * Shuffle all existing trait values (sample without replacement) - this keeps distribution identical
+    
+    
+***NOTE***: SHUFFLE TRAIT VALUES ONLY THOSE FOUND WITHIN CELL, OR SHUFFLE ACROSS ALL SPECIES IN SPECIES SET?
+    
+    
+    * Calculate functional richness and vulnerability with randomized trait set.
+    * Calculate impacts for each stressor based on new functional vulnerability, and cumulative impact.
+3.  Repeat step 2 many many times, Monte Carlo style.
+    * For each pixel, calculate distribution (incl std dev and skew):
+        * Distribution of FR and FV around "true" value
+        * Distribution of impacts around "true" value 
+        * Distribution of CHI around "true" value
+4.  Examine these distributions around the globe
+    * Map summary stats; interpolate to see any global gradients vs. random?
+    * Plot summary stats vs. spp richness and/or latitude
+
+# Methods
+
+## Identify cells
+
+Gather maps of the "true" state of species richness, functional richness, cumulative impacts, etc.
+
+```{r gather rasts and spp info}
+chi_r <- rast(here('_output/cumulative_impact_maps/chi_funct_entity.tif')) %>%
+  setNames('chi')
+sr_r  <- rast(here('_output/nspp_maps/species_richness.tif')) %>%
+  setNames('nspp')
+fr_r  <- rast(here('_output/nspp_maps/funct_entity_richness.tif')) %>%
+  setNames('n_fe')
+fv_r  <- rast(here('_output/nspp_maps/mean_funct_vulnerability.tif')) %>%
+  setNames('fv')
+cell_id_r <- chi_r %>% setValues(1:ncell(.)) %>% setNames('cell_id')
+
+cell_id_df <- as.data.frame(c(chi_r, sr_r, fr_r, fv_r, cell_id_r), 
+                         xy = TRUE) %>%
+  filter(!is.na(chi))
+```
+
+### Select sample of cells
+
+Choose 10,000 cells randomly and filter our full cell data.frame down to just these cells.
+
+``` {r select sample of cells}
+set.seed(42)
+n_cells <- 10000
+cell_sample_df <- cell_id_df %>%
+  sample_n(n_cells)
+
+cell_id_vec <- cell_sample_df$cell_id %>% sort()
+
+rm('cell_id_df') ### don't need this one any more
+```
+
+## Gather other information
+
+Gather species information including traits and vulnerability scores.
+
+```{r get species info}
+spp_info <- assemble_spp_info_df()
+spp_traits_df <- spp_info %>%
+  select(species, mob, trp, len, wcol) %>%
+  distinct()
+
+```
+
+Gather uniform-exposure stressor information.
+
+```{r gather info on unif exp stressors}
+str_vuln_lookup <- read_csv(here('_raw/stressor_vulnerability_lookup.csv'), show_col_types = FALSE)
+strs <- str_vuln_lookup$stressor
+strs_unif <- strs[!str_detect(strs, 'sst_rise|biomass_removal|bycatch')]
+
+str_fs <- list.files(here('_data/stressors_mol'),
+                     full.names = TRUE)
+
+str_rast <- rast(str_fs) %>%
+  setNames(basename(str_fs) %>% str_remove('_[0-9]{4}.+'))
+str_cell_df <- c(str_rast, cell_id_r) %>%
+  as.data.frame(xy = TRUE) %>%
+  filter(cell_id %in% cell_id_vec) %>%
+  mutate(across(everything(), ~ifelse(is.na(.x), 0, .x)))
+
+imp_fs <- list.files(here_anx('_output/impact_maps/impact_maps_funct_entity'),
+                     full.names = TRUE)
+imp_fs <- imp_fs[str_detect(imp_fs, 'mean.tif')]
+
+imp_rast <- rast(imp_fs) %>%
+  setNames(basename(imp_fs) %>% str_remove_all('impact_fe_|_x_.+|_mean.tif'))
+
+imp_cell_df <- c(imp_rast, cell_id_r) %>%
+  as.data.frame(xy = TRUE) %>%
+  filter(cell_id %in% cell_id_vec) %>%
+  mutate(across(everything(), ~ifelse(is.na(.x), 0, .x)))
+  
+```
+
+
+### Map sample locations
+
+``` {r, eval = TRUE}
+sr_df <- sr_r %>% as.data.frame(xy = TRUE)
+ggplot() +
+  geom_raster(data = sr_df, aes(x, y, fill = nspp)) +
+  geom_point(data = cell_sample_df, aes(x, y), color = 'red', size = 0.1, alpha = .5) +
+  coord_sf() +
+  scale_fill_viridis_c() +
+  theme_void()
+```
+
+## Gather species in these cells
+
+Read in each species rangemap file and filter down to just those cells in our sample.
+
+```{r define function to gather spp cells}
+get_spp_cells <- function(spp_name, cell_id_vec, spp_info) {
+  ### f <- spp_map_fs[1]
+  f <- spp_info %>%
+    filter(species == spp_name) %>%
+    .$map_f %>% unique()
+  data_src <- spp_info %>%
+    filter(species == spp_name) %>%
+    .$src %>% unique()
+  
+  tmp_df <- read_csv(f, show_col_types = FALSE) 
+
+  if(data_src == 'iucn') {
+    tmp_df <- tmp_df %>%
+      filter(presence != 5)
+  } else {
+    tmp_df <- tmp_df %>%
+      filter(prob >= .5)
+  }
+  ### get cells and strip down to just those in sample; return as dataframe
+  spp_cells <- tmp_df$cell_id
+  spp_cells <- spp_cells[spp_cells %in% cell_id_vec]
+  if(length(spp_cells) == 0) spp_cells <- -1
+  
+  ### return result
+  return(data.frame(species = spp_name, cell_id = spp_cells))
+}
+```
+
+Pulling all spp and filtering down to just the sample cells will be slow regardless of how many sample cells - because *all* species maps have to be pulled.
+
+```{r create spp cell sample set}
+spp_names_f <- here_anx('sens_analysis/spp_name_to_id.csv')
+spp_cells_f <- here_anx('sens_analysis/spp_cells_to_id.csv')
+
+if(any(!file.exists(spp_names_f, spp_cells_f))) {
+  spp_name_vec <- spp_info$species %>% unique()
+  
+  # tictoc::tic()
+  message('Getting species presence for ', length(spp_name_vec),
+          ' species across ', length(cell_id_vec), ' sample cells...')
+  spp_cells_list <- parallel::mclapply(spp_name_vec, 
+                                       FUN = get_spp_cells, 
+                                       cell_id_vec = cell_id_vec,
+                                       spp_info = spp_info,
+                                       mc.cores = 16)
+  # tictoc::toc()
+  
+  spp_cells_sample_df <- spp_cells_list %>%
+    bind_rows() %>%
+    filter(cell_id != -1) %>%
+    mutate(species = factor(species),
+           spp_id = as.integer(species)) %>%
+    distinct()
+  
+  spp_names_out <- spp_cells_sample_df %>%
+    select(species, spp_id) %>%
+    distinct()
+  spp_cells_out <- spp_cells_sample_df %>%
+    select(cell_id, spp_id) %>%
+    distinct()
+  write_csv(spp_names_out, spp_names_f)
+  write_csv(spp_cells_out, spp_cells_f)
+}
+
+spp_cells_sample_df <- read_csv(spp_names_f, show_col_types = FALSE) %>%
+  left_join(read_csv(spp_cells_f, show_col_types = FALSE), by = 'spp_id') %>%
+  select(-spp_id)
+```
+
+## Shuffle traits and calc cell FD values
+
+```{r define fxns to shuffle traits and calc FD}
+
+shuffle_trait <- function(df, trait, traits_df = spp_traits_df) {
+  
+  df2 <- df %>%
+    oharac::dt_join(traits_df, by = 'species', type = 'left') %>%
+    rename(tmp := all_of(trait)) %>%
+    group_by(cell_id) %>%
+    mutate(tmp = sample(tmp, size = n(), replace = FALSE)) %>%
+    ungroup() %>%
+    rename(!!trait := tmp)
+  
+  spp_fe_cells <- df2 %>%
+    assign_fe()
+  
+  return(spp_fe_cells)
+}
+
+assign_fe <- function(df) {
+  ### summarize FEs across all spp in the set
+  tmp <- df %>%
+    unite(col = trait, mob, trp, len, wcol) %>%
+    group_by(trait) %>%
+    summarize(spp_in_fe = n_distinct(species)) %>%
+    arrange(-spp_in_fe) %>%
+    mutate(fe_id = 1:n()) %>%
+    separate(col = trait, into = c('mob', 'trp', 'len', 'wcol'))
+  
+  spp_fes_out <- df %>%
+    left_join(tmp, by = c('mob', 'trp', 'len', 'wcol')) %>%
+    select(cell_id, species, fe_id)
+  
+  return(spp_fes_out)
+}
+
+calc_fd_metrics <- function(df) {
+  tmp <- df %>%
+    as.data.table() %>%
+    .[ , .(n_spp_fe = length(unique(species)),
+           fv_fe = calc_fe(length(unique(species)))),
+       by = .(cell_id, fe_id)] %>%
+    .[ , .(n_fe = length(unique(fe_id)),
+           fv = mean(fv_fe)),
+       by = .(cell_id)]
+  return(tmp)
+}
+
+summarize_fd_stats <- function(df, truth_df = cell_sample_df) {
+  message('Summarizing functional diversity stats...')
+  fd_result_summary <- df %>%
+    as.data.table() %>%
+    .[ , .(n_fe_mean = mean(n_fe),
+              n_fe_95lo = quantile(n_fe, .025),
+              n_fe_95hi = quantile(n_fe, .975),
+              n_fe_sdev = sd(n_fe),
+              fv_mean = mean(fv),
+              fv_95lo = quantile(fv, .025),
+              fv_95hi = quantile(fv, .975),
+              fv_sdev = sd(fv)),
+       by = cell_id]
+  
+  fd_results_check <- fd_result_summary %>%
+    left_join(truth_df, by = 'cell_id') %>%
+    mutate(diff_n_fe = n_fe_mean - n_fe,
+           diff_fv   = fv_mean - fv) %>%
+    select(-x, -y)
+    return(fd_results_check)
+}
+
+drop_missing_iters <- function(tmp_fs) {
+  result_df <- parallel::mclapply(tmp_fs, fread, mc.cores = 20) %>%
+    setNames(tmp_fs) %>%
+    rbindlist(idcol = 'f')
+  nrows <- result_df %>%
+    as.data.table() %>%
+    .[ , .(n = length(cell_id)), by = f]
+  print(nrows %>% filter(n < n_cells))
+  
+  iters_problem <- nrows$f[nrows$n < n_cells]
+  unlink(iters_problem)
+}
+
+bind_tmp_fs <- function(tmp_fs) {
+  message('Checking temp files and binding...')
+  ### error checks... any files missing?
+  if(length(tmp_fs) < n_sims) stop('Missing some files!')
+  ### error checks... any files with dropped cells?
+  result_df <- parallel::mclapply(tmp_fs, fread, mc.cores = 20) %>%
+    setNames(tmp_fs) %>%
+    rbindlist(idcol = 'f')
+  nrows <- result_df %>%
+    as.data.table() %>%
+    .[ , .(n = length(cell_id)), by = f]
+  if(!all(nrows$n == n_cells)) stop('Missing some iterations!')
+  ### iters_problem <- nrows$f[nrows$n < n_cells]
+  ### unlink(iters_problem)
+  return(result_df %>% select(-f))
+}
+```
+
+
+## Shuffle traits and calc functional diversity metrics
+
+Shuffle within cells, rather than across entire species set.  Write out as summary data frame; if data frame exists, don't re-run it all!
+
+```{r shuffle traits and calc func div metrics}
+n_sims <- 1000
+
+trait_vec <- c('len', 'mob', 'trp', 'wcol')
+out_fstem <- here_anx('sens_analysis/funct_div_summary/fd_summary_shuffle_%s.csv')
+
+for(i in seq_along(trait_vec)) {
+  # i <- 4
+  tr <- trait_vec[i]
+  out_f <- sprintf(out_fstem, tr)
+  
+  if(!file.exists(out_f)) {
+    message('Shuffling trait ', tr, ' and summarizing to ', basename(out_f), '...')
+    
+    tmp_out_fstem <- here_anx('sens_analysis/funct_div_summary/tmp', 
+                              'tmp_fd_summary_shuffle_%s_%s.csv')
+
+    zxcv <- parallel::mclapply(
+      1:n_sims, mc.cores = 10,
+      FUN = function(j) {
+        # j <- 1
+        tmp_out_f <- sprintf(tmp_out_fstem, tr, j)
+        if(file.exists(tmp_out_f)) return(NULL)
+        
+        ### set a different determinate seed each iteration/trait combo
+        rnd_seed <- (i + n_sims * j) * 42
+        set.seed(rnd_seed)
+        if(j %% 20 == 0 | runif(1) < .1) {
+          message('Random seed for ', tr, ' iter ', j, ' = ', rnd_seed)
+        }
+        
+        spp_fe_cells <- spp_cells_sample_df %>%
+          shuffle_trait(trait = tr)
+      
+        fd_metrics <- spp_fe_cells %>%
+          calc_fd_metrics()
+        
+        write_csv(fd_metrics, tmp_out_f)
+      }
+    )
+    
+    tmp_fs <- list.files(dirname(tmp_out_fstem), 
+                         pattern = sprintf('tmp_fd_summary_shuffle_%s', tr),
+                         full.names = TRUE)
+    
+    fd_result_df <- bind_tmp_fs(tmp_fs) ### includes error checks
+    
+    fd_result_summary <- fd_result_df %>%
+      summarize_fd_stats() %>%
+      ### round out ludicrous precision
+      mutate(across(where(is.numeric), ~round(.x, 6)))
+    
+    write_csv(fd_result_summary, out_f)
+    unlink(tmp_fs)
+  }
+}
+```
+
+``` {r plot fd metrics}
+fd_results_fs <- sprintf(out_fstem, trait_vec) %>%
+  setNames(trait_vec)
+
+### unlink(fd_results_fs)
+for(tr in trait_vec) {
+  fd_results <- read_csv(fd_results_fs[tr], show_col_types = FALSE)
+  hist(fd_results$diff_n_fe, main = sprintf('Shuffle %s, # FEs', tr))
+  hist(fd_results$diff_fv,   main = sprintf('Shuffle %s, FV', tr))
+}
+```
+
+When randomizing any of the traits, functional richness and vulnerability both seem to increase on average.  Logically, if (for the same number of species) functional richness increases, then functional vulnerability should probably increase as well, since number of spp per FE would on average decrease.
+
+
+
+## Shuffle traits and calc uniform exposure stressor vuln and impacts
+
+Shuffle within cells, rather than across entire species set.  Write out as summary data frame; if data frame exists, don't re-run it all!
+
+Note: Because these are scalar multipliers, we can calculate the distribution summary stats of vulnerability across multiple iterations and simply multiply by the stressor intensity, rather than multiplying by stressor intensity for each iteration.
+
+```{r define functions for vuln and intensity}
+get_spp_vuln_df <- function(str, str_vuln = str_vuln_lookup, spp = spp_info) {
+  vuln_name <- str_vuln %>%
+    filter(stressor == str) %>%
+    .$vulnerability
+  spp_vuln_df <- spp %>%
+    filter(stressor == vuln_name) %>%
+    select(species, v_score, vuln = stressor) %>%
+    distinct()
+  return(spp_vuln_df)
+}
+
+calc_cell_vuln <- function(spp_fe_cells, spp_vuln_df) {
+  spp_fe_vuln_cells <- spp_fe_cells %>%
+    oharac::dt_join(spp_vuln_df, by = 'species', type = 'left') %>%
+    as.data.table() %>%
+    .[ , .(cell_vuln = mean(v_score),
+           fv = calc_fe(n_distinct(species))),
+       by = .(cell_id, fe_id)] %>%
+    .[ , .(cell_vuln = sum(cell_vuln * fv) / sum(fv)),
+       by = cell_id]
+
+  return(spp_fe_vuln_cells)
+}
+
+calc_mean_impact <- function(df, str, int_cells = str_cell_df, imp_cells = imp_cell_df) {
+  true_impact_df <- imp_cells %>%
+    select(cell_id, impact := all_of(str))
+  str_intensity_df <- int_cells %>%
+    select(cell_id, intensity := all_of(str))
+  str_impact_result_df <- df %>%
+    as.data.table() %>%
+    .[ , .(vuln_mean = mean(cell_vuln),
+           vuln_sdev = sd(cell_vuln),
+           vuln_95lo = quantile(cell_vuln, .025),
+           vuln_95hi = quantile(cell_vuln, .975)),
+       by = cell_id] %>%
+    left_join(str_intensity_df, by = 'cell_id') %>%
+    mutate(imp_mean = vuln_mean * intensity,
+           imp_sdev = vuln_sdev * intensity,
+           imp_95lo = vuln_95lo * intensity,
+           imp_95hi = vuln_95hi * intensity) %>%
+    left_join(true_impact_df, by = 'cell_id') %>%
+    mutate(diff_imp_mean = impact - imp_mean) %>%
+    ### round out ludicrous precision
+    mutate(across(where(is.numeric), ~round(.x, 6))) %>%
+    select(-intensity)
+}
+```
+
+```{r calc impacts for unif exp stressors}
+out_fstem <- here_anx('sens_analysis/impact_summary/impact_shuffle_%s_%s.csv')
+
+### Loop over traits to be shuffled
+for(i in seq_along(trait_vec)) {
+  # i <- 4
+  tr <- trait_vec[i]
+  
+  ### loop over stressors to be calculated
+  for(j in seq_along(strs_unif)) {
+    # j <- 5
+    str <- strs_unif[j]
+    
+    out_f <- sprintf(out_fstem, tr, str)
+    
+    if(!file.exists(out_f)) {
+      message('Shuffling trait ', tr, ' for stressor ', str, 
+              ' and summarizing to ', basename(out_f), '...')
+      
+      tmp_out_fstem <- here_anx('sens_analysis/impact_summary/tmp', 
+                                'tmp_unif_exp_summary_shuffle_%s_%s_%s.csv')
+
+      ### load vulnerability df for this loop (stressor)
+      spp_vuln_df <- get_spp_vuln_df(str = str)
+      
+      ### Loop over simulations
+      zxcv <- parallel::mclapply(
+        1:n_sims, mc.cores = 10,
+        FUN = function(k) {
+          # k <- 815
+          tmp_out_f <- sprintf(tmp_out_fstem, tr, str, k)
+          if(file.exists(tmp_out_f)) return('ok')
+          
+          ### set a different determinate seed each iteration/trait combo
+          rnd_seed <- (i + n_sims * k) * 42
+          set.seed(rnd_seed)
+          if(k %% 20 == 0 | runif(1) < .1) {
+            message('Random seed for ', tr, ', str ', str, 
+                    ': iter ', k, ' = ', rnd_seed)
+          }
+          
+          ### attach stressor vulnerability and summarize to mean per cell
+          spp_fe_cells <- spp_cells_sample_df %>%
+            shuffle_trait(trait = tr)
+          system.time({
+          spp_fe_vuln_cells <- calc_cell_vuln(spp_fe_cells, spp_vuln_df)
+          })
+          
+          write_csv(spp_fe_vuln_cells, tmp_out_f)
+          return(paste('Created', basename(tmp_out_f)))
+        }
+      )### end of sim iteration loop
+      
+      tmp_fs <- list.files(dirname(tmp_out_fstem), 
+                           pattern = sprintf('tmp_unif_exp_summary_shuffle_%s_%s', tr, str),
+                           full.names = TRUE)
+      ### drop_missing_iters(tmp_fs)
+
+      str_impact_tmp_df <- bind_tmp_fs(tmp_fs) ### includes error checks
+      
+      str_impact_result_df <- str_impact_tmp_df %>%
+        calc_mean_impact(str) %>%
+        select(cell_id, contains('imp'))
+      write_csv(str_impact_result_df, out_f)
+      
+      ### delete temp files once full file is complete - NO! if we
+      ### keep all sims, and since we're using the same seeds for the 
+      ### trait shuffling, impact results should be comparable across sims
+      ### i.e., add up all impacts for sim #3 to get CHI for sim #3
+      # unlink(tmp_fs)
+    } ### end of creating out_f in if statement
+    
+  } ### end of sequence along uniform stressor names
+  
+} ### end of sequence along traits to be shuffled
+
+```
+
+## Calculate impacts for bycatch stressor
+
+This is close to the uniform-exposure stressors, except that some species are exposed to benthic, some to pelagic, and some to both.  Here, grab bycatch stressor maps for pelagic and benthic, and smash into a dataframe.  Calculate impacts per species per cell directly, rather than a full-cell vulnerability.
+
+```{r gather bycatch stressor maps}
+out_fstem <- here_anx('sens_analysis/impact_summary/impact_shuffle_%s_%s.csv')
+
+out_fs <- list.files(out_fstem, pattern = 'bycatch', full.names = TRUE)
+
+if(length(out_fs) < length(trait_vec)) {
+
+  benth_rast <- rast(here('_data/stressors_mol/bycatch_benthic_2017.tif'))
+  pelag_rast <- rast(here('_data/stressors_mol/bycatch_pelagic_2017.tif'))
+  bp_rast <- (benth_rast + pelag_rast) / 2
+  
+  bycatch_cells_df <- data.frame(ben = as.vector(values(benth_rast)),
+                                 pel = as.vector(values(pelag_rast)),
+                                 both    = as.vector(values(bp_rast)),
+                                 cell_id = 1:ncell(benth_rast)) %>%
+    filter(cell_id %in% cell_id_vec) %>%
+    filter(!is.na(ben) | !is.na(pel)) %>%
+    pivot_longer(names_to = 'wcol', values_to = 'bycatch', cols = -cell_id)
+  
+  spp_zone_df <- spp_info %>%
+    mutate(wcol = case_when(wcol == 'pel' ~ 'pel',
+                            wcol == 'ben' ~ 'ben',
+                            wcol %in% c('rf', 'bp') ~ 'both',
+                            TRUE ~ 'oops')) %>%
+    select(species, wcol) %>%
+    distinct()
+  
+  spp_bycatch_str <- spp_cells_sample_df %>%
+    oharac::dt_join(spp_zone_df, by = c('species'), type = 'inner') %>%
+    oharac::dt_join(bycatch_cells_df, by = c('cell_id', 'wcol'), type = 'inner')
+
+}
+
+```
+
+```{r calc impacts for bycatch stressor}
+
+### Loop over traits to be shuffled
+for(i in seq_along(trait_vec)) {
+  # i <- 1
+  tr <- trait_vec[i]
+  
+  str <- 'bycatch'
+  
+  out_f <- sprintf(out_fstem, tr, str)
+  
+  if(!file.exists(out_f)) {
+    message('Shuffling trait ', tr, ' for stressor ', str, 
+            ' and summarizing to ', basename(out_f), '...')
+    
+    tmp_out_fstem <- here_anx('sens_analysis/impact_summary/tmp', 
+                              'tmp_nonunif_exp_summary_shuffle_%s_%s_%s.csv')
+
+    ### load vulnerability df for this loop (stressor)
+    spp_vuln_df <- get_spp_vuln_df(str = str)
+    
+    ### Loop over simulations
+    zxcv <- parallel::mclapply(
+      1:n_sims, mc.cores = 10,
+      FUN = function(k) {
+        # k <- 2
+        tmp_out_f <- sprintf(tmp_out_fstem, tr, str, k)
+        if(file.exists(tmp_out_f)) return('ok')
+        
+        ### set a different determinate seed each iteration/trait combo
+        rnd_seed <- (i + n_sims * k) * 42
+        set.seed(rnd_seed)
+        if(k %% 20 == 0 | runif(1) < .1) {
+          message('Random seed for ', tr, ', str ', str, 
+                  ': iter ', k, ' = ', rnd_seed)
+        } 
+        
+        ### attach stressor vulnerability and impact and summarize to mean per cell
+        spp_fe_cells <- spp_cells_sample_df %>%
+          shuffle_trait(trait = tr)
+        
+        spp_fe_imp_cells <- spp_fe_cells %>%
+          oharac::dt_join(spp_vuln_df, by = 'species', type = 'left') %>%
+          oharac::dt_join(spp_bycatch_str, by = c('species', 'cell_id'), type = 'left') %>%
+          as.data.table() %>%
+          ### fill zero catch cells
+          .[ , bycatch := ifelse(is.na(bycatch), 0, bycatch)] %>%
+          ### calc impact as product of pressure and vuln
+          .[ , imp := bycatch * v_score] %>%
+          ### calc mean impact across FE per cell
+          .[ , .(cell_imp = mean(imp),
+                 fv = calc_fe(length(unique(species)))),
+             by = .(cell_id, fe_id)] %>%
+          ### calc FV-weighted mean across all FEs in cell
+          .[ , .(imp_mean = sum(cell_imp * fv) / sum(fv)),
+             by = cell_id]
+          
+        write_csv(spp_fe_imp_cells, tmp_out_f)
+        return(paste('Created', basename(tmp_out_f)))
+      }
+    )### end of sim iteration loop
+    
+    ### Load sim files, summarize, and compare shuffled calculated impacts to "true" result
+    tmp_fs <- list.files(dirname(tmp_out_fstem), 
+                         pattern = sprintf('tmp_nonunif_exp_summary_shuffle_%s_%s', tr, str),
+                         full.names = TRUE)
+
+    true_impact_df <- imp_cell_df %>%
+      select(cell_id, impact = bycatch)
+
+    str_impact_tmp_df <- bind_tmp_fs(tmp_fs) ### includes error checks
+    
+    str_impact_result_df <- str_impact_tmp_df %>%
+      rename(imp_mean_sim = imp_mean) %>%
+      as.data.table() %>%
+      .[ , .(imp_mean = mean(imp_mean_sim),
+            imp_sdev = sd(imp_mean_sim),
+            imp_95lo = quantile(imp_mean_sim, .025),
+            imp_95hi = quantile(imp_mean_sim, .975)),
+         by = cell_id] %>%
+      left_join(true_impact_df, by = 'cell_id') %>%
+      mutate(diff_imp_mean = impact - imp_mean) %>%
+      ### round out ludicrous precision
+      mutate(across(where(is.numeric), ~round(.x, 6)))
+    
+    write_csv(str_impact_result_df, out_f)
+    
+    ### delete temp files once full file is complete - NO! if we
+    ### keep all sims, and since we're using the same seeds for the 
+    ### trait shuffling, impact results should be comparable across sims
+    ### i.e., add up all impacts for sim #3 to get CHI for sim #3
+    # unlink(tmp_fs)
+  } ### end of creating out_f in if statement
+  
+} ### end of sequence along traits to be shuffled
+
+```
+
+## Calculate impacts for SST Rise stressor
+
+Here, grab SST rise stressor maps for each spp (pre-built in `1_setup/stressors`), filter to relevant cells, and smash into a dataframe.  Then, from that, iterate over each shuffled set of traits to create a mean impact.  There is no intermediate vulnerability step in this case; cell-wide vulnerability does not make sense here since each spp has its own stressor intensity.
+
+```{r functions for getting spp stressor maps directly}
+get_spp_stressor_map <- function(spp, df) {
+  map_fs <- df %>%
+    filter(species == spp) %>%
+    .$map_f
+  if(length(map_fs) == 1) {
+    ### easy case
+    cells <- fread(map_fs) %>%
+    .[cell_id %in% cell_id_vec, ]
+  } else {
+    message('multiple maps for ', spp, '...')
+    cells <- lapply(map_fs, data.table::fread) %>%
+      rbindlist() %>%
+      .[cell_id %in% cell_id_vec, ]
+    if(nrow(cells) == 0) return(data.table())  ### no need to summarize
+    cells <- cells %>%
+      group_by(cell_id) %>%
+      summarize(across(everything(), .fns = mean))
+  }
+  
+  return(cells %>% mutate(species = spp))
+}
+```
+
+```{r gather sst rise impact maps}
+out_fstem <- here_anx('sens_analysis/impact_summary/impact_shuffle_%s_%s.csv')
+
+out_fs <- list.files(dirname(out_fstem), pattern = 'sst_rise', full.names = TRUE)
+if(length(out_fs) < length(trait_vec)) {
+
+  spp_sst_map_df <- spp_info %>%
+    select(species, map_f) %>% 
+    distinct() %>%
+    mutate(map_f = basename(map_f) %>% str_replace('_mol_', '_max_temp_'),
+           map_f = here_anx('stressors/max_temp', map_f)) %>%
+    filter(file.exists(map_f))
+  
+  spp_vec <- spp_sst_map_df$species %>% unique()
+  # tictoc::tic()
+  spp_sst_str <- parallel::mclapply(spp_vec, mc.cores = 40,
+                                    FUN = get_spp_stressor_map,
+                                    df = spp_sst_map_df) %>%
+    rbindlist()
+  # tictoc::toc()
+}
+
+```
+
+```{r calc impacts for SST rise stressors}
+
+### Loop over traits to be shuffled
+for(i in seq_along(trait_vec)) {
+  # i <- 2
+  tr <- trait_vec[i]
+  
+  str <- 'sst_rise'
+  
+  out_f <- sprintf(out_fstem, tr, str)
+  
+  if(!file.exists(out_f)) {
+    message('Shuffling trait ', tr, ' for stressor ', str, 
+            ' and summarizing to ', basename(out_f), '...')
+    
+    tmp_out_fstem <- here_anx('sens_analysis/impact_summary/tmp', 
+                              'tmp_nonunif_exp_summary_shuffle_%s_%s_%s.csv')
+
+    ### load vulnerability df for this loop (stressor)
+    spp_vuln_df <- get_spp_vuln_df(str = str)
+    
+    ### Loop over simulations
+    zxcv <- parallel::mclapply(
+      1:n_sims, mc.cores = 11,
+      FUN = function(k) {
+        # k <- 2
+        tmp_out_f <- sprintf(tmp_out_fstem, tr, str, k)
+        if(file.exists(tmp_out_f)) return('ok')
+        
+        ### set a different determinate seed each iteration/trait combo
+        rnd_seed <- (i + n_sims * k) * 42
+        set.seed(rnd_seed)
+        if(k %% 20 == 0 | runif(1) < .1) {
+          message('Random seed for ', tr, ', str ', str, 
+                  ': iter ', k, ' = ', rnd_seed)
+        }
+        
+        ### attach stressor vulnerability and impact and summarize to mean per cell
+        spp_fe_cells <- spp_cells_sample_df %>%
+          shuffle_trait(trait = tr)
+        
+        spp_fe_imp_cells <- spp_fe_cells %>%
+          oharac::dt_join(spp_vuln_df, by = 'species', type = 'left') %>%
+          oharac::dt_join(spp_sst_str, by = c('species', 'cell_id'), type = 'inner') %>%
+          as.data.table() %>%
+          ### calc impact as product of pressure and vuln
+          .[ , imp := therm_prs * v_score] %>%
+          ### calc mean impact across FE per cell
+          .[ , .(cell_imp = mean(imp),
+                 fv = calc_fe(length(unique(species)))),
+             by = .(cell_id, fe_id)] %>%
+          ### calc FV-weighted mean across all FEs in cell
+          .[ , .(imp_mean = sum(cell_imp * fv) / sum(fv)),
+             by = cell_id]
+          
+        write_csv(spp_fe_imp_cells, tmp_out_f)
+        return(paste('Created', basename(tmp_out_f)))
+      }
+    )### end of sim iteration loop
+    
+    ### Load sim files, summarize, and compare shuffled calculated impacts to "true" result
+    tmp_fs <- list.files(dirname(tmp_out_fstem), 
+                         pattern = sprintf('tmp_nonunif_exp_summary_shuffle_%s_%s', tr, str),
+                         full.names = TRUE)
+    
+    true_impact_df <- imp_cell_df %>%
+      select(cell_id, impact = sst_rise)
+
+    str_impact_tmp_df <- bind_tmp_fs(tmp_fs) ### includes error checks
+    
+    str_impact_result_df <- str_impact_tmp_df %>%
+      rename(imp_mean_sim = imp_mean) %>%
+      as.data.table() %>%
+      .[ , .(imp_mean = mean(imp_mean_sim),
+            imp_sdev = sd(imp_mean_sim),
+            imp_95lo = quantile(imp_mean_sim, .025),
+            imp_95hi = quantile(imp_mean_sim, .975)),
+         by = cell_id] %>%
+      left_join(true_impact_df, by = 'cell_id') %>%
+      mutate(diff_imp_mean = impact - imp_mean) %>%
+      ### round out ludicrous precision
+      mutate(across(where(is.numeric), ~round(.x, 6)))
+    
+    write_csv(str_impact_result_df, out_f)
+    
+    ### delete temp files once full file is complete - NO! if we
+    ### keep all sims, and since we're using the same seeds for the 
+    ### trait shuffling, impact results should be comparable across sims
+    ### i.e., add up all impacts for sim #3 to get CHI for sim #3
+    # unlink(tmp_fs)
+  } ### end of creating out_f in if statement
+  
+} ### end of sequence along traits to be shuffled
+
+```
+
+
+## Calculate impacts for biomass removal stressor
+
+Here, grab biomass removal stressor maps for each spp (pre-built in `1_setup/stressors`), filter to relevant cells, and smash into a dataframe.  Then, from that, iterate over each shuffled set of traits to create a mean impact.  As for SST rise, there is no intermediate vulnerability step in this case; cell-wide vulnerability does not make sense here since each spp has its own stressor intensity.
+
+```{r gather biomass removal stressor maps}
+out_fstem <- here_anx('sens_analysis/impact_summary/impact_shuffle_%s_%s.csv')
+
+out_fs <- list.files(out_fstem, pattern = 'biomass_removal', full.names = TRUE)
+if(length(out_fs) < length(trait_vec)) {
+
+  spp_bio_rem_map_df <- spp_info %>%
+    select(species, src) %>% 
+    distinct() %>%
+    mutate(map_f = sprintf('%s_spp_rescaled_catch_%s.csv', src, species),
+           map_f = str_replace_all(map_f, ' ', '_'),
+           map_f = here_anx('stressors/fishing/4_rescaled_catch_by_spp_cell', map_f)) %>%
+    filter(file.exists(map_f))
+  
+  spp_vec <- spp_bio_rem_map_df$species %>% unique()
+  # tictoc::tic()
+  spp_bio_rem_str <- parallel::mclapply(spp_vec, mc.cores = 40,
+                                        FUN = get_spp_stressor_map,
+                                        df = spp_bio_rem_map_df) %>%
+    rbindlist()
+  # tictoc::toc()
+}
+
+```
+
+```{r calc impacts for biomass removal stressor}
+
+### Loop over traits to be shuffled
+for(i in seq_along(trait_vec)) {
+  # i <- 1
+  tr <- trait_vec[i]
+  
+  str <- 'biomass_removal'
+  
+  out_f <- sprintf(out_fstem, tr, str)
+  
+  if(!file.exists(out_f)) {
+    message('Shuffling trait ', tr, ' for stressor ', str, 
+            ' and summarizing to ', basename(out_f), '...')
+    
+    tmp_out_fstem <- here_anx('sens_analysis/impact_summary/tmp', 
+                              'tmp_nonunif_exp_summary_shuffle_%s_%s_%s.csv')
+
+    ### load vulnerability df for this loop (stressor)
+    spp_vuln_df <- get_spp_vuln_df(str = str)
+    
+    ### Loop over simulations
+    zxcv <- parallel::mclapply(
+      1:n_sims, mc.cores = 10,
+      FUN = function(k) {
+        # k <- 2
+        tmp_out_f <- sprintf(tmp_out_fstem, tr, str, k)
+        if(file.exists(tmp_out_f)) return('ok')
+        
+        ### set a different determinate seed each iteration/trait combo
+        rnd_seed <- (i + n_sims * k) * 42
+        set.seed(rnd_seed)
+        if(k %% 20 == 0) message('Random seed for ', tr, ', str ', str, 
+                                 ': iter ', k, ' = ', rnd_seed)
+        
+        ### attach stressor vulnerability and impact and summarize to mean per cell
+        spp_fe_cells <- spp_cells_sample_df %>%
+          shuffle_trait(trait = tr)
+        
+        spp_fe_imp_cells <- spp_fe_cells %>%
+          oharac::dt_join(spp_vuln_df, by = 'species', type = 'left') %>%
+          oharac::dt_join(spp_bio_rem_str, by = c('species', 'cell_id'), type = 'left') %>%
+          as.data.table() %>%
+          ### fill zero catch cells
+          .[ , rescaled_catch := ifelse(is.na(rescaled_catch), 0, rescaled_catch)] %>%
+          ### calc impact as product of pressure and vuln
+          .[ , imp := rescaled_catch * v_score] %>%
+          ### calc mean impact across FE per cell
+          .[ , .(cell_imp = mean(imp),
+                 fv = calc_fe(length(unique(species)))),
+             by = .(cell_id, fe_id)] %>%
+          ### calc FV-weighted mean across all FEs in cell
+          .[ , .(imp_mean = sum(cell_imp * fv) / sum(fv)),
+             by = cell_id]
+          
+        write_csv(spp_fe_imp_cells, tmp_out_f)
+        return(paste('Created', basename(tmp_out_f)))
+      }
+    )### end of sim iteration loop
+    
+    ### Load sim files, summarize, and compare shuffled calculated impacts to "true" result
+    tmp_fs <- list.files(dirname(tmp_out_fstem), 
+                         pattern = sprintf('tmp_nonunif_exp_summary_shuffle_%s_%s', tr, str),
+                         full.names = TRUE)
+    ### drop_missing_iters(tmp_fs)
+
+
+    true_impact_df <- imp_cell_df %>%
+      select(cell_id, impact = biomass_removal)
+
+    str_impact_tmp_df <- bind_tmp_fs(tmp_fs) ### includes error checks
+    
+    str_impact_result_df <- str_impact_tmp_df %>%
+      rename(imp_mean_sim = imp_mean) %>%
+      as.data.table() %>%
+      .[ , .(imp_mean = mean(imp_mean_sim),
+            imp_sdev = sd(imp_mean_sim),
+            imp_95lo = quantile(imp_mean_sim, .025),
+            imp_95hi = quantile(imp_mean_sim, .975)),
+         by = cell_id] %>%
+      left_join(true_impact_df, by = 'cell_id') %>%
+      mutate(diff_imp_mean = impact - imp_mean) %>%
+      ### round out ludicrous precision
+      mutate(across(where(is.numeric), ~round(.x, 6)))
+    
+    write_csv(str_impact_result_df, out_f)
+    
+    ### delete temp files once full file is complete - NO! if we
+    ### keep all sims, and since we're using the same seeds for the 
+    ### trait shuffling, impact results should be comparable across sims
+    ### i.e., add up all impacts for sim #3 to get CHI for sim #3
+    # unlink(tmp_fs)
+  } ### end of creating out_f in if statement
+  
+} ### end of sequence along traits to be shuffled
+
+```
+

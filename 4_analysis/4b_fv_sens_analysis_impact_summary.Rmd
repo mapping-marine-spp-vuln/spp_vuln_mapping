@@ -1,0 +1,158 @@
+---
+title: 'Sensitivity analysis: Functional Entity grouping traits'
+author: "*Compiled on `r date()` by `r Sys.info()['user']`*"
+output: 
+  html_document:
+    code_folding: hide
+    toc: true
+    toc_depth: 3
+    toc_float: yes
+    number_sections: true
+    theme: cerulean
+    highlight: haddock
+    includes: 
+      in_header: '~/github/src/templates/ohara_hdr.html'
+  pdf_document:
+    toc: true
+---
+
+``` {r setup, echo = TRUE, message = FALSE, warning = FALSE}
+
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE,
+                      fig.height = 4, fig.width = 7)
+
+library(terra)
+library(oharac)
+library(data.table)
+library(tidyverse)
+library(here)
+source(here('common_fxns.R'))
+```
+
+# Summary
+
+Sensitivity analysis to determine how drastically scores change with different values of functional traits.  
+
+In script 4a, we calculated sensitivity around functional diversity metrics and per-stressor impacts.  In this script, we aggregate results across all stressors for each randomized iteration, to determine the distribution of mean values for cumulative impacts.
+
+# Methods
+
+For each randomized trait, collect iterations across all stressors and calculate cumulative impact for each iteration.  Because each iteration used the same seed for the pseudorandom number generator, the randomized trait set should be identical across all stressors.  This allows us to simply add all stressors cell-by-cell for a given iteration to determine the cumulative impact.
+
+Unfortunately, the tmp impact files for uniform-exposure stressors look like they're actually just vulnerability scores (impacts were calculated after).  So, for those stressors, bind with stressor intensity and convert to impacts... :/
+
+```{r load stressor intensities}
+stressor_intensity_f <- here_anx('sens_analysis/sample_str_intensity.csv')
+if(!file.exists(stressor_intensity_f)) {
+  cell_id_vec <- fread(here_anx('sens_analysis/spp_cells_to_id.csv')) %>%
+    .$cell_id %>% unique() %>% sort()
+  
+  cell_id_r <- rast(here('_output/cumulative_impact_maps/chi_funct_entity.tif')) %>%
+    setValues(1:ncell(.)) %>% setNames('cell_id')
+  
+  str_vuln_lookup <- read_csv(here('_raw/stressor_vulnerability_lookup.csv'), 
+                              show_col_types = FALSE)
+  strs <- str_vuln_lookup$stressor
+  strs_unif <- strs[!str_detect(strs, 'sst_rise|biomass_removal|bycatch')]
+  
+  str_fs <- list.files(here('_data/stressors_mol'),
+                       pattern = smash2or(strs_unif),
+                       full.names = TRUE)
+  
+  str_rast <- rast(str_fs) %>%
+    setNames(basename(str_fs) %>% str_remove('_[0-9]{4}.+'))
+  
+  str_cell_df <- c(str_rast, cell_id_r) %>%
+    as.data.frame(xy = FALSE) %>%
+    filter(cell_id %in% cell_id_vec) %>%
+    mutate(across(everything(), ~ifelse(is.na(.x), 0, .x))) %>%
+    pivot_longer(cols = -cell_id, names_to = 'stressor', values_to = 'intensity')
+  
+  write_csv(str_cell_df, stressor_intensity_f)
+}
+
+str_cell_df <- read_csv(stressor_intensity_f)
+unif_strs <- str_cell_df$stressor %>% unique()
+
+```
+
+```{r define function to calc impacts from vulns}
+get_impacts <- function(f) {
+  ### fs <- iter_df$f
+  ### f <- fs[4]
+  s <- str_remove_all(basename(f), '.+_shuffle_[a-z]+_|_[0-9].+')
+  if(!s %in% unif_strs) {
+    df <- fread(f)
+  } else {
+    str_df <- str_cell_df %>%
+      filter(stressor == s)
+    if(nrow(str_df) < 10000) stop('no rows for ', s)
+    df <- fread(f) %>%
+      oharac::dt_join(str_df, by = 'cell_id', type = 'inner') %>%
+      mutate(imp_mean = cell_vuln * intensity) %>%
+      select(cell_id, imp_mean)
+  }
+  
+  return(df)
+}
+
+calc_iter_chi <- function(i, t, tmp_df) {
+  ### i <- 1
+  if(i %% 20 == 1) message('Iteration ', i, ' for stressor ', t, '...')
+  iter_df <- tmp_df %>%
+    filter(iter == i & trait == t)
+
+  iter_cells_df <- parallel::mclapply(iter_df$f, FUN = get_impacts, mc.cores = 13) %>%
+    setNames(iter_df$str) %>%
+    rbindlist(idcol = 'stressor')
+  
+  iter_summary_df <- iter_cells_df %>%
+    as.data.table() %>%
+    .[ , .(chi = sum(imp_mean)),
+       by = cell_id] %>%
+    mutate(i = i, t = t)
+  
+  return(iter_summary_df)
+}
+```
+
+
+```{r}
+trait_vec <- c('len', 'mob', 'trp', 'wcol')
+n_sims <- 1000
+
+chi_out_fstem <- here_anx('sens_analysis/impact_summary/chi_shuffle_%s.csv')
+
+tmp_fs <- list.files(here_anx('sens_analysis/impact_summary/tmp'), full.names = TRUE)
+tmp_df <- data.frame(f = tmp_fs) %>%
+  mutate(iter  = str_extract(basename(f), '[0-9]+') %>% as.numeric(),
+         str   = str_remove_all(basename(f), '.+_shuffle_[a-z]+_|_[0-9].+'),
+         trait = str_extract(basename(f), smash2or(trait_vec)))
+
+for(t in trait_vec) {
+  ### t <- trait_vec[1]
+  
+  chi_out_f <- sprintf(chi_out_fstem, t)
+  
+  if(!file.exists(chi_out_f)) {
+    message('Summarizing CHI for trait ', t, '...')
+    
+
+    cell_chi_df <- lapply(1:20, 
+                          FUN = calc_iter_chi, 
+                          tmp_df = tmp_df, t = t) %>%
+      rbindlist()
+    
+    cell_chi_summary <- cell_chi_df %>%
+      as.data.table() %>%
+      .[ , .(chi_mean = mean(chi),
+             chi_sdev = sd(chi),
+             chi_95lo = quantile(chi, .025),
+             chi_95hi = quantile(chi, .975)),
+         by = cell_id]
+      
+    write_csv(cell_chi_summary, chi_out_f)
+  }
+}
+```
+
