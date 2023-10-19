@@ -176,7 +176,7 @@ knitr::include_graphics(fv_fig_f)
 
 ```
 
-```{r map difference in fv}
+```{r map coefficient of variation in fv}
 fv_fig_f <- '_figs/fv_cv_by_trait_map.png'
 
 if(!file.exists(fv_fig_f)) {
@@ -332,7 +332,7 @@ if(!file.exists(chi_fig_f)) {
     
   p <- ggplot() +
     geom_raster(data = chi_map_df, aes(x, y, fill = delta_chi)) +
-    labs(fill = 'ΔFV')
+    labs(fill = 'ΔCHI')
   
   p <- finish_map(p)
   
@@ -340,57 +340,19 @@ if(!file.exists(chi_fig_f)) {
   
 }
 knitr::include_graphics(chi_fig_f)
-  # tbd
-  ### param dist plot
-  # tbd
-  ### spp vs param plot
-  
 
 ```
 
-```{r map difference in fv}
-fv_fig_f <- '_figs/fv_cv_by_trait_map.png'
 
-if(!file.exists(fv_fig_f)) {
-  fv_map_list <- vector('list', length = length(fd_ts)) %>%
-    setNames(fd_ts)
-  for(trait in fd_ts) {
-    fv_map_list[[trait]] <- map_param(df = fd_df %>% filter(t == trait), 
-                                      p = 'fv', s = 'cv')
-  }
-  
-  fv_map_stack <- rast(fv_map_list)
-  
-  fv_map_df <- as.data.frame(fv_map_stack, xy = TRUE) %>%
-    pivot_longer(-c(x, y), names_to = 'trait', values_to = 'cv_fv') %>%
-    mutate(trait = case_when(trait == 'len' ~ 'body length',
-                             trait == 'mob' ~ 'adult mobility',
-                             trait == 'trp' ~ 'trophic level',
-                             trait == 'wcol' ~ 'water column position'))
-    
-  p <- ggplot() +
-    geom_raster(data = fv_map_df, aes(x, y, fill = cv_fv)) +
-    labs(fill = 'CV(FV)')
-  
-  p <- finish_map(p, div = FALSE)
-  
-  ggsave(fv_fig_f, width = 6.5, height = 3, dpi = 300)
+### Plots of CHI stats vs. number of species
 
-}
-knitr::include_graphics(fv_fig_f)
+How do CHI stats vary as traits are randomized, relative to the number of species in a given pixel?
 
-```
-
-### Plots of functional diversity parameters vs. number of species
-
-How do functional diversity metrics (FV and number of FEs) vary as traits are randomized, relative to the number of species in a given pixel?
-
-```{r fv plots}
-fv_plot_df <- fd_df %>%
+```{r chi plots}
+chi_plot_df <- chi_df %>%
   filter(stat %in% c('mean', 'cv', 'diff')) %>%
-  filter(param == 'fv') %>%
   mutate(metric = paste(stat, param)) %>%
-  mutate(metric = str_replace(metric, 'fv', '(FV)'),
+  mutate(metric = str_replace(metric, 'chi', '(CHI)'),
          metric = str_replace(metric, 'mean ', 'mean'),
          metric = str_replace(metric, 'cv ', 'CV'),
          metric = str_replace(metric, 'diff ', 'Δ')) %>%
@@ -400,42 +362,15 @@ fv_plot_df <- fd_df %>%
                        t == 'wcol' ~ 'water column position')) %>%
   sample_frac(.1)
 
-p <- ggplot(fv_plot_df, aes(x = nspp, y = val)) +
+p <- ggplot(chi_plot_df, aes(x = nspp, y = val)) +
   geom_point(alpha = .2) +
   theme_ohara() +
   facet_grid(metric ~ t, scales = 'free_y') +
   labs(x = 'Species richness') +
   theme(axis.title.y = element_blank())
 
-ggsave('_figs/fv_stat_by_trait_scatter.png', width = 6, height = 3, dpi = 300)
+ggsave('_figs/chi_stat_by_trait_scatter.png', width = 6, height = 3, dpi = 300)
 
-knitr::include_graphics('_figs/fv_stat_by_trait_scatter.png')
-```
-
-```{r n_fe plots}
-fe_plot_df <- fd_df %>%
-  filter(stat %in% c('mean', 'cv', 'diff')) %>%
-  filter(param == 'n_fe') %>%
-  mutate(metric = paste(stat, param)) %>%
-  mutate(metric = str_replace(metric, 'n_fe', '(# FE)'),
-         metric = str_replace(metric, 'mean ', 'mean'),
-         metric = str_replace(metric, 'cv ', 'CV'),
-         metric = str_replace(metric, 'diff ', 'Δ')) %>%
-  mutate(t = case_when(t == 'len' ~ 'body length',
-                       t == 'mob' ~ 'adult mobility',
-                       t == 'trp' ~ 'trophic level',
-                       t == 'wcol' ~ 'water column position')) %>%
-  sample_frac(.1)
-
-p <- ggplot(fe_plot_df, aes(x = nspp, y = val)) +
-  geom_point(alpha = .2) +
-  theme_ohara() +
-  facet_grid(metric ~ t, scales = 'free_y') +
-  labs(x = 'Species richness') +
-  theme(axis.title.y = element_blank())
-
-ggsave('_figs/n_fe_stat_by_trait_scatter.png', width = 6, height = 3, dpi = 300)
-
-knitr::include_graphics('_figs/n_fe_stat_by_trait_scatter.png')
+knitr::include_graphics('_figs/chi_stat_by_trait_scatter.png')
 
 ```
