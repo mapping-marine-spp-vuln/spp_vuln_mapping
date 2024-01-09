@@ -18,7 +18,9 @@ output:
 
 ``` {r setup, echo = TRUE, message = FALSE, warning = FALSE}
 
-knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE,
+knitr::opts_chunk$set(echo = TRUE, 
+                      # message = FALSE, 
+                      warning = FALSE,
                       fig.height = 4, fig.width = 7)
 
 library(terra)
@@ -33,12 +35,12 @@ source(here('common_fxns.R'))
 
 Sensitivity analysis to determine how drastically scores change with different values of functional traits.  
 
-1.  Identify a set of sample cells for analysis (maybe 10,000? 100,000? what is analytically tractable?).  
+1.  Identify a set of sample cells for analysis (let's go with 100,000).  
     * For each cell, identify the species found in that location.
     * Determine spp richness, functional richness and vulnerability.  Spp richness will not change, but others probably will.
     * Determine FE-weighted mean impacts.  Spp-weighted will not change, but FE-weighted may change depending on how FV changes.
 2.  For each trait (max body length, trophic level, adult mobility, position in water column), for each sample cell:
-    * Shuffle all existing trait values (sample without replacement) - this keeps distribution identical
+    * Shuffle all existing trait values, sampling with replacement bootstrap-style - this keeps distribution largely identical but allows some variation
     
     
 ***NOTE***: SHUFFLE TRAIT VALUES ONLY THOSE FOUND WITHIN CELL, OR SHUFFLE ACROSS ALL SPECIES IN SPECIES SET?
@@ -47,8 +49,8 @@ Sensitivity analysis to determine how drastically scores change with different v
     * Calculate functional richness and vulnerability with randomized trait set.
     * Calculate impacts for each stressor based on new functional vulnerability, and cumulative impact.
 3.  Repeat step 2 many many times, Monte Carlo style.
-    * For each pixel, calculate distribution (incl std dev and skew):
-        * Distribution of FR and FV around "true" value
+    * For each pixel, calculate distribution (mean, std dev, 95% CI):
+        * Distribution of FR and FV around "true" value ("true" meaning scores based on determined trait set).
         * Distribution of impacts around "true" value 
         * Distribution of CHI around "true" value
 4.  Examine these distributions around the globe
@@ -79,11 +81,11 @@ cell_id_df <- as.data.frame(c(chi_r, sr_r, fr_r, fv_r, cell_id_r),
 
 ### Select sample of cells
 
-Choose 10,000 cells randomly and filter our full cell data.frame down to just these cells.
+Choose 100,000 cells randomly and filter our full cell data.frame down to just these cells.
 
 ``` {r select sample of cells}
 set.seed(42)
-n_cells <- 10000
+n_cells <- 100000
 cell_sample_df <- cell_id_df %>%
   sample_n(n_cells)
 
@@ -232,7 +234,7 @@ shuffle_trait <- function(df, trait, traits_df = spp_traits_df) {
     oharac::dt_join(traits_df, by = 'species', type = 'left') %>%
     rename(tmp := all_of(trait)) %>%
     group_by(cell_id) %>%
-    mutate(tmp = sample(tmp, size = n(), replace = FALSE)) %>%
+    mutate(tmp = sample(tmp, size = n(), replace = TRUE)) %>%
     ungroup() %>%
     rename(!!trait := tmp)
   
@@ -306,10 +308,10 @@ drop_missing_iters <- function(tmp_fs) {
   unlink(iters_problem)
 }
 
-bind_tmp_fs <- function(tmp_fs) {
+bind_tmp_fs <- function(tmp_fs, n) {
   message('Checking temp files and binding...')
   ### error checks... any files missing?
-  if(length(tmp_fs) < n_sims) stop('Missing some files!')
+  if(length(tmp_fs) < n) stop('Missing some files!')
   ### error checks... any files with dropped cells?
   result_df <- parallel::mclapply(tmp_fs, fread, mc.cores = 20) %>%
     setNames(tmp_fs) %>%
@@ -336,7 +338,7 @@ trait_vec <- c('len', 'mob', 'trp', 'wcol')
 out_fstem <- here_anx('sens_analysis/funct_div_summary/fd_summary_shuffle_%s.csv')
 
 for(i in seq_along(trait_vec)) {
-  # i <- 4
+  # i <- 1
   tr <- trait_vec[i]
   out_f <- sprintf(out_fstem, tr)
   
@@ -354,6 +356,7 @@ for(i in seq_along(trait_vec)) {
         if(file.exists(tmp_out_f)) return(NULL)
         
         ### set a different determinate seed each iteration/trait combo
+        ### this ensures repeatability if needing to re-run any iteration/trait set
         rnd_seed <- (i + n_sims * j) * 42
         set.seed(rnd_seed)
         if(j %% 20 == 0 | runif(1) < .1) {
@@ -374,7 +377,7 @@ for(i in seq_along(trait_vec)) {
                          pattern = sprintf('tmp_fd_summary_shuffle_%s', tr),
                          full.names = TRUE)
     
-    fd_result_df <- bind_tmp_fs(tmp_fs) ### includes error checks
+    fd_result_df <- bind_tmp_fs(tmp_fs, n = n_sims) ### includes error checks
     
     fd_result_summary <- fd_result_df %>%
       summarize_fd_stats() %>%
@@ -408,6 +411,8 @@ When randomizing any of the traits, functional richness and vulnerability both s
 Shuffle within cells, rather than across entire species set.  Write out as summary data frame; if data frame exists, don't re-run it all!
 
 Note: Because these are scalar multipliers, we can calculate the distribution summary stats of vulnerability across multiple iterations and simply multiply by the stressor intensity, rather than multiplying by stressor intensity for each iteration.
+
+Because of the processing demands, let's just do 200 sims of each of these.  This should still give us a reasonable estimate of 95% confidence intervals.
 
 ```{r define functions for vuln and intensity}
 get_spp_vuln_df <- function(str, str_vuln = str_vuln_lookup, spp = spp_info) {
@@ -461,15 +466,16 @@ calc_mean_impact <- function(df, str, int_cells = str_cell_df, imp_cells = imp_c
 
 ```{r calc impacts for unif exp stressors}
 out_fstem <- here_anx('sens_analysis/impact_summary/impact_shuffle_%s_%s.csv')
+n_sims_imp <- 200
 
 ### Loop over traits to be shuffled
 for(i in seq_along(trait_vec)) {
-  # i <- 4
+  # i <- 1
   tr <- trait_vec[i]
   
   ### loop over stressors to be calculated
   for(j in seq_along(strs_unif)) {
-    # j <- 5
+    # j <- 10
     str <- strs_unif[j]
     
     out_f <- sprintf(out_fstem, tr, str)
@@ -486,14 +492,14 @@ for(i in seq_along(trait_vec)) {
       
       ### Loop over simulations
       zxcv <- parallel::mclapply(
-        1:n_sims, mc.cores = 10,
+        1:n_sims_imp, mc.cores = 10,
         FUN = function(k) {
-          # k <- 815
+          # k <- 200
           tmp_out_f <- sprintf(tmp_out_fstem, tr, str, k)
           if(file.exists(tmp_out_f)) return('ok')
           
           ### set a different determinate seed each iteration/trait combo
-          rnd_seed <- (i + n_sims * k) * 42
+          rnd_seed <- (i + n_sims_imp * k) * 42
           set.seed(rnd_seed)
           if(k %% 20 == 0 | runif(1) < .1) {
             message('Random seed for ', tr, ', str ', str, 
@@ -504,7 +510,7 @@ for(i in seq_along(trait_vec)) {
           spp_fe_cells <- spp_cells_sample_df %>%
             shuffle_trait(trait = tr)
           system.time({
-          spp_fe_vuln_cells <- calc_cell_vuln(spp_fe_cells, spp_vuln_df)
+            spp_fe_vuln_cells <- calc_cell_vuln(spp_fe_cells, spp_vuln_df)
           })
           
           write_csv(spp_fe_vuln_cells, tmp_out_f)
@@ -517,14 +523,14 @@ for(i in seq_along(trait_vec)) {
                            full.names = TRUE)
       ### drop_missing_iters(tmp_fs)
 
-      str_impact_tmp_df <- bind_tmp_fs(tmp_fs) ### includes error checks
+      str_impact_tmp_df <- bind_tmp_fs(tmp_fs, n = n_sims_imp) ### includes error checks
       
       str_impact_result_df <- str_impact_tmp_df %>%
         calc_mean_impact(str) %>%
         select(cell_id, contains('imp'))
       write_csv(str_impact_result_df, out_f)
       
-      ### delete temp files once full file is complete - NO! if we
+      ### delete temp files once full file is complete? - NO! if we
       ### keep all sims, and since we're using the same seeds for the 
       ### trait shuffling, impact results should be comparable across sims
       ### i.e., add up all impacts for sim #3 to get CHI for sim #3
@@ -542,8 +548,6 @@ for(i in seq_along(trait_vec)) {
 This is close to the uniform-exposure stressors, except that some species are exposed to benthic, some to pelagic, and some to both.  Here, grab bycatch stressor maps for pelagic and benthic, and smash into a dataframe.  Calculate impacts per species per cell directly, rather than a full-cell vulnerability.
 
 ```{r gather bycatch stressor maps}
-out_fstem <- here_anx('sens_analysis/impact_summary/impact_shuffle_%s_%s.csv')
-
 out_fs <- list.files(out_fstem, pattern = 'bycatch', full.names = TRUE)
 
 if(length(out_fs) < length(trait_vec)) {
@@ -580,7 +584,7 @@ if(length(out_fs) < length(trait_vec)) {
 
 ### Loop over traits to be shuffled
 for(i in seq_along(trait_vec)) {
-  # i <- 1
+  # i <- 2
   tr <- trait_vec[i]
   
   str <- 'bycatch'
@@ -597,16 +601,26 @@ for(i in seq_along(trait_vec)) {
     ### load vulnerability df for this loop (stressor)
     spp_vuln_df <- get_spp_vuln_df(str = str)
     
+    ### identify completed files
+    tmp_fs <- list.files(dirname(tmp_out_fstem), 
+                     pattern = sprintf('tmp_nonunif_exp_summary_shuffle_%s_%s', tr, str),
+                     full.names = TRUE)
+     if(length(tmp_fs) > 0) {
+      tmp_done <- basename(tmp_fs) %>% str_extract('[0-9]+') %>% as.numeric()
+      tmp_vec <- (1:n_sims_imp)[-tmp_done]
+    } else tmp_vec <- 1:n_sims_imp
+    message('Iterating bycatch over ', length(tmp_vec), ' iterations...')
+
     ### Loop over simulations
     zxcv <- parallel::mclapply(
-      1:n_sims, mc.cores = 10,
+      tmp_vec, mc.cores = 6,
       FUN = function(k) {
-        # k <- 2
+        # k <- tmp_vec[1]
         tmp_out_f <- sprintf(tmp_out_fstem, tr, str, k)
         if(file.exists(tmp_out_f)) return('ok')
         
         ### set a different determinate seed each iteration/trait combo
-        rnd_seed <- (i + n_sims * k) * 42
+        rnd_seed <- (i + n_sims_imp * k) * 42
         set.seed(rnd_seed)
         if(k %% 20 == 0 | runif(1) < .1) {
           message('Random seed for ', tr, ', str ', str, 
@@ -614,24 +628,28 @@ for(i in seq_along(trait_vec)) {
         } 
         
         ### attach stressor vulnerability and impact and summarize to mean per cell
-        spp_fe_cells <- spp_cells_sample_df %>%
-          shuffle_trait(trait = tr)
+        system.time({
+          spp_fe_cells <- spp_cells_sample_df %>%
+            shuffle_trait(trait = tr)
+        }) ### 40 sec
         
-        spp_fe_imp_cells <- spp_fe_cells %>%
-          oharac::dt_join(spp_vuln_df, by = 'species', type = 'left') %>%
-          oharac::dt_join(spp_bycatch_str, by = c('species', 'cell_id'), type = 'left') %>%
-          as.data.table() %>%
-          ### fill zero catch cells
-          .[ , bycatch := ifelse(is.na(bycatch), 0, bycatch)] %>%
-          ### calc impact as product of pressure and vuln
-          .[ , imp := bycatch * v_score] %>%
-          ### calc mean impact across FE per cell
-          .[ , .(cell_imp = mean(imp),
-                 fv = calc_fe(length(unique(species)))),
-             by = .(cell_id, fe_id)] %>%
-          ### calc FV-weighted mean across all FEs in cell
-          .[ , .(imp_mean = sum(cell_imp * fv) / sum(fv)),
-             by = cell_id]
+        system.time({
+          spp_fe_imp_cells <- spp_fe_cells %>%
+            oharac::dt_join(spp_vuln_df, by = 'species', type = 'left') %>%
+            oharac::dt_join(spp_bycatch_str, by = c('species', 'cell_id'), type = 'left') %>%
+            as.data.table() %>%
+            ### fill zero catch cells
+            .[ , bycatch := ifelse(is.na(bycatch), 0, bycatch)] %>%
+            ### calc impact as product of pressure and vuln
+            .[ , imp := bycatch * v_score] %>%
+            ### calc mean impact across FE per cell
+            .[ , .(cell_imp = mean(imp),
+                   fv = calc_fe(length(unique(species)))),
+               by = .(cell_id, fe_id)] %>%
+            ### calc FV-weighted mean across all FEs in cell
+            .[ , .(imp_mean = sum(cell_imp * fv) / sum(fv)),
+               by = cell_id]
+         }) ### join steps ~ 40 sec, summarize steps ~ 90 seconds: ~ 2 min
           
         write_csv(spp_fe_imp_cells, tmp_out_f)
         return(paste('Created', basename(tmp_out_f)))
@@ -646,7 +664,7 @@ for(i in seq_along(trait_vec)) {
     true_impact_df <- imp_cell_df %>%
       select(cell_id, impact = bycatch)
 
-    str_impact_tmp_df <- bind_tmp_fs(tmp_fs) ### includes error checks
+    str_impact_tmp_df <- bind_tmp_fs(tmp_fs, n = n_sims_imp) ### includes error checks
     
     str_impact_result_df <- str_impact_tmp_df %>%
       rename(imp_mean_sim = imp_mean) %>%
@@ -747,16 +765,25 @@ for(i in seq_along(trait_vec)) {
     ### load vulnerability df for this loop (stressor)
     spp_vuln_df <- get_spp_vuln_df(str = str)
     
+    ### identify completed files
+    tmp_fs <- list.files(dirname(tmp_out_fstem), 
+                     pattern = sprintf('tmp_nonunif_exp_summary_shuffle_%s_%s', tr, str),
+                     full.names = TRUE)
+    if(length(tmp_fs) > 0) {
+      tmp_done <- basename(tmp_fs) %>% str_extract('[0-9]+') %>% as.numeric()
+      tmp_vec <- (1:n_sims_imp)[-tmp_done]
+    } else tmp_vec <- 1:n_sims_imp
+
     ### Loop over simulations
     zxcv <- parallel::mclapply(
-      1:n_sims, mc.cores = 11,
+      tmp_vec, mc.cores = 6,
       FUN = function(k) {
         # k <- 2
         tmp_out_f <- sprintf(tmp_out_fstem, tr, str, k)
         if(file.exists(tmp_out_f)) return('ok')
         
         ### set a different determinate seed each iteration/trait combo
-        rnd_seed <- (i + n_sims * k) * 42
+        rnd_seed <- (i + n_sims_imp * k) * 42
         set.seed(rnd_seed)
         if(k %% 20 == 0 | runif(1) < .1) {
           message('Random seed for ', tr, ', str ', str, 
@@ -794,7 +821,7 @@ for(i in seq_along(trait_vec)) {
     true_impact_df <- imp_cell_df %>%
       select(cell_id, impact = sst_rise)
 
-    str_impact_tmp_df <- bind_tmp_fs(tmp_fs) ### includes error checks
+    str_impact_tmp_df <- bind_tmp_fs(tmp_fs, n = n_sims_imp) ### includes error checks
     
     str_impact_result_df <- str_impact_tmp_df %>%
       rename(imp_mean_sim = imp_mean) %>%
@@ -873,16 +900,25 @@ for(i in seq_along(trait_vec)) {
     ### load vulnerability df for this loop (stressor)
     spp_vuln_df <- get_spp_vuln_df(str = str)
     
+    ### identify completed files
+    tmp_fs <- list.files(dirname(tmp_out_fstem), 
+                     pattern = sprintf('tmp_nonunif_exp_summary_shuffle_%s_%s', tr, str),
+                     full.names = TRUE)
+    if(length(tmp_fs) > 0) {
+      tmp_done <- basename(tmp_fs) %>% str_extract('[0-9]+') %>% as.numeric()
+      tmp_vec <- (1:n_sims_imp)[-tmp_done]
+    } else tmp_vec <- 1:n_sims_imp
+
     ### Loop over simulations
     zxcv <- parallel::mclapply(
-      1:n_sims, mc.cores = 10,
+      tmp_vec, mc.cores = 6,
       FUN = function(k) {
         # k <- 2
         tmp_out_f <- sprintf(tmp_out_fstem, tr, str, k)
         if(file.exists(tmp_out_f)) return('ok')
         
         ### set a different determinate seed each iteration/trait combo
-        rnd_seed <- (i + n_sims * k) * 42
+        rnd_seed <- (i + n_sims_imp * k) * 42
         set.seed(rnd_seed)
         if(k %% 20 == 0) message('Random seed for ', tr, ', str ', str, 
                                  ': iter ', k, ' = ', rnd_seed)
@@ -922,7 +958,7 @@ for(i in seq_along(trait_vec)) {
     true_impact_df <- imp_cell_df %>%
       select(cell_id, impact = biomass_removal)
 
-    str_impact_tmp_df <- bind_tmp_fs(tmp_fs) ### includes error checks
+    str_impact_tmp_df <- bind_tmp_fs(tmp_fs, n = n_sims_imp) ### includes error checks
     
     str_impact_result_df <- str_impact_tmp_df %>%
       rename(imp_mean_sim = imp_mean) %>%

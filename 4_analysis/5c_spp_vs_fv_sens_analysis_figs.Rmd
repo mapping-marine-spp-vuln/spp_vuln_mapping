@@ -1,0 +1,259 @@
+---
+title: 'Sensitivity analysis: CHI calclulated from species vs FV approach'
+author: "*Compiled on `r date()` by `r Sys.info()['user']`*"
+output: 
+  html_document:
+    code_folding: hide
+    toc: true
+    toc_depth: 3
+    toc_float: yes
+    number_sections: true
+    theme: cerulean
+    highlight: haddock
+    includes: 
+      in_header: '~/github/src/templates/ohara_hdr.html'
+  pdf_document:
+    toc: true
+---
+
+``` {r setup, echo = TRUE, message = FALSE, warning = FALSE}
+
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE,
+                      fig.height = 4, fig.width = 7)
+
+library(terra)
+library(sf)
+library(oharac)
+library(data.table)
+library(tidyverse)
+library(here)
+source(here('common_fxns.R'))
+```
+
+# Summary
+
+Sensitivity analysis to determine how drastically scores change with different values of functional traits.  
+
+In script 4a, we calculated sensitivity around functional diversity metrics and per-stressor impacts.  In 4b, we aggregate results across all stressors for each randomized iteration, to determine the distribution of mean values for cumulative impacts.  Here, we map them out and make cool figures.
+
+# Methods
+
+For each randomized species set, plot the variation in CHI for the sampled points, with a nearest-neighbor interpolation to help spot regional variation.  We will examine several stats: absolute and relative difference, relative 95% confidence interval (CI divided by mean), coefficient of variance (std dev divided by mean).
+
+To determine statistical significance of differences between the two approaches, we will look at the 95% confidence interval around the *difference* in mean between the spp approach and the FE approach.
+
+```{r get cell id to xy}
+ocean_r <- rast(here('_spatial/ocean_area_mol.tif'))
+cell_xy <- ocean_r %>% 
+  setValues(1:ncell(.)) %>%
+  setNames('cell_id') %>%
+  as.data.frame(xy = TRUE)
+```
+
+```{r}
+land_sf <- read_sf(here('_spatial/ne_10m_land/ne_10m_land_no_casp.shp')) %>%
+  st_transform(st_crs(ocean_r))
+
+globe_bbox <- rbind(c(-180, -90), c(-180, 90), 
+                      c(180, 90), c(180, -90), c(-180, -90)) 
+globe_border <- st_polygon(list(globe_bbox)) %>%
+  st_sfc(crs = 4326) %>%
+  st_sf(data.frame(rgn = 'globe', geom = .)) %>%
+  smoothr::densify(max_distance = 0.5) %>%
+  st_transform(crs = crs(ocean_r))
+
+finish_map <- function(p, div = TRUE) {
+  ### div is whether the palette should be a diverging palette (TRUE) or
+  ### sequential (FALSE)
+
+  p <- p +
+    ### continents:
+    geom_sf(data = land_sf,
+            fill = 'grey96', color = 'grey40', 
+            size = .10) +
+    geom_sf(data = globe_border,
+            fill = NA, color = 'grey70', 
+            size = .1) +
+    scale_x_continuous(expand = c(0, 0)) +
+    scale_y_continuous(expand = c(0, 0)) +
+    theme_void()
+  
+  if(div) {
+    ### diverging palette
+    p <- p + 
+      scale_fill_gradient2(low = '#d01c8b', mid = '#ffffdf', high = '#4dac26')
+  } else {
+    ### sequential palette
+    p <- p + scale_fill_viridis_c()
+  }
+  
+  return(p)
+}
+```
+
+## Cumulative impact metrics
+
+### Maps of cumulative impact variation
+
+How does cumulative impact vary as species sets are randomized?
+
+```{r gather chi metrics}
+chi_f <- here_anx('spp_vs_fe_sensitivity_analysis/impact_summary', 'chi_shuffle_species.csv')
+
+chi_df <- fread(chi_f) %>%
+  mutate(diff_sig = diff_95lo * diff_95hi > 0) %>% 
+    ### if lo and hi are on opposite sides of zero, then not sig
+  select(cell_id, chi_mean_spp, chi_mean_fe, diff_sig) %>%
+  mutate(diff = chi_mean_spp - chi_mean_fe) %>%
+  left_join(cell_xy, by = 'cell_id')
+
+```
+
+
+```{r map difference in chi}
+chi_fig_f <- '_figs/chi_diff_by_species_map.png'
+
+if(!file.exists(chi_fig_f)) {
+  
+  diff_mtx <- chi_df %>%
+    select(x, y, z = diff) %>%
+    as.matrix()
+  sig_mtx <- chi_df %>%
+    select(x, y, z = diff_sig) %>%
+    as.matrix()
+  
+  diff_r <- interpNear(ocean_r, diff_mtx, radius = 500000) %>%
+    mask(ocean_r)
+  sig_r <- interpNear(ocean_r, sig_mtx, radius = 500000) %>%
+    mask(ocean_r)
+
+  sig_diff_map <- diff_r %>%
+    setNames('chi_diff_spp_fe')
+  sig_diff_map[sig_r == 0] <- NA
+
+  chi_diff_map_df <- as.data.frame(sig_diff_map, xy = TRUE)
+    
+  p <- ggplot() +
+    geom_raster(data = as.data.frame(ocean_r, xy = TRUE), aes(x, y), fill = 'grey70') +
+    geom_raster(data = chi_diff_map_df, aes(x, y, fill = chi_diff_spp_fe)) +
+    labs(fill = 'ΔCHI')
+  
+  p <- finish_map(p)
+  
+  ggsave(chi_fig_f, width = 6.5, height = 3, dpi = 300)
+  
+}
+knitr::include_graphics(chi_fig_f)
+
+```
+
+### Maps of non-climate cumulative impact variation
+
+How does cumulative impact vary as species sets are randomized?
+
+```{r gather noncc chi metrics}
+chi_f <- here_anx('spp_vs_fe_sensitivity_analysis/impact_summary', 'chi_noncc_shuffle_species.csv')
+
+chi_df <- fread(chi_f) %>%
+  mutate(diff_sig = diff_95lo * diff_95hi > 0) %>% 
+    ### if lo and hi are on opposite sides of zero, then not sig
+  select(cell_id, chi_mean_spp, chi_mean_fe, diff_sig) %>%
+  mutate(diff = chi_mean_spp - chi_mean_fe) %>%
+  left_join(cell_xy, by = 'cell_id')
+
+```
+
+
+```{r map difference in noncc chi}
+chi_fig_f <- '_figs/chi_noncc_diff_by_species_map.png'
+
+if(!file.exists(chi_fig_f)) {
+  
+  diff_mtx <- chi_df %>%
+    select(x, y, z = diff) %>%
+    as.matrix()
+  sig_mtx <- chi_df %>%
+    select(x, y, z = diff_sig) %>%
+    as.matrix()
+  
+  diff_r <- interpNear(ocean_r, diff_mtx, radius = 500000) %>%
+    mask(ocean_r)
+  sig_r <- interpNear(ocean_r, sig_mtx, radius = 500000) %>%
+    mask(ocean_r)
+
+  sig_diff_map <- diff_r %>%
+    setNames('chi_diff_spp_fe')
+  sig_diff_map[sig_r == 0] <- NA
+
+  chi_diff_map_df <- as.data.frame(sig_diff_map, xy = TRUE)
+    
+  p <- ggplot() +
+    geom_raster(data = as.data.frame(ocean_r, xy = TRUE), aes(x, y), fill = 'grey70') +
+    geom_raster(data = chi_diff_map_df, aes(x, y, fill = chi_diff_spp_fe)) +
+    labs(fill = 'ΔCHI')
+  
+  p <- finish_map(p)
+  
+  ggsave(chi_fig_f, width = 6.5, height = 3, dpi = 300)
+  
+}
+knitr::include_graphics(chi_fig_f)
+
+```
+
+
+
+### Maps of climate cumulative impact variation
+
+How does cumulative impact vary as species sets are randomized?
+
+```{r gather cc chi metrics}
+chi_f <- here_anx('spp_vs_fe_sensitivity_analysis/impact_summary', 'chi_cc_shuffle_species.csv')
+
+chi_df <- fread(chi_f) %>%
+  mutate(diff_sig = diff_95lo * diff_95hi > 0) %>% 
+    ### if lo and hi are on opposite sides of zero, then not sig
+  select(cell_id, chi_mean_spp, chi_mean_fe, diff_sig) %>%
+  mutate(diff = chi_mean_spp - chi_mean_fe) %>%
+  left_join(cell_xy, by = 'cell_id')
+
+```
+
+
+```{r map difference in cc chi}
+chi_fig_f <- '_figs/chi_cc_diff_by_species_map.png'
+
+if(!file.exists(chi_fig_f)) {
+  
+  diff_mtx <- chi_df %>%
+    select(x, y, z = diff) %>%
+    as.matrix()
+  sig_mtx <- chi_df %>%
+    select(x, y, z = diff_sig) %>%
+    as.matrix()
+  
+  diff_r <- interpNear(ocean_r, diff_mtx, radius = 500000) %>%
+    mask(ocean_r)
+  sig_r <- interpNear(ocean_r, sig_mtx, radius = 500000) %>%
+    mask(ocean_r)
+
+  sig_diff_map <- diff_r %>%
+    setNames('chi_diff_spp_fe')
+  sig_diff_map[sig_r == 0] <- NA
+
+  chi_diff_map_df <- as.data.frame(sig_diff_map, xy = TRUE)
+    
+  p <- ggplot() +
+    geom_raster(data = as.data.frame(ocean_r, xy = TRUE), aes(x, y), fill = 'grey70') +
+    geom_raster(data = chi_diff_map_df, aes(x, y, fill = chi_diff_spp_fe)) +
+    labs(fill = 'ΔCHI')
+  
+  p <- finish_map(p)
+  
+  ggsave(chi_fig_f, width = 6.5, height = 3, dpi = 300)
+  
+}
+knitr::include_graphics(chi_fig_f)
+
+```
+

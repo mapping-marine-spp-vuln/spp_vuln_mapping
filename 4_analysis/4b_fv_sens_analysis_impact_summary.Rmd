@@ -86,7 +86,7 @@ get_impacts <- function(f) {
   } else {
     str_df <- str_cell_df %>%
       filter(stressor == s)
-    if(nrow(str_df) < 10000) stop('no rows for ', s)
+    if(nrow(str_df) < 100000) stop('missing rows for ', s)
     df <- fread(f) %>%
       oharac::dt_join(str_df, by = 'cell_id', type = 'inner') %>%
       mutate(imp_mean = cell_vuln * intensity) %>%
@@ -118,8 +118,6 @@ calc_iter_chi <- function(i, t, tmp_df) {
 
 
 ```{r}
-trait_vec <- c('len', 'mob', 'trp', 'wcol')
-n_sims <- 1000
 
 chi_out_fstem <- here_anx('sens_analysis/impact_summary/chi_shuffle_%s.csv')
 
@@ -127,7 +125,10 @@ tmp_fs <- list.files(here_anx('sens_analysis/impact_summary/tmp'), full.names = 
 tmp_df <- data.frame(f = tmp_fs) %>%
   mutate(iter  = str_extract(basename(f), '[0-9]+') %>% as.numeric(),
          str   = str_remove_all(basename(f), '.+_shuffle_[a-z]+_|_[0-9].+'),
-         trait = str_extract(basename(f), smash2or(trait_vec)))
+         trait = str_extract(basename(f), '(?<=shuffle_)[a-z]+(?=_)'))
+
+n_sims <- max(tmp_df$iter)
+trait_vec <- unique(tmp_df$trait)
 
 for(t in trait_vec) {
   ### t <- trait_vec[1]
@@ -136,9 +137,8 @@ for(t in trait_vec) {
   
   if(!file.exists(chi_out_f)) {
     message('Summarizing CHI for trait ', t, '...')
-    
 
-    cell_chi_df <- lapply(1:20, 
+    cell_chi_df <- lapply(1:n_sims, 
                           FUN = calc_iter_chi, 
                           tmp_df = tmp_df, t = t) %>%
       rbindlist()
@@ -148,7 +148,8 @@ for(t in trait_vec) {
       .[ , .(chi_mean = mean(chi),
              chi_sdev = sd(chi),
              chi_95lo = quantile(chi, .025),
-             chi_95hi = quantile(chi, .975)),
+             chi_95hi = quantile(chi, .975),
+             n_iters = length(chi)),
          by = cell_id]
       
     write_csv(cell_chi_summary, chi_out_f)
