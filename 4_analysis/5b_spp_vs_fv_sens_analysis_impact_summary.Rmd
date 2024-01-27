@@ -117,7 +117,7 @@ calc_iter_chi <- function(i, tmp_df) {
 }
 ```
 
-## Summarize impacts: CHI, non-CC, CC
+## Summarize impacts: CHI, non-CC, CC, and per stressor
 
 ```{r all impacts}
 
@@ -214,3 +214,42 @@ if(!file.exists(chi_cc_out_f)) {
 
 ```
 
+```{r per-stressor impacts}
+
+impact_out_fstem <- here_anx('spp_vs_fe_sensitivity_analysis/impact_summary/impact_%s_shuffle_species.csv')
+
+strs <- tmp_df$str %>% unique()
+
+for(s in strs) {
+  # s <- strs[1]
+  str_tmp_df <- tmp_df %>%
+    filter(str == s)
+
+  impact_out_f <- sprintf(impact_out_fstem, s)
+  if(!file.exists(impact_out_f)) {
+    cell_imp_df <- lapply(1:n_sims, 
+                          FUN = calc_iter_chi, 
+                          tmp_df = str_tmp_df) %>%
+      rbindlist() %>%
+      setNames(str_replace(names(.), 'chi', 'impact')) %>%
+      mutate(spp_fe_diff = impact_spp - impact_fe)
+    
+    cell_impact_summary <- cell_imp_df %>%
+      as.data.table() %>%
+      .[ , .(impact_mean_spp = mean(impact_spp),
+             impact_sdev_spp = sd(impact_spp),
+             impact_mean_fe = mean(impact_fe),
+             impact_sdev_fe = sd(impact_fe),
+             diff_95lo = quantile(spp_fe_diff, .025),
+             diff_95hi = quantile(spp_fe_diff, .975),
+             n_iters = length(impact_spp)),
+         by = cell_id]
+      
+    write_csv(cell_impact_summary, impact_out_f)
+  }
+}
+
+
+
+
+```

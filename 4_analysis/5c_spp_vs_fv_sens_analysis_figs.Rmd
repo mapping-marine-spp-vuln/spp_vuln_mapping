@@ -1,5 +1,5 @@
 ---
-title: 'Sensitivity analysis: CHI calclulated from species vs FV approach'
+title: 'Sensitivity analysis: CHI calculated from species vs FV approach'
 author: "*Compiled on `r date()` by `r Sys.info()['user']`*"
 output: 
   html_document:
@@ -254,6 +254,245 @@ if(!file.exists(chi_fig_f)) {
   
 }
 knitr::include_graphics(chi_fig_f)
+
+```
+
+### Maps of variation in impact from individual stressors
+
+How does per-stressor impact vary as species sets are randomized?
+
+```{r gather individual impact metrics}
+impact_fs <- list.files(here_anx('spp_vs_fe_sensitivity_analysis/impact_summary'),
+                        pattern = 'impact_.+_shuffle_species.csv',
+                        full.names = TRUE)
+str_vec <- impact_fs %>%
+  basename() %>%
+  str_remove_all('impact_|_shuffle.+')
+
+names(impact_fs) <- str_vec
+
+for(s in str_vec) {
+  # s <- str_vec[1]
+  impact_fig_f <- sprintf('_figs/impact_%s_diff_by_species_map.png', s)
+  
+  if(!file.exists(impact_fig_f)) {
+  
+    impact_df <- fread(impact_fs[s]) %>%
+      mutate(diff_sig = diff_95lo * diff_95hi > 0) %>% 
+        ### if lo and hi are on opposite sides of zero, then not sig
+      select(cell_id, impact_mean_spp, impact_mean_fe, diff_sig) %>%
+      mutate(diff = impact_mean_spp - impact_mean_fe) %>%
+      left_join(cell_xy, by = 'cell_id')
+  
+    
+    diff_mtx <- impact_df %>%
+      select(x, y, z = diff) %>%
+      as.matrix()
+    sig_mtx <- impact_df %>%
+      select(x, y, z = diff_sig) %>%
+      as.matrix()
+    
+    diff_r <- interpNear(ocean_r, diff_mtx, radius = 500000) %>%
+      mask(ocean_r)
+    sig_r <- interpNear(ocean_r, sig_mtx, radius = 500000) %>%
+      mask(ocean_r)
+  
+    sig_diff_map <- diff_r %>%
+      setNames('impact_diff_spp_fe')
+    sig_diff_map[sig_r == 0] <- NA
+  
+    impact_diff_map_df <- as.data.frame(sig_diff_map, xy = TRUE)
+      
+    p <- ggplot() +
+      geom_raster(data = as.data.frame(ocean_r, xy = TRUE), aes(x, y), fill = 'grey70') +
+      geom_raster(data = impact_diff_map_df, aes(x, y, fill = impact_diff_spp_fe)) +
+      labs(fill = 'ΔCHI')
+    
+    p <- finish_map(p) +
+      labs(title = s)
+    
+    ggsave(impact_fig_f, width = 6.5, height = 3, dpi = 300)
+    
+  }
+ 
+  knitr::include_graphics(impact_fig_f)
+}
+
+```
+
+
+
+### Maps of variation in impact from individual stressors
+
+How many stressors have significant differences between FV and spp as species sets are randomized?  AND - do we want to just focus on areas where FV is significantly GREATER?
+
+```{r make map of signif higher stressors by count}
+
+str_sig_count_f <- 'fe_vs_spp_sig_higher_n_stressors.tif'
+
+if(!file.exists(str_sig_count_f)) {
+  impact_fs <- list.files(here_anx('spp_vs_fe_sensitivity_analysis/impact_summary'),
+                          pattern = 'impact_.+_shuffle_species.csv',
+                          full.names = TRUE)
+  str_vec <- impact_fs %>%
+    basename() %>%
+    str_remove_all('impact_|_shuffle.+')
+  
+  names(impact_fs) <- str_vec
+  
+  lyrs_out <- vector('list', length = length(str_vec)) %>%
+    setNames(str_vec)
+  
+  for(s in str_vec) {
+    # s <- str_vec[1]
+
+    impact_df <- fread(impact_fs[s]) %>%
+      mutate(diff_sig = diff_95lo * diff_95hi > 0) %>% 
+        ### if lo and hi are on opposite sides of zero, then not sig
+      select(cell_id, impact_mean_spp, impact_mean_fe, diff_sig) %>%
+      mutate(diff = impact_mean_spp - impact_mean_fe) %>%
+      left_join(cell_xy, by = 'cell_id')
+  
+    
+    diff_mtx <- impact_df %>%
+      select(x, y, z = diff) %>%
+      as.matrix()
+    sig_mtx <- impact_df %>%
+      select(x, y, z = diff_sig) %>%
+      as.matrix()
+    
+    diff_r <- interpNear(ocean_r, diff_mtx, radius = 500000) %>%
+      mask(ocean_r)
+    sig_r <- interpNear(ocean_r, sig_mtx, radius = 500000) %>%
+      mask(ocean_r)
+  
+    sig_diff_map <- diff_r %>%
+      setNames(s)
+    sig_diff_map[sig_r == 0] <- NA
+    sig_diff_map[sig_diff_map < 0] <- NA
+    
+    ### normalize to sig vs. not sig diff
+    sig_diff_out <- sig_diff_map / sig_diff_map
+      
+    lyrs_out[s] <- sig_diff_out
+  }
+   
+  summed_sig_diff <- sum(rast(lyrs_out), na.rm = TRUE)
+  writeRaster(summed_sig_diff, str_sig_count_f, overwrite = TRUE)
+  
+}
+
+summed_sig_diff_df <- rast(str_sig_count_f) %>%
+  as.data.frame(xy = TRUE)
+  
+p <- ggplot() +
+  geom_raster(data = as.data.frame(ocean_r, xy = TRUE), aes(x, y), fill = 'grey70') +
+  geom_raster(data = summed_sig_diff_df, aes(x, y, fill = as.character(sum))) +
+  labs(fill = '# of stressors')
+
+p <- p +     
+  ### continents:
+  geom_sf(data = land_sf,
+          fill = 'grey96', color = 'grey40', 
+          size = .10) +
+  geom_sf(data = globe_border,
+          fill = NA, color = 'grey70', 
+          size = .1) +
+  scale_x_continuous(expand = c(0, 0)) +
+  scale_y_continuous(expand = c(0, 0)) +
+  scale_fill_viridis_d() +
+  theme_void()
+
+
+ggsave(plot = p, filename = '_figs/summed_sig_higher_stressors.png', width = 6.5, height = 3, dpi = 300)
+
+knitr::include_graphics('_figs/summed_sig_higher_stressors.png')
+
+```
+
+...or where FE CHI is significantly LOWER?
+
+```{r make map of signif lower stressors by count}
+
+str_sig_count_f <- 'fe_vs_spp_sig_lower_n_stressors.tif'
+
+if(!file.exists(str_sig_count_f)) {
+  impact_fs <- list.files(here_anx('spp_vs_fe_sensitivity_analysis/impact_summary'),
+                          pattern = 'impact_.+_shuffle_species.csv',
+                          full.names = TRUE)
+  str_vec <- impact_fs %>%
+    basename() %>%
+    str_remove_all('impact_|_shuffle.+')
+  
+  names(impact_fs) <- str_vec
+  
+  lyrs_out <- vector('list', length = length(str_vec)) %>%
+    setNames(str_vec)
+  
+  for(s in str_vec) {
+    # s <- str_vec[1]
+
+    impact_df <- fread(impact_fs[s]) %>%
+      mutate(diff_sig = diff_95lo * diff_95hi > 0) %>% 
+        ### if lo and hi are on opposite sides of zero, then not sig
+      select(cell_id, impact_mean_spp, impact_mean_fe, diff_sig) %>%
+      mutate(diff = impact_mean_spp - impact_mean_fe) %>%
+      left_join(cell_xy, by = 'cell_id')
+  
+    
+    diff_mtx <- impact_df %>%
+      select(x, y, z = diff) %>%
+      as.matrix()
+    sig_mtx <- impact_df %>%
+      select(x, y, z = diff_sig) %>%
+      as.matrix()
+    
+    diff_r <- interpNear(ocean_r, diff_mtx, radius = 500000) %>%
+      mask(ocean_r)
+    sig_r <- interpNear(ocean_r, sig_mtx, radius = 500000) %>%
+      mask(ocean_r)
+  
+    sig_diff_map <- diff_r %>%
+      setNames(s)
+    sig_diff_map[sig_r == 0] <- NA
+    sig_diff_map[sig_diff_map > 0] <- NA
+    
+    ### normalize to sig vs. not sig diff
+    sig_diff_out <- sig_diff_map / sig_diff_map
+      
+    lyrs_out[s] <- sig_diff_out
+  }
+   
+  summed_sig_diff <- sum(rast(lyrs_out), na.rm = TRUE)
+  writeRaster(summed_sig_diff, str_sig_count_f, overwrite = TRUE)
+  
+}
+
+summed_sig_diff_df <- rast(str_sig_count_f) %>%
+  as.data.frame(xy = TRUE)
+  
+p <- ggplot() +
+  geom_raster(data = as.data.frame(ocean_r, xy = TRUE), aes(x, y), fill = 'grey70') +
+  geom_raster(data = summed_sig_diff_df, aes(x, y, fill = as.character(sum))) +
+  labs(fill = '# of stressors')
+
+p <- p +     
+  ### continents:
+  geom_sf(data = land_sf,
+          fill = 'grey96', color = 'grey40', 
+          size = .10) +
+  geom_sf(data = globe_border,
+          fill = NA, color = 'grey70', 
+          size = .1) +
+  scale_x_continuous(expand = c(0, 0)) +
+  scale_y_continuous(expand = c(0, 0)) +
+  scale_fill_viridis_d() +
+  theme_void()
+
+
+ggsave(plot = p, filename = '_figs/summed_sig_lower_stressors.png', width = 6.5, height = 3, dpi = 300)
+
+knitr::include_graphics('_figs/summed_sig_lower_stressors.png')
 
 ```
 
