@@ -49,8 +49,9 @@ if(!file.exists(spp_imp_sum_file)) { ### unlink(spp_imp_sum_file)
     mutate(name = ifelse(src == 'am', str_replace_all(species, ' ', '_'), iucn_sid),
            f = sprintf('impacts_%s_%s.csv', src, name)) %>%
     group_by(species) %>%
-    filter(all(src == 'am') | src == 'iucn') %>%
-      ### if all sources are AquaMaps, keep those; if any IUCN, keep only those
+    filter(src == 'am' | all(src == 'iucn')) %>%
+      ### if any sources are AquaMaps, keep that; if all IUCN, keep those
+      ### but honestly this probably does nothing lol
     ungroup()
   
   spp_imp_fs <- list.files(here_anx('impacts_by_species'), 
@@ -442,10 +443,10 @@ fig1 <- ggdraw() +
              size = 9, fontfamily = 'Helvetica', fontface = 'bold')
 
 
-fig1_file <- here('5_ms_figs/fig1_taxon_impact_summaries.png')
-ggsave(fig1_file, width = 12, height = 5, units = 'cm', dpi = 300)
-
-knitr::include_graphics(fig1_file)
+# fig1_file <- here('5_ms_figs/fig1_taxon_impact_summaries.png')
+# ggsave(fig1_file, width = 12, height = 5, units = 'cm', dpi = 300)
+# 
+# knitr::include_graphics(fig1_file)
 
 fig1_fourpanel <- ggdraw() +
   draw_plot(fig1, x = 0, y = .5, height = .5, width = 1) +
