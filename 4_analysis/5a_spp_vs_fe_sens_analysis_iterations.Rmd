@@ -31,7 +31,7 @@ source(here('common_fxns.R'))
 
 # Summary
 
-Sensitivity analysis to determine how drastically scores change with different resamples of species assemblages  
+Sensitivity analysis to determine how drastically scores change with different resamples of species assemblages
 
 1.  Identify a set of sample cells for analysis (use the same 100,000 used in script 4a).  
     * For each cell, identify the species found in that location, and their functional entities as determined by the regular set of traits (not varying traits as in the sensitivity analysis).
@@ -40,11 +40,8 @@ Sensitivity analysis to determine how drastically scores change with different r
     * calculate species-average CHI for this resample
     * calculate functional entity averages, and then average across FEs using FV weighting.
 3.  Repeat step 2 many many times, Monte Carlo style - 1000 times should be good.
-    * For each pixel, calculate distribution (incl std dev):
-        * Distribution of spp-mean and FE-mean CHI
-4.  Examine these distributions around the globe
-    * Map summary stats; interpolate to see any global gradients vs. random?
-    * Plot summary stats vs. spp richness and/or latitude
+    * For each pixel, calculate distribution (incl std dev) of spp-mean and FE-mean CHI
+    * Write out each iteration as its own file for later aggregating and calculating confidence intervals
 
 # Methods
 

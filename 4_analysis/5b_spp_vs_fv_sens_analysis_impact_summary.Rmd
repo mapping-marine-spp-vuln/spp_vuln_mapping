@@ -35,6 +35,8 @@ Sensitivity analysis to determine how drastically scores change when remixing sp
 
 In script 5a, we calculated sensitivity around species communities and per-stressor impacts.  In this script, we aggregate results across all stressors for each randomized iteration, to determine the distribution of mean values for cumulative impacts.
 
+For each cell, across all iterations, we calculate a difference between the FE approach and spp approach, and then identify the 97.5% and 2.5% values across all iterations to calculate a confidence interval.  Note that for the difference calculation, a positive value indicates that the FE approach estimated a HIGHER impact than the SPP approach.
+
 # Methods
 
 For each randomized species set, collect iterations across all stressors and calculate cumulative impact for each iteration.  Because each iteration used the same seed for the pseudorandom number generator, the randomized species set should be identical across all stressors.  This allows us to simply add all stressors cell-by-cell for a given iteration to determine the cumulative impact.
@@ -42,13 +44,11 @@ For each randomized species set, collect iterations across all stressors and cal
 Unfortunately, the tmp impact files for uniform-exposure stressors look like they're actually just vulnerability scores (impacts were calculated after).  So, for those stressors, bind with stressor intensity and convert to impacts... :/
 
 ```{r load stressor intensities}
+cell_id_r <- rast(here('_output/cumulative_impact_maps/chi_funct_entity.tif')) %>%
+  setValues(1:ncell(.)) %>% setNames('cell_id')
+
 stressor_intensity_f <- here_anx('sens_analysis/sample_str_intensity.csv')
 if(!file.exists(stressor_intensity_f)) {
-  cell_id_vec <- fread(here_anx('sens_analysis/spp_cells_to_id.csv')) %>%
-    .$cell_id %>% unique() %>% sort()
-  
-  cell_id_r <- rast(here('_output/cumulative_impact_maps/chi_funct_entity.tif')) %>%
-    setValues(1:ncell(.)) %>% setNames('cell_id')
   
   str_vuln_lookup <- read_csv(here('_raw/stressor_vulnerability_lookup.csv'), 
                               show_col_types = FALSE)
@@ -73,6 +73,15 @@ if(!file.exists(stressor_intensity_f)) {
 
 str_cell_df <- read_csv(stressor_intensity_f)
 unif_strs <- str_cell_df$stressor %>% unique()
+
+chi_orig_spp_r <- rast(here('_output/cumulative_impact_maps/chi_species.tif')) %>%
+  setNames('chi_orig_spp')
+chi_orig_fe_r <- rast(here('_output/cumulative_impact_maps/chi_funct_entity.tif')) %>%
+  setNames('chi_orig_fe')
+
+chi_orig_df <- c(chi_orig_spp_r, chi_orig_fe_r, cell_id_r) %>%
+  as.data.frame() %>%
+  filter(cell_id %in% str_cell_df$cell_id)
 
 ```
 
@@ -99,6 +108,7 @@ get_impacts <- function(f) {
 
 calc_iter_chi <- function(i, tmp_df) {
   ### i <- 1
+  message('Calculating mean chi for iteration ', i, '...')
   iter_df <- tmp_df %>%
     filter(iter == i)
 
@@ -131,11 +141,15 @@ tmp_df <- data.frame(f = tmp_fs) %>%
 n_sims <- max(tmp_df$iter)
 
 if(!file.exists(chi_out_f)) {
+  ### unlink(chi_out_f)
   cell_chi_df <- lapply(1:n_sims, 
                         FUN = calc_iter_chi, 
                         tmp_df = tmp_df) %>%
     rbindlist() %>%
-    mutate(spp_fe_diff = chi_spp - chi_fe)
+    oharac::dt_join(chi_orig_df, type = 'left', by = 'cell_id') %>%
+    mutate(fe_spp_diff  = chi_fe - chi_spp,
+           spp_spp_diff = chi_spp - chi_orig_spp,
+           fe_fe_diff   = chi_fe - chi_orig_fe)
   
   cell_chi_summary <- cell_chi_df %>%
     as.data.table() %>%
@@ -143,8 +157,12 @@ if(!file.exists(chi_out_f)) {
            chi_sdev_spp = sd(chi_spp),
            chi_mean_fe = mean(chi_fe),
            chi_sdev_fe = sd(chi_fe),
-           diff_95lo = quantile(spp_fe_diff, .025),
-           diff_95hi = quantile(spp_fe_diff, .975),
+           diff_95lo = quantile(fe_spp_diff, .025),
+           diff_95hi = quantile(fe_spp_diff, .975),
+           diff_95lo_spp = quantile(spp_spp_diff, .025),
+           diff_95hi_spp = quantile(spp_spp_diff, .975),
+           diff_95lo_fe  = quantile(fe_fe_diff, .025),
+           diff_95hi_fe  = quantile(fe_fe_diff, .975),
            n_iters = length(chi_spp)),
        by = cell_id]
     
@@ -161,11 +179,14 @@ noncc_tmp_df <- tmp_df %>%
   filter(!str %in% c('sst_rise', 'ocean_acidification', 'sea_level_rise', 'sst_extremes', 'uv_radiation'))
 
 if(!file.exists(chi_noncc_out_f)) {
+  ### unlink(chi_noncc_out_f)
   cell_chi_df <- lapply(1:n_sims, 
                         FUN = calc_iter_chi, 
                         tmp_df = noncc_tmp_df) %>%
     rbindlist() %>%
-    mutate(spp_fe_diff = chi_spp - chi_fe)
+    mutate(fe_spp_diff  = chi_fe - chi_spp,
+           spp_spp_diff = chi_spp - chi_orig_spp,
+           fe_fe_diff   = chi_fe - chi_orig_fe)
   
   cell_chi_summary <- cell_chi_df %>%
     as.data.table() %>%
@@ -173,8 +194,12 @@ if(!file.exists(chi_noncc_out_f)) {
            chi_sdev_spp = sd(chi_spp),
            chi_mean_fe = mean(chi_fe),
            chi_sdev_fe = sd(chi_fe),
-           diff_95lo = quantile(spp_fe_diff, .025),
-           diff_95hi = quantile(spp_fe_diff, .975),
+           diff_95lo = quantile(fe_spp_diff, .025),
+           diff_95hi = quantile(fe_spp_diff, .975),
+           diff_95lo_spp = quantile(spp_spp_diff, .025),
+           diff_95hi_spp = quantile(spp_spp_diff, .975),
+           diff_95lo_fe  = quantile(fe_fe_diff, .025),
+           diff_95hi_fe  = quantile(fe_fe_diff, .975),
            n_iters = length(chi_spp)),
        by = cell_id]
     
@@ -192,11 +217,15 @@ cc_tmp_df <- tmp_df %>%
 
 
 if(!file.exists(chi_cc_out_f)) {
+  ### unlink(chi_cc_out_f)
+
   cell_chi_df <- lapply(1:n_sims, 
                         FUN = calc_iter_chi, 
                         tmp_df = cc_tmp_df) %>%
     rbindlist() %>%
-    mutate(spp_fe_diff = chi_spp - chi_fe)
+    mutate(fe_spp_diff  = chi_fe - chi_spp,
+           spp_spp_diff = chi_spp - chi_orig_spp,
+           fe_fe_diff   = chi_fe - chi_orig_fe)
   
   cell_chi_summary <- cell_chi_df %>%
     as.data.table() %>%
@@ -204,8 +233,12 @@ if(!file.exists(chi_cc_out_f)) {
            chi_sdev_spp = sd(chi_spp),
            chi_mean_fe = mean(chi_fe),
            chi_sdev_fe = sd(chi_fe),
-           diff_95lo = quantile(spp_fe_diff, .025),
-           diff_95hi = quantile(spp_fe_diff, .975),
+           diff_95lo = quantile(fe_spp_diff, .025),
+           diff_95hi = quantile(fe_spp_diff, .975),
+           diff_95lo_spp = quantile(spp_spp_diff, .025),
+           diff_95hi_spp = quantile(spp_spp_diff, .975),
+           diff_95lo_fe  = quantile(fe_fe_diff, .025),
+           diff_95hi_fe  = quantile(fe_fe_diff, .975),
            n_iters = length(chi_spp)),
        by = cell_id]
     
@@ -217,6 +250,8 @@ if(!file.exists(chi_cc_out_f)) {
 ```{r per-stressor impacts}
 
 impact_out_fstem <- here_anx('spp_vs_fe_sensitivity_analysis/impact_summary/impact_%s_shuffle_species.csv')
+### unlink_fs <- list.files(dirname(impact_out_fstem), pattern = 'species.csv', full.names = TRUE)
+### unlink(unlink_fs)
 
 strs <- tmp_df$str %>% unique()
 
@@ -232,7 +267,7 @@ for(s in strs) {
                           tmp_df = str_tmp_df) %>%
       rbindlist() %>%
       setNames(str_replace(names(.), 'chi', 'impact')) %>%
-      mutate(spp_fe_diff = impact_spp - impact_fe)
+      mutate(fe_spp_diff = impact_fe - impact_spp)
     
     cell_impact_summary <- cell_imp_df %>%
       as.data.table() %>%
@@ -240,8 +275,8 @@ for(s in strs) {
              impact_sdev_spp = sd(impact_spp),
              impact_mean_fe = mean(impact_fe),
              impact_sdev_fe = sd(impact_fe),
-             diff_95lo = quantile(spp_fe_diff, .025),
-             diff_95hi = quantile(spp_fe_diff, .975),
+             diff_95lo = quantile(fe_spp_diff, .025),
+             diff_95hi = quantile(fe_spp_diff, .975),
              n_iters = length(impact_spp)),
          by = cell_id]
       

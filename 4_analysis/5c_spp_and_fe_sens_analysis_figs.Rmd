@@ -1,0 +1,266 @@
+---
+title: 'Sensitivity analysis: CHI calculated from species and FV approach'
+author: "*Compiled on `r date()` by `r Sys.info()['user']`*"
+output: 
+  html_document:
+    code_folding: hide
+    toc: true
+    toc_depth: 3
+    toc_float: yes
+    number_sections: true
+    theme: cerulean
+    highlight: haddock
+    includes: 
+      in_header: '~/github/src/templates/ohara_hdr.html'
+  pdf_document:
+    toc: true
+---
+
+``` {r setup, echo = TRUE, message = FALSE, warning = FALSE}
+
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE,
+                      fig.height = 4, fig.width = 7)
+
+library(terra)
+library(sf)
+library(oharac)
+library(data.table)
+library(tidyverse)
+library(here)
+source(here('common_fxns.R'))
+```
+
+# Summary
+
+Sensitivity analysis to determine how drastically scores change with different values of functional traits.  
+
+In script 5a, we calculated sensitivity around species and FE impacts by resampling species distributions in each sample cell 1000 times.   In 45, we aggregate results across all stressors for each randomized iteration, to determine the distribution of mean values and confidence intervals for cumulative impacts.  Here, we map them out and make cool figures.
+
+# Methods
+
+For each randomized species set, plot the variation in CHI for the sampled points, with a nearest-neighbor interpolation to help spot regional variation.  Here we are not looking at the differences between spp and FE approaches, but the variation within each approach based on a random resampling of species within each sample cell.  Here the variation will compare the mean of the resampled CHI iterations against the mean based on the original species sets.  
+
+We can additionally compare the iterated species calculations to the original species calculations by looking at 95% confidence intervals around the differences.
+
+```{r get cell id to xy}
+ocean_r <- rast(here('_spatial/ocean_area_mol.tif'))
+cell_xy <- ocean_r %>% 
+  setValues(1:ncell(.)) %>%
+  setNames('cell_id') %>%
+  as.data.frame(xy = TRUE)
+
+```
+
+```{r}
+land_sf <- read_sf(here('_spatial/ne_10m_land/ne_10m_land_no_casp.shp')) %>%
+  st_transform(st_crs(ocean_r))
+
+globe_bbox <- rbind(c(-180, -90), c(-180, 90), 
+                      c(180, 90), c(180, -90), c(-180, -90)) 
+globe_border <- st_polygon(list(globe_bbox)) %>%
+  st_sfc(crs = 4326) %>%
+  st_sf(data.frame(rgn = 'globe', geom = .)) %>%
+  smoothr::densify(max_distance = 0.5) %>%
+  st_transform(crs = crs(ocean_r))
+
+finish_map <- function(p, div = TRUE) {
+  ### div is whether the palette should be a diverging palette (TRUE) or
+  ### sequential (FALSE)
+
+  p <- p +
+    ### continents:
+    geom_sf(data = land_sf,
+            fill = 'grey96', color = 'grey40', 
+            size = .10) +
+    geom_sf(data = globe_border,
+            fill = NA, color = 'grey70', 
+            size = .1) +
+    scale_x_continuous(expand = c(0, 0)) +
+    scale_y_continuous(expand = c(0, 0)) +
+    theme_void()
+  
+  if(div) {
+    ### diverging palette
+    p <- p + 
+      scale_fill_gradient2(high = '#d01c8b', mid = '#ffffdf', low = '#4dac26')
+  } else {
+    ### sequential palette
+    p <- p + scale_fill_viridis_c()
+  }
+  
+  return(p)
+}
+```
+
+## Cumulative impact metrics
+
+### Maps of cumulative impact variation
+
+How does cumulative impact vary as species sets are randomized?
+
+```{r gather chi metrics}
+
+chi_orig_spp_r <- rast(here('_output/cumulative_impact_maps/chi_species.tif')) %>%
+  setNames('chi_orig_spp')
+chi_orig_fe_r <- rast(here('_output/cumulative_impact_maps/chi_funct_entity.tif')) %>%
+  setNames('chi_orig_fe')
+cell_id_r <- chi_orig_spp_r %>%
+  setNames('cell_id') %>%
+  setValues(1:ncell(.))
+
+chi_orig_df <- c(chi_orig_spp_r, chi_orig_fe_r, cell_id_r) %>%
+  as.data.frame()
+
+chi_f <- here_anx('spp_vs_fe_sensitivity_analysis/impact_summary', 'chi_shuffle_species.csv')
+sig_diff_thresh <- .001
+chi_df <- fread(chi_f) %>%
+  select(-contains('sdev'), -diff_95lo, -diff_95hi, -n_iters) %>%
+  inner_join(chi_orig_df, by = 'cell_id') %>%
+  mutate(diff_fe  = chi_mean_fe  - chi_orig_fe,
+         diff_spp = chi_mean_spp - chi_orig_spp) %>%
+  mutate(diff_fe_sig  = diff_95lo_fe  * diff_95hi_fe  > 0,
+         diff_spp_sig = diff_95lo_spp * diff_95hi_spp > 0) %>% 
+    ### if lo and hi are on opposite sides of zero, then not sig
+  mutate(diff_fe_sig  = ifelse(abs(diff_fe)  < sig_diff_thresh, FALSE, diff_fe_sig),
+         diff_spp_sig = ifelse(abs(diff_spp) < sig_diff_thresh, FALSE, diff_spp_sig)) %>% 
+    ### if lo and hi are on opposite sides of zero, then not sig
+  left_join(cell_xy, by = 'cell_id')
+
+```
+
+
+```{r map significant difference in chi spp vs spp}
+chi_fig_f <- '_figs/chi_diff_spp_vs_spp_map.png'
+
+if(!file.exists(chi_fig_f)) {
+  
+  diff_mtx <- chi_df %>%
+    select(x, y, z = diff_spp) %>%
+    as.matrix()
+  sig_mtx <- chi_df %>%
+    select(x, y, z = diff_spp_sig) %>%
+    as.matrix()
+  
+  diff_r <- interpNear(ocean_r, diff_mtx, radius = 500000) %>%
+    mask(ocean_r)
+  sig_r <- interpNear(ocean_r, sig_mtx, radius = 500000) %>%
+    mask(ocean_r)
+
+  sig_diff_map <- diff_r %>%
+    setNames('chi_diff_spp_vs_spp')
+  sig_diff_map[sig_r == 0] <- NA
+
+  chi_diff_map_df <- as.data.frame(sig_diff_map, xy = TRUE)
+    
+  p <- ggplot() +
+    geom_raster(data = as.data.frame(ocean_r, xy = TRUE), aes(x, y), fill = 'grey70') +
+    geom_raster(data = chi_diff_map_df, aes(x, y, fill = chi_diff_spp_vs_spp)) +
+    labs(fill = 'ΔCHI spp')
+  
+  p <- finish_map(p)
+  
+  ggsave(chi_fig_f, width = 6.5, height = 3, dpi = 300)
+  
+}
+knitr::include_graphics(chi_fig_f)
+
+```
+
+```{r map general difference in chi spp vs spp}
+chi_fig_f <- '_figs/chi_diff_spp_vs_spp_map_nonsig.png'
+
+if(!file.exists(chi_fig_f)) {
+  
+  diff_mtx <- chi_df %>%
+    select(x, y, z = diff_spp) %>%
+    as.matrix()
+
+  diff_r <- interpNear(ocean_r, diff_mtx, radius = 500000) %>%
+    mask(ocean_r)
+
+  diff_map <- diff_r %>%
+    setNames('chi_diff_spp_vs_spp')
+
+  chi_diff_map_df <- as.data.frame(diff_map, xy = TRUE)
+    
+  p <- ggplot() +
+    geom_raster(data = as.data.frame(ocean_r, xy = TRUE), aes(x, y), fill = 'grey70') +
+    geom_raster(data = chi_diff_map_df, aes(x, y, fill = chi_diff_spp_vs_spp)) +
+    labs(fill = 'ΔCHI spp')
+  
+  p <- finish_map(p)
+  
+  ggsave(chi_fig_f, width = 6.5, height = 3, dpi = 300)
+  
+}
+knitr::include_graphics(chi_fig_f)
+
+```
+
+```{r map significant difference in chi fe vs fe}
+chi_fig_f <- '_figs/chi_diff_fe_vs_fe_map.png'
+
+if(!file.exists(chi_fig_f)) {
+  
+  diff_mtx <- chi_df %>%
+    select(x, y, z = diff_fe) %>%
+    as.matrix()
+  sig_mtx <- chi_df %>%
+    select(x, y, z = diff_fe_sig) %>%
+    as.matrix()
+  
+  diff_r <- interpNear(ocean_r, diff_mtx, radius = 500000) %>%
+    mask(ocean_r)
+  sig_r <- interpNear(ocean_r, sig_mtx, radius = 500000) %>%
+    mask(ocean_r)
+
+  sig_diff_map <- diff_r %>%
+    setNames('chi_diff_fe_vs_fe')
+  sig_diff_map[sig_r == 0] <- NA
+
+  chi_diff_map_df <- as.data.frame(sig_diff_map, xy = TRUE)
+    
+  p <- ggplot() +
+    geom_raster(data = as.data.frame(ocean_r, xy = TRUE), aes(x, y), fill = 'grey70') +
+    geom_raster(data = chi_diff_map_df, aes(x, y, fill = chi_diff_fe_vs_fe)) +
+    labs(fill = 'ΔCHI fe')
+  
+  p <- finish_map(p)
+  
+  ggsave(chi_fig_f, width = 6.5, height = 3, dpi = 300)
+  
+}
+knitr::include_graphics(chi_fig_f)
+
+```
+
+```{r map overall difference in chi fe vs fe}
+chi_fig_f <- '_figs/chi_diff_fe_vs_fe_map_nonsig.png'
+
+if(!file.exists(chi_fig_f)) {
+  
+  diff_mtx <- chi_df %>%
+    select(x, y, z = diff_fe) %>%
+    as.matrix()
+
+  diff_r <- interpNear(ocean_r, diff_mtx, radius = 500000) %>%
+    mask(ocean_r)
+
+  diff_map <- diff_r %>%
+    setNames('chi_diff_fe_vs_fe')
+
+  chi_diff_map_df <- as.data.frame(diff_map, xy = TRUE)
+    
+  p <- ggplot() +
+    geom_raster(data = as.data.frame(ocean_r, xy = TRUE), aes(x, y), fill = 'grey70') +
+    geom_raster(data = chi_diff_map_df, aes(x, y, fill = chi_diff_fe_vs_fe)) +
+    labs(fill = 'ΔCHI fe')
+  
+  p <- finish_map(p)
+  
+  ggsave(chi_fig_f, width = 6.5, height = 3, dpi = 300)
+  
+}
+knitr::include_graphics(chi_fig_f)
+
+```

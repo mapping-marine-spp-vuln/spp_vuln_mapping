@@ -38,7 +38,7 @@ In script 4a, we calculated sensitivity around functional diversity metrics and 
 
 # Methods
 
-For each randomized trait, plot the variation in functional diversity metrics for the sampled points, with a nearest-neighbor interpolation to help spot regional variation.  We will examine several stats: absolute and relative difference, relative 95% confidence interval (CI divided by mean), coefficient of variance (std dev divided by mean)
+For each randomized trait, plot the variation in functional diversity metrics for the sampled points, with a nearest-neighbor interpolation to help spot regional variation.  We will examine several stats: absolute and relative difference (diff / mean), 95% confidence interval, coefficient of variance (std dev divided by mean)
 
 ```{r get cell id to xy}
 ocean_r <- rast(here('_spatial/ocean_area_mol.tif'))
@@ -59,18 +59,15 @@ fd_df <- lapply(fd_fs, fread) %>%
   rbindlist(idcol = 't') %>%
   mutate(n_fe_diff = n_fe_mean - n_fe,
          fv_diff = fv_mean - fv,
-         n_fe_ci = (n_fe_95hi - n_fe_95lo) / n_fe_mean,
-         fv_ci   = (fv_95hi - fv_95lo) / fv_mean,
+         n_fe_ci = (n_fe_95hi - n_fe_95lo),
+         fv_ci   = (fv_95hi - fv_95lo),
          n_fe_cv = n_fe_sdev / n_fe_mean,
          fv_cv   = fv_sdev / fv_mean) %>%
-  select(cell_id, t, nspp,
-         n_fe_mean, n_fe_diff,
-         fv_mean, fv_diff,
-         n_fe_ci, fv_ci, n_fe_cv, fv_cv) %>%
+  rename(n_fe_value = n_fe, fv_value = fv) %>%
   pivot_longer(cols = -c(cell_id, t, nspp),
                names_to = 'var', values_to = 'val') %>%
   mutate(param = str_extract(var, 'n_fe|fv'),
-         stat  = str_extract(var, 'mean|sdev|ci|cv|diff')) %>%
+         stat  = str_extract(var, 'mean|sdev|ci|cv|diff|95..|value')) %>%
   select(-var) %>%
   left_join(cell_xy, by = 'cell_id')
 
@@ -96,16 +93,29 @@ globe_border <- st_polygon(list(globe_bbox)) %>%
 ```
 
 ```{r function to generate map}
-map_param <- function(df, s, p, r = ocean_r) {
-  mtx <- df %>%
+map_param <- function(df, s, p, r = ocean_r, thresh = .005) {
+  sig_mtx <- df %>%
+    filter(param == p & stat %in% c('95hi', '95lo', 'value')) %>%
+    pivot_wider(names_from = stat, values_from = val) %>%
+    mutate(sig = ifelse(between(value, `95lo`, `95hi`), 0, 1)) %>%
+    select(x, y, z = sig) %>%
+    as.matrix()
+  
+  sig_rast <- interpNear(r, sig_mtx, radius = 50000) %>%
+    mask(r)
+  
+  val_mtx <- df %>%
     filter(stat == s & param == p) %>%
     select(x, y, z = val) %>%
     as.matrix()
   
-  r_out <- interpNear(r, mtx, radius = 500000) %>%
+  val_rast <- interpNear(r, val_mtx, radius = 500000) %>%
     mask(r)
   
-  return(r_out)
+  val_rast[sig_rast == 0] <- NA
+  if(!is.na(thresh)) val_rast[abs(val_rast) < thresh] <- NA
+
+  return(val_rast)
 }
 
 finish_map <- function(p, div = TRUE) {
@@ -145,7 +155,8 @@ if(!file.exists(fv_fig_f)) {
   fv_map_list <- vector('list', length = length(fd_ts)) %>%
     setNames(fd_ts)
   for(trait in fd_ts) {
-    fv_map_list[[trait]] <- map_param(df = fd_df %>% filter(t == trait), 
+    # trait <- fd_ts[1]
+    fv_map_list[[trait]] <- map_param(df = fd_df %>% filter(t == trait),
                                       p = 'fv', s = 'diff')
   }
   
@@ -295,7 +306,7 @@ chi_df <- lapply(chi_fs, fread) %>%
   left_join(chi_true_df, by = 'cell_id') %>%
   left_join(nspp_df, by = 'cell_id') %>%
   mutate(chi_diff = chi_mean - chi_fe,
-         chi_ci = (chi_95hi - chi_95lo) / chi_mean,
+         chi_ci = (chi_95hi - chi_95lo),
          chi_cv = chi_sdev / chi_mean) %>%
   select(cell_id, t, nspp,
          chi_mean, chi_diff,

@@ -51,22 +51,25 @@ For each combination, pull in the requisite rasters, perform regression on perha
 ```{r}
 nspp_r <- rast(here('_output/func_entities/n_spp.tif'))
 n_fe_r <- rast(here('_output/func_entities/n_fe.tif'))
+fao_rgns_r <- rast(here('_spatial/fao_mol.tif')) %>% setNames('fao')
 
-regr_df <- data.frame(c(nspp_r, n_fe_r))
+regr_df <- data.frame(c(nspp_r, n_fe_r, fao_rgns_r))
 
 set.seed(42)
 regr_sample_df <- regr_df %>%
-  sample_n(10000)
+  filter(!is.na(fao)) %>%
+  sample_n(10000) %>%
+  mutate(fao = factor(fao))
 
 tot_fes_repr <- 339
 max_fes_repr <- minmax(n_fe_r)[2]
 
-ggplot(regr_sample_df, aes(x = n_spp, y = n_fe)) +
+ggplot(regr_sample_df, aes(x = n_spp, y = n_fe, color = fao)) +
   geom_point() +
   geom_hline(yintercept = tot_fes_repr, color = 'red') +
   geom_hline(yintercept = max_fes_repr, color = 'blue')
 
-ggplot(regr_sample_df, aes(x = log(n_spp), y = log(n_fe))) +
+ggplot(regr_sample_df, aes(x = log(n_spp), y = log(n_fe), color = fao)) +
   geom_point() +
   geom_hline(yintercept = log(tot_fes_repr), color = 'red') +
   geom_hline(yintercept = log(max_fes_repr), color = 'blue')
