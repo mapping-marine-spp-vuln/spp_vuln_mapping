@@ -223,6 +223,8 @@ noncc_spp_qtile_df <- as.data.frame(noncc_qtile_spp, xy = TRUE) %>%
 
 cc_noncc_spp_qtile_df <- full_join(cc_spp_qtile_df, noncc_spp_qtile_df, by = c('x', 'y')) %>%
   mutate(bi_class = paste(cc_spp, noncc_spp, sep = '-'))
+
+cc_noncc_summary <- 
 ```
 
 

@@ -30,7 +30,7 @@ source(here('common_fxns.R'))
 
 # Summary
 
-Identify areas with anomalous predictions of impact from habitat and FE based CHI methods, looking at the bar charts by region.  Possible areas include the Andaman Islands area?  
+Identify areas with anomalous predictions of impact from habitat and spp based CHI methods, looking at the bar charts by region.  Possible areas include the Andaman Islands area?  
 
 Questions:
 
