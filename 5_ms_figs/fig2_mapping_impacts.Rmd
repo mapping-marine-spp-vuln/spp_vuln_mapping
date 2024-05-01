@@ -102,8 +102,6 @@ globe_border <- st_polygon(list(globe_bbox)) %>%
 ```{r panel A}
 
 panel_a_chi <- ggplot() +
-  ### background for NA cells:
-  geom_raster(data = ocean_df, aes(x, y), fill = 'grey85') +
   ### plot data:
   geom_raster(data = chi_spp_df, aes(x, y, fill = xfm(chi))) +
   ### continents:
@@ -129,8 +127,6 @@ panel_a_chi <- ggplot() +
 ```{r panel B}
 
 panel_b_cc <- ggplot() +
-  ### background for NA cells:
-  geom_raster(data = ocean_df, aes(x, y), fill = 'grey85') +
   ### plot data:
   geom_raster(data = cc_spp_df, aes(x, y, fill = xfm(cc_spp))) +
   ### continents:
@@ -153,8 +149,6 @@ panel_b_cc <- ggplot() +
 ```{r panel C}
 
 panel_c_noncc <- ggplot() +
-  ### background for NA cells:
-  geom_raster(data = ocean_df, aes(x, y), fill = 'grey85') +
   ### plot data:
   geom_raster(data = noncc_spp_df, aes(x, y, fill = xfm(noncc_spp))) +
   ### continents:
@@ -209,10 +203,6 @@ Reclassify values using `ntile` to get quartile values:
 cc_qtile_spp <- noncc_qtile_spp <- climate_map_spp ### initialize two new maps
 values(cc_qtile_spp) <- ntile(values(climate_map_spp), 4)
 values(noncc_qtile_spp) <- ntile(values(nonclimate_map_spp), 4)
-# plot(cc_qtile_spp, axes = FALSE, 
-#      main = 'Climate impact quintile, spp avg', col = hcl.colors(4))
-# plot(noncc_qtile_spp, axes = FALSE, 
-#      main = 'Non-climate impact quintile, spp avg', col = hcl.colors(4))
 ```
 
 ```{r spp dataframes}
@@ -223,16 +213,12 @@ noncc_spp_qtile_df <- as.data.frame(noncc_qtile_spp, xy = TRUE) %>%
 
 cc_noncc_spp_qtile_df <- full_join(cc_spp_qtile_df, noncc_spp_qtile_df, by = c('x', 'y')) %>%
   mutate(bi_class = paste(cc_spp, noncc_spp, sep = '-'))
-
-cc_noncc_summary <- 
 ```
 
 
-```{r panel D}
+```{r panel D bivariate plot}
 
 panel_d_biplot <- ggplot() +
-  ### background for NA cells:
-  geom_raster(data = ocean_df, aes(x, y), fill = 'grey85') +
   ### plot data:
   geom_raster(data = cc_noncc_spp_qtile_df, aes(x, y, fill = bi_class), show.legend = FALSE) +
   ### continents:
@@ -252,9 +238,6 @@ panel_d_biplot <- ggplot() +
 # panel_d_biplot
 ```
 
-
-
-
 ## Assemble figure
 
 ```{r gather pieces}
@@ -272,9 +255,9 @@ panel_abc_lgd <- get_legend(panel_a_chi)
 ### parameterize panels for easier changing
 p_w <- 0.55
 p_h <- p_w / 2 * 6/5
-a <- c(x = 0.00, y = 0.63)
-b <- c(x = 1-p_w, y = 0.42)
-c <- c(x = 0.00, y = 0.21)
+a <- c(x = 0.00, y = 0.645)
+b <- c(x = 1-p_w, y = 0.43)
+c <- c(x = 0.00, y = 0.215)
 d <- c(x = 1-p_w, y = 0.0)
 
 fig2_panels <- ggdraw() +
