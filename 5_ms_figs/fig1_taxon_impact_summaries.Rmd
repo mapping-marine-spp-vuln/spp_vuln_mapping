@@ -144,6 +144,11 @@ taxa_pcts <- taxa_imp_scores %>%
   group_by(taxon) %>%
   summarize(n_overall = n(),
             pct_overall = round(n() / nrow(.), 3))
+```
+
+### top 1%
+
+```{r}
 
 unwt_top1pct <- unwt_df %>%
   select(iucn_sid:all) %>%
@@ -156,7 +161,11 @@ unwt_top1pct %>%
   left_join(taxa_pcts, by = 'taxon') %>%
   mutate(repr = pct / pct_overall) %>%
   arrange(desc(repr))
+```
 
+### bottom 1%
+
+```{r}
 unwt_btm1pct <- unwt_df %>%
   arrange(all) %>%
   head(as.integer(nrow(.) * .01))

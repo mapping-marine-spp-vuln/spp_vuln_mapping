@@ -45,10 +45,10 @@ Build up an analysis dataframe including all three CHI maps.  Include additional
 ```{r build chi dataframe}
 chi_fs <- list.files(here('_output/cumulative_impact_maps'), pattern = 'chi_.+.tif',
                      full.names = TRUE)
-chi_fs <- chi_fs[!str_detect(chi_fs, 'species_group')]
+chi_fs <- chi_fs[!str_detect(chi_fs, 'funct_entity_group')]
 
 lyr_names <- basename(chi_fs) %>% str_remove('.tif') %>%
-  str_replace('(chi_)?funct_entity(_group_chi)?', 'chi_fe') %>%
+  str_replace('(chi_)?species(_group_chi)?', 'chi_spp') %>%
   str_replace('(chi_)?habitat(_group_chi)?', 'chi_hab')
 chi_stack_all <- rast(chi_fs) %>%
   setNames(lyr_names)
@@ -58,9 +58,9 @@ chi_cc_stack <- chi_stack_all[[str_detect(names(chi_stack_all), '_climate')]]
 chi_noncc_stack_hab <- chi_stack_all[[str_detect(names(chi_stack_all), 'chi_hab_(f|o|l)')]] %>%
   sum(na.rm = TRUE) %>%
   setNames('chi_hab_noncc')
-chi_noncc_stack_fe  <- chi_stack_all[[str_detect(names(chi_stack_all), 'chi_fe_(f|o|l)')]] %>%
+chi_noncc_stack_fe  <- chi_stack_all[[str_detect(names(chi_stack_all), 'chi_spp_(f|o|l)')]] %>%
   sum(na.rm = TRUE) %>%
-  setNames('chi_fe_noncc')
+  setNames('chi_spp_noncc')
 
 nspp_r <- rast(here('_output/nspp_maps/species_richness.tif')) %>%
   setNames('nspp')
@@ -122,11 +122,11 @@ meow_prov_df <- foreign::read.dbf(here('_spatial/meow_rgns/meow_rgns.dbf')) %>%
 
 meow_prov_chi_df_unordered <- chi_df %>%
   left_join(meow_prov_df, by = c('meow' = 'eco_code_x')) %>%
-  mutate(chi_fe          = ntile(chi_fe, n = 1000) / 10,
+  mutate(chi_spp          = ntile(chi_spp, n = 1000) / 10,
          chi_hab         = ntile(chi_hab, n = 1000) / 10,
-         chi_fe_climate  = ntile(chi_fe_climate, n = 1000) / 10,
+         chi_spp_climate  = ntile(chi_spp_climate, n = 1000) / 10,
          chi_hab_climate = ntile(chi_hab_climate, n = 1000) / 10,
-         chi_fe_noncc    = ntile(chi_fe_noncc, n = 1000) / 10,
+         chi_spp_noncc    = ntile(chi_spp_noncc, n = 1000) / 10,
          chi_hab_noncc   = ntile(chi_hab_noncc, n = 1000) / 10) %>%
   select(starts_with('chi_'), cell_id, coastal, prov_lbl, realm_lbl) %>%
   filter(!is.na(prov_lbl)) %>%
@@ -137,7 +137,7 @@ meow_prov_chi_df_unordered <- chi_df %>%
 ### Within each realm, order by highest to lowest 
 ### mean overall coastal FE impact
 prov_order <- meow_prov_chi_df_unordered %>%
-  filter(method_zone == 'chi_fe_neritic') %>%
+  filter(method_zone == 'chi_spp_neritic') %>%
   group_by(prov_lbl, realm_lbl) %>%
   summarize(med_chi = median(chi)) %>%
   ungroup() %>%
@@ -176,9 +176,9 @@ plot_realm <- function(df, methods, x_label) {
   # fills <- c('grey90', 'grey40', 'grey70', 'black') ### fills for methods
   # clrs  <- c('black',  'grey40', 'grey70', 'black') ### colors for methods
   
-  lbls <- c(fe_n  = latex2exp::TeX('$FE_c$'),
+  lbls <- c(spp_n  = latex2exp::TeX('$Spp_c$'),
             hab_n = latex2exp::TeX('$Hab_c$'),
-            fe_o  = latex2exp::TeX('$FE_o$'),
+            spp_o  = latex2exp::TeX('$Spp_o$'),
             hab_o = latex2exp::TeX('$Hab_o$')) %>%
     rev()
   lvls <- names(lbls)
@@ -200,10 +200,6 @@ plot_realm <- function(df, methods, x_label) {
     geom_boxplot(width = .4, position = position_dodge(width = .75),
                  outlier.shape = NA, 
                  size = .25) +
-    # geom_point(data = means_df,
-    #            aes(x = med, group = method_zone),
-    #            position = position_dodge(width = .75),
-    #            size = 1, shape = 21, color = 'black', fill = 'white') +
     geom_point(data = means_df,
                aes(x = med, group = method_zone),
                position = position_dodge(width = .75),
@@ -237,13 +233,13 @@ plot_realm <- function(df, methods, x_label) {
 
 # lbls <- unname(latex2exp::TeX(c("$I_{FE}^C$", "$I_{Hab}^C$")))
 panel_a <- plot_realm(df = meow_realm_chi_df, 
-                      methods = c('chi_fe', 'chi_hab'), 
+                      methods = c('chi_spp', 'chi_hab'), 
                       x_label = 'Cumulative (%ile)')
 panel_b <- plot_realm(df = meow_realm_chi_df, 
-                      methods = c('chi_fe_climate', 'chi_hab_climate'), 
+                      methods = c('chi_spp_climate', 'chi_hab_climate'), 
                       x_label = 'Climate (%ile)')
 panel_c <- plot_realm(df = meow_realm_chi_df, 
-                      methods = c('chi_fe_noncc', 'chi_hab_noncc'), 
+                      methods = c('chi_spp_noncc', 'chi_hab_noncc'), 
                       x_label = 'Non-climate (%ile)')
 
 # panel_a; panel_b; panel_c
@@ -298,9 +294,9 @@ plot_prov <- function(df, methods, x_label, strips) {
   # fills <- c('grey90', 'grey40', 'grey70', 'black') ### fills for methods
   # clrs  <- c('black',  'grey40', 'grey70', 'black') ### colors for methods
 
-  lbls <- c(fe_n  = latex2exp::TeX('$FE_c$'),
+  lbls <- c(spp_n = latex2exp::TeX('$Spp_c$'),
             hab_n = latex2exp::TeX('$Hab_c$'),
-            fe_o  = latex2exp::TeX('$FE_o$'),
+            spp_o = latex2exp::TeX('$Spp_o$'),
             hab_o = latex2exp::TeX('$Hab_o$')) %>%
     rev()
   lvls <- names(lbls)
@@ -323,10 +319,6 @@ plot_prov <- function(df, methods, x_label, strips) {
   p <- p +
     geom_boxplot(width = .4, position = position_dodge(width = .75),
                  outlier.shape = NA, size = .25) +
-    # geom_point(data = means_df,
-    #            aes(x = med, group = method_zone), 
-    #            position = position_dodge(width = .75),
-    #            size = 1, shape = 21, color = 'black', fill = 'white') +
     geom_point(data = means_df,
                aes(x = med, group = method_zone), 
                position = position_dodge(width = .75),
@@ -369,17 +361,17 @@ plot_prov <- function(df, methods, x_label, strips) {
 }
 
 panel_a_SI <- plot_prov(df = meow_prov_chi_df, 
-                        methods = c('chi_fe', 'chi_hab'), 
+                        methods = c('chi_spp', 'chi_hab'), 
                         x_label = 'Cumulative (%ile)',
                         strips = FALSE)
 
 panel_b_SI <- plot_prov(df = meow_prov_chi_df, 
-                        methods = c('chi_fe_climate', 'chi_hab_climate'), 
+                        methods = c('chi_spp_climate', 'chi_hab_climate'), 
                         x_label = 'Climate (%ile)',
                         strips = FALSE)
 
 panel_c_SI <- plot_prov(df = meow_prov_chi_df, 
-                        methods = c('chi_fe_noncc', 'chi_hab_noncc'), 
+                        methods = c('chi_spp_noncc', 'chi_hab_noncc'), 
                         x_label = 'Non-climate (%ile)',
                         strips = TRUE)
 
@@ -421,186 +413,4 @@ figSI_file <- here('5_ms_figs/figSI_impacts_by_ecoregion_province.png')
 ggsave(figSI_file, width = 18, height = 26.67, units = 'cm', dpi = 300)
 
 knitr::include_graphics(figSI_file)
-```
-
-## Examine impacts by EEZ (georegion)
-
-```{r, fig.height = 8, eval = FALSE}
-eez_rgns_df <- read_csv(here('_spatial/eez_rgn_names/rgn_names_ohi.csv')) %>%
-  left_join(read_csv(here('_spatial/eez_rgn_names/unsd_methodology.csv')),
-            by = 'iso3c') %>%
-  janitor::clean_names() %>%
-  mutate(ldc = ifelse(!is.na(least_developed_countries), 'LDC', 'not LDC'),
-         sids = ifelse(!is.na(small_island_developing_states), 'SIDS', 'not SIDS')) %>%
-  select(rgn_id, rgn_label, georgn, geosubrgn, 
-         ldc, sids, dev = developed_developing) %>%
-  mutate(georgn_lbl = str_replace(georgn, 'Northern', 'N'),
-         georgn_lbl = str_replace(georgn_lbl, 'Southern', 'S'),
-         georgn_lbl = str_replace(georgn_lbl, 'Atlantic', 'Atl'),
-         georgn_lbl = str_replace(georgn_lbl, 'Pacific', 'Pac'),
-         georgn_lbl = str_replace(georgn_lbl, 'America', 'Amer'),
-         georgn_lbl = str_replace(georgn_lbl, 'Latin', 'Lat'),
-         georgn_lbl = str_replace(georgn_lbl, ' and the Caribbean', '/Carib'),
-         georgn_lbl = fct_inorder(georgn_lbl)) %>%
-  mutate(subrgn_lbl = str_replace(geosubrgn, '(-)?(E|e)ast(ern)?', 'E'),
-         subrgn_lbl = str_replace(subrgn_lbl, '(W|w)est(ern)?', 'W'),
-         subrgn_lbl = str_replace(subrgn_lbl, 'North(ern)?', 'N'),
-         subrgn_lbl = str_replace(subrgn_lbl, 'South(ern)?', 'S'),
-         subrgn_lbl = str_replace(subrgn_lbl, 'Atlantic', 'Atl'),
-         subrgn_lbl = str_replace(subrgn_lbl, 'Pacific', 'Pac'),
-         subrgn_lbl = str_replace(subrgn_lbl, 'Africa', 'Afr'),
-         subrgn_lbl = str_replace(subrgn_lbl, 'America', 'Amer'),
-         subrgn_lbl = str_replace(subrgn_lbl, 'Australia and New Zealand', 'Aus/NZ'),
-         subrgn_lbl = fct_inorder(subrgn_lbl))
-eez_chi_df <- chi_df %>%
-  left_join(eez_rgns_df, by = c('eez' = 'rgn_id')) %>%
-  mutate(fe  = ntile(chi_funct_entity, n = 1000) / 10,
-         spp = ntile(chi_species, n = 1000) / 10,
-         hab = ntile(chi_habitat, n = 1000) / 10) %>%
-  ### In each realm, order by highest to lowest mean impact
-  group_by(subrgn_lbl) %>%
-  mutate(mean_hab = mean(hab)) %>%
-  ungroup() %>%
-  arrange(georgn_lbl, mean_hab) %>%
-  mutate(subrgn_lbl = fct_inorder(subrgn_lbl)) %>%
-  select(fe, spp, hab, cell_id, subrgn_lbl, georgn_lbl, sids, ldc, dev) %>%
-  pivot_longer(names_to = 'method', values_to = 'chi', spp, fe, hab) %>%
-  filter(!is.na(subrgn_lbl))
-
-means_df <- eez_chi_df %>%
-  group_by(georgn_lbl, subrgn_lbl, method) %>%
-  summarize(mean = mean(chi), med = median(chi))
-  
-
-x <- ggplot(eez_chi_df, aes(x = subrgn_lbl, y = chi, fill = method)) +
-  geom_hline(yintercept = 100, color = 'black', size = 2) +
-  geom_boxplot(width = .6, position = position_dodge(width = .75),
-               outlier.shape = NA, color = 'black', size = .25) +
-  geom_point(data = means_df, aes(y = mean, group = method), 
-             position = position_dodge(width = .75),
-             size = 2, shape = 21, color = 'black', fill = 'cyan') +
-  geom_point(data = means_df, aes(y = med, group = method), 
-             position = position_dodge(width = .75),
-             size = 2, shape = 21, color = 'black', fill = 'white') +
-  scale_fill_manual(values = hcl.colors(4)[c(1, 2, 4)], 
-                    breaks = c('spp', 'fe', 'hab'),
-                    labels = c('spp (eq wt)', 'spp (fv wt)', 'habitat')) +
-  scale_y_continuous(limits = c(0, 100), expand = c(0, 0)) +
-  coord_flip() +
-  theme_minimal(base_family = "Roboto Condensed") +
-  theme(axis.title = element_blank(),
-        panel.grid.minor.y = element_blank(),
-        strip.text.y = element_text(angle = 0, hjust = 0, face = 'bold')) +
-  facet_grid(rows = vars(georgn_lbl), 
-             scales = 'free_y', space = 'free_y')
-
-ggsave(here('figs/eez_chi_plot.png'), height = 14, width = 6, dpi = 300)
-
-knitr::include_graphics(here('figs/eez_chi_plot.png'))
-```
-
-```{r, eval = FALSE}
-sids_df <- eez_chi_df %>%
-  group_by(georgn_lbl) %>%
-  filter(n_distinct(sids) == 2 | sids == 'SIDS')
-
-means_df <- sids_df %>%
-  group_by(georgn_lbl, sids, method) %>%
-  summarize(mean = mean(chi), med = median(chi))
-
-x <- ggplot(sids_df, aes(x = sids, y = chi, fill = method)) +
-  geom_hline(yintercept = 100, color = 'black', size = 2) +
-  geom_boxplot(width = .6, position = position_dodge(width = .75),
-               outlier.shape = NA, color = 'black', size = .25) +
-  geom_point(data = means_df, aes(y = mean, group = method), 
-             position = position_dodge(width = .75),
-             size = 2, shape = 21, color = 'black', fill = 'cyan') +
-  geom_point(data = means_df, aes(y = med, group = method), 
-             position = position_dodge(width = .75),
-             size = 2, shape = 21, color = 'black', fill = 'white') +
-  scale_fill_manual(values = hcl.colors(4)[c(1, 2, 4)], 
-                    breaks = c('spp', 'fe', 'hab'),
-                    labels = c('spp (eq wt)', 'spp (fv wt)', 'habitat')) +
-  scale_y_continuous(limits = c(0, 100), expand = c(0, 0)) +
-  coord_flip() +
-  theme_minimal(base_family = "Roboto Condensed") +
-  theme(axis.title = element_blank(),
-        panel.grid.minor.y = element_blank(),
-        strip.text.y = element_text(angle = 0, hjust = 0, face = 'bold')) +
-  facet_grid(rows = vars(georgn_lbl), 
-             scales = 'free_y', space = 'free_y')
-
-ggsave(here('figs/sids_chi_plot.png'), height = 3.5, width = 6, dpi = 300)
-
-knitr::include_graphics(here('figs/sids_chi_plot.png'))
-
-```
-
-```{r, eval = FALSE}
-ldc_df <- eez_chi_df %>%
-  group_by(georgn_lbl) %>%
-  filter(n_distinct(ldc) == 2 | sids == 'LDC')
-
-means_df <- ldc_df %>%
-  group_by(georgn_lbl, ldc, method) %>%
-  summarize(mean = mean(chi), med = median(chi))
-
-x <- ggplot(sids_df, aes(x = ldc, y = chi, fill = method)) +
-  geom_hline(yintercept = 100, color = 'black', size = 2) +
-  geom_boxplot(width = .6, position = position_dodge(width = .75),
-               outlier.shape = NA, color = 'black', size = .25) +
-  geom_point(data = means_df, aes(y = mean, group = method), 
-             position = position_dodge(width = .75),
-             size = 2, shape = 21, color = 'black', fill = 'cyan') +
-  geom_point(data = means_df, aes(y = med, group = method), 
-             position = position_dodge(width = .75),
-             size = 2, shape = 21, color = 'black', fill = 'white') +
-  scale_fill_manual(values = hcl.colors(4)[c(1, 2, 4)], 
-                    breaks = c('spp', 'fe', 'hab'),
-                    labels = c('spp (eq wt)', 'spp (fv wt)', 'habitat')) +
-  scale_y_continuous(limits = c(0, 100), expand = c(0, 0)) +
-  coord_flip() +
-  theme_minimal(base_family = "Roboto Condensed") +
-  theme(axis.title = element_blank(),
-        panel.grid.minor.y = element_blank(),
-        strip.text.y = element_text(angle = 0, hjust = 0, face = 'bold')) +
-  facet_grid(rows = vars(georgn_lbl), 
-             scales = 'free_y', space = 'free_y')
-
-ggsave(here('figs/ldc_chi_plot.png'), height = 3.5, width = 6, dpi = 300)
-
-knitr::include_graphics(here('figs/ldc_chi_plot.png'))
-```
-
-```{r, eval = FALSE}
-means_df <- eez_chi_df %>%
-  group_by(georgn_lbl, dev, method) %>%
-  summarize(mean = mean(chi), med = median(chi))
-
-x <- ggplot(eez_chi_df, aes(x = dev, y = chi, fill = method)) +
-  geom_hline(yintercept = 100, color = 'black', size = 2) +
-  geom_boxplot(width = .6, position = position_dodge(width = .75),
-               outlier.shape = NA, color = 'black', size = .25) +
-  geom_point(data = means_df, aes(y = mean, group = method), 
-             position = position_dodge(width = .75),
-             size = 2, shape = 21, color = 'black', fill = 'cyan') +
-  geom_point(data = means_df, aes(y = med, group = method), 
-             position = position_dodge(width = .75),
-             size = 2, shape = 21, color = 'black', fill = 'white') +
-  scale_fill_manual(values = hcl.colors(4)[c(1, 2, 4)], 
-                    breaks = c('spp', 'fe', 'hab'),
-                    labels = c('spp (eq wt)', 'spp (fv wt)', 'habitat')) +
-  scale_y_continuous(limits = c(0, 100), expand = c(0, 0)) +
-  coord_flip() +
-  theme_minimal(base_family = "Roboto Condensed") +
-  theme(axis.title = element_blank(),
-        panel.grid.minor.y = element_blank(),
-        strip.text.y = element_text(angle = 0, hjust = 0, face = 'bold')) +
-  facet_grid(rows = vars(georgn_lbl), 
-             scales = 'free_y', space = 'free_y')
-
-ggsave(here('figs/dev_chi_plot.png'), height = 8, width = 6, dpi = 300)
-
-knitr::include_graphics(here('figs/dev_chi_plot.png'))
-
 ```

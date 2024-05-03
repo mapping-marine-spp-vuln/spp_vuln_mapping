@@ -9,7 +9,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
 
 
-<meta name="author" content="Compiled on Sun Apr 28 19:23:25 2024 by ohara" />
+<meta name="author" content="Compiled on Fri May 3 13:49:05 2024 by ohara" />
 
 
 <title>Figure 2: Maps of Species CHI</title>
@@ -1660,7 +1660,7 @@ border-radius: 0px;
 
 
 <h1 class="title toc-ignore">Figure 2: Maps of Species CHI</h1>
-<h4 class="author"><em>Compiled on Sun Apr 28 19:23:25 2024 by
+<h4 class="author"><em>Compiled on Fri May 3 13:49:05 2024 by
 ohara</em></h4>
 
 </div>
@@ -1837,7 +1837,123 @@ values:</p>
 <span id="cb10-4"><a href="#cb10-4" tabindex="-1"></a>  <span class="fu">setNames</span>(<span class="fu">c</span>(<span class="st">&#39;x&#39;</span>, <span class="st">&#39;y&#39;</span>, <span class="st">&#39;noncc_spp&#39;</span>))</span>
 <span id="cb10-5"><a href="#cb10-5" tabindex="-1"></a></span>
 <span id="cb10-6"><a href="#cb10-6" tabindex="-1"></a>cc_noncc_spp_qtile_df <span class="ot">&lt;-</span> <span class="fu">full_join</span>(cc_spp_qtile_df, noncc_spp_qtile_df, <span class="at">by =</span> <span class="fu">c</span>(<span class="st">&#39;x&#39;</span>, <span class="st">&#39;y&#39;</span>)) <span class="sc">%&gt;%</span></span>
-<span id="cb10-7"><a href="#cb10-7" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">bi_class =</span> <span class="fu">paste</span>(cc_spp, noncc_spp, <span class="at">sep =</span> <span class="st">&#39;-&#39;</span>))</span></code></pre></div>
+<span id="cb10-7"><a href="#cb10-7" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">bi_class =</span> <span class="fu">paste</span>(cc_spp, noncc_spp, <span class="at">sep =</span> <span class="st">&#39;-&#39;</span>))</span>
+<span id="cb10-8"><a href="#cb10-8" tabindex="-1"></a></span>
+<span id="cb10-9"><a href="#cb10-9" tabindex="-1"></a>cc_noncc_summary <span class="ot">&lt;-</span> cc_noncc_spp_qtile_df <span class="sc">%&gt;%</span></span>
+<span id="cb10-10"><a href="#cb10-10" tabindex="-1"></a>  <span class="fu">group_by</span>(cc_spp, noncc_spp) <span class="sc">%&gt;%</span></span>
+<span id="cb10-11"><a href="#cb10-11" tabindex="-1"></a>  <span class="fu">summarize</span>(<span class="at">n =</span> <span class="fu">n</span>(),</span>
+<span id="cb10-12"><a href="#cb10-12" tabindex="-1"></a>            <span class="at">pct =</span> <span class="fu">n</span>() <span class="sc">/</span> <span class="fu">nrow</span>(cc_noncc_spp_qtile_df), </span>
+<span id="cb10-13"><a href="#cb10-13" tabindex="-1"></a>            <span class="at">.groups =</span> <span class="st">&#39;drop&#39;</span>)</span>
+<span id="cb10-14"><a href="#cb10-14" tabindex="-1"></a></span>
+<span id="cb10-15"><a href="#cb10-15" tabindex="-1"></a>knitr<span class="sc">::</span><span class="fu">kable</span>(cc_noncc_summary, <span class="at">digits =</span> <span class="dv">3</span>)</span></code></pre></div>
+<table>
+<thead>
+<tr class="header">
+<th align="right">cc_spp</th>
+<th align="right">noncc_spp</th>
+<th align="right">n</th>
+<th align="right">pct</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="right">1</td>
+<td align="right">1</td>
+<td align="right">324581</td>
+<td align="right">0.088</td>
+</tr>
+<tr class="even">
+<td align="right">1</td>
+<td align="right">2</td>
+<td align="right">300192</td>
+<td align="right">0.082</td>
+</tr>
+<tr class="odd">
+<td align="right">1</td>
+<td align="right">3</td>
+<td align="right">179527</td>
+<td align="right">0.049</td>
+</tr>
+<tr class="even">
+<td align="right">1</td>
+<td align="right">4</td>
+<td align="right">115698</td>
+<td align="right">0.031</td>
+</tr>
+<tr class="odd">
+<td align="right">2</td>
+<td align="right">1</td>
+<td align="right">279191</td>
+<td align="right">0.076</td>
+</tr>
+<tr class="even">
+<td align="right">2</td>
+<td align="right">2</td>
+<td align="right">250271</td>
+<td align="right">0.068</td>
+</tr>
+<tr class="odd">
+<td align="right">2</td>
+<td align="right">3</td>
+<td align="right">231144</td>
+<td align="right">0.063</td>
+</tr>
+<tr class="even">
+<td align="right">2</td>
+<td align="right">4</td>
+<td align="right">159392</td>
+<td align="right">0.043</td>
+</tr>
+<tr class="odd">
+<td align="right">3</td>
+<td align="right">1</td>
+<td align="right">211177</td>
+<td align="right">0.057</td>
+</tr>
+<tr class="even">
+<td align="right">3</td>
+<td align="right">2</td>
+<td align="right">178541</td>
+<td align="right">0.049</td>
+</tr>
+<tr class="odd">
+<td align="right">3</td>
+<td align="right">3</td>
+<td align="right">264828</td>
+<td align="right">0.072</td>
+</tr>
+<tr class="even">
+<td align="right">3</td>
+<td align="right">4</td>
+<td align="right">265452</td>
+<td align="right">0.072</td>
+</tr>
+<tr class="odd">
+<td align="right">4</td>
+<td align="right">1</td>
+<td align="right">105049</td>
+<td align="right">0.029</td>
+</tr>
+<tr class="even">
+<td align="right">4</td>
+<td align="right">2</td>
+<td align="right">190994</td>
+<td align="right">0.052</td>
+</tr>
+<tr class="odd">
+<td align="right">4</td>
+<td align="right">3</td>
+<td align="right">244499</td>
+<td align="right">0.066</td>
+</tr>
+<tr class="even">
+<td align="right">4</td>
+<td align="right">4</td>
+<td align="right">379456</td>
+<td align="right">0.103</td>
+</tr>
+</tbody>
+</table>
 <div class="sourceCode" id="cb11"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" tabindex="-1"></a>panel_d_biplot <span class="ot">&lt;-</span> <span class="fu">ggplot</span>() <span class="sc">+</span></span>
 <span id="cb11-2"><a href="#cb11-2" tabindex="-1"></a>  <span class="do">### plot data:</span></span>
 <span id="cb11-3"><a href="#cb11-3" tabindex="-1"></a>  <span class="fu">geom_raster</span>(<span class="at">data =</span> cc_noncc_spp_qtile_df, <span class="fu">aes</span>(x, y, <span class="at">fill =</span> bi_class), <span class="at">show.legend =</span> <span class="cn">FALSE</span>) <span class="sc">+</span></span>
@@ -1860,7 +1976,7 @@ values:</p>
 </div>
 <div id="assemble-figure" class="section level2" number="3.2">
 <h2><span class="header-section-number">3.2</span> Assemble figure</h2>
-<div class="sourceCode" id="cb12"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" tabindex="-1"></a>fig2_file <span class="ot">&lt;-</span> <span class="fu">here</span>(<span class="st">&#39;5_ms_figs/fig2_mapping_impacts.png&#39;</span>)</span>
+<div class="sourceCode" id="cb12"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" tabindex="-1"></a>fig2_file <span class="ot">&lt;-</span> <span class="fu">here</span>(<span class="st">&#39;5_ms_figs/fig2_mapping_impacts_spp.png&#39;</span>)</span>
 <span id="cb12-2"><a href="#cb12-2" tabindex="-1"></a>panel_a_map  <span class="ot">&lt;-</span> <span class="fu">get_panel</span>(panel_a_chi)</span>
 <span id="cb12-3"><a href="#cb12-3" tabindex="-1"></a>panel_b_map  <span class="ot">&lt;-</span> <span class="fu">get_panel</span>(panel_b_cc)</span>
 <span id="cb12-4"><a href="#cb12-4" tabindex="-1"></a>panel_c_map  <span class="ot">&lt;-</span> <span class="fu">get_panel</span>(panel_c_noncc)</span>

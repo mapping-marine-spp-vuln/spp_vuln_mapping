@@ -111,9 +111,9 @@ values(noncc_qtile_spp) <- ntile(values(nonclimate_map_spp), 4)
 
 ## Create panels
 
-### FE impact hot/cool spots overlap with hab impact
+### Species impact hot/cool spots overlap with hab impact
 
-Compare the FE CHI hot/cool spots with hab - incl Sørensen similarity
+Compare the species CHI hot/cool spots with hab - incl Sørensen similarity
 
 ```{r panel X bivariate by spp}
 cc_spp_df <- as.data.frame(cc_qtile_spp, xy = TRUE) %>%
@@ -125,26 +125,28 @@ cc_noncc_spp_df <- dt_join(cc_spp_df, noncc_spp_df,
                           by = c('x', 'y'), type = 'full') %>%
   mutate(bi_class = paste(cc_spp, noncc_spp, sep = '-'))
 
-spp_hotspots <- cc_noncc_spp_df %>%
-  filter(bi_class %in% c('1-1', '4-4')) %>%
-  select(x, y, spp_bi = bi_class)
-hab_hotspots <- cc_noncc_hab_df %>%
-  filter(bi_class %in% c('1-1', '4-4')) %>%
-  select(x, y, hab_bi = bi_class)
-
-similarity_df <- spp_hotspots %>%
-  full_join(hab_hotspots, by = c('x', 'y')) %>%
-  mutate(match = case_when(is.na(hab_bi) ~ 'b',
-                           is.na(spp_bi)  ~ 'c',
-                           hab_bi == spp_bi ~ 'a',
-                           TRUE ~ 'X')) %>%
+cc_match <- cc_spp_df %>%
+  inner_join(cc_hab_df, by = c('x', 'y')) %>%
+  mutate(match = case_when(cc_hab == cc_spp ~ 'a',
+                           TRUE ~ 'b')) %>%
   group_by(match) %>%
   summarize(n_gp = n()) %>%
   spread(match, n_gp) %>%
-  mutate(jaccard = a / (a + b + c),
-         sorensen = 2*a / (
-           2*a + b + c))
-knitr::kable(similarity_df)
+  mutate(jaccard = a / (a + b),
+         sorensen = 2*a / (2*a + b))
+knitr::kable(cc_match)
+
+noncc_match <- noncc_spp_df %>%
+  inner_join(noncc_hab_df, by = c('x', 'y')) %>%
+  mutate(r = runif(n = n())) %>%
+  mutate(match = case_when(noncc_hab == noncc_spp ~ 'a',
+                           TRUE ~ 'b')) %>%
+  group_by(match) %>%
+  summarize(n_gp = n()) %>%
+  spread(match, n_gp) %>%
+  mutate(jaccard = a / (a + b),
+         sorensen = 2*a / (2*a + b))
+knitr::kable(noncc_match)
 ```
 
 ### Panel A and B: hab-FE climate and non-climate overlap

@@ -1,5 +1,5 @@
 ---
-title: "Figure 2: Maps of Species CHI"
+title: "Figure S2: Maps of Habitat CHI"
 author: "*Compiled on `r date()` by `r Sys.info()['user']`*"
 output: 
   html_document:
@@ -38,13 +38,11 @@ Create Fig. 2 for manuscript: A) a panel of cumulative impacts, B) & C) separate
 
 # Data
 
-Results from scripts in folder `2_process_spp_vuln_and_impacts`
+Results from scripts in folder `3_process_hab_vuln_and_impacts`
 
 # Methods
 
-Read in the output rasters for species-level impacts (unweighted) - total, climate, and non-climate; reclassify based on quartile/quintile for biplot. 
-
-<!-- NOTE: dropping cells with fewer than 20 species, mostly in the Arctic, a few in Antarctic. -->
+Read in the output rasters for habitat-level impacts (unweighted) - total, climate, and non-climate; reclassify based on quartile/quintile for biplot. 
 
 ```{r}
 ocean_map <- rast(here('_spatial/ocean_area_mol.tif'))
@@ -53,20 +51,16 @@ ocean_df <- as.data.frame(ocean_map, xy = TRUE)
 land_sf <- read_sf(here('_spatial/ne_10m_land/ne_10m_land_no_casp.shp')) %>%
   st_transform(st_crs(ocean_map))
 
-nspp_mask <- rast(here('_output/nspp_maps/species_richness.tif'))
-nspp_vals <- values(nspp_mask)
-values(nspp_mask)[nspp_vals < 20] <- NA
-
-chi_gps_spp <- list.files(here('_output/cumulative_impact_maps'),
-                         pattern = 'species_group_chi',
+chi_gps_hab <- list.files(here('_output/cumulative_impact_maps'),
+                         pattern = 'habitat_group_chi',
                          full.names = TRUE)
 
-climate_map_spp     <- rast(chi_gps_spp[1])
+climate_map_hab     <- rast(chi_gps_hab[1])
 
-nonclimate_map_spp  <- rast(chi_gps_spp[2:4]) %>%
+nonclimate_map_hab  <- rast(chi_gps_hab[2:4]) %>%
   sum(na.rm = TRUE)
 
-chi_total_map_spp <- rast(here('_output/cumulative_impact_maps/chi_species.tif'))
+chi_total_map_hab <- rast(here('_output/cumulative_impact_maps/chi_habitat.tif'))
 ```
 
 ## Create panels
@@ -74,15 +68,15 @@ chi_total_map_spp <- rast(here('_output/cumulative_impact_maps/chi_species.tif')
 ### Panel A: total CHI
 
 ```{r}
-cc_spp_df <- as.data.frame(climate_map_spp, xy = TRUE) %>%
-  setNames(c('x', 'y', 'cc_spp'))
-noncc_spp_df <- as.data.frame(nonclimate_map_spp, xy = TRUE) %>%
-  setNames(c('x', 'y', 'noncc_spp'))
-chi_spp_df <- as.data.frame(chi_total_map_spp, xy = TRUE) %>%
+cc_hab_df <- as.data.frame(climate_map_hab, xy = TRUE) %>%
+  setNames(c('x', 'y', 'cc_hab'))
+noncc_hab_df <- as.data.frame(nonclimate_map_hab, xy = TRUE) %>%
+  setNames(c('x', 'y', 'noncc_hab'))
+chi_hab_df <- as.data.frame(chi_total_map_hab, xy = TRUE) %>%
   setNames(c('x', 'y', 'chi'))
 
-chi_lims <- c(0, round(max(chi_spp_df$chi), 2))
-chi_brks <- c(0, .05, .2, .5, 1, round(max(chi_spp_df$chi), 2))
+chi_lims <- c(0, round(max(chi_hab_df$chi), 2))
+chi_brks <- c(0, .2, .5, 1, 2, 5, round(max(chi_hab_df$chi), 1))
 chi_lbls <- sprintf('%.2f', chi_brks)
 
 xfm <- function(x) {x^.5} ### function to warp CHI scale for visual impact
@@ -103,7 +97,7 @@ globe_border <- st_polygon(list(globe_bbox)) %>%
 
 panel_a_chi <- ggplot() +
   ### plot data:
-  geom_raster(data = chi_spp_df, aes(x, y, fill = xfm(chi))) +
+  geom_raster(data = chi_hab_df, aes(x, y, fill = xfm(chi))) +
   ### continents:
   geom_sf(data = land_sf,
           fill = 'grey96', color = NA, 
@@ -128,7 +122,7 @@ panel_a_chi <- ggplot() +
 
 panel_b_cc <- ggplot() +
   ### plot data:
-  geom_raster(data = cc_spp_df, aes(x, y, fill = xfm(cc_spp))) +
+  geom_raster(data = cc_hab_df, aes(x, y, fill = xfm(cc_hab))) +
   ### continents:
   geom_sf(data = land_sf,
           fill = 'grey96', color = NA, 
@@ -150,7 +144,7 @@ panel_b_cc <- ggplot() +
 
 panel_c_noncc <- ggplot() +
   ### plot data:
-  geom_raster(data = noncc_spp_df, aes(x, y, fill = xfm(noncc_spp))) +
+  geom_raster(data = noncc_hab_df, aes(x, y, fill = xfm(noncc_hab))) +
   ### continents:
   geom_sf(data = land_sf,
           fill = 'grey96', color = NA, 
@@ -194,25 +188,33 @@ panel_lgd_raw <- bi_legend(pal = map_pal, dim = 4,
 # panel_lgd_raw
 ```
 
-### Panel D: spp climate vs nonclimate bivariate plot
+### Panel D: habitat climate vs nonclimate bivariate plot
 
 Use a four-level bivariate color scale to capture spatial overlap of quartiles for climate and non-climate stressors.
 
 Reclassify values using `ntile` to get quartile values:
 ```{r reclass eq weight}
-cc_qtile_spp <- noncc_qtile_spp <- climate_map_spp ### initialize two new maps
-values(cc_qtile_spp) <- ntile(values(climate_map_spp), 4)
-values(noncc_qtile_spp) <- ntile(values(nonclimate_map_spp), 4)
+cc_qtile_hab <- noncc_qtile_hab <- climate_map_hab ### initialize two new maps
+values(cc_qtile_hab) <- ntile(values(climate_map_hab), 4)
+values(noncc_qtile_hab) <- ntile(values(nonclimate_map_hab), 4)
 ```
 
-```{r spp dataframes}
-cc_spp_qtile_df <- as.data.frame(cc_qtile_spp, xy = TRUE) %>%
-  setNames(c('x', 'y', 'cc_spp'))
-noncc_spp_qtile_df <- as.data.frame(noncc_qtile_spp, xy = TRUE) %>%
-  setNames(c('x', 'y', 'noncc_spp'))
+```{r habitat dataframes}
+cc_hab_qtile_df <- as.data.frame(cc_qtile_hab, xy = TRUE) %>%
+  setNames(c('x', 'y', 'cc_hab'))
+noncc_hab_qtile_df <- as.data.frame(noncc_qtile_hab, xy = TRUE) %>%
+  setNames(c('x', 'y', 'noncc_hab'))
 
-cc_noncc_spp_qtile_df <- full_join(cc_spp_qtile_df, noncc_spp_qtile_df, by = c('x', 'y')) %>%
-  mutate(bi_class = paste(cc_spp, noncc_spp, sep = '-'))
+cc_noncc_hab_qtile_df <- full_join(cc_hab_qtile_df, noncc_hab_qtile_df, by = c('x', 'y')) %>%
+  mutate(bi_class = paste(cc_hab, noncc_hab, sep = '-'))
+
+cc_noncc_summary <- cc_noncc_hab_qtile_df %>%
+  group_by(cc_hab, noncc_hab) %>%
+  summarize(n = n(),
+            pct = n() / nrow(cc_noncc_hab_qtile_df), 
+            .groups = 'drop')
+
+knitr::kable(cc_noncc_summary, digits = 3)
 ```
 
 
@@ -220,7 +222,7 @@ cc_noncc_spp_qtile_df <- full_join(cc_spp_qtile_df, noncc_spp_qtile_df, by = c('
 
 panel_d_biplot <- ggplot() +
   ### plot data:
-  geom_raster(data = cc_noncc_spp_qtile_df, aes(x, y, fill = bi_class), show.legend = FALSE) +
+  geom_raster(data = cc_noncc_hab_qtile_df, aes(x, y, fill = bi_class), show.legend = FALSE) +
   ### continents:
   geom_sf(data = land_sf,
           fill = 'grey96', color = NA, 
@@ -241,7 +243,7 @@ panel_d_biplot <- ggplot() +
 ## Assemble figure
 
 ```{r gather pieces}
-fig2_file <- here('5_ms_figs/fig2_mapping_impacts.png')
+figS2_file <- here('5_ms_figs/figS2_mapping_impacts_hab.png')
 panel_a_map  <- get_panel(panel_a_chi)
 panel_b_map  <- get_panel(panel_b_cc)
 panel_c_map  <- get_panel(panel_c_noncc)
@@ -260,13 +262,13 @@ b <- c(x = 1-p_w, y = 0.43)
 c <- c(x = 0.00, y = 0.215)
 d <- c(x = 1-p_w, y = 0.0)
 
-fig2_panels <- ggdraw() +
+figS2_panels <- ggdraw() +
   draw_plot(panel_a_map,  x = a['x'], y = a['y'], height = p_h, width = p_w) +
   draw_plot(panel_b_map,  x = b['x'], y = b['y'], height = p_h, width = p_w) +
   draw_plot(panel_c_map,  x = c['x'], y = c['y'], height = p_h, width = p_w) +
   draw_plot(panel_d_map,  x = d['x'], y = d['y'], height = p_h, width = p_w)
 
-fig2_labels <- fig2_panels +
+figS2_labels <- figS2_panels +
   draw_label('A', x = a['x'], y = a['y'] + p_h,  hjust = 0, vjust = 0, 
              size = 9, fontfamily = 'Helvetica', fontface = 'bold') +
   draw_label('B', x = 1,      y = b['y'] + p_h + .005,  hjust = 1, vjust = 0, 
@@ -290,7 +292,7 @@ fig2_labels <- fig2_panels +
 l1 <- c(x = .60, y = 0.75, h = .25, w = .05)
 l2 <- c(x = .30, y = 0.02, h = .144, w = .12)
 
-fig2_legends <- fig2_labels +
+figS2_legends <- figS2_labels +
   ### draw legends:
   draw_plot(panel_abc_lgd, x = l1['x'], y = l1['y'],
             height = l1['h'], width = l1['w']) +
@@ -316,8 +318,8 @@ fig2_legends <- fig2_labels +
              size = 6, color = 'black', fontfamily = 'Helvetica', fontface = 'bold')
 
 
-ggsave(fig2_file, width = 12, height = 10, units = 'cm', dpi = 300)
+ggsave(figS2_file, width = 12, height = 10, units = 'cm', dpi = 300)
 
-knitr::include_graphics(fig2_file)
+knitr::include_graphics(figS2_file)
 ```
 
