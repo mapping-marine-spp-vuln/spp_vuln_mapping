@@ -42,9 +42,7 @@ Results from scripts in folder `2_process_spp_vuln_and_impacts` and `3_process_h
 
 # Methods
 
-Read in the output rasters for species-level impacts (unweighted); reclassify based on quartile/quintile.  Fig. 1A is bivariate plot of climate vs. non-climate stressors for equal weighted species average, Fig. 1B is bivariate plot of climate vs. non-climate stressors for FV-weighted FE average; Fig. 1C and 1D are %difference plots for each category.
-
-NOTE: dropping cells with fewer than 20 species, mostly in the Arctic, a few in Antarctic.
+Read in the output rasters for species-level impacts (unweighted); reclassify based on quartile/quintile.  Fig. 1A is bivariate plot of climate for species and habitat impact average, Fig. 1B is bivariate plot of  non-climate stressors for the two methods.
 
 ```{r}
 ocean_map <- rast(here('_spatial/ocean_area_mol.tif'))
@@ -167,7 +165,7 @@ map_pal <- as.vector(map_pal_mtx) %>% setNames(names(map_pal_raw))
 
 panel_lgd_raw <- bi_legend(pal = map_pal, dim = 4,
                            x = 'CHI Hab',
-                           y = 'CHI FE')
+                           y = 'CHI Spp')
 panel_lgd_raw
 ```
 
@@ -275,11 +273,11 @@ fig_3 <- ggdraw() +
   draw_label('Species vs. Habitat\nimpacts (quartiles)',
              x = 0.99, y = .54, hjust = 1, vjust = 0, angle = 0,
              size = 7, color = 'black', fontfamily = 'Helvetica', fontface = 'bold') +
-  draw_label('Habitat ->', 
+  draw_label('Habitat →', 
              x = lgd_xy['x'], y = lgd_xy['y'] - .005, 
              hjust = 0, vjust = 1, angle = 0,
              size = 6, color = 'black', fontfamily = 'Helvetica', fontface = 'bold') +
-  draw_label('Species ->', 
+  draw_label('Species →', 
              x = lgd_xy['x'] - .005, y = lgd_xy['y'], 
              hjust = 0, vjust = 0, angle = 90,
              size = 6, color = 'black', fontfamily = 'Helvetica', fontface = 'bold')
@@ -291,6 +289,7 @@ knitr::include_graphics(fig3_file)
 
 ## Examine correlations
 
+Adjust limits and AB line to account for the fact that habitat weights were on a 0-5 scale, while spp vulnerabilities were on a 0-1 scale.
 ```{r set up linear models}
 spp_vs_hab_stack <- c(climate_map_hab,
                       nonclimate_map_hab,
@@ -300,6 +299,7 @@ spp_vs_hab_stack <- c(climate_map_hab,
 
 ### Keep raster values with xy = TRUE, no need for cell IDs
 hab_vs_spp_df <- as.data.frame(spp_vs_hab_stack, xy = TRUE)
+  
 
 ### generate a LM based on climate stressors
 cc_mdl <- lm(spp_cc ~ hab_cc + 0, data = hab_vs_spp_df)
@@ -309,10 +309,10 @@ ggplot(hab_vs_spp_df %>% sample_n(10000), aes(x = hab_cc, y = spp_cc)) +
               slope = cc_mdl$coefficients[1],
               color = 'red') +
   geom_abline(intercept = 0,
-              slope = 1,
+              slope = .2,
               color = 'blue', alpha = .5) +
-  coord_fixed() +
-  xlim(c(0, 1)) + ylim(c(0, 1))
+  # coord_fixed() +
+  xlim(c(0, 5)) + ylim(c(0, 1))
 
 ### generate a LM based on non-climate stressors
 noncc_mdl <- lm(spp_noncc ~ hab_noncc + 0, data = hab_vs_spp_df)
@@ -322,10 +322,10 @@ ggplot(hab_vs_spp_df %>% sample_n(10000), aes(x = hab_noncc, y = spp_noncc)) +
               slope = noncc_mdl$coefficients[1],
               color = 'red') +
   geom_abline(intercept = 0,
-              slope = 1,
+              slope = .2,
               color = 'blue', alpha = .5) +
-  coord_fixed() +
-  xlim(c(0, 1)) + ylim(c(0, 1))
+  # coord_fixed() +
+  xlim(c(0, 5)) + ylim(c(0, 1))
 ```
 
 $$I_{spp}^{cc} = 0.085 I_{hab}^{cc} + 0 \quad (adj.R^2 = 0.781)$$
@@ -389,11 +389,11 @@ fig_SI <- ggdraw() +
   draw_label('Climate v. non-\nclimate impacts\n(quartiles)',
              x = 0.99, y = .70, hjust = 1, vjust = 0, angle = 0,
              size = 7, color = 'black', fontfamily = 'Helvetica', fontface = 'bold') +
-  draw_label('Climate ->', 
+  draw_label('Climate →', 
              x = lgd_xy['x'], y = lgd_xy['y'] - .005, 
              hjust = 0, vjust = 1, angle = 0,
              size = 6, color = 'black', fontfamily = 'Helvetica', fontface = 'bold') +
-  draw_label('Non-climate ->', 
+  draw_label('Non-climate →', 
              x = lgd_xy['x'] - .005, y = lgd_xy['y'], 
              hjust = 0, vjust = 0, angle = 90,
              size = 6, color = 'black', fontfamily = 'Helvetica', fontface = 'bold')
