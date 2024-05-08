@@ -1,5 +1,5 @@
 ---
-title: "Figure 3: Comparing species and FE impacts"
+title: "Figure 5: Comparing species and FE impacts"
 author: "*Compiled on `r date()` by `r Sys.info()['user']`*"
 output: 
   html_document:
@@ -34,7 +34,7 @@ source(here('common_fxns.R'))
 
 # Summary
 
-Create Fig. 3(?) for manuscript
+Create Fig. 5 for manuscript
 
 # Data
 
@@ -42,9 +42,7 @@ Results from scripts in folder `2_process_spp_vuln_and_impacts`
 
 # Methods
 
-Read in the output rasters for species-level impacts (unweighted); reclassify based on quartile/quintile.  Fig. 1A is bivariate plot of climate vs. non-climate stressors for equal weighted species average, Fig. 1B is bivariate plot of climate vs. non-climate stressors for FV-weighted FE average; Fig. 1C and 1D are %difference plots for each category.
-
-NOTE: dropping cells with fewer than 20 species, mostly in the Arctic, a few in Antarctic.
+Read in the output rasters for species-level impacts (unweighted); reclassify based on quartile/quintile.  Fig. 5A is bivariate plot of climate stressors for species and FE quartiles, Fig. 5B is bivariate plot of non-climate stressors for species and FE quartiles; Fig. 1C and 1D are %difference plots for each category.
 
 ```{r}
 ocean_map <- rast(here('_spatial/ocean_area_mol.tif'))
@@ -53,28 +51,20 @@ ocean_df <- as.data.frame(ocean_map, xy = TRUE)
 land_sf <- read_sf(here('_spatial/ne_10m_land/ne_10m_land_no_casp.shp')) %>%
   st_transform(st_crs(ocean_map))
 
-nspp_mask <- rast(here('_output/nspp_maps/species_richness.tif'))
-nspp_vals <- values(nspp_mask)
-# values(nspp_mask)[nspp_vals < 20] <- NA
-
 chi_gps_fe <- list.files(here('_output/cumulative_impact_maps'),
                           pattern = 'funct_entity_group_chi',
                           full.names = TRUE)
 chi_gps_spp <- list.files(here('_output/cumulative_impact_maps'),
                           pattern = 'species_group_chi',
                           full.names = TRUE)
-climate_map_fe <- rast(chi_gps_fe[1]) %>%
-  mask(nspp_mask)
-climate_map_spp <- rast(chi_gps_spp[1]) %>%
-  mask(nspp_mask)
+climate_map_fe <- rast(chi_gps_fe[1])
+climate_map_spp <- rast(chi_gps_spp[1])
 
 nonclimate_map_fe <- rast(chi_gps_fe[2:4]) %>%
-  sum(na.rm = TRUE) %>%
-  mask(nspp_mask)
+  sum(na.rm = TRUE)
 
 nonclimate_map_spp  <- rast(chi_gps_spp[2:4]) %>%
-  sum(na.rm = TRUE) %>%
-  mask(nspp_mask)
+  sum(na.rm = TRUE)
 ```
 
 ### Reclassify
@@ -99,10 +89,6 @@ cc_noncc_fe_df <- dt_join(cc_fe_df, noncc_fe_df, by = c('x', 'y'), type = 'full'
 cc_qtile_spp <- noncc_qtile_spp <- climate_map_spp ### initialize two new maps
 values(cc_qtile_spp) <- ntile(values(climate_map_spp), 4)
 values(noncc_qtile_spp) <- ntile(values(nonclimate_map_spp), 4)
-# plot(cc_qtile_spp, axes = FALSE, 
-#      main = 'Climate impact quintile, fv wt avg', col = hcl.colors(4))
-# plot(noncc_qtile_spp, axes = FALSE, 
-#      main = 'Non-climate impact quintile, fv wt avg', col = hcl.colors(4))
 ```
 
 ## Create panels

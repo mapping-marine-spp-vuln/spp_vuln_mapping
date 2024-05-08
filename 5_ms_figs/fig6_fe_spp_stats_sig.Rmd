@@ -1,0 +1,172 @@
+---
+title: "Figure 6: Spp vs FE impacts statistically significant differences"
+author: "*Compiled on `r date()` by `r Sys.info()['user']`*"
+output: 
+  html_document:
+    code_folding: hide
+    toc: true
+    toc_depth: 3
+    toc_float: yes
+    number_sections: true
+    theme: cerulean
+    highlight: haddock
+    includes: 
+      in_header: '~/github/src/templates/ohara_hdr.html'
+  pdf_document:
+    toc: true
+---
+
+``` {r setup, echo = TRUE, message = FALSE, warning = FALSE}
+
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE, fig.height = 4, fig.width = 7)
+
+library(terra)
+library(sf)
+library(oharac)
+library(data.table)
+library(tidyverse)
+library(biscale)  ### for bivariate legend
+library(cowplot)
+library(here)
+source(here('common_fxns.R'))
+
+```
+
+# Summary
+
+Create Fig. 3(?) for manuscript
+
+# Data
+
+Results from scripts in folder `2_process_spp_vuln_and_impacts`
+
+# Methods
+
+Read in the output rasters from the sensitivity analysis, showing number of stressors that are significantly different (higher, then lower) in each cell.  These rasters were originally created in script `4_analysis/5d_spp_vs_fv_sens_analysis_figs.Rmd`.
+
+```{r}
+ocean_map <- rast(here('_spatial/ocean_area_mol.tif'))
+ocean_df <- as.data.frame(ocean_map, xy = TRUE)
+
+land_sf <- read_sf(here('_spatial/ne_10m_land/ne_10m_land_no_casp.shp')) %>%
+  st_transform(st_crs(ocean_map))
+
+globe_bbox <- rbind(c(-180, -90), c(-180, 90), 
+                      c(180, 90), c(180, -90), c(-180, -90)) 
+globe_border <- st_polygon(list(globe_bbox)) %>%
+  st_sfc(crs = 4326) %>%
+  st_sf(data.frame(rgn = 'globe', geom = .)) %>%
+  smoothr::densify(max_distance = 0.5) %>%
+  st_transform(crs = crs(ocean_map))
+```
+
+## Maps of variation in impact from individual stressors
+
+How many stressors have significant differences between FV and spp as species sets are randomized?  AND - do we want to just focus on areas where FV is significantly GREATER?
+
+```{r make map of signif higher stressors by count}
+sig_hi_count_f <- '../4_analysis/fe_vs_spp_sig_higher_n_stressors.tif'
+sig_lo_count_f <- '../4_analysis/fe_vs_spp_sig_lower_n_stressors.tif'
+
+sig_diff_r <- rast(c(sig_hi_count_f, sig_lo_count_f))
+
+num_strs <- minmax(sig_diff_r) %>% max()
+
+sig_hi_count_df <- sig_diff_r[[1]] %>%
+  as.data.frame(xy = TRUE) %>%
+  mutate(sumfct = factor(sum, levels = 1:num_strs))
+
+sig_lo_count_df <- sig_diff_r[[2]] %>%
+  as.data.frame(xy = TRUE) %>%
+  mutate(sumfct = factor(sum, levels = 1:num_strs))
+```
+
+```{r prepare panel A}
+panel_a <- ggplot() +
+  ### background for NA cells:
+  geom_raster(data = ocean_df, aes(x, y), fill = 'grey85') +
+  ### plot data:
+  geom_raster(data = sig_hi_count_df, aes(x, y, fill = sumfct)) +
+  ### continents:
+  geom_sf(data = land_sf,
+          fill = 'grey96', color = NA, 
+          size = .1) +
+  geom_sf(data = globe_border,
+          fill = NA, color = 'grey70', 
+          size = .1) +
+  scale_fill_viridis_d(guide = guide_legend(reverse = TRUE)) +
+  scale_x_continuous(expand = c(0, 0)) +
+  scale_y_continuous(expand = c(0, 0)) +
+  theme_void() +
+  theme(axis.text = element_blank(), 
+        axis.title = element_blank(),
+        legend.key.size = unit(.35, 'cm'),
+        legend.margin = margin(0, 0, 0, 0, unit = 'pt'),
+        legend.text = element_text(size = 6, color = 'black', 
+                                   hjust = 0, vjust = 0.5, angle = 0),
+        legend.title = element_blank())
+
+# panel_a
+```
+
+...or where FE CHI is significantly LOWER?
+
+```{r prepare panel b}
+
+panel_b <- ggplot() +
+  ### background for NA cells:
+  geom_raster(data = ocean_df, aes(x, y), fill = 'grey85') +
+  ### plot data:
+  geom_raster(data = sig_lo_count_df, aes(x, y, fill = sumfct), show.legend = FALSE) +
+  ### continents:
+  geom_sf(data = land_sf,
+          fill = 'grey96', color = NA, 
+          size = .1) +
+  geom_sf(data = globe_border,
+          fill = NA, color = 'grey70', 
+          size = .1) +
+  scale_fill_viridis_d() +
+  scale_x_continuous(expand = c(0, 0)) +
+  scale_y_continuous(expand = c(0, 0)) +
+  theme_void() +
+  theme(axis.text = element_blank(), 
+        axis.title = element_blank())
+
+# panel_b
+```
+
+## Assemble figure
+
+```{r gather pieces}
+fig6_file <- here('5_ms_figs/fig6_comparing_fe_vs_spp_significance.png')
+panel_a_map <- get_panel(panel_a)
+panel_b_map <- get_panel(panel_b)
+panel_lgd   <- get_legend(panel_a)
+```
+
+```{r}
+### parameterize legends for easier changing of label positions:
+lgd_xy <- c(x = .875, y = .4, h = .2, w = .12)
+
+fig_6 <- ggdraw() +
+  ### draw panels:
+  draw_plot(panel_a_map,  x = 0.00, y = 0.505, height = 0.49, width = 0.88) +
+  draw_plot(panel_b_map,  x = 0.00, y = 0.005, height = 0.49, width = 0.88) +
+  ### draw legend:
+  draw_plot(panel_lgd, x = lgd_xy['x'], y = lgd_xy['y'], 
+            height = lgd_xy['h'], width = lgd_xy['w']) +
+  ### Panel labels:
+  draw_label('A', x = 0.002, y = .97, hjust = 0, vjust = 1, 
+             size = 9, fontfamily = 'Helvetica', fontface = 'bold') +
+  draw_label('B', x = 0.002, y = .47, hjust = 0, vjust = 0, 
+             size = 9, fontfamily = 'Helvetica', fontface = 'bold') + 
+  ### legend label: 
+  draw_label('Stressor\ncount', x = lgd_xy['x'], y = lgd_xy['y'] + lgd_xy['h']/2, 
+             hjust = 1, vjust = .5, 
+             size = 7, fontfamily = 'Helvetica', fontface = 'bold')
+
+ggsave(fig6_file, width = 12, height = 10, units = 'cm', dpi = 300)
+
+knitr::include_graphics(fig6_file)
+```
+
