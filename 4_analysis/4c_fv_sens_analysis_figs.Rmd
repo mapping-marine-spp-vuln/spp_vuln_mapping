@@ -27,6 +27,7 @@ library(oharac)
 library(data.table)
 library(tidyverse)
 library(here)
+library(cowplot)
 source(here('common_fxns.R'))
 ```
 
@@ -93,17 +94,8 @@ globe_border <- st_polygon(list(globe_bbox)) %>%
 ```
 
 ```{r function to generate map}
-map_param <- function(df, s, p, r = ocean_r, thresh = .005) {
-  sig_mtx <- df %>%
-    filter(param == p & stat %in% c('95hi', '95lo', 'value')) %>%
-    pivot_wider(names_from = stat, values_from = val) %>%
-    mutate(sig = ifelse(between(value, `95lo`, `95hi`), 0, 1)) %>%
-    select(x, y, z = sig) %>%
-    as.matrix()
-  
-  sig_rast <- interpNear(r, sig_mtx, radius = 50000) %>%
-    mask(r)
-  
+map_param <- function(df, s, p, r = ocean_r, sig = FALSE, thresh = NULL) {
+
   val_mtx <- df %>%
     filter(stat == s & param == p) %>%
     select(x, y, z = val) %>%
@@ -112,8 +104,18 @@ map_param <- function(df, s, p, r = ocean_r, thresh = .005) {
   val_rast <- interpNear(r, val_mtx, radius = 500000) %>%
     mask(r)
   
-  val_rast[sig_rast == 0] <- NA
-  if(!is.na(thresh)) val_rast[abs(val_rast) < thresh] <- NA
+  if(sig) {
+    sig_mtx <- df %>%
+      filter(param == p & stat %in% c('95hi', '95lo', 'value')) %>%
+      pivot_wider(names_from = stat, values_from = val) %>%
+      mutate(sig = ifelse(between(value, `95lo`, `95hi`), 0, 1)) %>%
+      select(x, y, z = sig) %>%
+      as.matrix()
+    sig_rast <- interpNear(r, sig_mtx, radius = 50000) %>%
+      mask(r)
+    val_rast[sig_rast == 0] <- NA
+  }
+  if(!is.null(thresh)) val_rast[abs(val_rast) < thresh] <- NA
 
   return(val_rast)
 }
@@ -125,7 +127,7 @@ finish_map <- function(p, div = TRUE) {
   p <- p +
     ### continents:
     geom_sf(data = land_sf,
-            fill = 'grey96', color = 'grey40', 
+            fill = 'grey96', color = 'grey40',
             size = .10) +
     geom_sf(data = globe_border,
             fill = NA, color = 'grey70', 
@@ -161,6 +163,10 @@ if(!file.exists(fv_fig_f)) {
   }
   
   fv_map_stack <- rast(fv_map_list)
+  mean_sd_vals <- as.data.frame(fv_map_stack) %>%
+    summarize(across(everything(), .fns = list(mean = mean, sd = sd), .names = '{.col}_{.fn}'))
+  #     len_mean     len_sd   mob_mean     mob_sd   trp_mean     trp_sd  wcol_mean    wcol_sd
+  # 1 0.03633012 0.04194202 0.03743112 0.04292291 0.05350717 0.04770103 0.02206068 0.02724206  
   
   fv_map_df <- as.data.frame(fv_map_stack, xy = TRUE) %>%
     pivot_longer(-c(x, y), names_to = 'trait', values_to = 'delta_fv') %>%
@@ -188,9 +194,9 @@ knitr::include_graphics(fv_fig_f)
 ```
 
 ```{r map coefficient of variation in fv}
-fv_fig_f <- '_figs/fv_cv_by_trait_map.png'
+fv2_fig_f <- '_figs/fv_cv_by_trait_map.png'
 
-if(!file.exists(fv_fig_f)) {
+if(!file.exists(fv2_fig_f)) {
   fv_map_list <- vector('list', length = length(fd_ts)) %>%
     setNames(fd_ts)
   for(trait in fd_ts) {
@@ -213,10 +219,10 @@ if(!file.exists(fv_fig_f)) {
   
   p <- finish_map(p, div = FALSE)
   
-  ggsave(fv_fig_f, width = 6.5, height = 3, dpi = 300)
+  ggsave(fv2_fig_f, width = 6.5, height = 3, dpi = 300)
 
 }
-knitr::include_graphics(fv_fig_f)
+knitr::include_graphics(fv2_fig_f)
 
 ```
 
@@ -225,58 +231,67 @@ knitr::include_graphics(fv_fig_f)
 How do functional diversity metrics (FV and number of FEs) vary as traits are randomized, relative to the number of species in a given pixel?
 
 ```{r fv plots}
-fv_plot_df <- fd_df %>%
-  filter(stat %in% c('mean', 'cv', 'diff')) %>%
-  filter(param == 'fv') %>%
-  mutate(metric = paste(stat, param)) %>%
-  mutate(metric = str_replace(metric, 'fv', '(FV)'),
-         metric = str_replace(metric, 'mean ', 'mean'),
-         metric = str_replace(metric, 'cv ', 'CV'),
-         metric = str_replace(metric, 'diff ', 'Δ')) %>%
-  mutate(t = case_when(t == 'len' ~ 'body length',
-                       t == 'mob' ~ 'adult mobility',
-                       t == 'trp' ~ 'trophic level',
-                       t == 'wcol' ~ 'water column position')) %>%
-  sample_frac(.1)
+plot_f <- '_figs/fv_stat_by_trait_scatter.png'
 
-p <- ggplot(fv_plot_df, aes(x = nspp, y = val)) +
-  geom_point(alpha = .2) +
-  theme_ohara() +
-  facet_grid(metric ~ t, scales = 'free_y') +
-  labs(x = 'Species richness') +
-  theme(axis.title.y = element_blank())
+if(!file.exists(plot_f)) {
+  fv_plot_df <- fd_df %>%
+    filter(stat %in% c('mean', 'cv', 'diff')) %>%
+    filter(param == 'fv') %>%
+    mutate(metric = paste(stat, param)) %>%
+    mutate(metric = str_replace(metric, 'fv', '(FV)'),
+           metric = str_replace(metric, 'mean ', 'mean'),
+           metric = str_replace(metric, 'cv ', 'CV'),
+           metric = str_replace(metric, 'diff ', 'Δ')) %>%
+    mutate(t = case_when(t == 'len' ~ 'body length',
+                         t == 'mob' ~ 'adult mobility',
+                         t == 'trp' ~ 'trophic level',
+                         t == 'wcol' ~ 'water column position')) %>%
+    sample_frac(.1)
+  
+  p <- ggplot(fv_plot_df, aes(x = nspp, y = val)) +
+    geom_point(alpha = .2) +
+    theme_ohara() +
+    facet_grid(metric ~ t, scales = 'free_y') +
+    labs(x = 'Species richness') +
+    theme(axis.title.y = element_blank())
 
-ggsave('_figs/fv_stat_by_trait_scatter.png', width = 6, height = 3, dpi = 300)
+    ggsave(plot_f, width = 6, height = 3, dpi = 300)
+}
 
-knitr::include_graphics('_figs/fv_stat_by_trait_scatter.png')
+knitr::include_graphics(plot_f)
 ```
 
 ```{r n_fe plots}
-fe_plot_df <- fd_df %>%
-  filter(stat %in% c('mean', 'cv', 'diff')) %>%
-  filter(param == 'n_fe') %>%
-  mutate(metric = paste(stat, param)) %>%
-  mutate(metric = str_replace(metric, 'n_fe', '(# FE)'),
-         metric = str_replace(metric, 'mean ', 'mean'),
-         metric = str_replace(metric, 'cv ', 'CV'),
-         metric = str_replace(metric, 'diff ', 'Δ')) %>%
-  mutate(t = case_when(t == 'len' ~ 'body length',
-                       t == 'mob' ~ 'adult mobility',
-                       t == 'trp' ~ 'trophic level',
-                       t == 'wcol' ~ 'water column position')) %>%
-  sample_frac(.1)
 
-p <- ggplot(fe_plot_df, aes(x = nspp, y = val)) +
-  geom_point(alpha = .2) +
-  theme_ohara() +
-  facet_grid(metric ~ t, scales = 'free_y') +
-  labs(x = 'Species richness') +
-  theme(axis.title.y = element_blank())
+plot_f <- '_figs/n_fe_stat_by_trait_scatter.png'
 
-ggsave('_figs/n_fe_stat_by_trait_scatter.png', width = 6, height = 3, dpi = 300)
+if(!file.exists(plot_f)) {
+  
+  fe_plot_df <- fd_df %>%
+    filter(stat %in% c('mean', 'cv', 'diff')) %>%
+    filter(param == 'n_fe') %>%
+    mutate(metric = paste(stat, param)) %>%
+    mutate(metric = str_replace(metric, 'n_fe', '(# FE)'),
+           metric = str_replace(metric, 'mean ', 'mean'),
+           metric = str_replace(metric, 'cv ', 'CV'),
+           metric = str_replace(metric, 'diff ', 'Δ')) %>%
+    mutate(t = case_when(t == 'len' ~ 'body length',
+                         t == 'mob' ~ 'adult mobility',
+                         t == 'trp' ~ 'trophic level',
+                         t == 'wcol' ~ 'water column position')) %>%
+    sample_frac(.1)
+  
+  p <- ggplot(fe_plot_df, aes(x = nspp, y = val)) +
+    geom_point(alpha = .2) +
+    theme_ohara() +
+    facet_grid(metric ~ t, scales = 'free_y') +
+    labs(x = 'Species richness') +
+    theme(axis.title.y = element_blank())
+  
+    ggsave(plot_f, width = 6, height = 3, dpi = 300)
+}
 
-knitr::include_graphics('_figs/n_fe_stat_by_trait_scatter.png')
-
+knitr::include_graphics(plot_f)
 ```
 
 
@@ -333,7 +348,10 @@ if(!file.exists(chi_fig_f)) {
   }
   
   chi_map_stack <- rast(chi_map_list)
-  
+  mean_sd_vals <- as.data.frame(chi_map_stack) %>%
+    summarize(across(everything(), .fns = list(mean = mean, sd = sd), .names = '{.col}_{.fn}'))
+  #      len_mean     len_sd     mob_mean     mob_sd    trp_mean     trp_sd    wcol_mean    wcol_sd
+  # 1 -0.00801914 0.01990471 0.0008610911 0.01656777 0.003189031 0.01596556 -0.006297416 0.02280766  
   chi_map_df <- as.data.frame(chi_map_stack, xy = TRUE) %>%
     pivot_longer(-c(x, y), names_to = 'trait', values_to = 'delta_chi') %>%
     mutate(trait = case_when(trait == 'len' ~ 'body length',
@@ -360,28 +378,63 @@ knitr::include_graphics(chi_fig_f)
 How do CHI stats vary as traits are randomized, relative to the number of species in a given pixel?
 
 ```{r chi plots}
-chi_plot_df <- chi_df %>%
-  filter(stat %in% c('mean', 'cv', 'diff')) %>%
-  mutate(metric = paste(stat, param)) %>%
-  mutate(metric = str_replace(metric, 'chi', '(CHI)'),
-         metric = str_replace(metric, 'mean ', 'mean'),
-         metric = str_replace(metric, 'cv ', 'CV'),
-         metric = str_replace(metric, 'diff ', 'Δ')) %>%
-  mutate(t = case_when(t == 'len' ~ 'body length',
-                       t == 'mob' ~ 'adult mobility',
-                       t == 'trp' ~ 'trophic level',
-                       t == 'wcol' ~ 'water column position')) %>%
-  sample_frac(.1)
+plot_f <- '_figs/chi_stat_by_trait_scatter.png'
+if(!file.exists(plot_f)) {
+  chi_plot_df <- chi_df %>%
+    filter(stat %in% c('mean', 'cv', 'diff')) %>%
+    mutate(metric = paste(stat, param)) %>%
+    mutate(metric = str_replace(metric, 'chi', '(CHI)'),
+           metric = str_replace(metric, 'mean ', 'mean'),
+           metric = str_replace(metric, 'cv ', 'CV'),
+           metric = str_replace(metric, 'diff ', 'Δ')) %>%
+    mutate(t = case_when(t == 'len' ~ 'body length',
+                         t == 'mob' ~ 'adult mobility',
+                         t == 'trp' ~ 'trophic level',
+                         t == 'wcol' ~ 'water column position')) %>%
+    sample_frac(.1)
+  
+  p <- ggplot(chi_plot_df, aes(x = nspp, y = val)) +
+    geom_point(alpha = .2) +
+    theme_ohara() +
+    facet_grid(metric ~ t, scales = 'free_y') +
+    labs(x = 'Species richness') +
+    theme(axis.title.y = element_blank())
+  
+  ggsave(plot_f, width = 6, height = 3, dpi = 300)
+}
 
-p <- ggplot(chi_plot_df, aes(x = nspp, y = val)) +
-  geom_point(alpha = .2) +
-  theme_ohara() +
-  facet_grid(metric ~ t, scales = 'free_y') +
-  labs(x = 'Species richness') +
-  theme(axis.title.y = element_blank())
-
-ggsave('_figs/chi_stat_by_trait_scatter.png', width = 6, height = 3, dpi = 300)
-
-knitr::include_graphics('_figs/chi_stat_by_trait_scatter.png')
+knitr::include_graphics(plot_f)
 
 ```
+
+# Fig for SI
+
+Combine the FV variation and CHI variation into a large panel.
+
+```{r}
+p <- ggdraw() +
+  draw_image(fv_fig_f,  x = 0.0, y = 0.51, width = 1.0, height = 0.49) +
+  draw_image(chi_fig_f, x = 0.0, y = 0.0,  width = 1.0, height = 0.49) +
+  draw_label('A.', x = .07, y = .995, hjust = 0, vjust = 1,
+             size = 7, color = 'black', fontfamily = 'Helvetica', fontface = 'bold') +
+  draw_label('B.', x = 0.5, y = .995, hjust = 0, vjust = 1,
+             size = 7, color = 'black', fontfamily = 'Helvetica', fontface = 'bold') +
+  draw_label('C.', x = .07, y = .748, hjust = 0, vjust = 1,
+             size = 7, color = 'black', fontfamily = 'Helvetica', fontface = 'bold') +
+  draw_label('D.', x = 0.5, y = .748, hjust = 0, vjust = 1,
+             size = 7, color = 'black', fontfamily = 'Helvetica', fontface = 'bold') +
+  draw_label('E.', x = .07, y = .485, hjust = 0, vjust = 1,
+             size = 7, color = 'black', fontfamily = 'Helvetica', fontface = 'bold') +
+  draw_label('F.', x = 0.5, y = .485, hjust = 0, vjust = 1,
+             size = 7, color = 'black', fontfamily = 'Helvetica', fontface = 'bold') +
+  draw_label('G.', x = .07, y = .235, hjust = 0, vjust = 1,
+             size = 7, color = 'black', fontfamily = 'Helvetica', fontface = 'bold') +
+  draw_label('H.', x = 0.5, y = .235, hjust = 0, vjust = 1,
+             size = 7, color = 'black', fontfamily = 'Helvetica', fontface = 'bold')
+
+si_fig_file <- here('5_ms_figs/figS4_sens_analysis.png')
+ggsave(si_fig_file, height = 11.5, width = 12, units = 'cm', dpi = 300)
+
+knitr::include_graphics(si_fig_file)
+```
+
