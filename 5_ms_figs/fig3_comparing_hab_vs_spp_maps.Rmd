@@ -253,25 +253,32 @@ panel_lgd   <- get_panel(panel_lgd_raw)
 
 ```
 
+             
 ```{r}
+plot_w <- 12; plot_h <- 5.5
 ### parameterize legends for easier changing of label positions:
-lgd_xy <- c(x = .875, y = .39, h = .144, w = .12)
+lgd_xy <- c(x = .30, y = 0.12, h = .23, w = .11)
+p_w <- 0.55
+p_h <- p_w / 2 * plot_w/plot_h ### last normalizes aspect ratio
+a <- c(x = 0.00, y = 0.39)
+b <- c(x = 1-p_w, y = 0.0)
 
-fig_3 <- ggdraw() +
+fig3_panels <- ggdraw() +
   ### draw panels:
-  draw_plot(panel_a_map,  x = 0.00, y = 0.505, height = 0.49, width = 0.88) +
-  draw_plot(panel_b_map,  x = 0.00, y = 0.005, height = 0.49, width = 0.88) +
+  draw_plot(panel_a_map,  x = a['x'], y = a['y'], height = p_h, width = p_w) +
+  draw_plot(panel_b_map,  x = b['x'], y = b['y'], height = p_h, width = p_w) +
   ### draw legend:
   draw_plot(panel_lgd, x = lgd_xy['x'], y = lgd_xy['y'], 
             height = lgd_xy['h'], width = lgd_xy['w']) +
   ### Panel labels:
-  draw_label('A   Climate', x = 0.002, y = .97, hjust = 0, vjust = 1, 
+  draw_label('A. Climate', x = a['x'], y = a['y'] + p_h + .005,  hjust = 0, vjust = 1, 
              size = 9, fontfamily = 'Helvetica', fontface = 'bold') +
-  draw_label('B   Non-climate', x = 0.002, y = .47, hjust = 0, vjust = 0, 
+  draw_label('B. Non-climate', x = 1,  y = b['y'] + p_h,  hjust = 1, vjust = 0, 
              size = 9, fontfamily = 'Helvetica', fontface = 'bold') +
   ### Legend labels:
   draw_label('Species vs. Habitat\nimpacts (quartiles)',
-             x = 0.99, y = .54, hjust = 1, vjust = 0, angle = 0,
+             x = lgd_xy['x'] - .05, y = lgd_xy['y'] + lgd_xy['h']/2, 
+             hjust = 1, vjust = 0.5, angle = 0,
              size = 7, color = 'black', fontfamily = 'Helvetica', fontface = 'bold') +
   draw_label('Habitat →', 
              x = lgd_xy['x'], y = lgd_xy['y'] - .005, 
@@ -282,7 +289,7 @@ fig_3 <- ggdraw() +
              hjust = 0, vjust = 0, angle = 90,
              size = 6, color = 'black', fontfamily = 'Helvetica', fontface = 'bold')
 
-ggsave(fig3_file, width = 12, height = 10, units = 'cm', dpi = 300)
+ggsave(fig3_file, width = plot_w, height = plot_h, units = 'cm', dpi = 300)
 
 knitr::include_graphics(fig3_file)
 ```
@@ -333,73 +340,4 @@ $$I_{spp}^{cc} = 0.085 I_{hab}^{cc} + 0 \quad (adj.R^2 = 0.781)$$
 $$I_{spp}^{non-cc} = 0.282 I_{hab}^{non-cc} + 0 \quad (adj.R^2 = 0.574)$$
 
 
-## SI plot - habitat climate vs. non-climate
 
-Use a four-level bivariate color scale to capture spatial overlap of quartiles for climate and non-climate stressors on habitats.
-
-```{r SI fig}
-
-hab_overlap_summary <- cc_noncc_hab_df %>%
-  group_by(bi_class) %>%
-  summarize(ncell = n(),
-            pct = n() / nrow(.))
-knitr::kable(hab_overlap_summary, digits = 4, 
-             col.names = c('hab CHI overlap', '# of cells', '% of area'))
-
-hab_cc_noncc <- ggplot() +
-  ### background for NA cells:
-  geom_raster(data = ocean_df, aes(x, y), fill = 'grey85') +
-  ### plot data:
-  geom_raster(data = cc_noncc_hab_df, aes(x, y, fill = bi_class), 
-              show.legend = FALSE) +
-  # bi_scale_fill(pal = pal_name, dim = 4) +
-  bi_scale_fill(pal = map_pal, dim = 4) +
-  ### continents:
-  geom_sf(data = land_sf,
-          fill = 'grey96', color = NA, 
-          size = .1) +
-  geom_sf(data = globe_border,
-          fill = NA, color = 'grey70', 
-          size = .1) +
-  scale_x_continuous(expand = c(0, 0)) +
-  scale_y_continuous(expand = c(0, 0)) +
-  theme_void() +
-  theme(axis.text = element_blank(), 
-        axis.title = element_blank())
-
-
-panel_si_map <- get_panel(hab_cc_noncc)
-
-```
-
-
-
-```{r}
-### parameterize legends for easier changing of label positions:
-lgd_xy <- c(x = .88, y = .40, h = .264, w = .11)
-
-fig_SI <- ggdraw() +
-  ### draw panels:
-  draw_plot(panel_si_map,  x = 0.00, y = 0, height = 1, width = 0.85) +
-  ### draw legend:
-  draw_plot(panel_lgd, x = lgd_xy['x'], y = lgd_xy['y'], 
-            height = lgd_xy['h'], width = lgd_xy['w']) +
-  ### Legend labels:
-  ### panel A labels:
-  draw_label('Climate v. non-\nclimate impacts\n(quartiles)',
-             x = 0.99, y = .70, hjust = 1, vjust = 0, angle = 0,
-             size = 7, color = 'black', fontfamily = 'Helvetica', fontface = 'bold') +
-  draw_label('Climate →', 
-             x = lgd_xy['x'], y = lgd_xy['y'] - .005, 
-             hjust = 0, vjust = 1, angle = 0,
-             size = 6, color = 'black', fontfamily = 'Helvetica', fontface = 'bold') +
-  draw_label('Non-climate →', 
-             x = lgd_xy['x'] - .005, y = lgd_xy['y'], 
-             hjust = 0, vjust = 0, angle = 90,
-             size = 6, color = 'black', fontfamily = 'Helvetica', fontface = 'bold')
-
-fig_si_file <- here('5_ms_figs/figSI_map_hab_cc_noncc.png')
-ggsave(fig_si_file, width = 12, height = 5, units = 'cm', dpi = 300)
-
-knitr::include_graphics(fig_si_file)
-```

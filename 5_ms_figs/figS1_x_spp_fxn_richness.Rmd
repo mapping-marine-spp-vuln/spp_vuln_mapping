@@ -1,0 +1,252 @@
+---
+title: "Figure S1: Maps of spp richness, functional richness, FD"
+author: "*Compiled on `r date()` by `r Sys.info()['user']`*"
+output: 
+  html_document:
+    code_folding: hide
+    toc: true
+    toc_depth: 3
+    toc_float: yes
+    number_sections: true
+    theme: cerulean
+    highlight: haddock
+    includes: 
+      in_header: '~/github/src/templates/ohara_hdr.html'
+  pdf_document:
+    toc: true
+---
+
+``` {r setup, echo = TRUE, message = FALSE, warning = FALSE}
+
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE, fig.height = 4, fig.width = 7)
+
+library(terra)
+library(sf)
+library(oharac)
+library(data.table)
+library(tidyverse)
+library(cowplot)
+library(here)
+source(here('common_fxns.R'))
+
+```
+
+# Summary
+
+Create spp richness and functional richness figs for manuscript SI
+
+# Data
+
+Results from scripts in folder `2_process_spp_vuln_and_impacts`
+
+# Methods
+
+Read in the output rasters for species-level impacts (unweighted); reclassify based on quartile/quintile.  Fig. 1A is bivariate plot of climate vs. non-climate stressors for equal weighted species average, Fig. 1B is bivariate plot of climate vs. non-climate stressors for FV-weighted FE average; Fig. 1C and 1D are %difference plots for each category.
+
+NOTE: dropping cells with fewer than 20 species, mostly in the Arctic, a few in Antarctic.
+
+```{r}
+ocean_map <- rast(here('_spatial/ocean_area_mol.tif'))
+ocean_df <- as.data.frame(ocean_map, xy = TRUE)
+
+land_sf <- read_sf(here('_spatial/ne_10m_land/ne_10m_land_no_casp.shp')) %>%
+  st_transform(st_crs(ocean_map))
+
+nspp_mask <- rast(here('_output/nspp_maps/species_richness.tif')) %>%
+  setNames('n_spp')
+
+fd_map_fs <- here('_output/func_entities', c('n_fe.tif', 
+                                             'f_wvuln.tif', 
+                                             'f_red.tif', 
+                                             'f_overred.tif'))
+fd_maps <- rast(fd_map_fs) %>%
+  mask(nspp_mask)
+
+maps_df <- as.data.frame(c(nspp_mask, fd_maps), xy = TRUE)
+```
+
+
+## Create panels
+
+### Plot 1: Species richness
+
+```{r define globe boundary}
+globe_bbox <- rbind(c(-180, -90), c(-180, 90), 
+                      c(180, 90), c(180, -90), c(-180, -90)) 
+globe_border <- st_polygon(list(globe_bbox)) %>%
+  st_sfc(crs = 4326) %>%
+  st_sf(data.frame(rgn = 'globe', geom = .)) %>%
+  smoothr::densify(max_distance = 0.5) %>%
+  st_transform(crs = crs(ocean_map))
+```
+
+```{r species richness plot}
+spp_max <- max(maps_df$n_spp)
+
+complete_map <- function(p) {
+  pp <- p + 
+    geom_sf(data = land_sf,
+            fill = 'grey96', color = 'grey40', 
+            size = .1) +
+    geom_sf(data = globe_border,
+            fill = NA, color = 'grey70', 
+            size = .1) +
+    scale_x_continuous(expand = c(0, 0)) +
+    scale_y_continuous(expand = c(0, 0)) +
+    theme_void() +
+    theme(text = element_text(size = 7),
+          axis.text = element_blank(), 
+          axis.title = element_blank())
+  return(pp)
+}
+
+sr_map <- ggplot() +
+  ### plot data:
+  geom_raster(data = maps_df, aes(x, y, fill = log10(n_spp)))
+
+sr_map <- complete_map(sr_map) +
+  scale_fill_viridis_c(breaks = c(0, 1, 2, 3, log10(spp_max)),
+                       labels = c(1, 10, 100, 1000, spp_max),
+                       limits = c(0, log10(spp_max))) +
+  labs(fill = '# species')
+
+fig_nspp_f <- 'figS1_spp_richness.png'
+ggsave(fig_nspp_f, height = 3, width = 6.5, dpi = 300, units = 'in')
+knitr::include_graphics(fig_nspp_f)
+```
+
+### Plot 2: Functional diversity metrics, with plots vs spp richness
+
+```{r Panel a funct richness}
+fe_max <- max(maps_df$n_fe)
+
+fr_map <- ggplot() +
+  ### plot data:
+  geom_raster(data = maps_df, aes(x, y, fill = log10(n_fe)))
+
+fr_map <- complete_map(fr_map) +
+  scale_fill_viridis_c(breaks = c(0, 1, 2, log10(fe_max)),
+                       labels = c(1, 10, 100, fe_max),
+                       limits = c(0, log10(fe_max))) +
+  labs(fill = '# FEs')
+
+# fr_map
+```
+
+```{r Panel c funct vulnerability}
+fv_map <- ggplot() +
+  ### plot data:
+  geom_raster(data = maps_df, aes(x, y, fill = f_wvuln))
+
+fv_map <- complete_map(fv_map) +
+  scale_fill_viridis_c(limits = c(0, 1)) +
+  labs(fill = 'Funct\nvuln')
+
+# fv_map
+```
+
+```{r Panel e funct redundancy}
+fred_map <- ggplot() +
+  ### plot data:
+  geom_raster(data = maps_df, aes(x, y, fill = f_red))
+
+fred_map <- complete_map(fred_map) +
+  scale_fill_viridis_c(limits = c(0, NA)) +
+  labs(fill = 'Funct\nred')
+
+# fred_map
+```
+
+```{r Panel g funct overredundancy}
+for_map <- ggplot() +
+  ### plot data:
+  geom_raster(data = maps_df, aes(x, y, fill = f_overred))
+
+for_map <- complete_map(for_map) +
+  scale_fill_viridis_c(limits = c(0, 1)) +
+  labs(fill = 'Funct\noverred')
+
+# for_map
+```
+
+```{r spp richness vs funct div plots}
+set.seed(42)
+sample_df <- maps_df %>%
+  sample_n(10000)
+
+fr_sr_plot <- ggplot(sample_df, aes(x = n_spp, y = n_fe)) +
+  theme_ohara(base_size = 7) +
+  geom_point(alpha = .2) +
+  theme(axis.title.y = element_blank()) +
+  labs(x = 'Species richness', y = 'Functional richness')
+
+fv_sr_plot <- ggplot(sample_df, aes(x = n_spp, y = f_wvuln)) +
+  theme_ohara(base_size = 7) +
+  geom_point(alpha = .2) +
+  ylim(c(0, 1)) +
+  theme(axis.title.y = element_blank()) +
+  labs(x = 'Species richness', y = 'Functional vulnerability')
+
+fred_sr_plot <- ggplot(sample_df, aes(x = n_spp, y = f_red)) +
+  theme_ohara(base_size = 7) +
+  geom_point(alpha = .2) +
+  theme(axis.title.y = element_blank()) +
+  labs(x = 'Species richness', y = 'Functional redundancy')
+
+for_sr_plot <- ggplot(sample_df, aes(x = n_spp, y = f_overred)) +
+  theme_ohara(base_size = 7) +
+  geom_point(alpha = .2) +
+  ylim(c(0, 1)) +
+  theme(axis.title.y = element_blank()) +
+  labs(x = 'Species richness', y = 'Functional overredundancy')
+
+# fr_sr_plot; fv_sr_plot; fred_sr_plot; for_sr_plot
+```
+
+
+
+## Assemble figure S2
+
+```{r assemble figure}
+figS2_file <- here('5_ms_figs/figSXXX_f_div_maps.png')
+m_w <- .65             ### map width
+m_h <- .22             ### map/plot height
+m_y <- (.25 - m_h) / 2 ### map/plot y offset
+m_x <- .01             ### map x offset
+l_w <- .05             ### label width (vertical between map and plot)
+p_x <- 2 * m_x + m_w + l_w ### x position of plot
+p_w <- 1 - p_x         ### plot width
+
+figS2 <- ggdraw() +
+  ### draw maps
+  draw_plot(fr_map,   x = m_x, y = m_y + .75, width = m_w, height = m_h) +
+  draw_plot(fv_map,   x = m_x, y = m_y + .50, width = m_w, height = m_h) +
+  draw_plot(fred_map, x = m_x, y = m_y + .25, width = m_w, height = m_h) +
+  draw_plot(for_map,  x = m_x, y = m_y + 0.0, width = m_w, height = m_h) +
+  ### draw plots
+  draw_plot(fr_sr_plot,   x = p_x, y = m_y + .75, width = p_w, height = m_h) +
+  draw_plot(fv_sr_plot,   x = p_x, y = m_y + .50, width = p_w, height = m_h) +
+  draw_plot(fred_sr_plot, x = p_x, y = m_y + .25, width = p_w, height = m_h) +
+  draw_plot(for_sr_plot,  x = p_x, y = m_y + 0.0, width = p_w, height = m_h) +
+  ### draw legend labels
+  draw_label('Functional richness',
+             x = p_x, y = .75 + m_h / 2, hjust = .5, angle = 90, vjust = 0, size = 7) +
+  draw_label('Functional vulnerability',
+             x = p_x, y = .50 + m_h / 2, hjust = .5, angle = 90, vjust = 0, size = 7) +
+  draw_label('Functional redundancy',
+             x = p_x, y = .25 + m_h / 2, hjust = .5, angle = 90, vjust = 0, size = 7) +
+  draw_label('Functional overredundancy',
+             x = p_x, y = 0.0 + m_h / 2, hjust = .5, angle = 90, vjust = 0, size = 7) +
+  ### draw panel labels
+  draw_label('A', x = m_x, y = 1.0 - m_y, hjust = 0, vjust = 1, size = 10, fontface = 'bold') +
+  draw_label('B', x = p_x, y = 1.0 - m_y, hjust = 0, vjust = 1, size = 10, fontface = 'bold') +
+  draw_label('C', x = m_x, y = .75 - m_y, hjust = 0, vjust = 1, size = 10, fontface = 'bold') +
+  draw_label('D', x = p_x, y = .75 - m_y, hjust = 0, vjust = 1, size = 10, fontface = 'bold') +
+  draw_label('E', x = m_x, y = .50 - m_y, hjust = 0, vjust = 1, size = 10, fontface = 'bold') +
+  draw_label('F', x = p_x, y = .50 - m_y, hjust = 0, vjust = 1, size = 10, fontface = 'bold') +
+  draw_label('G', x = m_x, y = .25 - m_y, hjust = 0, vjust = 1, size = 10, fontface = 'bold') +
+  draw_label('H', x = p_x, y = .25 - m_y, hjust = 0, vjust = 1, size = 10, fontface = 'bold')
+
+ggsave(filename = figS2_file, width = 6.5, height = 9, dpi = 300, units = 'in')
+knitr::include_graphics(figS2_file)
+```

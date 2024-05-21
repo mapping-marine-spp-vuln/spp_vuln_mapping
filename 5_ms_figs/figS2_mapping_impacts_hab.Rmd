@@ -269,22 +269,14 @@ figS2_panels <- ggdraw() +
   draw_plot(panel_d_map,  x = d['x'], y = d['y'], height = p_h, width = p_w)
 
 figS2_labels <- figS2_panels +
-  draw_label('A', x = a['x'], y = a['y'] + p_h,  hjust = 0, vjust = 0, 
+  draw_label('A. All stressors', x = a['x'], y = a['y'] + p_h,  hjust = 0, vjust = 0, 
              size = 9, fontfamily = 'Helvetica', fontface = 'bold') +
-  draw_label('B', x = 1,      y = b['y'] + p_h + .005,  hjust = 1, vjust = 0, 
+  draw_label('B. Climate stressors', x = 1,      y = b['y'] + p_h + .005,  hjust = 1, vjust = 0, 
              size = 9, fontfamily = 'Helvetica', fontface = 'bold') +
-  draw_label('C', x = c['x'], y = c['y'] + p_h + .005,  hjust = 0, vjust = 0, 
+  draw_label('C. Non-climate stressors', x = c['x'], y = c['y'] + p_h + .005,  hjust = 0, vjust = 0, 
              size = 9, fontfamily = 'Helvetica', fontface = 'bold') +
-  draw_label('D', x = 1,      y = d['y'] + p_h + .005,  hjust = 1, vjust = 0, 
-             size = 9, fontfamily = 'Helvetica', fontface = 'bold') +
-  draw_label('All stressors', x = a['x'] + .03,  y = a['y'] + p_h,  hjust = 0, vjust = 0, 
-             size = 9, fontfamily = 'Helvetica') +
-  draw_label('Climate stressors', x = 1 - .03, y = b['y'] + p_h + .005,  hjust = 1, vjust = 0, 
-             size = 9, fontfamily = 'Helvetica') +
-  draw_label('Non-climate stressors', x = c['x'] + .03,  y = c['y'] + p_h + .005,  hjust = 0, vjust = 0, 
-             size = 9, fontfamily = 'Helvetica') +
-  draw_label('Climate vs. non-climate', x = 1 - .03,   y = d['y'] + p_h + .005,  hjust = 1, vjust = 0, 
-             size = 9, fontfamily = 'Helvetica')
+  draw_label('D. Climate vs. non-climate', x = 1,      y = d['y'] + p_h + .005,  hjust = 1, vjust = 0, 
+             size = 9, fontfamily = 'Helvetica', fontface = 'bold')
 ```
 
 ``` {r finish plot with legends}
@@ -299,12 +291,12 @@ figS2_legends <- figS2_labels +
   draw_plot(panel_d_lgd, x = l2['x'], y = l2['y'],
             height = l2['h'], width = l2['w']) +
   ### Legend label for CHI:
-  draw_label('Cumulative\nhuman impacts',
+  draw_label('A-C: Cumulative\nhuman impacts',
              x = l1['x'] + l1['w'] + .04, y = l1['y'] + l1['h'] * .5 , 
              hjust = 0, vjust = .5, angle = 0,
              size = 7, color = 'black', fontfamily = 'Helvetica', fontface = 'bold') +
   ### Legend labels for biscale:
-  draw_label('Climate vs. non-\nclimate impacts\n(quartiles)',
+  draw_label('D: Climate vs. non-\nclimate impacts\n(quartiles)',
              x = l2['x'] - .03, y = l2['y'] + l2['h'] * .5 , 
              hjust = 1, vjust = .5, angle = 0,
              size = 7, color = 'black', fontfamily = 'Helvetica', fontface = 'bold') +

@@ -79,7 +79,21 @@ sig_hi_count_df <- sig_diff_r[[1]] %>%
 sig_lo_count_df <- sig_diff_r[[2]] %>%
   as.data.frame(xy = TRUE) %>%
   mutate(sumfct = factor(sum, levels = 1:num_strs))
+
+sig_diff_df <- ocean_df %>%
+  left_join(sig_hi_count_df %>% select(x, y, sum_hi = sum)) %>%
+  left_join(sig_lo_count_df %>% select(x, y, sum_lo = sum)) %>%
+  mutate(diff = case_when(is.na(sum_hi) ~ sum_lo,
+                          is.na(sum_lo) ~ sum_hi,
+                          TRUE ~ sum_hi + sum_lo))
+
+sig_diff_pct <- sig_diff_df %>%
+  summarize(pct = sum(!is.na(diff)) / n())
+
+# ggplot(sig_diff_df, aes(x, y, fill = diff)) + geom_raster() + coord_sf
 ```
+
+Percent of ocean with at least 1 significantly different (higher OR lower) stressor: `r round(sig_diff_pct * 100, 2)`%
 
 ```{r prepare panel A}
 panel_a <- ggplot() +
@@ -100,11 +114,14 @@ panel_a <- ggplot() +
   theme_void() +
   theme(axis.text = element_blank(), 
         axis.title = element_blank(),
+        legend.position = 'bottom',
         legend.key.size = unit(.35, 'cm'),
         legend.margin = margin(0, 0, 0, 0, unit = 'pt'),
         legend.text = element_text(size = 6, color = 'black', 
-                                   hjust = 0, vjust = 0.5, angle = 0),
-        legend.title = element_blank())
+                                   hjust = 0.5, vjust = 1, angle = 0),
+        legend.spacing.x = unit(0, 'cm'),
+        legend.title = element_blank()) +
+  guides(fill = guide_legend(label.position = "bottom", nrow = 1))
 
 # panel_a
 ```
@@ -145,27 +162,32 @@ panel_lgd   <- get_legend(panel_a)
 ```
 
 ```{r}
+plot_w <- 12; plot_h <- 5.5
 ### parameterize legends for easier changing of label positions:
-lgd_xy <- c(x = .875, y = .4, h = .2, w = .12)
+lgd_xy <- c(x = .15, y = 0.06, h = .22, w = .22)
+p_w <- 0.55
+p_h <- p_w / 2 * plot_w/plot_h ### last normalizes aspect ratio
+a <- c(x = 0.00, y = 0.39)
+b <- c(x = 1-p_w, y = 0.0)
 
-fig_6 <- ggdraw() +
+x <- ggdraw() +
   ### draw panels:
-  draw_plot(panel_a_map,  x = 0.00, y = 0.505, height = 0.49, width = 0.88) +
-  draw_plot(panel_b_map,  x = 0.00, y = 0.005, height = 0.49, width = 0.88) +
+  draw_plot(panel_a_map,  x = a['x'], y = a['y'], height = p_h, width = p_w) +
+  draw_plot(panel_b_map,  x = b['x'], y = b['y'], height = p_h, width = p_w) +
   ### draw legend:
   draw_plot(panel_lgd, x = lgd_xy['x'], y = lgd_xy['y'], 
             height = lgd_xy['h'], width = lgd_xy['w']) +
   ### Panel labels:
-  draw_label('A', x = 0.002, y = .97, hjust = 0, vjust = 1, 
+  draw_label('A.', x = a['x'], y = 1,  hjust = 0, vjust = 1, 
              size = 9, fontfamily = 'Helvetica', fontface = 'bold') +
-  draw_label('B', x = 0.002, y = .47, hjust = 0, vjust = 0, 
-             size = 9, fontfamily = 'Helvetica', fontface = 'bold') + 
-  ### legend label: 
-  draw_label('Stressor\ncount', x = lgd_xy['x'], y = lgd_xy['y'] + lgd_xy['h']/2, 
-             hjust = 1, vjust = .5, 
+  draw_label('B.', x = 1,  y = b['y'] + p_h -.01,  hjust = 1, vjust = 1, 
+             size = 9, fontfamily = 'Helvetica', fontface = 'bold') +
+  ### legend label:
+  draw_label('Stressor count', x = lgd_xy['x'] + lgd_xy['w'] / 2, y = lgd_xy['y'] + lgd_xy['h'],
+             hjust = .5, vjust = 1,
              size = 7, fontfamily = 'Helvetica', fontface = 'bold')
 
-ggsave(fig6_file, width = 12, height = 10, units = 'cm', dpi = 300)
+ggsave(fig6_file, height = plot_h, width = plot_w, units = 'cm', dpi = 300)
 
 knitr::include_graphics(fig6_file)
 ```

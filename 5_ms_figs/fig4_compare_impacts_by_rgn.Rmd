@@ -269,11 +269,11 @@ fig4 <- ggdraw() +
   draw_plot(panel_a_lgd, x = lgd_a_xy['x'], y = lgd_a_xy['y'], 
             height = lgd_a_xy['h'], width = lgd_a_xy['w']) +
   ### Panel labels:
-  draw_label('A', x = 0.002, y = .99, hjust = 0, vjust = 1, 
+  draw_label('A.', x = 0.002, y = .99, hjust = 0, vjust = 1, 
              size = 9, fontfamily = 'Helvetica', fontface = 'bold') +
-  draw_label('B', x = 0.37, y = .99, hjust = 0, vjust = 1, 
+  draw_label('B.', x = 0.365, y = .99, hjust = 0, vjust = 1, 
              size = 9, fontfamily = 'Helvetica', fontface = 'bold') +
-  draw_label('C', x = 0.64, y = .99, hjust = 0, vjust = 1, 
+  draw_label('C.', x = 0.635, y = .99, hjust = 0, vjust = 1, 
              size = 9, fontfamily = 'Helvetica', fontface = 'bold')
 
 
@@ -401,15 +401,15 @@ fig_SI <- ggdraw() +
   draw_plot(panel_a_SI_lgd, x = lgd_a_xy['x'], y = lgd_a_xy['y'], 
             height = lgd_a_xy['h'], width = lgd_a_xy['w']) +
   ### Panel labels:
-  draw_label('A', x = 0.002, y = .99, hjust = 0, vjust = 1, 
+  draw_label('A.', x = 0.002, y = .99, hjust = 0, vjust = 1, 
              size = 9, fontfamily = 'Helvetica', fontface = 'bold') +
-  draw_label('B', x = 0.44, y = .99, hjust = .5, vjust = 1, 
+  draw_label('B.', x = 0.445, y = .99, hjust = .5, vjust = 1, 
              size = 9, fontfamily = 'Helvetica', fontface = 'bold') +
-  draw_label('C', x = 0.68, y = .99, hjust = .5, vjust = 1, 
+  draw_label('C.', x = 0.685, y = .99, hjust = .5, vjust = 1, 
              size = 9, fontfamily = 'Helvetica', fontface = 'bold')
 
 
-figSI_file <- here('5_ms_figs/figSI_impacts_by_ecoregion_province.png')
+figSI_file <- here('5_ms_figs/figS3_impacts_by_ecoregion_province.png')
 ggsave(figSI_file, width = 18, height = 26.67, units = 'cm', dpi = 300)
 
 knitr::include_graphics(figSI_file)
