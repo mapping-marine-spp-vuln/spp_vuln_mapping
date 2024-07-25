@@ -1,5 +1,5 @@
 ---
-title: "Figure S2: Maps of Habitat CHI"
+title: "Figure 2: Maps of Habitat CHI"
 author: "*Compiled on `r date()` by `r Sys.info()['user']`*"
 output: 
   html_document:
@@ -44,6 +44,7 @@ Results from scripts in folder `3_process_hab_vuln_and_impacts`
 
 Read in the output rasters for habitat-level impacts (unweighted) - total, climate, and non-climate; reclassify based on quartile/quintile for biplot. 
 
+
 ```{r}
 ocean_map <- rast(here('_spatial/ocean_area_mol.tif'))
 ocean_df <- as.data.frame(ocean_map, xy = TRUE)
@@ -67,19 +68,26 @@ chi_total_map_hab <- rast(here('_output/cumulative_impact_maps/chi_habitat.tif')
 
 ### Panel A: total CHI
 
+Squashing extreme outliers!
 ```{r}
+squash_outliers <- quantile(values(chi_total_map_hab), .9999, na.rm = TRUE)
+
 cc_hab_df <- as.data.frame(climate_map_hab, xy = TRUE) %>%
-  setNames(c('x', 'y', 'cc_hab'))
+  setNames(c('x', 'y', 'cc_hab')) %>%
+  mutate(cc_hab = ifelse(cc_hab < squash_outliers, cc_hab, squash_outliers))
 noncc_hab_df <- as.data.frame(nonclimate_map_hab, xy = TRUE) %>%
-  setNames(c('x', 'y', 'noncc_hab'))
+  setNames(c('x', 'y', 'noncc_hab')) %>%
+  mutate(cc_hab = ifelse(noncc_hab < squash_outliers, noncc_hab, squash_outliers))
 chi_hab_df <- as.data.frame(chi_total_map_hab, xy = TRUE) %>%
-  setNames(c('x', 'y', 'chi'))
+  setNames(c('x', 'y', 'chi')) %>%
+  mutate(chi = ifelse(chi < squash_outliers, chi, squash_outliers))
 
 chi_lims <- c(0, round(max(chi_hab_df$chi), 2))
-chi_brks <- c(0, .2, .5, 1, 2, 5, round(max(chi_hab_df$chi), 1))
+chi_brks <- c(0, 1, 2, 3, 4, round(max(chi_hab_df$chi), 2))
 chi_lbls <- sprintf('%.2f', chi_brks)
+chi_lbls[length(chi_lbls)] <- paste0('≥ ', chi_lbls[length(chi_lbls)])
 
-xfm <- function(x) {x^.5} ### function to warp CHI scale for visual impact
+xfm <- function(x) {x^1} ### function to warp CHI scale for visual impact
 ```
 
 
@@ -94,6 +102,12 @@ globe_border <- st_polygon(list(globe_bbox)) %>%
 ```
 
 ```{r panel A}
+inset_bbox_df <- tribble(
+  ~xmin,   ~xmax,  ~ymin,  ~ymax, ~loc,
+ -1.0e6,  +3.5e6, +3.5e6, +8.0e6, 'europe',
+ +8.5e6, +13.5e6, -0.0e6, +5.0e6, 'se_asia',
+ -9.5e6, -5.5e6, +0.5e6, +4.5e6, 'caribbean'
+ )
 
 panel_a_chi <- ggplot() +
   ### plot data:
@@ -105,17 +119,45 @@ panel_a_chi <- ggplot() +
   geom_sf(data = globe_border,
           fill = NA, color = 'grey70', 
           size = .1) +
+  geom_rect(data = inset_bbox_df, aes(xmin = xmin, xmax = xmax, ymin = ymin, ymax = ymax),
+            color = 'red', fill = NA, linewidth = 0.2) +
   scale_fill_viridis_c(limits = xfm(chi_lims), breaks = xfm(chi_brks), labels = chi_lbls) +
   scale_x_continuous(expand = c(0, 0)) +
   scale_y_continuous(expand = c(0, 0)) +
   theme_void() +
   theme(axis.text = element_blank(), 
         axis.title = element_blank(),
-        legend.text = element_text(hjust = 0, vjust = .5, size = 5),
+        legend.text = element_text(hjust = 0.5, vjust = 1, size = 7, angle = 0),
         legend.title = element_blank(),
-        legend.key.size = unit(.3, 'cm'))
+        legend.key.height = unit(.16, 'in'),
+        legend.key.width = unit(.32, 'in'),
+        legend.direction = 'horizontal')
 
 # panel_a_chi
+# asdf <- get_legend(panel_a_chi)
+```
+
+```{r function for plotting insets}
+
+plot_inset <- function(chi_df, bbox_df) {
+  ### for chi_df, rename the chi column to just 'chi'
+  ### for bbox_df, filter to the appropriate row
+  ggplot() +
+    ### plot data:
+    geom_raster(data = chi_df, aes(x, y, fill = xfm(chi)), show.legend = FALSE) +
+    scale_fill_viridis_c(limits = xfm(chi_lims), breaks = xfm(chi_brks), labels = chi_lbls) +
+    scale_x_continuous(expand = c(0, 0), limits = c(bbox_df$xmin[1], bbox_df$xmax[1])) +
+    scale_y_continuous(expand = c(0, 0), limits = c(bbox_df$ymin[1], bbox_df$ymax[1])) +
+    theme_void() +
+    theme(panel.border = element_rect(color = 'black', fill = NA, linewidth = .5),
+          panel.background = element_rect(color = NA, fill = 'grey96'))
+}
+
+inset_a_i <- plot_inset(chi_df = chi_hab_df, bbox_df = inset_bbox_df %>% filter(loc == 'europe'))
+inset_a_ii <- plot_inset(chi_df = chi_hab_df, bbox_df = inset_bbox_df %>% filter(loc == 'caribbean'))
+inset_a_iii <- plot_inset(chi_df = chi_hab_df, bbox_df = inset_bbox_df %>% filter(loc == 'se_asia'))
+
+
 ```
 
 ```{r panel B}
@@ -130,6 +172,8 @@ panel_b_cc <- ggplot() +
   geom_sf(data = globe_border,
           fill = NA, color = 'grey70', 
           size = .1) +
+  # geom_rect(data = inset_bbox_df, aes(xmin = xmin, xmax = xmax, ymin = ymin, ymax = ymax),
+  #           color = 'red', fill = NA, linewidth = 0.2) +
   scale_fill_viridis_c(limits = xfm(chi_lims), breaks = xfm(chi_brks), labels = chi_brks) +
   scale_x_continuous(expand = c(0, 0)) +
   scale_y_continuous(expand = c(0, 0)) +
@@ -152,6 +196,8 @@ panel_c_noncc <- ggplot() +
   geom_sf(data = globe_border,
           fill = NA, color = 'grey70', 
           size = .1) +
+  # geom_rect(data = inset_bbox_df, aes(xmin = xmin, xmax = xmax, ymin = ymin, ymax = ymax),
+  #           color = 'red', fill = NA, linewidth = 0.2) +
   scale_fill_viridis_c(limits = xfm(chi_lims), breaks = xfm(chi_brks), labels = chi_brks) +
   scale_x_continuous(expand = c(0, 0)) +
   scale_y_continuous(expand = c(0, 0)) +
@@ -164,7 +210,38 @@ panel_c_noncc <- ggplot() +
 
 
 
-### Set up palettes for biplot
+
+
+### Panel D: hab climate vs nonclimate bivariate plot
+
+Use a four-level bivariate color scale to capture spatial overlap of quartiles for climate and non-climate stressors.
+
+Reclassify values using `ntile` to get quartile values:
+```{r reclass eq weight}
+cc_qtile_hab <- noncc_qtile_hab <- climate_map_hab ### initialize two new maps
+values(cc_qtile_hab) <- ntile(values(climate_map_hab), 4)
+values(noncc_qtile_hab) <- ntile(values(nonclimate_map_hab), 4)
+```
+
+```{r hab dataframes}
+cc_hab_qtile_df <- as.data.frame(cc_qtile_hab, xy = TRUE) %>%
+  setNames(c('x', 'y', 'cc_hab'))
+noncc_hab_qtile_df <- as.data.frame(noncc_qtile_hab, xy = TRUE) %>%
+  setNames(c('x', 'y', 'noncc_hab'))
+
+cc_noncc_hab_qtile_df <- full_join(cc_hab_qtile_df, noncc_hab_qtile_df, by = c('x', 'y')) %>%
+  mutate(bi_class = paste(cc_hab, noncc_hab, sep = '-'))
+
+cc_noncc_summary <- cc_noncc_hab_qtile_df %>%
+  group_by(cc_hab, noncc_hab) %>%
+  summarize(n = n(),
+            pct = n() / nrow(cc_noncc_hab_qtile_df), 
+            .groups = 'drop') %>%
+  mutate(pct = round(pct * 100, 1),
+         lbl = paste0(pct, '%'))
+
+knitr::kable(cc_noncc_summary, digits = 3)
+```
 
 For the bivariate color plot, one axis of colors represents climate, the other represents non-climate; for corner values (max agreement and max disagreement), use diverging color palettes; for intermediate values use a light shading to indicate variation more subtly.
 
@@ -183,38 +260,40 @@ map_pal_mtx[1, 1] <- '#ffffee'
 map_pal <- as.vector(map_pal_mtx) %>% setNames(names(map_pal_raw))
 
 panel_lgd_raw <- bi_legend(pal = map_pal, dim = 4,
-                           x = 'CHI Hab',
-                           y = 'CHI FE')
-# panel_lgd_raw
+                           x = 'Climate',
+                           y = 'Non-climate')
+
+si_fig <- panel_lgd_raw + 
+  geom_text(data = cc_noncc_summary %>%
+              filter(cc_hab + noncc_hab < 6), 
+            aes(x = cc_hab, y = noncc_hab, label = lbl),
+            hjust = .5, vjust = .5, color = 'black', size = 3) + 
+  geom_text(data = cc_noncc_summary %>%
+              filter(cc_hab + noncc_hab >= 6), 
+            aes(x = cc_hab, y = noncc_hab, label = lbl),
+            hjust = .5, vjust = .5, color = 'white', size = 3) +
+  scale_x_continuous(expand = c(0, 0)) +
+  scale_y_continuous(expand = c(0, 0)) +
+  theme(axis.title = element_text(hjust = 0, size = 12, face = 'bold', family = 'Helvetica'),
+        panel.border = element_rect(color = 'black', fill = NA))
+si_fig
+
+ggsave(filename = 'figSXXXB_hab_legend_w_pcts.png', plot = si_fig, height = 3, width = 3, units = 'in', dpi = 300)
 ```
 
-### Panel D: habitat climate vs nonclimate bivariate plot
+```{r}
+figSXXXA <- magick::image_read('figSXXXA_spp_legend_w_pcts.png')
+figSXXXB <- magick::image_read('figSXXXB_hab_legend_w_pcts.png')
 
-Use a four-level bivariate color scale to capture spatial overlap of quartiles for climate and non-climate stressors.
-
-Reclassify values using `ntile` to get quartile values:
-```{r reclass eq weight}
-cc_qtile_hab <- noncc_qtile_hab <- climate_map_hab ### initialize two new maps
-values(cc_qtile_hab) <- ntile(values(climate_map_hab), 4)
-values(noncc_qtile_hab) <- ntile(values(nonclimate_map_hab), 4)
-```
-
-```{r habitat dataframes}
-cc_hab_qtile_df <- as.data.frame(cc_qtile_hab, xy = TRUE) %>%
-  setNames(c('x', 'y', 'cc_hab'))
-noncc_hab_qtile_df <- as.data.frame(noncc_qtile_hab, xy = TRUE) %>%
-  setNames(c('x', 'y', 'noncc_hab'))
-
-cc_noncc_hab_qtile_df <- full_join(cc_hab_qtile_df, noncc_hab_qtile_df, by = c('x', 'y')) %>%
-  mutate(bi_class = paste(cc_hab, noncc_hab, sep = '-'))
-
-cc_noncc_summary <- cc_noncc_hab_qtile_df %>%
-  group_by(cc_hab, noncc_hab) %>%
-  summarize(n = n(),
-            pct = n() / nrow(cc_noncc_hab_qtile_df), 
-            .groups = 'drop')
-
-knitr::kable(cc_noncc_summary, digits = 3)
+ggdraw() +
+  draw_image(figSXXXA, x = 0.0, y = 0, width = .5, height = 1) +
+  draw_image(figSXXXB, x = 0.5, y = 0, width = .5, height = 1) +
+  draw_label('A', x = 0.01, y = .98, hjust = 0, vjust = 1, 
+             size = 12, fontfamily = 'Helvetica', fontface = 'bold') +
+  draw_label('B', x = 0.51, y = .98, hjust = 0, vjust = 1, 
+             size = 12, fontfamily = 'Helvetica', fontface = 'bold')
+ggsave('figSXXX_combined_legend_w_pcts.png', width = 4, height = 2)
+  
 ```
 
 
@@ -230,6 +309,8 @@ panel_d_biplot <- ggplot() +
   geom_sf(data = globe_border,
           fill = NA, color = 'grey70', 
           size = .1) +
+  # geom_rect(data = inset_bbox_df, aes(xmin = xmin, xmax = xmax, ymin = ymin, ymax = ymax),
+  #           color = 'red', fill = NA, linewidth = 0.2) +
   bi_scale_fill(pal = map_pal, dim = 4) +
   scale_x_continuous(expand = c(0, 0)) +
   scale_y_continuous(expand = c(0, 0)) +
@@ -243,75 +324,96 @@ panel_d_biplot <- ggplot() +
 ## Assemble figure
 
 ```{r gather pieces}
-figS2_file <- here('5_ms_figs/figS2_mapping_impacts_hab.png')
+fig2_file <- here('5_ms_figs/fig2_mapping_impacts_hab.png')
 panel_a_map  <- get_panel(panel_a_chi)
 panel_b_map  <- get_panel(panel_b_cc)
 panel_c_map  <- get_panel(panel_c_noncc)
 panel_d_map  <- get_panel(panel_d_biplot)
 panel_d_lgd <-  get_panel(panel_lgd_raw)
 panel_abc_lgd <- get_legend(panel_a_chi)
+panel_e_inset <- get_panel(inset_a_i)
+panel_f_inset <- get_panel(inset_a_ii)
+panel_g_inset <- get_panel(inset_a_iii) 
 ```
 
-```{r assemble figure square}
+```{r assemble figure update}
 
 ### parameterize panels for easier changing
-p_w <- 0.55
-p_h <- p_w / 2 * 6/5
-a <- c(x = 0.00, y = 0.645)
-b <- c(x = 1-p_w, y = 0.43)
-c <- c(x = 0.00, y = 0.215)
-d <- c(x = 1-p_w, y = 0.0)
+fig_h <- 8.5
+fig_w <- 6.25
+ar    <- fig_h / fig_w
+p_h <- 0.24
+p_w <- p_h * 2 * ar
+i_h <- p_h * 0.8
+i_w <- i_h * ar
 
-figS2_panels <- ggdraw() +
+a <- c(x = 0.00, y = 0.75)
+b <- c(x = 0.00, y = 0.50)
+c <- c(x = 0.00, y = 0.25)
+d <- c(x = 0.00, y = 0.0)
+e <- c(x = .968 - i_w, y = 0.65)
+f <- c(x = .968 - i_w, y = 0.45)
+g <- c(x = .968 - i_w, y = 0.25)
+
+fig2_panels <- ggdraw() +
   draw_plot(panel_a_map,  x = a['x'], y = a['y'], height = p_h, width = p_w) +
   draw_plot(panel_b_map,  x = b['x'], y = b['y'], height = p_h, width = p_w) +
   draw_plot(panel_c_map,  x = c['x'], y = c['y'], height = p_h, width = p_w) +
-  draw_plot(panel_d_map,  x = d['x'], y = d['y'], height = p_h, width = p_w)
+  draw_plot(panel_d_map,  x = d['x'], y = d['y'], height = p_h, width = p_w) +
+  draw_plot(panel_e_inset,  x = e['x'], y = e['y'], height = i_h, width = i_w) +
+  draw_plot(panel_f_inset,  x = f['x'], y = f['y'], height = i_h, width = i_w) +
+  draw_plot(panel_g_inset,  x = g['x'], y = g['y'], height = i_h, width = i_w)
 
-figS2_labels <- figS2_panels +
-  draw_label('A. All stressors', x = a['x'], y = a['y'] + p_h,  hjust = 0, vjust = 0, 
-             size = 9, fontfamily = 'Helvetica', fontface = 'bold') +
-  draw_label('B. Climate stressors', x = 1,      y = b['y'] + p_h + .005,  hjust = 1, vjust = 0, 
-             size = 9, fontfamily = 'Helvetica', fontface = 'bold') +
-  draw_label('C. Non-climate stressors', x = c['x'], y = c['y'] + p_h + .005,  hjust = 0, vjust = 0, 
-             size = 9, fontfamily = 'Helvetica', fontface = 'bold') +
-  draw_label('D. Climate vs. non-climate', x = 1,      y = d['y'] + p_h + .005,  hjust = 1, vjust = 0, 
-             size = 9, fontfamily = 'Helvetica', fontface = 'bold')
+fig2_labels <- fig2_panels +
+  draw_label('A', x = a['x'], y = a['y'] + p_h - .05,  hjust = 0, vjust = 1, 
+             size = 12, fontfamily = 'Helvetica', fontface = 'bold') +
+  draw_label('B', x = b['x'], y = b['y'] + p_h - .05,  hjust = 0, vjust = 1, 
+             size = 12, fontfamily = 'Helvetica', fontface = 'bold') +
+  draw_label('C', x = c['x'], y = c['y'] + p_h - .05,  hjust = 0, vjust = 1, 
+             size = 12, fontfamily = 'Helvetica', fontface = 'bold') +
+  draw_label('D', x = d['x'], y = d['y'] + p_h - .05,  hjust = 0, vjust = 1, 
+             size = 12, fontfamily = 'Helvetica', fontface = 'bold') +
+  draw_label('E', x = e['x'] - .01, y = e['y'] + i_h,  hjust = 1, vjust = 1, 
+             size = 12, fontfamily = 'Helvetica', fontface = 'bold') +
+  draw_label('F', x = f['x'] - .01, y = f['y'] + i_h,  hjust = 1, vjust = 1, 
+             size = 12, fontfamily = 'Helvetica', fontface = 'bold') +
+  draw_label('G', x = g['x'] - .01, y = g['y'] + i_h,  hjust = 1, vjust = 1, 
+             size = 12, fontfamily = 'Helvetica', fontface = 'bold')
 ```
+
 
 ``` {r finish plot with legends}
 ### parameterize legends for easier changing of label positions:
-l1 <- c(x = .60, y = 0.75, h = .25, w = .05)
-l2 <- c(x = .30, y = 0.02, h = .144, w = .12)
+l1 <- c(x = p_w + .02, y = 0.85, h = .10, w = .97 - p_w)
+l2 <- c(x = p_w + .048, y = 0.06, h = .12, w = .12 * ar)
 
-figS2_legends <- figS2_labels +
+fig2_legends <- fig2_labels +
   ### draw legends:
   draw_plot(panel_abc_lgd, x = l1['x'], y = l1['y'],
             height = l1['h'], width = l1['w']) +
   draw_plot(panel_d_lgd, x = l2['x'], y = l2['y'],
             height = l2['h'], width = l2['w']) +
   ### Legend label for CHI:
-  draw_label('A-C: Cumulative\nhuman impacts',
-             x = l1['x'] + l1['w'] + .04, y = l1['y'] + l1['h'] * .5 , 
-             hjust = 0, vjust = .5, angle = 0,
-             size = 7, color = 'black', fontfamily = 'Helvetica', fontface = 'bold') +
+  draw_label('Cumulative human impacts\n(A-C, E-G)',
+             x = l1['x'] + l1['w']/2, y = l1['y'] + l1['h'], 
+             hjust = 0.5, vjust = 0.5, angle = 0,
+             size = 9, color = 'black', fontfamily = 'Helvetica', fontface = 'bold') +
   ### Legend labels for biscale:
-  draw_label('D: Climate vs. non-\nclimate impacts\n(quartiles)',
-             x = l2['x'] - .03, y = l2['y'] + l2['h'] * .5 , 
-             hjust = 1, vjust = .5, angle = 0,
-             size = 7, color = 'black', fontfamily = 'Helvetica', fontface = 'bold') +
-  draw_label('Climate ->',
+  draw_label('Impact\nquartiles (D)',
+             x = l2['x'] + .01, y = l2['y'] + l2['h'], 
+             hjust = 0, vjust = 0, angle = 0,
+             size = 9, color = 'black', fontfamily = 'Helvetica', fontface = 'bold') +
+  draw_label('Climate →',
              x = l2['x'], y = l2['y'] - .005,
              hjust = 0, vjust = 1, angle = 0,
-             size = 6, color = 'black', fontfamily = 'Helvetica', fontface = 'bold') +
-  draw_label('Non-climate ->',
+             size = 7, color = 'black', fontfamily = 'Helvetica', fontface = 'bold') +
+  draw_label('Non-climate →',
              x = l2['x'] - .005, y = l2['y'],
              hjust = 0, vjust = 0, angle = 90,
-             size = 6, color = 'black', fontfamily = 'Helvetica', fontface = 'bold')
+             size = 7, color = 'black', fontfamily = 'Helvetica', fontface = 'bold')
 
 
-ggsave(figS2_file, width = 12, height = 10, units = 'cm', dpi = 300)
+ggsave(fig2_file, width = fig_w, height = fig_h, units = 'in', dpi = 300)
 
-knitr::include_graphics(figS2_file)
+knitr::include_graphics(fig2_file)
 ```
-

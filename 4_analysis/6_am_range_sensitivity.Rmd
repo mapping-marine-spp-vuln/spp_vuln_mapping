@@ -1,0 +1,236 @@
+---
+title: 'Sensitivity analysis: CHI calculated from species vs FV approach'
+author: "*Compiled on `r date()` by `r Sys.info()['user']`*"
+output: 
+  html_document:
+    code_folding: hide
+    toc: true
+    toc_depth: 3
+    toc_float: yes
+    number_sections: true
+    theme: cerulean
+    highlight: haddock
+    includes: 
+      in_header: '~/github/src/templates/ohara_hdr.html'
+  pdf_document:
+    toc: true
+---
+
+``` {r setup, echo = TRUE, message = FALSE, warning = FALSE}
+
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE,
+                      fig.height = 4, fig.width = 7)
+
+library(terra)
+library(sf)
+library(oharac)
+library(data.table)
+library(tidyverse)
+library(here)
+source(here('common_fxns.R'))
+```
+
+# Summary
+
+Examine the sensitivity of AquaMaps ranges to selection of threshold... ugh
+
+```{r}
+spp_map_df <- assemble_spp_info_df(fe_only = TRUE) %>%
+  select(-stressor, -v_score) %>%
+  distinct()
+
+table(spp_map_df %>% select(taxon, src))
+
+am_map_df <- spp_map_df %>%
+  filter(src == 'am') %>%
+  select(species, taxon, map_f) %>%
+  distinct()
+
+iucn_map_df <- spp_map_df %>%
+  filter(src == 'iucn') %>%
+  select(species, taxon, map_f) %>%
+  distinct()
+```
+
+For each AM spp, read in the map.  Calculate area (thank god for equal area cells) based on thresholds of 0 to 100% by 10% intervals.
+
+```{r}
+calc_areas <- function(map, probs = (0:10)/10) {
+  df <- data.table::fread(map)
+  
+  area_l <- lapply(probs, 
+                   FUN = function(p, x) {
+                     sum(x >= p)
+                     },
+                   x = df$prob)
+  area_df <- data.frame(area_km2 = unlist(area_l) * 100,
+                        prob = probs)
+  return(area_df)
+}
+
+# df <- data.table::fread(am_map_df$map_f[1])
+```
+
+```{r}
+area_prob_f <- here('int/aquamaps_area_prob_sensitivity.csv')
+
+if(!file.exists(area_prob_f)) {
+  maps <- am_map_df$map_f
+  
+  area_prob_l <- parallel::mclapply(maps,
+                                    FUN = calc_areas,
+                                    mc.cores = 20)
+  
+  area_prob_df <- area_prob_l %>%
+    setNames(maps) %>%
+    bind_rows(.id = 'map_f') %>%
+    mutate(map_f = basename(map_f)) %>%
+    pivot_wider(values_from = area_km2, names_from = prob)
+  
+  write_csv(area_prob_df, area_prob_f)
+}
+
+area_prob_df <- read_csv(area_prob_f) %>%
+  pivot_longer(-map_f, names_to = 'prob', values_to = 'area_km2') %>%
+  mutate(prob = as.numeric(prob)) 
+
+area_0.5_df <- area_prob_df %>%
+  filter(prob == 0.5) %>%
+  select(map_f, area_0.5 = area_km2)
+
+area_ratio_df <- area_prob_df %>%
+  filter(prob != 0.5) %>%
+  left_join(area_0.5_df, by = 'map_f') %>%
+  mutate(ratio = round(area_km2 / area_0.5, 3)) %>%
+  filter(area_0.5 > 0)
+
+ggplot(area_ratio_df, aes(x = ratio)) +
+  geom_histogram() +
+  facet_wrap(~ prob, scales = 'free_x')
+```
+
+```{r}
+area_ratio_df %>%
+  group_by(prob) %>%
+  summarize(m = mean(ratio), sd = sd(ratio))
+
+summary(lm(ratio ~ prob, data = area_ratio_df))
+```
+
+### Compare IUCN range to AquaMaps range
+
+```{r}
+overlap_spp <- spp_map_df %>%
+  filter(iucn_mapped & am_mapped) %>%
+  mutate(iucn_map = str_replace(map_f, 'am_spp_', 'iucn_spp_') %>%
+           str_replace('_mol_.+.csv', sprintf('_mol_%s.csv', iucn_sid))) %>%
+  select(species, taxon, iucn_map, am_map = map_f, iucn_sid)
+```
+
+```{r}
+
+get_map <- function(f) {
+  m <- lapply(f, FUN = data.table::fread) %>%
+    bind_rows() %>%
+    distinct()
+  if(str_detect(f[1], 'am_spp_')) {
+    m <- m %>% filter(prob >= 0.5)
+  } else m <- m %>% filter(presence != 5)
+  
+  m <- m$cell_id %>% unique()
+  
+  return(m)
+}
+
+calc_overlap <- function(spp) {
+  ### df <- overlap_spp %>% filter(species == 'delphinus delphis')
+  
+  df <- overlap_spp %>% filter(iucn_sid == spp)
+  
+  am_map <- get_map(f = df$am_map %>% unique())
+  iucn_map <- get_map(f = df$iucn_map %>% unique())
+  
+  intsx <- am_map[am_map %in% iucn_map]
+  sorensen <- 2 * length(intsx) / (length(am_map) + length(iucn_map))
+  
+  out_df <- data.frame(species = df$species[1],
+                       a_iucn = length(iucn_map) * 100,
+                       a_am   = length(am_map) * 100,
+                       sim    = sorensen)
+  return(out_df)
+}
+```
+
+```{r}
+spp_vec <- overlap_spp$iucn_sid %>% unique()
+
+range_sim_df <- parallel::mclapply(spp_vec, calc_overlap, mc.cores = 20) %>%
+  bind_rows() %>%
+  left_join(overlap_spp %>% select(species, taxon) %>% distinct()) %>%
+  left_join(iucn_map_df %>% group_by(taxon) %>% 
+              summarize(n_used = n_distinct(species)))
+```
+
+```{r}
+range_sim_bins_df <- range_sim_df %>%
+  group_by(taxon) %>%
+  mutate(mid = exp(mean(log(a_iucn))),
+         bin = ifelse(a_iucn > mid, 'high', 'low'))
+
+range_sim_bins_df %>% 
+  mutate(x = ifelse(a_am > a_iucn, 'am', 'iucn')) %>% 
+  pull(x) %>% table()
+
+range_sim_bins_df %>%
+  group_by(taxon, bin) %>%
+  summarize(mean_sim = mean(sim), 
+            sd_sim = sd(sim), 
+            n_used = first(n_used))
+
+range_sim_bins_df %>%
+  filter(a_am > 0 & a_iucn > 0) %>%
+  mutate(ratio = a_iucn / a_am,
+         ratio = ifelse(ratio > 1, 1/ratio, ratio)) %>%
+  group_by(taxon) %>%
+  summarize(mean_ratio = mean(ratio), 
+            sd_ratio = sd(ratio), 
+            n_used = first(n_used))
+
+range_sim_bins_df %>%
+  filter(a_am > 0 & a_iucn > 0 & a_am > a_iucn) %>%
+  mutate(ratio = a_iucn / a_am,
+         ratio = ifelse(ratio > 1, 1/ratio, ratio)) %>%
+  group_by(taxon) %>%
+  summarize(mean_ratio = mean(ratio), 
+            sd_ratio = sd(ratio), 
+            n_used = first(n_used))
+
+range_sim_bins_df %>%
+  filter(a_am > 0 & a_iucn > 0 & a_am < a_iucn) %>%
+  mutate(ratio = a_iucn / a_am,
+         ratio = ifelse(ratio > 1, 1/ratio, ratio)) %>%
+  group_by(taxon) %>%
+  summarize(mean_ratio = mean(ratio), 
+            sd_ratio = sd(ratio), 
+            n_used = first(n_used))
+
+```
+
+### just how reliant is the analysis on the IUCN spp?
+
+what is the total contribution of IUCN spp range (area) relative to AM?
+```{r}
+all_maps_vec <- spp_map_df$map_f
+all_src_vec  <- spp_map_df$src
+
+all_ranges <- parallel::mclapply(all_maps_vec, get_map, mc.cores = 20)
+
+iucn_ranges <- all_ranges[all_src_vec == 'iucn']
+am_ranges   <- all_ranges[all_src_vec == 'am']
+
+tot_iucn_range <- iucn_ranges %>% unlist() %>% length()
+tot_all_ranges <- all_ranges %>% unlist() %>% length()
+
+ratio <- tot_iucn_range / tot_all_ranges
+```
+
