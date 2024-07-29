@@ -1,0 +1,148 @@
+---
+title: "prepare Table S3 for manuscript - trait inclusion for stressor vulnerability"
+author: "*Compiled on `r date()` by `r Sys.info()['user']`*"
+output: 
+  html_document:
+    code_folding: hide
+    toc: true
+    toc_depth: 3
+    toc_float: yes
+    number_sections: true
+    theme: cerulean
+    highlight: haddock
+    includes: 
+      in_header: '~/github/src/templates/ohara_hdr.html'
+  pdf_document:
+    toc: true
+---
+
+``` {r setup, echo = TRUE, message = FALSE, warning = FALSE}
+
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE, fig.height = 4, fig.width = 7)
+
+library(oharac)
+library(tidyverse)
+library(here)
+source(here('common_fxns.R'))
+
+```
+
+# Summary
+
+Prep table for supplement
+
+# Methods
+
+Load in trait info by type (sensitivity, ad cap, exposure); group by type, trait, and summarize values
+
+```{r load stressor trait sheets}
+str_vuln_lookup <- read_csv(here('_raw/stressor_vulnerability_lookup.csv')) %>%
+  mutate(stressor = str_replace_all(stressor, '_', ' '),
+         stressor = str_remove(stressor, ' large'),
+         stressor = str_replace(stressor, 'dest', 'destruction'),
+         stressor = str_replace(stressor, 'benth str', 'benthic structures'),
+         stressor = ifelse(str_detect(stressor, 'light|nutrient'), paste(stressor, 'pollution'), stressor)) %>%
+  mutate(stressor = str_to_sentence(stressor),
+         stressor = str_replace(stressor, 'Sst', 'SST'),
+         stressor = str_replace(stressor, 'Uv', 'UV')) %>%
+  mutate(vulnerability = str_replace(vulnerability, 'sea_level_rise', 'slr')) %>%
+  mutate(vulnerability = str_replace(vulnerability, 'ocean_acidification', 'oa')) %>%
+  mutate(vulnerability = str_replace(vulnerability, 'uv_radiation', 'uv'))
+
+str_trait_f <- here('../spp_vuln_framework/_raw_data/xlsx',
+                    'stressors_traits_scored.xlsx')
+str_trait_shts <- readxl::excel_sheets(str_trait_f)
+
+sens_traits_raw <- readxl::read_excel(str_trait_f, sheet = 'sensitivity') %>%
+  janitor::clean_names() %>%
+  pivot_longer(names_to = 'vulnerability', values_to = 'value', cols = c(-category, -trait, -trait_value)) 
+
+sens_traits_str <- sens_traits_raw %>%
+  inner_join(str_vuln_lookup, by = 'vulnerability') %>%
+  select(-vulnerability) %>%
+  distinct() %>%
+  mutate(category = str_to_sentence(category),
+         trait = str_replace_all(trait, '_', ' ') %>% str_to_sentence())
+
+sens_traits_vals <- sens_traits_str %>%
+  select(category, trait, trait_value) %>%
+  distinct() %>%
+  filter(trait_value != 'NA') %>%
+  group_by(category, trait) %>%
+  summarize(trait_vals = paste(trait_value, collapse = ', '))
+
+sens_traits_str_summary <- sens_traits_str %>%
+  filter(value != 'NA' & value != 'none') %>%
+  group_by(category, trait, stressor) %>%
+  summarize(effect = ifelse(n_distinct(value) > 0, 'S', '')) %>%
+  pivot_wider(names_from = 'stressor', values_from = 'effect')
+
+sens_table <- sens_traits_vals %>%
+  left_join(sens_traits_str_summary) %>%
+  rename(Category = category, Trait = trait, `Trait values` = trait_vals) %>%
+  arrange(Category, Trait)
+```
+
+``` {r}
+acs_traits_raw <- readxl::read_excel(str_trait_f, sheet = 'spec_adcap') %>%
+  janitor::clean_names() %>%
+  filter(!is.na(trait) & !str_detect(trait, 'sex ratio')) %>%
+  filter(!str_detect(tolower(category), 'spatial')) %>% ### drop exposure traits
+  pivot_longer(names_to = 'vulnerability', values_to = 'value', cols = c(-category, -trait, -trait_value)) 
+
+acs_traits_str <- acs_traits_raw %>%
+  inner_join(str_vuln_lookup, by = 'vulnerability') %>%
+  select(-vulnerability) %>%
+  distinct() %>%
+  mutate(category = str_to_sentence(category),
+         trait = str_replace_all(trait, '_', ' ') %>% str_to_sentence())
+
+acs_traits_vals <- acs_traits_str %>%
+  select(category, trait, trait_value) %>%
+  distinct() %>%
+  filter(trait_value != 'NA') %>%
+  group_by(category, trait) %>%
+  summarize(trait_vals = paste(trait_value, collapse = ', '))
+
+acs_traits_str_summary <- acs_traits_str %>%
+  filter(value != 'NA' & value != 'none') %>%
+  group_by(category, trait, stressor) %>%
+  summarize(effect = ifelse(n_distinct(value) > 0, 'A', '')) %>%
+  pivot_wider(names_from = 'stressor', values_from = 'effect')
+
+acs_table <- acs_traits_vals %>%
+  left_join(acs_traits_str_summary) %>%
+  rename(Category = category, Trait = trait, `Trait values` = trait_vals) %>%
+  arrange(Category, Trait)
+```
+
+``` {r}
+str_collapse <- str_vuln_lookup$stressor %>% paste(collapse = ';')
+
+acg_traits_raw <- readxl::read_excel(str_trait_f, sheet = 'gen_adcap') %>%
+  janitor::clean_names() %>%
+  select(category, trait, trait_value, value = adcap_score) %>%
+  filter(trait_value != 'NA') %>%
+  group_by(category, trait) %>%
+  summarize(trait_vals = paste(unique(trait_value), collapse = ', '))
+
+acg_table <- acg_traits_raw %>%
+  mutate(stressor = str_collapse,
+         stressor = str_split(stressor, ';')) %>%
+  unnest(stressor) %>%
+  mutate(val = 'G') %>%
+  pivot_wider(names_from = 'stressor', values_from = 'val') %>%
+  rename(Category = category, Trait = trait, `Trait values` = trait_vals) %>%
+  arrange(Category, Trait)
+```
+
+## Combine to table
+
+```{r}
+traits_table <- bind_rows(sens_table, acs_table, acg_table)
+
+DT::datatable(traits_table)
+
+write_csv(traits_table, here('5_ms_figs/tableS3_traits_vs_stressors.csv'))
+```
+

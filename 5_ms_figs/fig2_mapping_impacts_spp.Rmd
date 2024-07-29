@@ -283,7 +283,7 @@ si_fig <- panel_lgd_raw +
         panel.border = element_rect(color = 'black', fill = NA))
 si_fig
 
-ggsave(filename = 'figSXXXA_spp_legend_w_pcts.png', plot = si_fig, height = 3, width = 3, units = 'in', dpi = 300)
+ggsave(filename = 'figS3A_spp_legend_w_pcts.png', plot = si_fig, height = 3, width = 3, units = 'in', dpi = 300)
 ```
 
 ```{r panel D bivariate plot}
