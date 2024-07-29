@@ -432,7 +432,7 @@ p <- ggdraw() +
   draw_label('H.', x = 0.5, y = .235, hjust = 0, vjust = 1,
              size = 7, color = 'black', fontfamily = 'Helvetica', fontface = 'bold')
 
-si_fig_file <- here('5_ms_figs/figS4_sens_analysis.png')
+si_fig_file <- here('5_ms_figs/figS6_sens_analysis.png')
 ggsave(si_fig_file, height = 11.5, width = 12, units = 'cm', dpi = 300)
 
 knitr::include_graphics(si_fig_file)
