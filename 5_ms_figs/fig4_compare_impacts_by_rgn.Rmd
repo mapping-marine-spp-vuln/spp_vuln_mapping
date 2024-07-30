@@ -11,7 +11,7 @@ output:
     theme: cerulean
     highlight: haddock
     includes: 
-      in_header: '~/github/src/templates/ohara_hdr.html'
+      in_header: 'https://raw.githubusercontent.com/oharac/src/master/templates/ohara_hdr.html'
   pdf_document:
     toc: true
 ---
@@ -217,14 +217,14 @@ plot_realm <- function(df, methods, x_label) {
     scale_x_continuous(limits = c(0, 100), expand = c(0, 0)) +
     theme_minimal() +
     labs(x = x_label) +
-    theme(text = element_text(family = 'Helvetica'),
+    theme(text = element_text(family = 'Arial'),
           axis.title.y = element_blank(),
-          axis.title.x = element_text(size = 6),
-          axis.text  = element_text(size = 6),
+          axis.title.x = element_text(size = 8),
+          axis.text  = element_text(size = 8),
           panel.grid.major.y = element_blank(),
           panel.grid.minor.y = element_blank(),
           panel.grid.minor.x = element_blank(),
-          legend.text  = element_text(face = 'bold', size = 6),
+          legend.text  = element_text(face = 'bold', size = 8),
           legend.key.size = unit(.25, 'cm'),
           legend.title = element_blank())
   
@@ -270,15 +270,15 @@ fig4 <- ggdraw() +
             height = lgd_a_xy['h'], width = lgd_a_xy['w']) +
   ### Panel labels:
   draw_label('A.', x = 0.002, y = .99, hjust = 0, vjust = 1, 
-             size = 9, fontfamily = 'Helvetica', fontface = 'bold') +
+             size = 12, fontfamily = 'Arial', fontface = 'bold') +
   draw_label('B.', x = 0.365, y = .99, hjust = 0, vjust = 1, 
-             size = 9, fontfamily = 'Helvetica', fontface = 'bold') +
+             size = 12, fontfamily = 'Arial', fontface = 'bold') +
   draw_label('C.', x = 0.635, y = .99, hjust = 0, vjust = 1, 
-             size = 9, fontfamily = 'Helvetica', fontface = 'bold')
+             size = 12, fontfamily = 'Arial', fontface = 'bold')
 
 
 fig4_file <- here('5_ms_figs/fig4_impacts_by_ecoregion.png')
-ggsave(fig4_file, width = 12, height = 10, units = 'cm', dpi = 300)
+ggsave(fig4_file, width = 6.25, height = 5.2, units = 'in', dpi = 300)
 
 knitr::include_graphics(fig4_file)
 ```
@@ -336,11 +336,11 @@ plot_prov <- function(df, methods, x_label, strips) {
     scale_x_continuous(limits = c(0, 100), expand = c(0, 0)) +
     theme_minimal() +
     theme(axis.title.y = element_blank(),
-          axis.title.x = element_text(face = 'bold', size = 6),
-          axis.text  = element_text(size = 6),
+          axis.title.x = element_text(face = 'bold', size = 8),
+          axis.text  = element_text(size = 8),
           panel.grid.major.y = element_blank(),
           panel.grid.minor.y = element_blank(),
-          legend.text  = element_text(face = 'bold', size = 6),
+          legend.text  = element_text(face = 'bold', size = 8),
           legend.key.size = unit(.25, 'cm'),
           legend.title = element_blank()) +
     facet_grid(rows = vars(realm_lbl), 
@@ -350,7 +350,7 @@ plot_prov <- function(df, methods, x_label, strips) {
   if(strips) {
     p <- p +
       theme(strip.text.y = element_text(angle = 90, hjust = .5, 
-                                        face = 'bold', size = 6))
+                                        face = 'bold', size = 8))
   } else {
     p <- p + 
       theme(strip.background = element_blank(),
@@ -402,11 +402,11 @@ fig_SI <- ggdraw() +
             height = lgd_a_xy['h'], width = lgd_a_xy['w']) +
   ### Panel labels:
   draw_label('A.', x = 0.002, y = .99, hjust = 0, vjust = 1, 
-             size = 9, fontfamily = 'Helvetica', fontface = 'bold') +
+             size = 9, fontfamily = 'Arial', fontface = 'bold') +
   draw_label('B.', x = 0.445, y = .99, hjust = .5, vjust = 1, 
-             size = 9, fontfamily = 'Helvetica', fontface = 'bold') +
+             size = 9, fontfamily = 'Arial', fontface = 'bold') +
   draw_label('C.', x = 0.685, y = .99, hjust = .5, vjust = 1, 
-             size = 9, fontfamily = 'Helvetica', fontface = 'bold')
+             size = 9, fontfamily = 'Arial', fontface = 'bold')
 
 
 figSI_file <- here('5_ms_figs/figS5_impacts_by_ecoregion_province.png')

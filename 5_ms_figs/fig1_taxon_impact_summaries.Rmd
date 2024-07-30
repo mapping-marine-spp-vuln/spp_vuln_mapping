@@ -11,7 +11,7 @@ output:
     theme: cerulean
     highlight: haddock
     includes: 
-      in_header: '~/github/src/templates/ohara_hdr.html'
+      in_header: 'https://raw.githubusercontent.com/oharac/src/master/templates/ohara_hdr.html'
   pdf_document:
     toc: true
 ---
@@ -256,18 +256,18 @@ plot_panel <- function(df, means_df,
     ### clean up theme
       theme_ohara() +
       theme(panel.background = element_blank(),
-            legend.text = element_text(size = 6),
-            legend.title = element_text(face = 'bold', size = 6),
+            legend.text = element_text(size = 8),
+            legend.title = element_text(face = 'bold', size = 8),
             legend.key.size = unit(.20, 'cm'),
             legend.background = element_blank(),
             axis.title.y = element_blank(),
-            axis.text.x = element_text(size = 6),
-            axis.title.x = element_text(face = 'bold', size = 6, hjust = 0)) +
+            axis.text.x = element_text(size = 8),
+            axis.title.x = element_text(face = 'bold', size = 8, hjust = 0)) +
       labs(x = x_lab, fill = 'Range', color = 'Range')
   
   if(y_text) {
     p <- p + 
-      theme(axis.text.y = element_text(face = 'bold', size = 6))
+      theme(axis.text.y = element_text(face = 'bold', size = 8))
   } else {
     p <- p + theme(axis.text.y = element_blank())
   }
@@ -279,8 +279,8 @@ plot_panel <- function(df, means_df,
                fill = 'white', color = 'white') +
       geom_text(data = tx_spp_counts, aes(label = n_spp, y = taxon),
                 x = .305, hjust = 0, color = 'black', fill = NA, 
-                family = 'Helvetica',
-                size = 1.8)
+                family = 'Arial',
+                size = 2.2)
   }
 
   return(p)
@@ -415,14 +415,14 @@ panel_d <- ggplot(tx_imp_by_str, aes(x = mean_prop, y = taxon)) +
   ### clean up theme
   theme_ohara() +
   theme(panel.background = element_blank(),
-        text = element_text(family = 'Helvetica'),
-        legend.text = element_text(size = 6),
-        legend.title = element_text(face = 'bold', size = 6),
+        text = element_text(family = 'Arial'),
+        legend.text = element_text(size = 8),
+        legend.title = element_text(face = 'bold', size = 8),
         legend.key.size = unit(.22, 'cm'),
         axis.title.y = element_blank(),
         axis.text.x = element_text(size = 6),
-        axis.text.y = element_text(face = 'bold', size = 6),
-        axis.title.x = element_text(face = 'bold', size = 6, hjust = 0)) +
+        axis.text.y = element_text(face = 'bold', size = 8),
+        axis.title.x = element_text(face = 'bold', size = 8, hjust = 0)) +
   labs(x = 'Proportion of cumulative impact', fill = 'Stressor', color = 'Stressor')
 ```
 
@@ -445,11 +445,11 @@ fig1 <- ggdraw() +
   draw_plot(panel_a_lgd, x = .533, y = .24, height = .10, width = .15) +
   ### Panel labels:
   draw_label('A.', x = 0.03, y = .99, hjust = 0, vjust = 1, 
-             size = 9, fontfamily = 'Helvetica', fontface = 'bold') +
+             size = 12, fontfamily = 'Arial', fontface = 'bold') +
   draw_label('B.', x = 0.405, y = .99, hjust = 0, vjust = 1, 
-             size = 9, fontfamily = 'Helvetica', fontface = 'bold') +
+             size = 12, fontfamily = 'Arial', fontface = 'bold') +
   draw_label('C.', x = 0.66, y = .99, hjust = 0, vjust = 1,  
-             size = 9, fontfamily = 'Helvetica', fontface = 'bold')
+             size = 12, fontfamily = 'Arial', fontface = 'bold')
 
 
 # fig1_file <- here('5_ms_figs/fig1_taxon_impact_summaries.png')
@@ -461,10 +461,10 @@ fig1_fourpanel <- ggdraw() +
   draw_plot(fig1, x = 0, y = .5, height = .5, width = 1) +
   draw_plot(panel_d, x = 0, y = 0, height = .49, width = 1.0) +
   draw_label('D.', x = 0.03, y = .48, hjust = 0, vjust = 1,  
-             size = 9, fontfamily = 'Helvetica', fontface = 'bold')
+             size = 12, fontfamily = 'Arial', fontface = 'bold')
 
 fig1_fourpanel_file <- here('5_ms_figs/fig1_taxon_impact_summaries_fourpanel.png')
-ggsave(fig1_fourpanel_file, width = 12, height = 10, units = 'cm', dpi = 300)
+ggsave(fig1_fourpanel_file, width = 6.25, height = 5, units = 'in', dpi = 300)
 
 knitr::include_graphics(fig1_fourpanel_file)
 

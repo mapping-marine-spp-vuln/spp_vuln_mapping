@@ -10,8 +10,6 @@ output:
     number_sections: true
     theme: cerulean
     highlight: haddock
-    includes: 
-      in_header: '~/github/src/templates/ohara_hdr.html'
   pdf_document:
     toc: true
 ---

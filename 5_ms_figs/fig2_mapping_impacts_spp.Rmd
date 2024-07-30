@@ -11,7 +11,7 @@ output:
     theme: cerulean
     highlight: haddock
     includes: 
-      in_header: '~/github/src/templates/ohara_hdr.html'
+      in_header: 'https://raw.githubusercontent.com/oharac/src/master/templates/ohara_hdr.html'
   pdf_document:
     toc: true
 ---
@@ -279,7 +279,7 @@ si_fig <- panel_lgd_raw +
             hjust = .5, vjust = .5, color = 'white', size = 3) +
   scale_x_continuous(expand = c(0, 0)) +
   scale_y_continuous(expand = c(0, 0)) +
-  theme(axis.title = element_text(hjust = 0, size = 12, face = 'bold', family = 'Helvetica'),
+  theme(axis.title = element_text(hjust = 0, size = 12, face = 'bold', family = 'Arial'),
         panel.border = element_rect(color = 'black', fill = NA))
 si_fig
 
@@ -354,20 +354,20 @@ fig2_panels <- ggdraw() +
   draw_plot(panel_g_inset,  x = g['x'], y = g['y'], height = i_h, width = i_w)
 
 fig2_labels <- fig2_panels +
-  draw_label('A', x = a['x'], y = a['y'] + p_h - .05,  hjust = 0, vjust = 1, 
-             size = 12, fontfamily = 'Helvetica', fontface = 'bold') +
-  draw_label('B', x = b['x'], y = b['y'] + p_h - .05,  hjust = 0, vjust = 1, 
-             size = 12, fontfamily = 'Helvetica', fontface = 'bold') +
-  draw_label('C', x = c['x'], y = c['y'] + p_h - .05,  hjust = 0, vjust = 1, 
-             size = 12, fontfamily = 'Helvetica', fontface = 'bold') +
-  draw_label('D', x = d['x'], y = d['y'] + p_h - .05,  hjust = 0, vjust = 1, 
-             size = 12, fontfamily = 'Helvetica', fontface = 'bold') +
-  draw_label('E', x = e['x'] - .01, y = e['y'] + i_h,  hjust = 1, vjust = 1, 
-             size = 12, fontfamily = 'Helvetica', fontface = 'bold') +
-  draw_label('F', x = f['x'] - .01, y = f['y'] + i_h,  hjust = 1, vjust = 1, 
-             size = 12, fontfamily = 'Helvetica', fontface = 'bold') +
-  draw_label('G', x = g['x'] - .01, y = g['y'] + i_h,  hjust = 1, vjust = 1, 
-             size = 12, fontfamily = 'Helvetica', fontface = 'bold')
+  draw_label('A.', x = a['x'], y = a['y'] + p_h - .05,  hjust = 0, vjust = 1, 
+             size = 12, fontfamily = 'Arial', fontface = 'bold') +
+  draw_label('B.', x = b['x'], y = b['y'] + p_h - .05,  hjust = 0, vjust = 1, 
+             size = 12, fontfamily = 'Arial', fontface = 'bold') +
+  draw_label('C.', x = c['x'], y = c['y'] + p_h - .05,  hjust = 0, vjust = 1, 
+             size = 12, fontfamily = 'Arial', fontface = 'bold') +
+  draw_label('D.', x = d['x'], y = d['y'] + p_h - .05,  hjust = 0, vjust = 1, 
+             size = 12, fontfamily = 'Arial', fontface = 'bold') +
+  draw_label('E.', x = e['x'] - .01, y = e['y'] + i_h,  hjust = 1, vjust = 1, 
+             size = 12, fontfamily = 'Arial', fontface = 'bold') +
+  draw_label('F.', x = f['x'] - .01, y = f['y'] + i_h,  hjust = 1, vjust = 1, 
+             size = 12, fontfamily = 'Arial', fontface = 'bold') +
+  draw_label('G.', x = g['x'] - .01, y = g['y'] + i_h,  hjust = 1, vjust = 1, 
+             size = 12, fontfamily = 'Arial', fontface = 'bold')
 ```
 
 
@@ -386,20 +386,20 @@ fig2_legends <- fig2_labels +
   draw_label('Cumulative human impacts\n(A-C, E-G)',
              x = l1['x'] + l1['w']/2, y = l1['y'] + l1['h'], 
              hjust = 0.5, vjust = 0.5, angle = 0,
-             size = 9, color = 'black', fontfamily = 'Helvetica', fontface = 'bold') +
+             size = 10, color = 'black', fontfamily = 'Arial', fontface = 'bold') +
   ### Legend labels for biscale:
   draw_label('Impact\nquartiles (D)',
              x = l2['x'] + .01, y = l2['y'] + l2['h'], 
              hjust = 0, vjust = 0, angle = 0,
-             size = 9, color = 'black', fontfamily = 'Helvetica', fontface = 'bold') +
+             size = 10, color = 'black', fontfamily = 'Arial', fontface = 'bold') +
   draw_label('Climate →',
              x = l2['x'], y = l2['y'] - .005,
              hjust = 0, vjust = 1, angle = 0,
-             size = 7, color = 'black', fontfamily = 'Helvetica', fontface = 'bold') +
+             size = 8, color = 'black', fontfamily = 'Arial', fontface = 'bold') +
   draw_label('Non-climate →',
              x = l2['x'] - .005, y = l2['y'],
              hjust = 0, vjust = 0, angle = 90,
-             size = 7, color = 'black', fontfamily = 'Helvetica', fontface = 'bold')
+             size = 8, color = 'black', fontfamily = 'Arial', fontface = 'bold')
 
 
 ggsave(fig2_file, width = fig_w, height = fig_h, units = 'in', dpi = 300)

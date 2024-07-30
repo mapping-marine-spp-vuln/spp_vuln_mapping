@@ -324,7 +324,7 @@ panel_d_biplot <- ggplot() +
 ## Assemble figure
 
 ```{r gather pieces}
-fig2_file <- here('5_ms_figs/fig2_mapping_impacts_hab.png')
+figS4_file <- here('5_ms_figs/figS4_mapping_impacts_hab.png')
 panel_a_map  <- get_panel(panel_a_chi)
 panel_b_map  <- get_panel(panel_b_cc)
 panel_c_map  <- get_panel(panel_c_noncc)
@@ -355,7 +355,7 @@ e <- c(x = .968 - i_w, y = 0.65)
 f <- c(x = .968 - i_w, y = 0.45)
 g <- c(x = .968 - i_w, y = 0.25)
 
-fig2_panels <- ggdraw() +
+figS4_panels <- ggdraw() +
   draw_plot(panel_a_map,  x = a['x'], y = a['y'], height = p_h, width = p_w) +
   draw_plot(panel_b_map,  x = b['x'], y = b['y'], height = p_h, width = p_w) +
   draw_plot(panel_c_map,  x = c['x'], y = c['y'], height = p_h, width = p_w) +
@@ -364,7 +364,7 @@ fig2_panels <- ggdraw() +
   draw_plot(panel_f_inset,  x = f['x'], y = f['y'], height = i_h, width = i_w) +
   draw_plot(panel_g_inset,  x = g['x'], y = g['y'], height = i_h, width = i_w)
 
-fig2_labels <- fig2_panels +
+figS4_labels <- figS4_panels +
   draw_label('A', x = a['x'], y = a['y'] + p_h - .05,  hjust = 0, vjust = 1, 
              size = 12, fontfamily = 'Helvetica', fontface = 'bold') +
   draw_label('B', x = b['x'], y = b['y'] + p_h - .05,  hjust = 0, vjust = 1, 
@@ -387,7 +387,7 @@ fig2_labels <- fig2_panels +
 l1 <- c(x = p_w + .02, y = 0.85, h = .10, w = .97 - p_w)
 l2 <- c(x = p_w + .048, y = 0.06, h = .12, w = .12 * ar)
 
-fig2_legends <- fig2_labels +
+figS4_legends <- figS4_labels +
   ### draw legends:
   draw_plot(panel_abc_lgd, x = l1['x'], y = l1['y'],
             height = l1['h'], width = l1['w']) +
@@ -413,7 +413,7 @@ fig2_legends <- fig2_labels +
              size = 7, color = 'black', fontfamily = 'Helvetica', fontface = 'bold')
 
 
-ggsave(fig2_file, width = fig_w, height = fig_h, units = 'in', dpi = 300)
+ggsave(figS4_file, width = fig_w, height = fig_h, units = 'in', dpi = 300)
 
-knitr::include_graphics(fig2_file)
+knitr::include_graphics(figS4_file)
 ```

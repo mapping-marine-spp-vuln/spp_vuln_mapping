@@ -11,7 +11,7 @@ output:
     theme: cerulean
     highlight: haddock
     includes: 
-      in_header: '~/github/src/templates/ohara_hdr.html'
+      in_header: 'https://raw.githubusercontent.com/oharac/src/master/templates/ohara_hdr.html'
   pdf_document:
     toc: true
 ---
@@ -315,16 +315,15 @@ panel_c_cc <- ggplot() +
   scale_x_continuous(expand = c(0, 0)) +
   scale_y_continuous(expand = c(0, 0)) +
   theme_void() +
-  theme(text = element_text(family = 'Helvetica'),
+  theme(text = element_text(family = 'Arial'),
         axis.text = element_blank(), 
         axis.title = element_blank(),
-        legend.key.height = unit(.25, 'cm'),
-        legend.key.width = unit(.75, 'cm'),
+        legend.key.height = unit(.16, 'in'),
+        legend.key.width = unit(.32, 'in'),
         legend.spacing = unit(0, 'cm'),
         legend.margin = margin(0, 0, 0, 0, unit = 'pt'),
-        legend.text = element_text(size = 6, color = 'black', 
+        legend.text = element_text(size = 8, color = 'black', 
                                    hjust = 0.5, vjust = 0, angle = 0),
-        legend.position = 'bottom',
         legend.direction = 'horizontal',
         legend.title = element_blank())
 
@@ -390,19 +389,19 @@ fig5_panels <- ggdraw() +
 
 fig5_labels <- fig5_panels +
   draw_label('A. Climate', x = a['x'], y = a['y'] + p_h,  hjust = 0, vjust = 0, 
-             size = 9, fontfamily = 'Helvetica', fontface = 'bold') +
+             size = 12, fontfamily = 'Arial', fontface = 'bold') +
   draw_label('B. Non-climate', x = 1,      y = b['y'] + p_h,  hjust = 1, vjust = 0, 
-             size = 9, fontfamily = 'Helvetica', fontface = 'bold') +
+             size = 12, fontfamily = 'Arial', fontface = 'bold') +
   draw_label('C. Climate', x = c['x'], y = c['y'] + p_h,  hjust = 0, vjust = 0, 
-             size = 9, fontfamily = 'Helvetica', fontface = 'bold') +
+             size = 12, fontfamily = 'Arial', fontface = 'bold') +
   draw_label('D. Non-climate', x = 1,      y = d['y'] + p_h,  hjust = 1, vjust = 0, 
-             size = 9, fontfamily = 'Helvetica', fontface = 'bold')
+             size = 12, fontfamily = 'Arial', fontface = 'bold')
 ```
 
 ``` {r finish plot with legends}
 ### parameterize legends for easier changing of label positions:
 l1 <- c(x = .60, y = 0.80, h = .144, w = .12)
-l2 <- c(x = .02, y = 0.07, h = .07, w = .44)
+l2 <- c(x = .02, y = 0.06, h = .07, w = .44)
 
 fig5_legends <- fig5_labels +
   ### draw legends:
@@ -411,31 +410,31 @@ fig5_legends <- fig5_labels +
   draw_plot(panel_cd_lgd, x = l2['x'], y = l2['y'],
             height = l2['h'], width = l2['w']) +
   ### Legend labels for biscale:
-  draw_label('A-B: Funct. entity vs.\nspecies impacts (quartiles)',
+  draw_label('A-B: Funct. entity vs.\nspecies impacts\n(quartiles)',
              x = l1['x'] + l1['w'] + .01, y = l1['y'] + l1['h'] - .01, 
              hjust = 0, vjust = 1, angle = 0,
-             size = 7, color = 'black', fontfamily = 'Helvetica', fontface = 'bold') +
+             size = 10, color = 'black', fontfamily = 'Arial', fontface = 'bold') +
   draw_label('Funct. Entity →',
              x = l1['x'], y = l1['y'] - .005,
              hjust = 0, vjust = 1, angle = 0,
-             size = 6, color = 'black', fontfamily = 'Helvetica', fontface = 'bold') +
+             size = 8, color = 'black', fontfamily = 'Arial', fontface = 'bold') +
   draw_label('Species →',
              x = l1['x'] - .005, y = l1['y'],
              hjust = 0, vjust = 0, angle = 90,
-             size = 6, color = 'black', fontfamily = 'Helvetica', fontface = 'bold') +
+             size = 8, color = 'black', fontfamily = 'Arial', fontface = 'bold') +
   ### Legend label for diff plots
   draw_label('C-D: Funct. entity vs. species impacts',
              x = .24, y = .185, hjust = 0.5, vjust = 1, angle = 0,
-             size = 7, color = 'black', fontfamily = 'Helvetica', fontface = 'bold') +
+             size = 10, color = 'black', fontfamily = 'Arial', fontface = 'bold') +
   draw_label('← spp > FE',
              x = .093, y = .156, hjust = 0, vjust = 1, angle = 0,
-             size = 5, color = 'black', fontfamily = 'Helvetica', fontface = 'bold') +
+             size = 8, color = 'black', fontfamily = 'Arial', fontface = 'bold') +
   draw_label('FE > spp →',
              x = .405, y = .156, hjust = 1, vjust = 1, angle = 0,
-             size = 5, color = 'black', fontfamily = 'Helvetica', fontface = 'bold')
+             size = 8, color = 'black', fontfamily = 'Arial', fontface = 'bold')
 
 
-ggsave(fig5_file, width = 12, height = 10, units = 'cm', dpi = 300)
+ggsave(fig5_file, width = 6.25, height = 5.2, units = 'in', dpi = 300)
 
 knitr::include_graphics(fig5_file)
 ```
