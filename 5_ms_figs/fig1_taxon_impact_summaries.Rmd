@@ -460,7 +460,7 @@ fig1 <- ggdraw() +
 
 fig1_fourpanel_file <- here('5_ms_figs/fig1_taxon_impact_summaries.png')
 ggsave(fig1_fourpanel_file, width = 6.25, height = 5, units = 'in', dpi = 300)
-ggsave(fig1_fourpanel_file %>% str_replace('.png$', '.tif'), width = 6.25, height = 5, units = 'in', dpi = 300)
+# ggsave(fig1_fourpanel_file %>% str_replace('.png$', '.tif'), width = 6.25, height = 5, units = 'in', dpi = 300)
 
 knitr::include_graphics(fig1_fourpanel_file)
 

@@ -403,7 +403,7 @@ fig2_legends <- fig2_labels +
 
 
 ggsave(fig2_file, width = fig_w, height = fig_h, units = 'in', dpi = 300)
-ggsave(fig2_file %>% str_replace('.png$', '.tif'), width = fig_w, height = fig_h, units = 'in', dpi = 300)
+# ggsave(fig2_file %>% str_replace('.png$', '.tif'), width = fig_w, height = fig_h, units = 'in', dpi = 300)
 
 knitr::include_graphics(fig2_file)
 ```

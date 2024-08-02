@@ -189,7 +189,7 @@ x <- ggdraw() +
              size = 10, fontfamily = 'Arial', fontface = 'bold')
 
 ggsave(fig6_file, height = plot_h, width = plot_w, units = 'in', dpi = 300)
-ggsave(fig6_file %>% str_replace('.png$', '.tif'), height = plot_h, width = plot_w, units = 'in', dpi = 300)
+# ggsave(fig6_file %>% str_replace('.png$', '.tif'), height = plot_h, width = plot_w, units = 'in', dpi = 300)
 
 knitr::include_graphics(fig6_file)
 ```
