@@ -279,6 +279,7 @@ fig4 <- ggdraw() +
 
 fig4_file <- here('5_ms_figs/fig4_impacts_by_ecoregion.png')
 ggsave(fig4_file, width = 6.25, height = 5.2, units = 'in', dpi = 300)
+ggsave(fig4_file %>% str_replace('.png$', '.tif'), width = 6.25, height = 5.2, units = 'in', dpi = 300)
 
 knitr::include_graphics(fig4_file)
 ```

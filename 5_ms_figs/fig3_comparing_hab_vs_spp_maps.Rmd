@@ -290,6 +290,7 @@ fig3_panels <- ggdraw() +
              size = 8, color = 'black', fontfamily = 'Helvetica', fontface = 'bold')
 
 ggsave(fig3_file, width = plot_w, height = plot_h, units = 'in', dpi = 300)
+ggsave(fig3_file %>% str_replace('.png$', '.tif'), width = plot_w, height = plot_h, units = 'in', dpi = 300)
 
 knitr::include_graphics(fig3_file)
 ```
