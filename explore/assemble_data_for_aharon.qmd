@@ -1,0 +1,118 @@
+---
+title: "Accessing data for Aharon"
+format: 
+  html:
+    embed-resources: true
+editor: visual
+---
+
+```{r}
+library(tidyverse)
+library(here)
+library(oharac)
+source(here('common_fxns.R'))
+source(here('1_setup/species/iucn/iucn_api_fxns.R'))
+```
+
+```{r}
+tmp_spp_risk_f <- 'iucn_risk_2024-1.csv'
+if(!file.exists(tmp_spp_risk_f)) {
+  api_key <- Sys.getenv('IUCN_KEY')
+  spp_npage_url <- sprintf('http://apiv3.iucnredlist.org/api/v3/speciescount?token=%s',
+                           api_key)
+  n_spp <- fromJSON(spp_npage_url) %>%
+    .$count %>% as.integer()
+  n_pages <- ceiling(n_spp/10000)
+  
+  spp_page_url <- 'http://apiv3.iucnredlist.org/api/v3/species/page/%s?token=%s'
+  spp_df_all <- mc_get_from_api(spp_page_url, c(0:(n_pages - 1)), api_key, delay = 1)
+  
+  risk_df <- spp_df_all %>%
+    select(iucn_sid = taxonid, sciname = scientific_name, category)
+  write_csv(risk_df, tmp_spp_risk_f)
+}
+risk_df <- read_csv(tmp_spp_risk_f) %>%
+  mutate(category = tolower(category),
+         category = case_when(str_detect(category, 'cd|nt') ~ 'nt',
+                              str_detect(category, 'lc') ~ 'lc',
+                              TRUE ~ category))
+
+spp_info <- assemble_spp_info_df()
+
+iucn_spp <- spp_info %>%
+  filter(iucn_mapped) %>%
+  inner_join(risk_df %>% select(-sciname), by = 'iucn_sid') %>%
+  filter(category %in% c('nt', 'vu', 'en', 'cr')) %>%
+  select(species, taxon, stressor, v_score, iucn_sid, sciname, mob:wcol, map_f, category) %>%
+  distinct()
+
+write_csv(iucn_spp, 'spp_list_for_aharon.csv')
+
+iucn_maps <- iucn_spp %>%
+  select(iucn_sid, sciname, map_f) %>%
+  distinct() %>%
+  mutate(map_f = str_replace(map_f, 'am_spp', 'iucn_spp'),
+         ### point to fishing stressor file - based on spp name
+         fish_f = str_replace(map_f, 'spp_maps_mol', 'stressors/fishing/4_rescaled_catch_by_spp_cell'),
+         fish_f = str_replace(fish_f, '_mol_', '_rescaled_catch_'),
+         ### update to IUCN range map file
+         range_f = str_replace(map_f, '_mol_.+.csv', sprintf('_mol_%s.csv', iucn_sid)),
+         ### point to IUCN max temperature file - based on spp id
+         max_t_f = str_replace(range_f, 'spp_maps_mol', 'stressors/max_temp'),
+         max_t_f = str_replace(max_t_f, '_mol_', '_max_temp_'))
+```
+
+```{r}
+spp_maps <- iucn_maps %>%
+  mutate(out_f = str_replace(range_f, 'spp_maps_mol', 'maps_for_aharon/spp_maps_mol'))
+
+if(any(!file.exists(spp_maps$out_f))) {
+  file.copy(spp_maps$map_f, spp_maps$out_f)
+}
+
+# dir.create(here_anx('maps_for_aharon/spp_maps_mol'))
+```
+
+```{r}
+thermal_maps <- iucn_maps %>%
+  mutate(out_f = str_replace(max_t_f, 
+                             'stressors/max_temp', 
+                             'maps_for_aharon/max_temp'))
+
+if(any(!file.exists(thermal_maps$out_f))) {
+  file.copy(thermal_maps$max_t_f, thermal_maps$out_f)
+}
+
+# dir.create(here_anx('maps_for_aharon/max_temp'))
+
+x <- read_csv(thermal_maps$out_f[1])
+```
+
+```{r}
+fish_maps <- iucn_maps %>%
+  mutate(out_f = str_replace(fish_f, 
+                             'stressors/fishing/4_rescaled_catch_by_spp_cell', 
+                             'maps_for_aharon/fishing')) %>%
+  filter(file.exists(fish_f))
+
+if(any(!file.exists(fish_maps$out_f))) {
+  file.copy(fish_maps$fish_f, fish_maps$out_f)
+}
+
+# dir.create(here_anx('maps_for_aharon/fishing'))
+
+x <- read_csv(fish_maps$out_f[1])
+
+```
+
+## zip 'em up
+
+```{r}
+fs <- list.files(here_anx('maps_for_aharon'), recursive = TRUE, full.names = TRUE)
+zipf <- here_anx('maps_for_aharon.zip')
+
+if(!file.exists(zipf)) {
+  zip(zipf, fs)
+}
+```
+
