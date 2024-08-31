@@ -178,7 +178,7 @@ p2 <- ggplot(gf_level_summary, aes(x = gf_rank, y = class)) +
                        limits = c(0, 1),
                        labels = c('0%', '25%', '50%', '75%', '100%')) +
   geom_text(data = n_lbls, aes(label = n_lbl), 
-            family = 'Helvetica', x = 3.6, hjust = 0, size = 2) +
+            family = 'Arial', x = 3.6, hjust = 0, size = 2) +
   scale_x_discrete(limits = c('none', 'genus', 'family', '', '')) +
   coord_fixed() +
   theme_ohara(base_size = 8) +
@@ -211,14 +211,14 @@ p <- ggdraw() +
   draw_plot(pnl_b, x = xvec[3], y = 0, width = wvec[3], height = 1) +
   draw_plot(lgd_b, x = xvec[4], y = 0, width = wvec[4], height = 1) +
   draw_label('A.', x = xvec[1], y = 1,  hjust = 0, vjust = 1, 
-             size = 9, fontfamily = 'Helvetica', fontface = 'bold') +
+             size = 9, fontfamily = 'Arial', fontface = 'bold') +
   draw_label('B.', x = xvec[3], y = 1,  hjust = 0, vjust = 1, 
-             size = 9, fontfamily = 'Helvetica', fontface = 'bold')
+             size = 9, fontfamily = 'Arial', fontface = 'bold')
   
   
 
 fig_f <- here('5_ms_figs/figS5_trait_imputation.png')
-ggsave(fig_f, width = 6.5, height = 5)
+ggsave(fig_f, width = 6.5, height = 5, dpi = 300)
 
 knitr::include_graphics(fig_f)
 ```

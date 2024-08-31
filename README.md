@@ -1,6 +1,6 @@
 # Organization of repository
 
-All scripts and finalized outputs are contained within the Git-tracked repository.  Most external data and many intermediate files generated in the scripts are stored in an external directory on an NCEAS server.  To reproduce the entire analysis from scratch, you will need to create a similar external file structure (see below for details).
+All scripts and finalized outputs are contained within the Git-tracked repository.  Most external data and many intermediate files generated in the scripts are stored in an external directory on an NCEAS server.  To reproduce the entire analysis from scratch, you will need to create a similar external file structure (see below for details).  Please feel free to contact Casey O'Hara (ohara@nceas.ucsb.edu) for questions and assistance.
 
 ## Directory structure: Git-tracked
 
@@ -58,7 +58,7 @@ here_anx <- function(f = '', ...) {
 
 This function is available in `common_fxns.R` script in the project root directory.  Update the `f_anx` location to point to your preferred root location external to the Github repository.
 
-I will not go into detail on the external directories for storing intermediate outputs; those can be found within the various scripts.  However, several scripts access data from external locations - you may wish to recreate a similar file structure or rewrite the script to accommodate a different file structure as you prefer.
+I will not go into detail on the external directories for storing intermediate outputs; those can be found within the various scripts.  However, several scripts access data from external locations - you may wish to recreate a similar file structure or rewrite the script to accommodate a different file structure as you prefer.  Please feel free to contact Casey O'Hara (ohara@nceas.ucsb.edu) for questions and assistance.
 
 ### Species traits
 
