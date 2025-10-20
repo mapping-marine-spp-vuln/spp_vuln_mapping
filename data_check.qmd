@@ -1,0 +1,73 @@
+---
+title: "Untitled"
+format: 
+  html:
+    embed-resources: true
+editor: source
+execute:
+  warning: false
+  message: false
+---
+
+```{r}
+library(terra)
+library(oharac)
+library(data.table)
+library(tidyverse)
+library(here)
+source(here('common_fxns.R'))
+```
+
+```{r}
+new_map_dir <- here('_output/cumulative_impact_maps')
+old_map_dir <- here('_output/cumulative_impact_maps/chi_old')
+spp_new_fs <- list.files(new_map_dir, pattern = 'species.*\\.tif', 
+                         full.names = TRUE)
+spp_old_fs <- list.files(old_map_dir, pattern = 'species.*\\.tif', 
+                         full.names = TRUE)
+
+fe_new_fs <- list.files(new_map_dir, pattern = 'funct.*\\.tif', 
+                         full.names = TRUE)
+fe_old_fs <- list.files(old_map_dir, pattern = 'funct.*\\.tif', 
+                         full.names = TRUE)
+```
+
+## species CHI new vs old
+
+```{r}
+spp_new <- rast(spp_new_fs)
+spp_old <- rast(spp_old_fs)
+plot(spp_new)
+plot(spp_old)
+```
+
+### spp diff
+
+```{r}
+
+spp_diff <- spp_new - spp_old
+spp_diff <- setNames(spp_diff, basename(spp_old_fs))
+plot(spp_diff)
+
+hist(spp_diff)
+```
+
+## funct entity CHI new vs old
+
+```{r}
+fe_new <- rast(fe_new_fs)
+fe_old <- rast(fe_old_fs)
+
+plot(fe_new)
+plot(fe_old)
+```
+
+### fe difference
+```{r}
+fe_diff <- fe_new - fe_old
+fe_diff <- setNames(fe_diff, basename(fe_old_fs))
+plot(fe_diff)
+
+hist(fe_diff)
+```
+

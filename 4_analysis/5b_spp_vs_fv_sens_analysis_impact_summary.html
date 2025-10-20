@@ -9,7 +9,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
 
 
-<meta name="author" content="Compiled on Sun Mar 17 20:48:17 2024 by ohara" />
+<meta name="author" content="Compiled on Fri Oct 17 22:30:48 2025 by ohara" />
 
 
 <title>Sensitivity analysis: species-weighting vs FV weighting</title>
@@ -1392,7 +1392,7 @@ overflow: visible;
 </style>
 <style type="text/css" data-origin="pandoc">
 pre > code.sourceCode { white-space: pre; position: relative; }
-pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span { line-height: 1.25; }
 pre > code.sourceCode > span:empty { height: 1.2em; }
 .sourceCode { overflow: visible; }
 code.sourceCode > span { color: inherit; text-decoration: inherit; }
@@ -1661,7 +1661,7 @@ border-radius: 0px;
 
 <h1 class="title toc-ignore">Sensitivity analysis: species-weighting vs
 FV weighting</h1>
-<h4 class="author"><em>Compiled on Sun Mar 17 20:48:17 2024 by
+<h4 class="author"><em>Compiled on Fri Oct 17 22:30:48 2025 by
 ohara</em></h4>
 
 </div>
@@ -1703,211 +1703,268 @@ iteration to determine the cumulative impact.</p>
 look like they’re actually just vulnerability scores (impacts were
 calculated after). So, for those stressors, bind with stressor intensity
 and convert to impacts… :/</p>
-<div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" tabindex="-1"></a>cell_id_r <span class="ot">&lt;-</span> <span class="fu">rast</span>(<span class="fu">here</span>(<span class="st">&#39;_output/cumulative_impact_maps/chi_funct_entity.tif&#39;</span>)) <span class="sc">%&gt;%</span></span>
-<span id="cb2-2"><a href="#cb2-2" tabindex="-1"></a>  <span class="fu">setValues</span>(<span class="dv">1</span><span class="sc">:</span><span class="fu">ncell</span>(.)) <span class="sc">%&gt;%</span> <span class="fu">setNames</span>(<span class="st">&#39;cell_id&#39;</span>)</span>
+<div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" tabindex="-1"></a>spp_names_f <span class="ot">&lt;-</span> <span class="fu">here_anx</span>(<span class="st">&#39;sens_analysis/spp_name_to_id.csv&#39;</span>)</span>
+<span id="cb2-2"><a href="#cb2-2" tabindex="-1"></a>spp_cells_f <span class="ot">&lt;-</span> <span class="fu">here_anx</span>(<span class="st">&#39;sens_analysis/spp_cells_to_id.csv&#39;</span>)</span>
 <span id="cb2-3"><a href="#cb2-3" tabindex="-1"></a></span>
-<span id="cb2-4"><a href="#cb2-4" tabindex="-1"></a>stressor_intensity_f <span class="ot">&lt;-</span> <span class="fu">here_anx</span>(<span class="st">&#39;sens_analysis/sample_str_intensity.csv&#39;</span>)</span>
-<span id="cb2-5"><a href="#cb2-5" tabindex="-1"></a><span class="cf">if</span>(<span class="sc">!</span><span class="fu">file.exists</span>(stressor_intensity_f)) {</span>
-<span id="cb2-6"><a href="#cb2-6" tabindex="-1"></a>  </span>
-<span id="cb2-7"><a href="#cb2-7" tabindex="-1"></a>  str_vuln_lookup <span class="ot">&lt;-</span> <span class="fu">read_csv</span>(<span class="fu">here</span>(<span class="st">&#39;_raw/stressor_vulnerability_lookup.csv&#39;</span>), </span>
-<span id="cb2-8"><a href="#cb2-8" tabindex="-1"></a>                              <span class="at">show_col_types =</span> <span class="cn">FALSE</span>)</span>
-<span id="cb2-9"><a href="#cb2-9" tabindex="-1"></a>  strs <span class="ot">&lt;-</span> str_vuln_lookup<span class="sc">$</span>stressor</span>
-<span id="cb2-10"><a href="#cb2-10" tabindex="-1"></a>  strs_unif <span class="ot">&lt;-</span> strs[<span class="sc">!</span><span class="fu">str_detect</span>(strs, <span class="st">&#39;sst_rise|biomass_removal|bycatch&#39;</span>)]</span>
-<span id="cb2-11"><a href="#cb2-11" tabindex="-1"></a>  </span>
-<span id="cb2-12"><a href="#cb2-12" tabindex="-1"></a>  str_fs <span class="ot">&lt;-</span> <span class="fu">list.files</span>(<span class="fu">here</span>(<span class="st">&#39;_data/stressors_mol&#39;</span>),</span>
-<span id="cb2-13"><a href="#cb2-13" tabindex="-1"></a>                       <span class="at">pattern =</span> <span class="fu">smash2or</span>(strs_unif),</span>
-<span id="cb2-14"><a href="#cb2-14" tabindex="-1"></a>                       <span class="at">full.names =</span> <span class="cn">TRUE</span>)</span>
-<span id="cb2-15"><a href="#cb2-15" tabindex="-1"></a>  </span>
-<span id="cb2-16"><a href="#cb2-16" tabindex="-1"></a>  str_rast <span class="ot">&lt;-</span> <span class="fu">rast</span>(str_fs) <span class="sc">%&gt;%</span></span>
-<span id="cb2-17"><a href="#cb2-17" tabindex="-1"></a>    <span class="fu">setNames</span>(<span class="fu">basename</span>(str_fs) <span class="sc">%&gt;%</span> <span class="fu">str_remove</span>(<span class="st">&#39;_[0-9]{4}.+&#39;</span>))</span>
-<span id="cb2-18"><a href="#cb2-18" tabindex="-1"></a>  </span>
-<span id="cb2-19"><a href="#cb2-19" tabindex="-1"></a>  str_cell_df <span class="ot">&lt;-</span> <span class="fu">c</span>(str_rast, cell_id_r) <span class="sc">%&gt;%</span></span>
-<span id="cb2-20"><a href="#cb2-20" tabindex="-1"></a>    <span class="fu">as.data.frame</span>(<span class="at">xy =</span> <span class="cn">FALSE</span>) <span class="sc">%&gt;%</span></span>
-<span id="cb2-21"><a href="#cb2-21" tabindex="-1"></a>    <span class="fu">filter</span>(cell_id <span class="sc">%in%</span> cell_id_vec) <span class="sc">%&gt;%</span></span>
-<span id="cb2-22"><a href="#cb2-22" tabindex="-1"></a>    <span class="fu">mutate</span>(<span class="fu">across</span>(<span class="fu">everything</span>(), <span class="sc">~</span><span class="fu">ifelse</span>(<span class="fu">is.na</span>(.x), <span class="dv">0</span>, .x))) <span class="sc">%&gt;%</span></span>
-<span id="cb2-23"><a href="#cb2-23" tabindex="-1"></a>    <span class="fu">pivot_longer</span>(<span class="at">cols =</span> <span class="sc">-</span>cell_id, <span class="at">names_to =</span> <span class="st">&#39;stressor&#39;</span>, <span class="at">values_to =</span> <span class="st">&#39;intensity&#39;</span>)</span>
-<span id="cb2-24"><a href="#cb2-24" tabindex="-1"></a>  </span>
-<span id="cb2-25"><a href="#cb2-25" tabindex="-1"></a>  <span class="fu">write_csv</span>(str_cell_df, stressor_intensity_f)</span>
-<span id="cb2-26"><a href="#cb2-26" tabindex="-1"></a>}</span>
-<span id="cb2-27"><a href="#cb2-27" tabindex="-1"></a></span>
-<span id="cb2-28"><a href="#cb2-28" tabindex="-1"></a>str_cell_df <span class="ot">&lt;-</span> <span class="fu">read_csv</span>(stressor_intensity_f)</span>
-<span id="cb2-29"><a href="#cb2-29" tabindex="-1"></a>unif_strs <span class="ot">&lt;-</span> str_cell_df<span class="sc">$</span>stressor <span class="sc">%&gt;%</span> <span class="fu">unique</span>()</span>
-<span id="cb2-30"><a href="#cb2-30" tabindex="-1"></a></span>
-<span id="cb2-31"><a href="#cb2-31" tabindex="-1"></a>chi_orig_spp_r <span class="ot">&lt;-</span> <span class="fu">rast</span>(<span class="fu">here</span>(<span class="st">&#39;_output/cumulative_impact_maps/chi_species.tif&#39;</span>)) <span class="sc">%&gt;%</span></span>
-<span id="cb2-32"><a href="#cb2-32" tabindex="-1"></a>  <span class="fu">setNames</span>(<span class="st">&#39;chi_orig_spp&#39;</span>)</span>
-<span id="cb2-33"><a href="#cb2-33" tabindex="-1"></a>chi_orig_fe_r <span class="ot">&lt;-</span> <span class="fu">rast</span>(<span class="fu">here</span>(<span class="st">&#39;_output/cumulative_impact_maps/chi_funct_entity.tif&#39;</span>)) <span class="sc">%&gt;%</span></span>
-<span id="cb2-34"><a href="#cb2-34" tabindex="-1"></a>  <span class="fu">setNames</span>(<span class="st">&#39;chi_orig_fe&#39;</span>)</span>
-<span id="cb2-35"><a href="#cb2-35" tabindex="-1"></a></span>
-<span id="cb2-36"><a href="#cb2-36" tabindex="-1"></a>chi_orig_df <span class="ot">&lt;-</span> <span class="fu">c</span>(chi_orig_spp_r, chi_orig_fe_r, cell_id_r) <span class="sc">%&gt;%</span></span>
-<span id="cb2-37"><a href="#cb2-37" tabindex="-1"></a>  <span class="fu">as.data.frame</span>() <span class="sc">%&gt;%</span></span>
-<span id="cb2-38"><a href="#cb2-38" tabindex="-1"></a>  <span class="fu">filter</span>(cell_id <span class="sc">%in%</span> str_cell_df<span class="sc">$</span>cell_id)</span></code></pre></div>
-<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" tabindex="-1"></a>get_impacts <span class="ot">&lt;-</span> <span class="cf">function</span>(f) {</span>
-<span id="cb3-2"><a href="#cb3-2" tabindex="-1"></a>  <span class="do">### fs &lt;- iter_df$f</span></span>
-<span id="cb3-3"><a href="#cb3-3" tabindex="-1"></a>  <span class="do">### f &lt;- fs[4]</span></span>
-<span id="cb3-4"><a href="#cb3-4" tabindex="-1"></a>  s <span class="ot">&lt;-</span> <span class="fu">str_remove_all</span>(<span class="fu">basename</span>(f), <span class="st">&#39;.+_shuffle_|_[0-9].+&#39;</span>)</span>
-<span id="cb3-5"><a href="#cb3-5" tabindex="-1"></a>  <span class="cf">if</span>(<span class="sc">!</span>s <span class="sc">%in%</span> unif_strs) {</span>
-<span id="cb3-6"><a href="#cb3-6" tabindex="-1"></a>    df <span class="ot">&lt;-</span> <span class="fu">fread</span>(f)</span>
-<span id="cb3-7"><a href="#cb3-7" tabindex="-1"></a>  } <span class="cf">else</span> {</span>
-<span id="cb3-8"><a href="#cb3-8" tabindex="-1"></a>    str_df <span class="ot">&lt;-</span> str_cell_df <span class="sc">%&gt;%</span></span>
-<span id="cb3-9"><a href="#cb3-9" tabindex="-1"></a>      <span class="fu">filter</span>(stressor <span class="sc">==</span> s)</span>
-<span id="cb3-10"><a href="#cb3-10" tabindex="-1"></a>    <span class="cf">if</span>(<span class="fu">nrow</span>(str_df) <span class="sc">&lt;</span> <span class="dv">100000</span>) <span class="fu">stop</span>(<span class="st">&#39;missing rows for &#39;</span>, s)</span>
-<span id="cb3-11"><a href="#cb3-11" tabindex="-1"></a>    df <span class="ot">&lt;-</span> <span class="fu">fread</span>(f) <span class="sc">%&gt;%</span></span>
-<span id="cb3-12"><a href="#cb3-12" tabindex="-1"></a>      oharac<span class="sc">::</span><span class="fu">dt_join</span>(str_df, <span class="at">by =</span> <span class="st">&#39;cell_id&#39;</span>, <span class="at">type =</span> <span class="st">&#39;inner&#39;</span>) <span class="sc">%&gt;%</span></span>
-<span id="cb3-13"><a href="#cb3-13" tabindex="-1"></a>      <span class="fu">mutate</span>(<span class="at">imp_mean_spp =</span> cell_vuln_spp <span class="sc">*</span> intensity,</span>
-<span id="cb3-14"><a href="#cb3-14" tabindex="-1"></a>             <span class="at">imp_mean_fe  =</span> cell_vuln_fe  <span class="sc">*</span> intensity) <span class="sc">%&gt;%</span></span>
-<span id="cb3-15"><a href="#cb3-15" tabindex="-1"></a>      <span class="fu">select</span>(cell_id, imp_mean_spp, imp_mean_fe)</span>
-<span id="cb3-16"><a href="#cb3-16" tabindex="-1"></a>  }</span>
-<span id="cb3-17"><a href="#cb3-17" tabindex="-1"></a>  </span>
-<span id="cb3-18"><a href="#cb3-18" tabindex="-1"></a>  <span class="fu">return</span>(df)</span>
-<span id="cb3-19"><a href="#cb3-19" tabindex="-1"></a>}</span>
-<span id="cb3-20"><a href="#cb3-20" tabindex="-1"></a></span>
-<span id="cb3-21"><a href="#cb3-21" tabindex="-1"></a>calc_iter_chi <span class="ot">&lt;-</span> <span class="cf">function</span>(i, tmp_df) {</span>
-<span id="cb3-22"><a href="#cb3-22" tabindex="-1"></a>  <span class="do">### i &lt;- 1</span></span>
-<span id="cb3-23"><a href="#cb3-23" tabindex="-1"></a>  <span class="fu">message</span>(<span class="st">&#39;Calculating mean chi for iteration &#39;</span>, i, <span class="st">&#39;...&#39;</span>)</span>
-<span id="cb3-24"><a href="#cb3-24" tabindex="-1"></a>  iter_df <span class="ot">&lt;-</span> tmp_df <span class="sc">%&gt;%</span></span>
-<span id="cb3-25"><a href="#cb3-25" tabindex="-1"></a>    <span class="fu">filter</span>(iter <span class="sc">==</span> i)</span>
-<span id="cb3-26"><a href="#cb3-26" tabindex="-1"></a></span>
-<span id="cb3-27"><a href="#cb3-27" tabindex="-1"></a>  iter_cells_df <span class="ot">&lt;-</span> parallel<span class="sc">::</span><span class="fu">mclapply</span>(iter_df<span class="sc">$</span>f, <span class="at">FUN =</span> get_impacts, <span class="at">mc.cores =</span> <span class="dv">13</span>) <span class="sc">%&gt;%</span></span>
-<span id="cb3-28"><a href="#cb3-28" tabindex="-1"></a>    <span class="fu">setNames</span>(iter_df<span class="sc">$</span>str) <span class="sc">%&gt;%</span></span>
-<span id="cb3-29"><a href="#cb3-29" tabindex="-1"></a>    <span class="fu">rbindlist</span>(<span class="at">idcol =</span> <span class="st">&#39;stressor&#39;</span>)</span>
-<span id="cb3-30"><a href="#cb3-30" tabindex="-1"></a>  </span>
-<span id="cb3-31"><a href="#cb3-31" tabindex="-1"></a>  iter_summary_df <span class="ot">&lt;-</span> iter_cells_df <span class="sc">%&gt;%</span></span>
-<span id="cb3-32"><a href="#cb3-32" tabindex="-1"></a>    <span class="fu">as.data.table</span>() <span class="sc">%&gt;%</span></span>
-<span id="cb3-33"><a href="#cb3-33" tabindex="-1"></a>    .[ , .(<span class="at">chi_spp =</span> <span class="fu">sum</span>(imp_mean_spp),</span>
-<span id="cb3-34"><a href="#cb3-34" tabindex="-1"></a>           <span class="at">chi_fe  =</span> <span class="fu">sum</span>(imp_mean_fe)),</span>
-<span id="cb3-35"><a href="#cb3-35" tabindex="-1"></a>       by <span class="ot">=</span> cell_id] <span class="sc">%&gt;%</span></span>
-<span id="cb3-36"><a href="#cb3-36" tabindex="-1"></a>    <span class="fu">mutate</span>(<span class="at">i =</span> i)</span>
-<span id="cb3-37"><a href="#cb3-37" tabindex="-1"></a>  </span>
-<span id="cb3-38"><a href="#cb3-38" tabindex="-1"></a>  <span class="fu">return</span>(iter_summary_df)</span>
-<span id="cb3-39"><a href="#cb3-39" tabindex="-1"></a>}</span></code></pre></div>
+<span id="cb2-4"><a href="#cb2-4" tabindex="-1"></a><span class="cf">if</span>(<span class="fu">any</span>(<span class="sc">!</span><span class="fu">file.exists</span>(spp_names_f, spp_cells_f))) {</span>
+<span id="cb2-5"><a href="#cb2-5" tabindex="-1"></a>  <span class="fu">stop</span>(<span class="st">&#39;Species/cell sample file(s) do not exist... Please run script 4a first to generate these files!&#39;</span>)</span>
+<span id="cb2-6"><a href="#cb2-6" tabindex="-1"></a>}</span>
+<span id="cb2-7"><a href="#cb2-7" tabindex="-1"></a></span>
+<span id="cb2-8"><a href="#cb2-8" tabindex="-1"></a>spp_cells_sample_df <span class="ot">&lt;-</span> <span class="fu">read_csv</span>(spp_names_f, <span class="at">show_col_types =</span> <span class="cn">FALSE</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb2-9"><a href="#cb2-9" tabindex="-1"></a>  <span class="fu">left_join</span>(<span class="fu">read_csv</span>(spp_cells_f, <span class="at">show_col_types =</span> <span class="cn">FALSE</span>), <span class="at">by =</span> <span class="st">&#39;spp_id&#39;</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb2-10"><a href="#cb2-10" tabindex="-1"></a>  <span class="fu">select</span>(<span class="sc">-</span>spp_id)</span>
+<span id="cb2-11"><a href="#cb2-11" tabindex="-1"></a>cell_id_vec <span class="ot">&lt;-</span> spp_cells_sample_df<span class="sc">$</span>cell_id <span class="sc">%&gt;%</span> <span class="fu">unique</span>() <span class="sc">%&gt;%</span> <span class="fu">sort</span>()</span>
+<span id="cb2-12"><a href="#cb2-12" tabindex="-1"></a>n_cells <span class="ot">&lt;-</span> <span class="fu">length</span>(cell_id_vec)</span></code></pre></div>
+<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" tabindex="-1"></a>cell_id_r <span class="ot">&lt;-</span> <span class="fu">rast</span>(<span class="fu">here</span>(<span class="st">&#39;_output/cumulative_impact_maps/chi_funct_entity.tif&#39;</span>)) <span class="sc">%&gt;%</span></span>
+<span id="cb3-2"><a href="#cb3-2" tabindex="-1"></a>  <span class="fu">setValues</span>(<span class="dv">1</span><span class="sc">:</span><span class="fu">ncell</span>(.)) <span class="sc">%&gt;%</span> <span class="fu">setNames</span>(<span class="st">&#39;cell_id&#39;</span>)</span>
+<span id="cb3-3"><a href="#cb3-3" tabindex="-1"></a></span>
+<span id="cb3-4"><a href="#cb3-4" tabindex="-1"></a>stressor_intensity_f <span class="ot">&lt;-</span> <span class="fu">here_anx</span>(<span class="st">&#39;sens_analysis/sample_str_intensity.csv&#39;</span>)</span>
+<span id="cb3-5"><a href="#cb3-5" tabindex="-1"></a><span class="cf">if</span>(<span class="sc">!</span><span class="fu">file.exists</span>(stressor_intensity_f)) {</span>
+<span id="cb3-6"><a href="#cb3-6" tabindex="-1"></a>  </span>
+<span id="cb3-7"><a href="#cb3-7" tabindex="-1"></a>  str_vuln_lookup <span class="ot">&lt;-</span> <span class="fu">read_csv</span>(<span class="fu">here</span>(<span class="st">&#39;_raw/stressor_vulnerability_lookup.csv&#39;</span>), </span>
+<span id="cb3-8"><a href="#cb3-8" tabindex="-1"></a>                              <span class="at">show_col_types =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb3-9"><a href="#cb3-9" tabindex="-1"></a>  strs <span class="ot">&lt;-</span> str_vuln_lookup<span class="sc">$</span>stressor</span>
+<span id="cb3-10"><a href="#cb3-10" tabindex="-1"></a>  strs_unif <span class="ot">&lt;-</span> strs[<span class="sc">!</span><span class="fu">str_detect</span>(strs, <span class="st">&#39;sst_rise|biomass_removal|bycatch&#39;</span>)]</span>
+<span id="cb3-11"><a href="#cb3-11" tabindex="-1"></a>  </span>
+<span id="cb3-12"><a href="#cb3-12" tabindex="-1"></a>  str_fs <span class="ot">&lt;-</span> <span class="fu">list.files</span>(<span class="fu">here</span>(<span class="st">&#39;_data/stressors_mol&#39;</span>),</span>
+<span id="cb3-13"><a href="#cb3-13" tabindex="-1"></a>                       <span class="at">pattern =</span> <span class="fu">smash2or</span>(strs_unif),</span>
+<span id="cb3-14"><a href="#cb3-14" tabindex="-1"></a>                       <span class="at">full.names =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb3-15"><a href="#cb3-15" tabindex="-1"></a>  </span>
+<span id="cb3-16"><a href="#cb3-16" tabindex="-1"></a>  str_rast <span class="ot">&lt;-</span> <span class="fu">rast</span>(str_fs) <span class="sc">%&gt;%</span></span>
+<span id="cb3-17"><a href="#cb3-17" tabindex="-1"></a>    <span class="fu">setNames</span>(<span class="fu">basename</span>(str_fs) <span class="sc">%&gt;%</span> <span class="fu">str_remove</span>(<span class="st">&#39;_[0-9]{4}.+&#39;</span>))</span>
+<span id="cb3-18"><a href="#cb3-18" tabindex="-1"></a>  </span>
+<span id="cb3-19"><a href="#cb3-19" tabindex="-1"></a>  str_cell_df <span class="ot">&lt;-</span> <span class="fu">c</span>(str_rast, cell_id_r) <span class="sc">%&gt;%</span></span>
+<span id="cb3-20"><a href="#cb3-20" tabindex="-1"></a>    <span class="fu">as.data.frame</span>(<span class="at">xy =</span> <span class="cn">FALSE</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb3-21"><a href="#cb3-21" tabindex="-1"></a>    <span class="fu">filter</span>(cell_id <span class="sc">%in%</span> cell_id_vec) <span class="sc">%&gt;%</span></span>
+<span id="cb3-22"><a href="#cb3-22" tabindex="-1"></a>    <span class="fu">mutate</span>(<span class="fu">across</span>(<span class="fu">everything</span>(), <span class="sc">~</span><span class="fu">ifelse</span>(<span class="fu">is.na</span>(.x), <span class="dv">0</span>, .x))) <span class="sc">%&gt;%</span></span>
+<span id="cb3-23"><a href="#cb3-23" tabindex="-1"></a>    <span class="fu">pivot_longer</span>(<span class="at">cols =</span> <span class="sc">-</span>cell_id, <span class="at">names_to =</span> <span class="st">&#39;stressor&#39;</span>, <span class="at">values_to =</span> <span class="st">&#39;intensity&#39;</span>)</span>
+<span id="cb3-24"><a href="#cb3-24" tabindex="-1"></a>  </span>
+<span id="cb3-25"><a href="#cb3-25" tabindex="-1"></a>  <span class="fu">write_csv</span>(str_cell_df, stressor_intensity_f)</span>
+<span id="cb3-26"><a href="#cb3-26" tabindex="-1"></a>}</span>
+<span id="cb3-27"><a href="#cb3-27" tabindex="-1"></a></span>
+<span id="cb3-28"><a href="#cb3-28" tabindex="-1"></a>str_cell_df <span class="ot">&lt;-</span> <span class="fu">read_csv</span>(stressor_intensity_f)</span>
+<span id="cb3-29"><a href="#cb3-29" tabindex="-1"></a>unif_strs <span class="ot">&lt;-</span> str_cell_df<span class="sc">$</span>stressor <span class="sc">%&gt;%</span> <span class="fu">unique</span>()</span>
+<span id="cb3-30"><a href="#cb3-30" tabindex="-1"></a></span>
+<span id="cb3-31"><a href="#cb3-31" tabindex="-1"></a>chi_orig_spp_r <span class="ot">&lt;-</span> <span class="fu">rast</span>(<span class="fu">here</span>(<span class="st">&#39;_output/cumulative_impact_maps/chi_species.tif&#39;</span>)) <span class="sc">%&gt;%</span></span>
+<span id="cb3-32"><a href="#cb3-32" tabindex="-1"></a>  <span class="fu">setNames</span>(<span class="st">&#39;chi_orig_spp&#39;</span>)</span>
+<span id="cb3-33"><a href="#cb3-33" tabindex="-1"></a>chi_orig_fe_r <span class="ot">&lt;-</span> <span class="fu">rast</span>(<span class="fu">here</span>(<span class="st">&#39;_output/cumulative_impact_maps/chi_funct_entity.tif&#39;</span>)) <span class="sc">%&gt;%</span></span>
+<span id="cb3-34"><a href="#cb3-34" tabindex="-1"></a>  <span class="fu">setNames</span>(<span class="st">&#39;chi_orig_fe&#39;</span>)</span>
+<span id="cb3-35"><a href="#cb3-35" tabindex="-1"></a></span>
+<span id="cb3-36"><a href="#cb3-36" tabindex="-1"></a>chi_orig_df <span class="ot">&lt;-</span> <span class="fu">c</span>(chi_orig_spp_r, chi_orig_fe_r, cell_id_r) <span class="sc">%&gt;%</span></span>
+<span id="cb3-37"><a href="#cb3-37" tabindex="-1"></a>  <span class="fu">as.data.frame</span>() <span class="sc">%&gt;%</span></span>
+<span id="cb3-38"><a href="#cb3-38" tabindex="-1"></a>  <span class="fu">filter</span>(cell_id <span class="sc">%in%</span> str_cell_df<span class="sc">$</span>cell_id)</span></code></pre></div>
+<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" tabindex="-1"></a>get_impacts <span class="ot">&lt;-</span> <span class="cf">function</span>(f) {</span>
+<span id="cb4-2"><a href="#cb4-2" tabindex="-1"></a>  <span class="do">### fs &lt;- iter_df$f</span></span>
+<span id="cb4-3"><a href="#cb4-3" tabindex="-1"></a>  <span class="do">### f &lt;- fs[4]</span></span>
+<span id="cb4-4"><a href="#cb4-4" tabindex="-1"></a>  s <span class="ot">&lt;-</span> <span class="fu">str_remove_all</span>(<span class="fu">basename</span>(f), <span class="st">&#39;.+_shuffle_|_[0-9].+&#39;</span>)</span>
+<span id="cb4-5"><a href="#cb4-5" tabindex="-1"></a>  <span class="cf">if</span>(<span class="sc">!</span>s <span class="sc">%in%</span> unif_strs) {</span>
+<span id="cb4-6"><a href="#cb4-6" tabindex="-1"></a>    df <span class="ot">&lt;-</span> <span class="fu">fread</span>(f)</span>
+<span id="cb4-7"><a href="#cb4-7" tabindex="-1"></a>  } <span class="cf">else</span> {</span>
+<span id="cb4-8"><a href="#cb4-8" tabindex="-1"></a>    str_df <span class="ot">&lt;-</span> str_cell_df <span class="sc">%&gt;%</span></span>
+<span id="cb4-9"><a href="#cb4-9" tabindex="-1"></a>      <span class="fu">filter</span>(stressor <span class="sc">==</span> s)</span>
+<span id="cb4-10"><a href="#cb4-10" tabindex="-1"></a>    <span class="cf">if</span>(<span class="fu">nrow</span>(str_df) <span class="sc">&lt;</span> <span class="dv">100000</span>) <span class="fu">stop</span>(<span class="st">&#39;missing rows for &#39;</span>, s)</span>
+<span id="cb4-11"><a href="#cb4-11" tabindex="-1"></a>    df <span class="ot">&lt;-</span> <span class="fu">fread</span>(f) <span class="sc">%&gt;%</span></span>
+<span id="cb4-12"><a href="#cb4-12" tabindex="-1"></a>      oharac<span class="sc">::</span><span class="fu">dt_join</span>(str_df, <span class="at">by =</span> <span class="st">&#39;cell_id&#39;</span>, <span class="at">type =</span> <span class="st">&#39;inner&#39;</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb4-13"><a href="#cb4-13" tabindex="-1"></a>      <span class="fu">mutate</span>(<span class="at">imp_mean_spp =</span> cell_vuln_spp <span class="sc">*</span> intensity,</span>
+<span id="cb4-14"><a href="#cb4-14" tabindex="-1"></a>             <span class="at">imp_mean_fe  =</span> cell_vuln_fe  <span class="sc">*</span> intensity) <span class="sc">%&gt;%</span></span>
+<span id="cb4-15"><a href="#cb4-15" tabindex="-1"></a>      <span class="fu">select</span>(cell_id, imp_mean_spp, imp_mean_fe)</span>
+<span id="cb4-16"><a href="#cb4-16" tabindex="-1"></a>  }</span>
+<span id="cb4-17"><a href="#cb4-17" tabindex="-1"></a>  </span>
+<span id="cb4-18"><a href="#cb4-18" tabindex="-1"></a>  <span class="fu">return</span>(df)</span>
+<span id="cb4-19"><a href="#cb4-19" tabindex="-1"></a>}</span>
+<span id="cb4-20"><a href="#cb4-20" tabindex="-1"></a></span>
+<span id="cb4-21"><a href="#cb4-21" tabindex="-1"></a>calc_iter_chi <span class="ot">&lt;-</span> <span class="cf">function</span>(i, tmp_df) {</span>
+<span id="cb4-22"><a href="#cb4-22" tabindex="-1"></a>  <span class="do">### i &lt;- 1</span></span>
+<span id="cb4-23"><a href="#cb4-23" tabindex="-1"></a>  <span class="fu">message</span>(<span class="st">&#39;Calculating mean chi for iteration &#39;</span>, i, <span class="st">&#39;...&#39;</span>)</span>
+<span id="cb4-24"><a href="#cb4-24" tabindex="-1"></a>  iter_df <span class="ot">&lt;-</span> tmp_df <span class="sc">%&gt;%</span></span>
+<span id="cb4-25"><a href="#cb4-25" tabindex="-1"></a>    <span class="fu">filter</span>(iter <span class="sc">==</span> i)</span>
+<span id="cb4-26"><a href="#cb4-26" tabindex="-1"></a></span>
+<span id="cb4-27"><a href="#cb4-27" tabindex="-1"></a>  iter_cells_df <span class="ot">&lt;-</span> parallel<span class="sc">::</span><span class="fu">mclapply</span>(iter_df<span class="sc">$</span>f, <span class="at">FUN =</span> get_impacts, <span class="at">mc.cores =</span> <span class="dv">13</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb4-28"><a href="#cb4-28" tabindex="-1"></a>    <span class="fu">setNames</span>(iter_df<span class="sc">$</span>str) <span class="sc">%&gt;%</span></span>
+<span id="cb4-29"><a href="#cb4-29" tabindex="-1"></a>    <span class="fu">rbindlist</span>(<span class="at">idcol =</span> <span class="st">&#39;stressor&#39;</span>)</span>
+<span id="cb4-30"><a href="#cb4-30" tabindex="-1"></a>  </span>
+<span id="cb4-31"><a href="#cb4-31" tabindex="-1"></a>  iter_summary_df <span class="ot">&lt;-</span> iter_cells_df <span class="sc">%&gt;%</span></span>
+<span id="cb4-32"><a href="#cb4-32" tabindex="-1"></a>    <span class="fu">as.data.table</span>() <span class="sc">%&gt;%</span></span>
+<span id="cb4-33"><a href="#cb4-33" tabindex="-1"></a>    .[ , .(<span class="at">chi_spp =</span> <span class="fu">sum</span>(imp_mean_spp),</span>
+<span id="cb4-34"><a href="#cb4-34" tabindex="-1"></a>           <span class="at">chi_fe  =</span> <span class="fu">sum</span>(imp_mean_fe)),</span>
+<span id="cb4-35"><a href="#cb4-35" tabindex="-1"></a>       by <span class="ot">=</span> cell_id] <span class="sc">%&gt;%</span></span>
+<span id="cb4-36"><a href="#cb4-36" tabindex="-1"></a>    <span class="fu">mutate</span>(<span class="at">i =</span> i)</span>
+<span id="cb4-37"><a href="#cb4-37" tabindex="-1"></a>  </span>
+<span id="cb4-38"><a href="#cb4-38" tabindex="-1"></a>  <span class="fu">return</span>(iter_summary_df)</span>
+<span id="cb4-39"><a href="#cb4-39" tabindex="-1"></a>}</span></code></pre></div>
 <div id="summarize-impacts-chi-non-cc-cc-and-per-stressor" class="section level2" number="2.1">
 <h2><span class="header-section-number">2.1</span> Summarize impacts:
 CHI, non-CC, CC, and per stressor</h2>
-<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" tabindex="-1"></a>chi_out_f <span class="ot">&lt;-</span> <span class="fu">here_anx</span>(<span class="st">&#39;spp_vs_fe_sensitivity_analysis/impact_summary/chi_shuffle_species.csv&#39;</span>)</span>
-<span id="cb4-2"><a href="#cb4-2" tabindex="-1"></a></span>
-<span id="cb4-3"><a href="#cb4-3" tabindex="-1"></a>tmp_fs <span class="ot">&lt;-</span> <span class="fu">list.files</span>(<span class="fu">here_anx</span>(<span class="st">&#39;spp_vs_fe_sensitivity_analysis/impact_summary/tmp&#39;</span>), <span class="at">full.names =</span> <span class="cn">TRUE</span>)</span>
-<span id="cb4-4"><a href="#cb4-4" tabindex="-1"></a>tmp_df <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(<span class="at">f =</span> tmp_fs) <span class="sc">%&gt;%</span></span>
-<span id="cb4-5"><a href="#cb4-5" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">iter  =</span> <span class="fu">str_extract</span>(<span class="fu">basename</span>(f), <span class="st">&#39;[0-9]+&#39;</span>) <span class="sc">%&gt;%</span> <span class="fu">as.numeric</span>(),</span>
-<span id="cb4-6"><a href="#cb4-6" tabindex="-1"></a>         <span class="at">str   =</span> <span class="fu">str_remove_all</span>(<span class="fu">basename</span>(f), <span class="st">&#39;.+_shuffle_|_[0-9].+&#39;</span>))</span>
-<span id="cb4-7"><a href="#cb4-7" tabindex="-1"></a></span>
-<span id="cb4-8"><a href="#cb4-8" tabindex="-1"></a>n_sims <span class="ot">&lt;-</span> <span class="fu">max</span>(tmp_df<span class="sc">$</span>iter)</span>
-<span id="cb4-9"><a href="#cb4-9" tabindex="-1"></a></span>
-<span id="cb4-10"><a href="#cb4-10" tabindex="-1"></a><span class="cf">if</span>(<span class="sc">!</span><span class="fu">file.exists</span>(chi_out_f)) {</span>
-<span id="cb4-11"><a href="#cb4-11" tabindex="-1"></a>  <span class="do">### unlink(chi_out_f)</span></span>
-<span id="cb4-12"><a href="#cb4-12" tabindex="-1"></a>  cell_chi_df <span class="ot">&lt;-</span> <span class="fu">lapply</span>(<span class="dv">1</span><span class="sc">:</span>n_sims, </span>
-<span id="cb4-13"><a href="#cb4-13" tabindex="-1"></a>                        <span class="at">FUN =</span> calc_iter_chi, </span>
-<span id="cb4-14"><a href="#cb4-14" tabindex="-1"></a>                        <span class="at">tmp_df =</span> tmp_df) <span class="sc">%&gt;%</span></span>
-<span id="cb4-15"><a href="#cb4-15" tabindex="-1"></a>    <span class="fu">rbindlist</span>() <span class="sc">%&gt;%</span></span>
-<span id="cb4-16"><a href="#cb4-16" tabindex="-1"></a>    oharac<span class="sc">::</span><span class="fu">dt_join</span>(chi_orig_df, <span class="at">type =</span> <span class="st">&#39;left&#39;</span>, <span class="at">by =</span> <span class="st">&#39;cell_id&#39;</span>) <span class="sc">%&gt;%</span></span>
-<span id="cb4-17"><a href="#cb4-17" tabindex="-1"></a>    <span class="fu">mutate</span>(<span class="at">fe_spp_diff  =</span> chi_fe <span class="sc">-</span> chi_spp,</span>
-<span id="cb4-18"><a href="#cb4-18" tabindex="-1"></a>           <span class="at">spp_spp_diff =</span> chi_spp <span class="sc">-</span> chi_orig_spp,</span>
-<span id="cb4-19"><a href="#cb4-19" tabindex="-1"></a>           <span class="at">fe_fe_diff   =</span> chi_fe <span class="sc">-</span> chi_orig_fe)</span>
-<span id="cb4-20"><a href="#cb4-20" tabindex="-1"></a>  </span>
-<span id="cb4-21"><a href="#cb4-21" tabindex="-1"></a>  cell_chi_summary <span class="ot">&lt;-</span> cell_chi_df <span class="sc">%&gt;%</span></span>
-<span id="cb4-22"><a href="#cb4-22" tabindex="-1"></a>    <span class="fu">as.data.table</span>() <span class="sc">%&gt;%</span></span>
-<span id="cb4-23"><a href="#cb4-23" tabindex="-1"></a>    .[ , .(<span class="at">chi_mean_spp =</span> <span class="fu">mean</span>(chi_spp),</span>
-<span id="cb4-24"><a href="#cb4-24" tabindex="-1"></a>           <span class="at">chi_sdev_spp =</span> <span class="fu">sd</span>(chi_spp),</span>
-<span id="cb4-25"><a href="#cb4-25" tabindex="-1"></a>           <span class="at">chi_mean_fe =</span> <span class="fu">mean</span>(chi_fe),</span>
-<span id="cb4-26"><a href="#cb4-26" tabindex="-1"></a>           <span class="at">chi_sdev_fe =</span> <span class="fu">sd</span>(chi_fe),</span>
-<span id="cb4-27"><a href="#cb4-27" tabindex="-1"></a>           <span class="at">diff_95lo =</span> <span class="fu">quantile</span>(fe_spp_diff, .<span class="dv">025</span>),</span>
-<span id="cb4-28"><a href="#cb4-28" tabindex="-1"></a>           <span class="at">diff_95hi =</span> <span class="fu">quantile</span>(fe_spp_diff, .<span class="dv">975</span>),</span>
-<span id="cb4-29"><a href="#cb4-29" tabindex="-1"></a>           <span class="at">diff_95lo_spp =</span> <span class="fu">quantile</span>(spp_spp_diff, .<span class="dv">025</span>),</span>
-<span id="cb4-30"><a href="#cb4-30" tabindex="-1"></a>           <span class="at">diff_95hi_spp =</span> <span class="fu">quantile</span>(spp_spp_diff, .<span class="dv">975</span>),</span>
-<span id="cb4-31"><a href="#cb4-31" tabindex="-1"></a>           <span class="at">diff_95lo_fe  =</span> <span class="fu">quantile</span>(fe_fe_diff, .<span class="dv">025</span>),</span>
-<span id="cb4-32"><a href="#cb4-32" tabindex="-1"></a>           <span class="at">diff_95hi_fe  =</span> <span class="fu">quantile</span>(fe_fe_diff, .<span class="dv">975</span>),</span>
-<span id="cb4-33"><a href="#cb4-33" tabindex="-1"></a>           <span class="at">n_iters =</span> <span class="fu">length</span>(chi_spp)),</span>
-<span id="cb4-34"><a href="#cb4-34" tabindex="-1"></a>       by <span class="ot">=</span> cell_id]</span>
-<span id="cb4-35"><a href="#cb4-35" tabindex="-1"></a>    </span>
-<span id="cb4-36"><a href="#cb4-36" tabindex="-1"></a>  <span class="fu">write_csv</span>(cell_chi_summary, chi_out_f)</span>
-<span id="cb4-37"><a href="#cb4-37" tabindex="-1"></a>}</span></code></pre></div>
-<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" tabindex="-1"></a>chi_noncc_out_f <span class="ot">&lt;-</span> <span class="fu">here_anx</span>(<span class="st">&#39;spp_vs_fe_sensitivity_analysis/impact_summary/chi_noncc_shuffle_species.csv&#39;</span>)</span>
+<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" tabindex="-1"></a>chi_out_f <span class="ot">&lt;-</span> <span class="fu">here_anx</span>(<span class="st">&#39;spp_vs_fe_sensitivity_analysis/impact_summary/chi_shuffle_species.csv&#39;</span>)</span>
 <span id="cb5-2"><a href="#cb5-2" tabindex="-1"></a></span>
-<span id="cb5-3"><a href="#cb5-3" tabindex="-1"></a>noncc_tmp_df <span class="ot">&lt;-</span> tmp_df <span class="sc">%&gt;%</span></span>
-<span id="cb5-4"><a href="#cb5-4" tabindex="-1"></a>  <span class="fu">filter</span>(<span class="sc">!</span>str <span class="sc">%in%</span> <span class="fu">c</span>(<span class="st">&#39;sst_rise&#39;</span>, <span class="st">&#39;ocean_acidification&#39;</span>, <span class="st">&#39;sea_level_rise&#39;</span>, <span class="st">&#39;sst_extremes&#39;</span>, <span class="st">&#39;uv_radiation&#39;</span>))</span>
-<span id="cb5-5"><a href="#cb5-5" tabindex="-1"></a></span>
-<span id="cb5-6"><a href="#cb5-6" tabindex="-1"></a><span class="cf">if</span>(<span class="sc">!</span><span class="fu">file.exists</span>(chi_noncc_out_f)) {</span>
-<span id="cb5-7"><a href="#cb5-7" tabindex="-1"></a>  <span class="do">### unlink(chi_noncc_out_f)</span></span>
-<span id="cb5-8"><a href="#cb5-8" tabindex="-1"></a>  cell_chi_df <span class="ot">&lt;-</span> <span class="fu">lapply</span>(<span class="dv">1</span><span class="sc">:</span>n_sims, </span>
-<span id="cb5-9"><a href="#cb5-9" tabindex="-1"></a>                        <span class="at">FUN =</span> calc_iter_chi, </span>
-<span id="cb5-10"><a href="#cb5-10" tabindex="-1"></a>                        <span class="at">tmp_df =</span> noncc_tmp_df) <span class="sc">%&gt;%</span></span>
-<span id="cb5-11"><a href="#cb5-11" tabindex="-1"></a>    <span class="fu">rbindlist</span>() <span class="sc">%&gt;%</span></span>
-<span id="cb5-12"><a href="#cb5-12" tabindex="-1"></a>    <span class="fu">mutate</span>(<span class="at">fe_spp_diff =</span> chi_fe <span class="sc">-</span> chi_spp)</span>
-<span id="cb5-13"><a href="#cb5-13" tabindex="-1"></a>  </span>
-<span id="cb5-14"><a href="#cb5-14" tabindex="-1"></a>  cell_chi_summary <span class="ot">&lt;-</span> cell_chi_df <span class="sc">%&gt;%</span></span>
-<span id="cb5-15"><a href="#cb5-15" tabindex="-1"></a>    <span class="fu">as.data.table</span>() <span class="sc">%&gt;%</span></span>
-<span id="cb5-16"><a href="#cb5-16" tabindex="-1"></a>    .[ , .(<span class="at">chi_mean_spp =</span> <span class="fu">mean</span>(chi_spp),</span>
-<span id="cb5-17"><a href="#cb5-17" tabindex="-1"></a>           <span class="at">chi_sdev_spp =</span> <span class="fu">sd</span>(chi_spp),</span>
-<span id="cb5-18"><a href="#cb5-18" tabindex="-1"></a>           <span class="at">chi_mean_fe =</span> <span class="fu">mean</span>(chi_fe),</span>
-<span id="cb5-19"><a href="#cb5-19" tabindex="-1"></a>           <span class="at">chi_sdev_fe =</span> <span class="fu">sd</span>(chi_fe),</span>
-<span id="cb5-20"><a href="#cb5-20" tabindex="-1"></a>           <span class="at">diff_95lo =</span> <span class="fu">quantile</span>(fe_spp_diff, .<span class="dv">025</span>),</span>
-<span id="cb5-21"><a href="#cb5-21" tabindex="-1"></a>           <span class="at">diff_95hi =</span> <span class="fu">quantile</span>(fe_spp_diff, .<span class="dv">975</span>),</span>
-<span id="cb5-22"><a href="#cb5-22" tabindex="-1"></a>           <span class="at">n_iters =</span> <span class="fu">length</span>(chi_spp)),</span>
-<span id="cb5-23"><a href="#cb5-23" tabindex="-1"></a>       by <span class="ot">=</span> cell_id]</span>
-<span id="cb5-24"><a href="#cb5-24" tabindex="-1"></a>    </span>
-<span id="cb5-25"><a href="#cb5-25" tabindex="-1"></a>  <span class="fu">write_csv</span>(cell_chi_summary, chi_noncc_out_f)</span>
-<span id="cb5-26"><a href="#cb5-26" tabindex="-1"></a>}</span></code></pre></div>
-<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" tabindex="-1"></a>chi_cc_out_f <span class="ot">&lt;-</span> <span class="fu">here_anx</span>(<span class="st">&#39;spp_vs_fe_sensitivity_analysis/impact_summary/chi_cc_shuffle_species.csv&#39;</span>)</span>
+<span id="cb5-3"><a href="#cb5-3" tabindex="-1"></a>tmp_fs <span class="ot">&lt;-</span> <span class="fu">list.files</span>(<span class="fu">here_anx</span>(<span class="st">&#39;spp_vs_fe_sensitivity_analysis/impact_summary/tmp&#39;</span>), <span class="at">full.names =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb5-4"><a href="#cb5-4" tabindex="-1"></a>tmp_df <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(<span class="at">f =</span> tmp_fs) <span class="sc">%&gt;%</span></span>
+<span id="cb5-5"><a href="#cb5-5" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">iter  =</span> <span class="fu">str_extract</span>(<span class="fu">basename</span>(f), <span class="st">&#39;[0-9]+&#39;</span>) <span class="sc">%&gt;%</span> <span class="fu">as.numeric</span>(),</span>
+<span id="cb5-6"><a href="#cb5-6" tabindex="-1"></a>         <span class="at">str   =</span> <span class="fu">str_remove_all</span>(<span class="fu">basename</span>(f), <span class="st">&#39;.+_shuffle_|_[0-9].+&#39;</span>))</span>
+<span id="cb5-7"><a href="#cb5-7" tabindex="-1"></a></span>
+<span id="cb5-8"><a href="#cb5-8" tabindex="-1"></a>n_sims <span class="ot">&lt;-</span> <span class="fu">max</span>(tmp_df<span class="sc">$</span>iter)</span>
+<span id="cb5-9"><a href="#cb5-9" tabindex="-1"></a></span>
+<span id="cb5-10"><a href="#cb5-10" tabindex="-1"></a><span class="cf">if</span>(<span class="sc">!</span><span class="fu">file.exists</span>(chi_out_f)) {</span>
+<span id="cb5-11"><a href="#cb5-11" tabindex="-1"></a>  <span class="do">### unlink(chi_out_f)</span></span>
+<span id="cb5-12"><a href="#cb5-12" tabindex="-1"></a>  cell_chi_df <span class="ot">&lt;-</span> <span class="fu">lapply</span>(<span class="dv">1</span><span class="sc">:</span>n_sims, </span>
+<span id="cb5-13"><a href="#cb5-13" tabindex="-1"></a>                        <span class="at">FUN =</span> calc_iter_chi, </span>
+<span id="cb5-14"><a href="#cb5-14" tabindex="-1"></a>                        <span class="at">tmp_df =</span> tmp_df) <span class="sc">%&gt;%</span></span>
+<span id="cb5-15"><a href="#cb5-15" tabindex="-1"></a>    <span class="fu">rbindlist</span>() <span class="sc">%&gt;%</span></span>
+<span id="cb5-16"><a href="#cb5-16" tabindex="-1"></a>    oharac<span class="sc">::</span><span class="fu">dt_join</span>(chi_orig_df, <span class="at">type =</span> <span class="st">&#39;left&#39;</span>, <span class="at">by =</span> <span class="st">&#39;cell_id&#39;</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb5-17"><a href="#cb5-17" tabindex="-1"></a>    <span class="fu">mutate</span>(<span class="at">fe_spp_diff  =</span> chi_fe <span class="sc">-</span> chi_spp,</span>
+<span id="cb5-18"><a href="#cb5-18" tabindex="-1"></a>           <span class="at">spp_spp_diff =</span> chi_spp <span class="sc">-</span> chi_orig_spp,</span>
+<span id="cb5-19"><a href="#cb5-19" tabindex="-1"></a>           <span class="at">fe_fe_diff   =</span> chi_fe <span class="sc">-</span> chi_orig_fe)</span>
+<span id="cb5-20"><a href="#cb5-20" tabindex="-1"></a>  </span>
+<span id="cb5-21"><a href="#cb5-21" tabindex="-1"></a>  cell_chi_summary <span class="ot">&lt;-</span> cell_chi_df <span class="sc">%&gt;%</span></span>
+<span id="cb5-22"><a href="#cb5-22" tabindex="-1"></a>    <span class="fu">as.data.table</span>() <span class="sc">%&gt;%</span></span>
+<span id="cb5-23"><a href="#cb5-23" tabindex="-1"></a>    .[ , .(<span class="at">chi_mean_spp =</span> <span class="fu">mean</span>(chi_spp),</span>
+<span id="cb5-24"><a href="#cb5-24" tabindex="-1"></a>           <span class="at">chi_sdev_spp =</span> <span class="fu">sd</span>(chi_spp),</span>
+<span id="cb5-25"><a href="#cb5-25" tabindex="-1"></a>           <span class="at">chi_mean_fe =</span> <span class="fu">mean</span>(chi_fe),</span>
+<span id="cb5-26"><a href="#cb5-26" tabindex="-1"></a>           <span class="at">chi_sdev_fe =</span> <span class="fu">sd</span>(chi_fe),</span>
+<span id="cb5-27"><a href="#cb5-27" tabindex="-1"></a>           <span class="at">diff_95lo =</span> <span class="fu">quantile</span>(fe_spp_diff, .<span class="dv">025</span>),</span>
+<span id="cb5-28"><a href="#cb5-28" tabindex="-1"></a>           <span class="at">diff_95hi =</span> <span class="fu">quantile</span>(fe_spp_diff, .<span class="dv">975</span>),</span>
+<span id="cb5-29"><a href="#cb5-29" tabindex="-1"></a>           <span class="at">diff_95lo_spp =</span> <span class="fu">quantile</span>(spp_spp_diff, .<span class="dv">025</span>),</span>
+<span id="cb5-30"><a href="#cb5-30" tabindex="-1"></a>           <span class="at">diff_95hi_spp =</span> <span class="fu">quantile</span>(spp_spp_diff, .<span class="dv">975</span>),</span>
+<span id="cb5-31"><a href="#cb5-31" tabindex="-1"></a>           <span class="at">diff_95lo_fe  =</span> <span class="fu">quantile</span>(fe_fe_diff, .<span class="dv">025</span>),</span>
+<span id="cb5-32"><a href="#cb5-32" tabindex="-1"></a>           <span class="at">diff_95hi_fe  =</span> <span class="fu">quantile</span>(fe_fe_diff, .<span class="dv">975</span>),</span>
+<span id="cb5-33"><a href="#cb5-33" tabindex="-1"></a>           <span class="at">n_iters =</span> <span class="fu">length</span>(chi_spp)),</span>
+<span id="cb5-34"><a href="#cb5-34" tabindex="-1"></a>       by <span class="ot">=</span> cell_id]</span>
+<span id="cb5-35"><a href="#cb5-35" tabindex="-1"></a>    </span>
+<span id="cb5-36"><a href="#cb5-36" tabindex="-1"></a>  <span class="fu">write_csv</span>(cell_chi_summary, chi_out_f)</span>
+<span id="cb5-37"><a href="#cb5-37" tabindex="-1"></a>}</span></code></pre></div>
+<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" tabindex="-1"></a>chi_noncc_out_f <span class="ot">&lt;-</span> <span class="fu">here_anx</span>(<span class="st">&#39;spp_vs_fe_sensitivity_analysis/impact_summary/chi_noncc_shuffle_species.csv&#39;</span>)</span>
 <span id="cb6-2"><a href="#cb6-2" tabindex="-1"></a></span>
-<span id="cb6-3"><a href="#cb6-3" tabindex="-1"></a>cc_tmp_df <span class="ot">&lt;-</span> tmp_df <span class="sc">%&gt;%</span></span>
-<span id="cb6-4"><a href="#cb6-4" tabindex="-1"></a>  <span class="fu">filter</span>(str <span class="sc">%in%</span> <span class="fu">c</span>(<span class="st">&#39;sst_rise&#39;</span>, <span class="st">&#39;ocean_acidification&#39;</span>, <span class="st">&#39;sea_level_rise&#39;</span>, <span class="st">&#39;sst_extremes&#39;</span>, <span class="st">&#39;uv_radiation&#39;</span>))</span>
+<span id="cb6-3"><a href="#cb6-3" tabindex="-1"></a>noncc_tmp_df <span class="ot">&lt;-</span> tmp_df <span class="sc">%&gt;%</span></span>
+<span id="cb6-4"><a href="#cb6-4" tabindex="-1"></a>  <span class="fu">filter</span>(<span class="sc">!</span>str <span class="sc">%in%</span> <span class="fu">c</span>(<span class="st">&#39;sst_rise&#39;</span>, <span class="st">&#39;ocean_acidification&#39;</span>, <span class="st">&#39;sea_level_rise&#39;</span>, <span class="st">&#39;sst_extremes&#39;</span>, <span class="st">&#39;uv_radiation&#39;</span>))</span>
 <span id="cb6-5"><a href="#cb6-5" tabindex="-1"></a></span>
 <span id="cb6-6"><a href="#cb6-6" tabindex="-1"></a></span>
-<span id="cb6-7"><a href="#cb6-7" tabindex="-1"></a><span class="cf">if</span>(<span class="sc">!</span><span class="fu">file.exists</span>(chi_cc_out_f)) {</span>
-<span id="cb6-8"><a href="#cb6-8" tabindex="-1"></a>  <span class="do">### unlink(chi_cc_out_f)</span></span>
-<span id="cb6-9"><a href="#cb6-9" tabindex="-1"></a></span>
-<span id="cb6-10"><a href="#cb6-10" tabindex="-1"></a>  cell_chi_df <span class="ot">&lt;-</span> <span class="fu">lapply</span>(<span class="dv">1</span><span class="sc">:</span>n_sims, </span>
-<span id="cb6-11"><a href="#cb6-11" tabindex="-1"></a>                        <span class="at">FUN =</span> calc_iter_chi, </span>
-<span id="cb6-12"><a href="#cb6-12" tabindex="-1"></a>                        <span class="at">tmp_df =</span> cc_tmp_df) <span class="sc">%&gt;%</span></span>
-<span id="cb6-13"><a href="#cb6-13" tabindex="-1"></a>    <span class="fu">rbindlist</span>() <span class="sc">%&gt;%</span></span>
-<span id="cb6-14"><a href="#cb6-14" tabindex="-1"></a>    <span class="fu">mutate</span>(<span class="at">fe_spp_diff =</span> chi_fe <span class="sc">-</span> chi_spp)</span>
-<span id="cb6-15"><a href="#cb6-15" tabindex="-1"></a>  </span>
-<span id="cb6-16"><a href="#cb6-16" tabindex="-1"></a>  cell_chi_summary <span class="ot">&lt;-</span> cell_chi_df <span class="sc">%&gt;%</span></span>
-<span id="cb6-17"><a href="#cb6-17" tabindex="-1"></a>    <span class="fu">as.data.table</span>() <span class="sc">%&gt;%</span></span>
-<span id="cb6-18"><a href="#cb6-18" tabindex="-1"></a>    .[ , .(<span class="at">chi_mean_spp =</span> <span class="fu">mean</span>(chi_spp),</span>
-<span id="cb6-19"><a href="#cb6-19" tabindex="-1"></a>           <span class="at">chi_sdev_spp =</span> <span class="fu">sd</span>(chi_spp),</span>
-<span id="cb6-20"><a href="#cb6-20" tabindex="-1"></a>           <span class="at">chi_mean_fe =</span> <span class="fu">mean</span>(chi_fe),</span>
-<span id="cb6-21"><a href="#cb6-21" tabindex="-1"></a>           <span class="at">chi_sdev_fe =</span> <span class="fu">sd</span>(chi_fe),</span>
-<span id="cb6-22"><a href="#cb6-22" tabindex="-1"></a>           <span class="at">diff_95lo =</span> <span class="fu">quantile</span>(fe_spp_diff, .<span class="dv">025</span>),</span>
-<span id="cb6-23"><a href="#cb6-23" tabindex="-1"></a>           <span class="at">diff_95hi =</span> <span class="fu">quantile</span>(fe_spp_diff, .<span class="dv">975</span>),</span>
-<span id="cb6-24"><a href="#cb6-24" tabindex="-1"></a>           <span class="at">n_iters =</span> <span class="fu">length</span>(chi_spp)),</span>
-<span id="cb6-25"><a href="#cb6-25" tabindex="-1"></a>       by <span class="ot">=</span> cell_id]</span>
-<span id="cb6-26"><a href="#cb6-26" tabindex="-1"></a>    </span>
-<span id="cb6-27"><a href="#cb6-27" tabindex="-1"></a>  <span class="fu">write_csv</span>(cell_chi_summary, chi_cc_out_f)</span>
-<span id="cb6-28"><a href="#cb6-28" tabindex="-1"></a>}</span></code></pre></div>
-<div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" tabindex="-1"></a>impact_out_fstem <span class="ot">&lt;-</span> <span class="fu">here_anx</span>(<span class="st">&#39;spp_vs_fe_sensitivity_analysis/impact_summary/impact_%s_shuffle_species.csv&#39;</span>)</span>
-<span id="cb7-2"><a href="#cb7-2" tabindex="-1"></a><span class="do">### unlink_fs &lt;- list.files(dirname(impact_out_fstem), pattern = &#39;species.csv&#39;, full.names = TRUE)</span></span>
-<span id="cb7-3"><a href="#cb7-3" tabindex="-1"></a><span class="do">### unlink(unlink_fs)</span></span>
-<span id="cb7-4"><a href="#cb7-4" tabindex="-1"></a></span>
-<span id="cb7-5"><a href="#cb7-5" tabindex="-1"></a>strs <span class="ot">&lt;-</span> tmp_df<span class="sc">$</span>str <span class="sc">%&gt;%</span> <span class="fu">unique</span>()</span>
-<span id="cb7-6"><a href="#cb7-6" tabindex="-1"></a></span>
-<span id="cb7-7"><a href="#cb7-7" tabindex="-1"></a><span class="cf">for</span>(s <span class="cf">in</span> strs) {</span>
-<span id="cb7-8"><a href="#cb7-8" tabindex="-1"></a>  <span class="co"># s &lt;- strs[1]</span></span>
-<span id="cb7-9"><a href="#cb7-9" tabindex="-1"></a>  str_tmp_df <span class="ot">&lt;-</span> tmp_df <span class="sc">%&gt;%</span></span>
-<span id="cb7-10"><a href="#cb7-10" tabindex="-1"></a>    <span class="fu">filter</span>(str <span class="sc">==</span> s)</span>
-<span id="cb7-11"><a href="#cb7-11" tabindex="-1"></a></span>
-<span id="cb7-12"><a href="#cb7-12" tabindex="-1"></a>  impact_out_f <span class="ot">&lt;-</span> <span class="fu">sprintf</span>(impact_out_fstem, s)</span>
-<span id="cb7-13"><a href="#cb7-13" tabindex="-1"></a>  <span class="cf">if</span>(<span class="sc">!</span><span class="fu">file.exists</span>(impact_out_f)) {</span>
-<span id="cb7-14"><a href="#cb7-14" tabindex="-1"></a>    cell_imp_df <span class="ot">&lt;-</span> <span class="fu">lapply</span>(<span class="dv">1</span><span class="sc">:</span>n_sims, </span>
-<span id="cb7-15"><a href="#cb7-15" tabindex="-1"></a>                          <span class="at">FUN =</span> calc_iter_chi, </span>
-<span id="cb7-16"><a href="#cb7-16" tabindex="-1"></a>                          <span class="at">tmp_df =</span> str_tmp_df) <span class="sc">%&gt;%</span></span>
-<span id="cb7-17"><a href="#cb7-17" tabindex="-1"></a>      <span class="fu">rbindlist</span>() <span class="sc">%&gt;%</span></span>
-<span id="cb7-18"><a href="#cb7-18" tabindex="-1"></a>      <span class="fu">setNames</span>(<span class="fu">str_replace</span>(<span class="fu">names</span>(.), <span class="st">&#39;chi&#39;</span>, <span class="st">&#39;impact&#39;</span>)) <span class="sc">%&gt;%</span></span>
-<span id="cb7-19"><a href="#cb7-19" tabindex="-1"></a>      <span class="fu">mutate</span>(<span class="at">fe_spp_diff =</span> impact_fe <span class="sc">-</span> impact_spp)</span>
-<span id="cb7-20"><a href="#cb7-20" tabindex="-1"></a>    </span>
-<span id="cb7-21"><a href="#cb7-21" tabindex="-1"></a>    cell_impact_summary <span class="ot">&lt;-</span> cell_imp_df <span class="sc">%&gt;%</span></span>
-<span id="cb7-22"><a href="#cb7-22" tabindex="-1"></a>      <span class="fu">as.data.table</span>() <span class="sc">%&gt;%</span></span>
-<span id="cb7-23"><a href="#cb7-23" tabindex="-1"></a>      .[ , .(<span class="at">impact_mean_spp =</span> <span class="fu">mean</span>(impact_spp),</span>
-<span id="cb7-24"><a href="#cb7-24" tabindex="-1"></a>             <span class="at">impact_sdev_spp =</span> <span class="fu">sd</span>(impact_spp),</span>
-<span id="cb7-25"><a href="#cb7-25" tabindex="-1"></a>             <span class="at">impact_mean_fe =</span> <span class="fu">mean</span>(impact_fe),</span>
-<span id="cb7-26"><a href="#cb7-26" tabindex="-1"></a>             <span class="at">impact_sdev_fe =</span> <span class="fu">sd</span>(impact_fe),</span>
-<span id="cb7-27"><a href="#cb7-27" tabindex="-1"></a>             <span class="at">diff_95lo =</span> <span class="fu">quantile</span>(fe_spp_diff, .<span class="dv">025</span>),</span>
-<span id="cb7-28"><a href="#cb7-28" tabindex="-1"></a>             <span class="at">diff_95hi =</span> <span class="fu">quantile</span>(fe_spp_diff, .<span class="dv">975</span>),</span>
-<span id="cb7-29"><a href="#cb7-29" tabindex="-1"></a>             <span class="at">n_iters =</span> <span class="fu">length</span>(impact_spp)),</span>
-<span id="cb7-30"><a href="#cb7-30" tabindex="-1"></a>         by <span class="ot">=</span> cell_id]</span>
-<span id="cb7-31"><a href="#cb7-31" tabindex="-1"></a>      </span>
-<span id="cb7-32"><a href="#cb7-32" tabindex="-1"></a>    <span class="fu">write_csv</span>(cell_impact_summary, impact_out_f)</span>
-<span id="cb7-33"><a href="#cb7-33" tabindex="-1"></a>  }</span>
-<span id="cb7-34"><a href="#cb7-34" tabindex="-1"></a>}</span></code></pre></div>
+<span id="cb6-7"><a href="#cb6-7" tabindex="-1"></a>noncc_orig_spp_r <span class="ot">&lt;-</span> <span class="fu">rast</span>(<span class="fu">here</span>(<span class="st">&#39;_output/cumulative_impact_maps&#39;</span>,</span>
+<span id="cb6-8"><a href="#cb6-8" tabindex="-1"></a>                              <span class="fu">c</span>(<span class="st">&#39;species_group_chi_fishing.tif&#39;</span>, </span>
+<span id="cb6-9"><a href="#cb6-9" tabindex="-1"></a>                                <span class="st">&#39;species_group_chi_land_based.tif&#39;</span>,</span>
+<span id="cb6-10"><a href="#cb6-10" tabindex="-1"></a>                                <span class="st">&#39;species_group_chi_ocean_based.tif&#39;</span>))) <span class="sc">%&gt;%</span></span>
+<span id="cb6-11"><a href="#cb6-11" tabindex="-1"></a>  <span class="fu">sum</span>() <span class="sc">%&gt;%</span></span>
+<span id="cb6-12"><a href="#cb6-12" tabindex="-1"></a>  <span class="fu">setNames</span>(<span class="st">&#39;chi_orig_spp&#39;</span>)</span>
+<span id="cb6-13"><a href="#cb6-13" tabindex="-1"></a>noncc_orig_fe_r <span class="ot">&lt;-</span> <span class="fu">rast</span>(<span class="fu">here</span>(<span class="st">&#39;_output/cumulative_impact_maps&#39;</span>,</span>
+<span id="cb6-14"><a href="#cb6-14" tabindex="-1"></a>                              <span class="fu">c</span>(<span class="st">&#39;funct_entity_group_chi_fishing.tif&#39;</span>, </span>
+<span id="cb6-15"><a href="#cb6-15" tabindex="-1"></a>                                <span class="st">&#39;funct_entity_group_chi_land_based.tif&#39;</span>,</span>
+<span id="cb6-16"><a href="#cb6-16" tabindex="-1"></a>                                <span class="st">&#39;funct_entity_group_chi_ocean_based.tif&#39;</span>))) <span class="sc">%&gt;%</span></span>
+<span id="cb6-17"><a href="#cb6-17" tabindex="-1"></a>  <span class="fu">sum</span>() <span class="sc">%&gt;%</span></span>
+<span id="cb6-18"><a href="#cb6-18" tabindex="-1"></a>  <span class="fu">setNames</span>(<span class="st">&#39;chi_orig_fe&#39;</span>)</span>
+<span id="cb6-19"><a href="#cb6-19" tabindex="-1"></a></span>
+<span id="cb6-20"><a href="#cb6-20" tabindex="-1"></a>noncc_orig_df <span class="ot">&lt;-</span> <span class="fu">c</span>(noncc_orig_spp_r, noncc_orig_fe_r, cell_id_r) <span class="sc">%&gt;%</span></span>
+<span id="cb6-21"><a href="#cb6-21" tabindex="-1"></a>  <span class="fu">as.data.frame</span>() <span class="sc">%&gt;%</span></span>
+<span id="cb6-22"><a href="#cb6-22" tabindex="-1"></a>  <span class="fu">filter</span>(cell_id <span class="sc">%in%</span> str_cell_df<span class="sc">$</span>cell_id)</span>
+<span id="cb6-23"><a href="#cb6-23" tabindex="-1"></a></span>
+<span id="cb6-24"><a href="#cb6-24" tabindex="-1"></a><span class="cf">if</span>(<span class="sc">!</span><span class="fu">file.exists</span>(chi_noncc_out_f)) {</span>
+<span id="cb6-25"><a href="#cb6-25" tabindex="-1"></a>  <span class="do">### unlink(chi_noncc_out_f)</span></span>
+<span id="cb6-26"><a href="#cb6-26" tabindex="-1"></a>  cell_chi_df <span class="ot">&lt;-</span> <span class="fu">lapply</span>(<span class="dv">1</span><span class="sc">:</span>n_sims, </span>
+<span id="cb6-27"><a href="#cb6-27" tabindex="-1"></a>                        <span class="at">FUN =</span> calc_iter_chi, </span>
+<span id="cb6-28"><a href="#cb6-28" tabindex="-1"></a>                        <span class="at">tmp_df =</span> noncc_tmp_df) <span class="sc">%&gt;%</span></span>
+<span id="cb6-29"><a href="#cb6-29" tabindex="-1"></a>    <span class="fu">rbindlist</span>() <span class="sc">%&gt;%</span></span>
+<span id="cb6-30"><a href="#cb6-30" tabindex="-1"></a>    oharac<span class="sc">::</span><span class="fu">dt_join</span>(noncc_orig_df, <span class="at">type =</span> <span class="st">&#39;left&#39;</span>, <span class="at">by =</span> <span class="st">&#39;cell_id&#39;</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb6-31"><a href="#cb6-31" tabindex="-1"></a>    <span class="fu">mutate</span>(<span class="at">fe_spp_diff  =</span> chi_fe <span class="sc">-</span> chi_spp,</span>
+<span id="cb6-32"><a href="#cb6-32" tabindex="-1"></a>           <span class="at">spp_spp_diff =</span> chi_spp <span class="sc">-</span> chi_orig_spp,</span>
+<span id="cb6-33"><a href="#cb6-33" tabindex="-1"></a>           <span class="at">fe_fe_diff   =</span> chi_fe <span class="sc">-</span> chi_orig_fe)</span>
+<span id="cb6-34"><a href="#cb6-34" tabindex="-1"></a>  </span>
+<span id="cb6-35"><a href="#cb6-35" tabindex="-1"></a>  cell_chi_summary <span class="ot">&lt;-</span> cell_chi_df <span class="sc">%&gt;%</span></span>
+<span id="cb6-36"><a href="#cb6-36" tabindex="-1"></a>    <span class="fu">as.data.table</span>() <span class="sc">%&gt;%</span></span>
+<span id="cb6-37"><a href="#cb6-37" tabindex="-1"></a>    .[ , .(<span class="at">chi_mean_spp =</span> <span class="fu">mean</span>(chi_spp),</span>
+<span id="cb6-38"><a href="#cb6-38" tabindex="-1"></a>           <span class="at">chi_sdev_spp =</span> <span class="fu">sd</span>(chi_spp),</span>
+<span id="cb6-39"><a href="#cb6-39" tabindex="-1"></a>           <span class="at">chi_mean_fe =</span> <span class="fu">mean</span>(chi_fe),</span>
+<span id="cb6-40"><a href="#cb6-40" tabindex="-1"></a>           <span class="at">chi_sdev_fe =</span> <span class="fu">sd</span>(chi_fe),</span>
+<span id="cb6-41"><a href="#cb6-41" tabindex="-1"></a>           <span class="at">diff_95lo =</span> <span class="fu">quantile</span>(fe_spp_diff, .<span class="dv">025</span>),</span>
+<span id="cb6-42"><a href="#cb6-42" tabindex="-1"></a>           <span class="at">diff_95hi =</span> <span class="fu">quantile</span>(fe_spp_diff, .<span class="dv">975</span>),</span>
+<span id="cb6-43"><a href="#cb6-43" tabindex="-1"></a>           <span class="at">diff_95lo_spp =</span> <span class="fu">quantile</span>(spp_spp_diff, .<span class="dv">025</span>),</span>
+<span id="cb6-44"><a href="#cb6-44" tabindex="-1"></a>           <span class="at">diff_95hi_spp =</span> <span class="fu">quantile</span>(spp_spp_diff, .<span class="dv">975</span>),</span>
+<span id="cb6-45"><a href="#cb6-45" tabindex="-1"></a>           <span class="at">diff_95lo_fe  =</span> <span class="fu">quantile</span>(fe_fe_diff, .<span class="dv">025</span>),</span>
+<span id="cb6-46"><a href="#cb6-46" tabindex="-1"></a>           <span class="at">diff_95hi_fe  =</span> <span class="fu">quantile</span>(fe_fe_diff, .<span class="dv">975</span>),</span>
+<span id="cb6-47"><a href="#cb6-47" tabindex="-1"></a>           <span class="at">n_iters =</span> <span class="fu">length</span>(chi_spp)),</span>
+<span id="cb6-48"><a href="#cb6-48" tabindex="-1"></a>       by <span class="ot">=</span> cell_id]</span>
+<span id="cb6-49"><a href="#cb6-49" tabindex="-1"></a>    </span>
+<span id="cb6-50"><a href="#cb6-50" tabindex="-1"></a>  <span class="fu">write_csv</span>(cell_chi_summary, chi_noncc_out_f)</span>
+<span id="cb6-51"><a href="#cb6-51" tabindex="-1"></a>}</span></code></pre></div>
+<div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" tabindex="-1"></a>chi_cc_out_f <span class="ot">&lt;-</span> <span class="fu">here_anx</span>(<span class="st">&#39;spp_vs_fe_sensitivity_analysis/impact_summary/chi_cc_shuffle_species.csv&#39;</span>)</span>
+<span id="cb7-2"><a href="#cb7-2" tabindex="-1"></a></span>
+<span id="cb7-3"><a href="#cb7-3" tabindex="-1"></a>cc_tmp_df <span class="ot">&lt;-</span> tmp_df <span class="sc">%&gt;%</span></span>
+<span id="cb7-4"><a href="#cb7-4" tabindex="-1"></a>  <span class="fu">filter</span>(str <span class="sc">%in%</span> <span class="fu">c</span>(<span class="st">&#39;sst_rise&#39;</span>, <span class="st">&#39;ocean_acidification&#39;</span>, <span class="st">&#39;sea_level_rise&#39;</span>, <span class="st">&#39;sst_extremes&#39;</span>, <span class="st">&#39;uv_radiation&#39;</span>))</span>
+<span id="cb7-5"><a href="#cb7-5" tabindex="-1"></a></span>
+<span id="cb7-6"><a href="#cb7-6" tabindex="-1"></a>cc_orig_spp_r <span class="ot">&lt;-</span> <span class="fu">rast</span>(<span class="fu">here</span>(<span class="st">&#39;_output/cumulative_impact_maps&#39;</span>,</span>
+<span id="cb7-7"><a href="#cb7-7" tabindex="-1"></a>                           <span class="st">&#39;species_group_chi_climate.tif&#39;</span>)) <span class="sc">%&gt;%</span></span>
+<span id="cb7-8"><a href="#cb7-8" tabindex="-1"></a>  <span class="fu">sum</span>() <span class="sc">%&gt;%</span></span>
+<span id="cb7-9"><a href="#cb7-9" tabindex="-1"></a>  <span class="fu">setNames</span>(<span class="st">&#39;chi_orig_spp&#39;</span>)</span>
+<span id="cb7-10"><a href="#cb7-10" tabindex="-1"></a>cc_orig_fe_r <span class="ot">&lt;-</span> <span class="fu">rast</span>(<span class="fu">here</span>(<span class="st">&#39;_output/cumulative_impact_maps&#39;</span>,</span>
+<span id="cb7-11"><a href="#cb7-11" tabindex="-1"></a>                          <span class="st">&#39;funct_entity_group_chi_climate.tif&#39;</span>)) <span class="sc">%&gt;%</span></span>
+<span id="cb7-12"><a href="#cb7-12" tabindex="-1"></a>  <span class="fu">sum</span>() <span class="sc">%&gt;%</span></span>
+<span id="cb7-13"><a href="#cb7-13" tabindex="-1"></a>  <span class="fu">setNames</span>(<span class="st">&#39;chi_orig_fe&#39;</span>)</span>
+<span id="cb7-14"><a href="#cb7-14" tabindex="-1"></a></span>
+<span id="cb7-15"><a href="#cb7-15" tabindex="-1"></a>noncc_orig_df <span class="ot">&lt;-</span> <span class="fu">c</span>(noncc_orig_spp_r, noncc_orig_fe_r, cell_id_r) <span class="sc">%&gt;%</span></span>
+<span id="cb7-16"><a href="#cb7-16" tabindex="-1"></a>  <span class="fu">as.data.frame</span>() <span class="sc">%&gt;%</span></span>
+<span id="cb7-17"><a href="#cb7-17" tabindex="-1"></a>  <span class="fu">filter</span>(cell_id <span class="sc">%in%</span> str_cell_df<span class="sc">$</span>cell_id)</span>
+<span id="cb7-18"><a href="#cb7-18" tabindex="-1"></a></span>
+<span id="cb7-19"><a href="#cb7-19" tabindex="-1"></a></span>
+<span id="cb7-20"><a href="#cb7-20" tabindex="-1"></a><span class="cf">if</span>(<span class="sc">!</span><span class="fu">file.exists</span>(chi_cc_out_f)) {</span>
+<span id="cb7-21"><a href="#cb7-21" tabindex="-1"></a>  <span class="do">### unlink(chi_cc_out_f)</span></span>
+<span id="cb7-22"><a href="#cb7-22" tabindex="-1"></a></span>
+<span id="cb7-23"><a href="#cb7-23" tabindex="-1"></a>  cell_chi_df <span class="ot">&lt;-</span> <span class="fu">lapply</span>(<span class="dv">1</span><span class="sc">:</span>n_sims, </span>
+<span id="cb7-24"><a href="#cb7-24" tabindex="-1"></a>                        <span class="at">FUN =</span> calc_iter_chi, </span>
+<span id="cb7-25"><a href="#cb7-25" tabindex="-1"></a>                        <span class="at">tmp_df =</span> cc_tmp_df) <span class="sc">%&gt;%</span></span>
+<span id="cb7-26"><a href="#cb7-26" tabindex="-1"></a>    <span class="fu">rbindlist</span>() <span class="sc">%&gt;%</span></span>
+<span id="cb7-27"><a href="#cb7-27" tabindex="-1"></a>    oharac<span class="sc">::</span><span class="fu">dt_join</span>(chi_orig_df, <span class="at">type =</span> <span class="st">&#39;left&#39;</span>, <span class="at">by =</span> <span class="st">&#39;cell_id&#39;</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb7-28"><a href="#cb7-28" tabindex="-1"></a>    <span class="fu">mutate</span>(<span class="at">fe_spp_diff  =</span> chi_fe <span class="sc">-</span> chi_spp,</span>
+<span id="cb7-29"><a href="#cb7-29" tabindex="-1"></a>           <span class="at">spp_spp_diff =</span> chi_spp <span class="sc">-</span> chi_orig_spp,</span>
+<span id="cb7-30"><a href="#cb7-30" tabindex="-1"></a>           <span class="at">fe_fe_diff   =</span> chi_fe <span class="sc">-</span> chi_orig_fe)</span>
+<span id="cb7-31"><a href="#cb7-31" tabindex="-1"></a>  </span>
+<span id="cb7-32"><a href="#cb7-32" tabindex="-1"></a>  cell_chi_summary <span class="ot">&lt;-</span> cell_chi_df <span class="sc">%&gt;%</span></span>
+<span id="cb7-33"><a href="#cb7-33" tabindex="-1"></a>    <span class="fu">as.data.table</span>() <span class="sc">%&gt;%</span></span>
+<span id="cb7-34"><a href="#cb7-34" tabindex="-1"></a>    .[ , .(<span class="at">chi_mean_spp =</span> <span class="fu">mean</span>(chi_spp),</span>
+<span id="cb7-35"><a href="#cb7-35" tabindex="-1"></a>           <span class="at">chi_sdev_spp =</span> <span class="fu">sd</span>(chi_spp),</span>
+<span id="cb7-36"><a href="#cb7-36" tabindex="-1"></a>           <span class="at">chi_mean_fe =</span> <span class="fu">mean</span>(chi_fe),</span>
+<span id="cb7-37"><a href="#cb7-37" tabindex="-1"></a>           <span class="at">chi_sdev_fe =</span> <span class="fu">sd</span>(chi_fe),</span>
+<span id="cb7-38"><a href="#cb7-38" tabindex="-1"></a>           <span class="at">diff_95lo =</span> <span class="fu">quantile</span>(fe_spp_diff, .<span class="dv">025</span>),</span>
+<span id="cb7-39"><a href="#cb7-39" tabindex="-1"></a>           <span class="at">diff_95hi =</span> <span class="fu">quantile</span>(fe_spp_diff, .<span class="dv">975</span>),</span>
+<span id="cb7-40"><a href="#cb7-40" tabindex="-1"></a>           <span class="at">diff_95lo_spp =</span> <span class="fu">quantile</span>(spp_spp_diff, .<span class="dv">025</span>),</span>
+<span id="cb7-41"><a href="#cb7-41" tabindex="-1"></a>           <span class="at">diff_95hi_spp =</span> <span class="fu">quantile</span>(spp_spp_diff, .<span class="dv">975</span>),</span>
+<span id="cb7-42"><a href="#cb7-42" tabindex="-1"></a>           <span class="at">diff_95lo_fe  =</span> <span class="fu">quantile</span>(fe_fe_diff, .<span class="dv">025</span>),</span>
+<span id="cb7-43"><a href="#cb7-43" tabindex="-1"></a>           <span class="at">diff_95hi_fe  =</span> <span class="fu">quantile</span>(fe_fe_diff, .<span class="dv">975</span>),</span>
+<span id="cb7-44"><a href="#cb7-44" tabindex="-1"></a>           <span class="at">n_iters =</span> <span class="fu">length</span>(chi_spp)),</span>
+<span id="cb7-45"><a href="#cb7-45" tabindex="-1"></a>       by <span class="ot">=</span> cell_id]</span>
+<span id="cb7-46"><a href="#cb7-46" tabindex="-1"></a>    </span>
+<span id="cb7-47"><a href="#cb7-47" tabindex="-1"></a>  <span class="fu">write_csv</span>(cell_chi_summary, chi_cc_out_f)</span>
+<span id="cb7-48"><a href="#cb7-48" tabindex="-1"></a>}</span></code></pre></div>
+<div class="sourceCode" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" tabindex="-1"></a>impact_out_fstem <span class="ot">&lt;-</span> <span class="fu">here_anx</span>(<span class="st">&#39;spp_vs_fe_sensitivity_analysis/impact_summary/impact_%s_shuffle_species.csv&#39;</span>)</span>
+<span id="cb8-2"><a href="#cb8-2" tabindex="-1"></a><span class="do">### unlink_fs &lt;- list.files(dirname(impact_out_fstem), pattern = &#39;species.csv&#39;, full.names = TRUE)</span></span>
+<span id="cb8-3"><a href="#cb8-3" tabindex="-1"></a><span class="do">### unlink(unlink_fs)</span></span>
+<span id="cb8-4"><a href="#cb8-4" tabindex="-1"></a></span>
+<span id="cb8-5"><a href="#cb8-5" tabindex="-1"></a>strs <span class="ot">&lt;-</span> tmp_df<span class="sc">$</span>str <span class="sc">%&gt;%</span> <span class="fu">unique</span>()</span>
+<span id="cb8-6"><a href="#cb8-6" tabindex="-1"></a></span>
+<span id="cb8-7"><a href="#cb8-7" tabindex="-1"></a><span class="cf">for</span>(s <span class="cf">in</span> strs) {</span>
+<span id="cb8-8"><a href="#cb8-8" tabindex="-1"></a>  <span class="co"># s &lt;- strs[1]</span></span>
+<span id="cb8-9"><a href="#cb8-9" tabindex="-1"></a>  str_tmp_df <span class="ot">&lt;-</span> tmp_df <span class="sc">%&gt;%</span></span>
+<span id="cb8-10"><a href="#cb8-10" tabindex="-1"></a>    <span class="fu">filter</span>(str <span class="sc">==</span> s)</span>
+<span id="cb8-11"><a href="#cb8-11" tabindex="-1"></a></span>
+<span id="cb8-12"><a href="#cb8-12" tabindex="-1"></a>  impact_out_f <span class="ot">&lt;-</span> <span class="fu">sprintf</span>(impact_out_fstem, s)</span>
+<span id="cb8-13"><a href="#cb8-13" tabindex="-1"></a>  <span class="cf">if</span>(<span class="sc">!</span><span class="fu">file.exists</span>(impact_out_f)) {</span>
+<span id="cb8-14"><a href="#cb8-14" tabindex="-1"></a>    cell_imp_df <span class="ot">&lt;-</span> <span class="fu">lapply</span>(<span class="dv">1</span><span class="sc">:</span>n_sims, </span>
+<span id="cb8-15"><a href="#cb8-15" tabindex="-1"></a>                          <span class="at">FUN =</span> calc_iter_chi, </span>
+<span id="cb8-16"><a href="#cb8-16" tabindex="-1"></a>                          <span class="at">tmp_df =</span> str_tmp_df) <span class="sc">%&gt;%</span></span>
+<span id="cb8-17"><a href="#cb8-17" tabindex="-1"></a>      <span class="fu">rbindlist</span>() <span class="sc">%&gt;%</span></span>
+<span id="cb8-18"><a href="#cb8-18" tabindex="-1"></a>      <span class="fu">setNames</span>(<span class="fu">str_replace</span>(<span class="fu">names</span>(.), <span class="st">&#39;chi&#39;</span>, <span class="st">&#39;impact&#39;</span>)) <span class="sc">%&gt;%</span></span>
+<span id="cb8-19"><a href="#cb8-19" tabindex="-1"></a>      <span class="fu">mutate</span>(<span class="at">fe_spp_diff =</span> impact_fe <span class="sc">-</span> impact_spp)</span>
+<span id="cb8-20"><a href="#cb8-20" tabindex="-1"></a>    </span>
+<span id="cb8-21"><a href="#cb8-21" tabindex="-1"></a>    cell_impact_summary <span class="ot">&lt;-</span> cell_imp_df <span class="sc">%&gt;%</span></span>
+<span id="cb8-22"><a href="#cb8-22" tabindex="-1"></a>      <span class="fu">as.data.table</span>() <span class="sc">%&gt;%</span></span>
+<span id="cb8-23"><a href="#cb8-23" tabindex="-1"></a>      .[ , .(<span class="at">impact_mean_spp =</span> <span class="fu">mean</span>(impact_spp),</span>
+<span id="cb8-24"><a href="#cb8-24" tabindex="-1"></a>             <span class="at">impact_sdev_spp =</span> <span class="fu">sd</span>(impact_spp),</span>
+<span id="cb8-25"><a href="#cb8-25" tabindex="-1"></a>             <span class="at">impact_mean_fe =</span> <span class="fu">mean</span>(impact_fe),</span>
+<span id="cb8-26"><a href="#cb8-26" tabindex="-1"></a>             <span class="at">impact_sdev_fe =</span> <span class="fu">sd</span>(impact_fe),</span>
+<span id="cb8-27"><a href="#cb8-27" tabindex="-1"></a>             <span class="at">diff_95lo =</span> <span class="fu">quantile</span>(fe_spp_diff, .<span class="dv">025</span>),</span>
+<span id="cb8-28"><a href="#cb8-28" tabindex="-1"></a>             <span class="at">diff_95hi =</span> <span class="fu">quantile</span>(fe_spp_diff, .<span class="dv">975</span>),</span>
+<span id="cb8-29"><a href="#cb8-29" tabindex="-1"></a>             <span class="at">n_iters =</span> <span class="fu">length</span>(impact_spp)),</span>
+<span id="cb8-30"><a href="#cb8-30" tabindex="-1"></a>         by <span class="ot">=</span> cell_id]</span>
+<span id="cb8-31"><a href="#cb8-31" tabindex="-1"></a>      </span>
+<span id="cb8-32"><a href="#cb8-32" tabindex="-1"></a>    <span class="fu">write_csv</span>(cell_impact_summary, impact_out_f)</span>
+<span id="cb8-33"><a href="#cb8-33" tabindex="-1"></a>  }</span>
+<span id="cb8-34"><a href="#cb8-34" tabindex="-1"></a>}</span></code></pre></div>
 </div>
 </div>
 

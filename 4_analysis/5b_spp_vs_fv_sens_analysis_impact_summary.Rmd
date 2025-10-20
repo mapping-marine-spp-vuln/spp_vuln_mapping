@@ -43,6 +43,21 @@ For each randomized species set, collect iterations across all stressors and cal
 
 Unfortunately, the tmp impact files for uniform-exposure stressors look like they're actually just vulnerability scores (impacts were calculated after).  So, for those stressors, bind with stressor intensity and convert to impacts... :/
 
+``` {r select sample of cells}
+spp_names_f <- here_anx('sens_analysis/spp_name_to_id.csv')
+spp_cells_f <- here_anx('sens_analysis/spp_cells_to_id.csv')
+
+if(any(!file.exists(spp_names_f, spp_cells_f))) {
+  stop('Species/cell sample file(s) do not exist... Please run script 4a first to generate these files!')
+}
+
+spp_cells_sample_df <- read_csv(spp_names_f, show_col_types = FALSE) %>%
+  left_join(read_csv(spp_cells_f, show_col_types = FALSE), by = 'spp_id') %>%
+  select(-spp_id)
+cell_id_vec <- spp_cells_sample_df$cell_id %>% unique() %>% sort()
+n_cells <- length(cell_id_vec)
+```
+
 ```{r load stressor intensities}
 cell_id_r <- rast(here('_output/cumulative_impact_maps/chi_funct_entity.tif')) %>%
   setValues(1:ncell(.)) %>% setNames('cell_id')
@@ -178,12 +193,31 @@ chi_noncc_out_f <- here_anx('spp_vs_fe_sensitivity_analysis/impact_summary/chi_n
 noncc_tmp_df <- tmp_df %>%
   filter(!str %in% c('sst_rise', 'ocean_acidification', 'sea_level_rise', 'sst_extremes', 'uv_radiation'))
 
+
+noncc_orig_spp_r <- rast(here('_output/cumulative_impact_maps',
+                              c('species_group_chi_fishing.tif', 
+                                'species_group_chi_land_based.tif',
+                                'species_group_chi_ocean_based.tif'))) %>%
+  sum() %>%
+  setNames('chi_orig_spp')
+noncc_orig_fe_r <- rast(here('_output/cumulative_impact_maps',
+                              c('funct_entity_group_chi_fishing.tif', 
+                                'funct_entity_group_chi_land_based.tif',
+                                'funct_entity_group_chi_ocean_based.tif'))) %>%
+  sum() %>%
+  setNames('chi_orig_fe')
+
+noncc_orig_df <- c(noncc_orig_spp_r, noncc_orig_fe_r, cell_id_r) %>%
+  as.data.frame() %>%
+  filter(cell_id %in% str_cell_df$cell_id)
+
 if(!file.exists(chi_noncc_out_f)) {
   ### unlink(chi_noncc_out_f)
   cell_chi_df <- lapply(1:n_sims, 
                         FUN = calc_iter_chi, 
                         tmp_df = noncc_tmp_df) %>%
     rbindlist() %>%
+    oharac::dt_join(noncc_orig_df, type = 'left', by = 'cell_id') %>%
     mutate(fe_spp_diff  = chi_fe - chi_spp,
            spp_spp_diff = chi_spp - chi_orig_spp,
            fe_fe_diff   = chi_fe - chi_orig_fe)
@@ -215,6 +249,19 @@ chi_cc_out_f <- here_anx('spp_vs_fe_sensitivity_analysis/impact_summary/chi_cc_s
 cc_tmp_df <- tmp_df %>%
   filter(str %in% c('sst_rise', 'ocean_acidification', 'sea_level_rise', 'sst_extremes', 'uv_radiation'))
 
+cc_orig_spp_r <- rast(here('_output/cumulative_impact_maps',
+                           'species_group_chi_climate.tif')) %>%
+  sum() %>%
+  setNames('chi_orig_spp')
+cc_orig_fe_r <- rast(here('_output/cumulative_impact_maps',
+                          'funct_entity_group_chi_climate.tif')) %>%
+  sum() %>%
+  setNames('chi_orig_fe')
+
+noncc_orig_df <- c(noncc_orig_spp_r, noncc_orig_fe_r, cell_id_r) %>%
+  as.data.frame() %>%
+  filter(cell_id %in% str_cell_df$cell_id)
+
 
 if(!file.exists(chi_cc_out_f)) {
   ### unlink(chi_cc_out_f)
@@ -223,6 +270,7 @@ if(!file.exists(chi_cc_out_f)) {
                         FUN = calc_iter_chi, 
                         tmp_df = cc_tmp_df) %>%
     rbindlist() %>%
+    oharac::dt_join(chi_orig_df, type = 'left', by = 'cell_id') %>%
     mutate(fe_spp_diff  = chi_fe - chi_spp,
            spp_spp_diff = chi_spp - chi_orig_spp,
            fe_fe_diff   = chi_fe - chi_orig_fe)
